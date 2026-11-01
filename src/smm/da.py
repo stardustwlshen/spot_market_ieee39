@@ -43,11 +43,6 @@ def run_da(case: DACase, verbose: bool = True) -> DAResult:
     slack = scuc.slack_summary(m)
     pricing = None
     tables = {}
-    pcfg = cfg.mode.get("pumped", {})
-    n_pf = scuc.fix_pumped_for_pricing(m, pcfg.get("pricing", "fixed"), float(pcfg.get("pricing_eps", 0.1)))
-    if n_pf and not scuc.has_slack(m):
-        pricing = scuc.solve_sced(m)
-        log(f"[DA] 抽蓄定价处理（{pcfg.get('pricing', 'fixed')}）后重算价格，用时 {pricing['time_s']:.1f}s")
     if scuc.has_slack(m):
         # 调度用大罚因子；定价改用定价罚因子重算（方案：松弛不把价格推到 1e6）
         tables_dispatch = _tables(m, scuc.extract_prices(m), cfg)

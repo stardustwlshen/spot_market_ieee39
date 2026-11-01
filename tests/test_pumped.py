@@ -12,7 +12,7 @@ def _ps_cfg(cfg):
 
 
 def test_pumped_da_constraints(da_result):
-    """日前：不同时抽发、台数限制、库容平衡、库容上下限、日末库容回到初值。"""
+    """日前：不同时抽发、台数限制、库容平衡、库容上下限、申报的日末库容（硬约束）。"""
     cfg = da_result.case.cfg
     p = _ps_cfg(cfg)
     ps = da_result.tables["pumped"]
@@ -28,10 +28,12 @@ def test_pumped_da_constraints(da_result):
     dV = (ps.P_pump / p["e_pump"] - ps.P_gen / p["e_gen"]).to_numpy() * cfg.dt
     assert np.allclose(np.diff(V), dV, atol=1e-5)
     assert ps.V_up.min() >= p["vup_min"] - 1e-6 and ps.V_up.max() <= p["vup_max"] + 1e-6
-    assert abs(ps.V_up.iloc[-1] - (p["vup_end"] if p.get("vup_end") is not None else p["vup0"])) < 1e-5
+    ve = da_result.case.bids["units"][p["id"]].get("vup_end")
+    if ve is not None:
+        assert abs(ps.V_up.iloc[-1] - ve) < 1e-5
     # 发电量 = 抽水量 × 综合效率（日末回到初值时）
     eg, ep = ps.P_gen.sum() * cfg.dt, ps.P_pump.sum() * cfg.dt
-    if ep > 1:
+    if ep > 1 and ve is not None and abs(ve - p["vup0"]) < 1e-6:
         assert abs(eg / ep - p["e_gen"] / p["e_pump"]) < 1e-4
 
 
@@ -46,86 +48,106 @@ def test_pumped_hourly_mode_step(da_result):
             assert (a == a[:, :1]).all()
 
 
-def test_pumped_pricing_fixed(da_result):
-    """定价 LP 中抽蓄按“不可定价机组”固定为 SCED 中标出力（广东 2026 细则 5.8.2.3 约束(14)）。"""
-    m = da_result.model
-    assert da_result.case.cfg.mode["pumped"]["pricing"] == "fixed"
-    assert all(m.Pg[i].fixed and m.Pp[i].fixed for i in m.Pg)
-
-
-def test_fix_pumped_for_pricing_modes():
-    """fix_pumped_for_pricing 三种方式（不求解，直接对变量值操作）。"""
-    import pyomo.environ as pyo
+def test_pumped_rules_same_as_storage(da_result):
+    """抽蓄市场规则同储能：配置 rules=storage，旧的 pricing/band 键已删除；定价 LP 中抽蓄出力不被固定（正常参与定价）。"""
     from smm import scuc
-    m = pyo.ConcreteModel()
-    m.PS = pyo.Set(initialize=["PS1"])
-    m.T = pyo.RangeSet(0, 1)
-    m.Pg = pyo.Var(m.PS, m.T, bounds=(0, 600))
-    m.Pp = pyo.Var(m.PS, m.T, bounds=(0, 600))
-    m.Pg["PS1", 0].value, m.Pg["PS1", 1].value = 400.0, 0.0
-    m.Pp["PS1", 0].value, m.Pp["PS1", 1].value = 0.0, 300.0
-    assert scuc.fix_pumped_for_pricing(m, "free") == 0
-    m2 = m.clone()
-    scuc.fix_pumped_for_pricing(m2, "band", 0.1)
-    assert m2.Pg["PS1", 0].lb == pytest.approx(360) and m2.Pg["PS1", 0].ub == pytest.approx(440)
-    assert m2.Pg["PS1", 1].fixed and m2.Pp["PS1", 1].fixed and m2.Pp["PS1", 1].value == 300
-    n = scuc.fix_pumped_for_pricing(m, "fixed")
-    assert n == 4 and all(v.fixed for v in m.Pg.values())
+    cfg = da_result.case.cfg
+    pc = cfg.mode["pumped"]
+    assert pc.get("rules") == "storage"
+    for k in ("pricing", "pricing_eps", "rt_mode", "rt_band_1e4m3", "da_mode", "reserve"):
+        assert k not in pc
+    assert not hasattr(scuc, "fix_pumped_for_pricing")
+    m = da_result.model
+    assert not any(m.Pg[i].fixed or m.Pp[i].fixed for i in m.Pg)
 
 
-def test_pumped_dispatch_mode_model(da_result):
-    """da_mode=dispatch（安全调控）：报价不进入目标（发电计极小成本、抽水 0）。"""
+def test_pumped_reserve_follows_storage(da_result):
+    """备用参与同储能：storage_reserve=false 时抽蓄备用变量为 0。"""
+    import pyomo.environ as pyo
+    cfg = da_result.case.cfg
+    m = da_result.model
+    if not cfg.mode["reserve"].get("storage_reserve"):
+        assert max(abs(pyo.value(m.rp_up[i])) for i in m.rp_up) < 1e-6
+
+
+def test_pumped_vup_end_declared_vs_free(da_result):
+    """日末上库库容：申报 → 日前硬约束（同储能申报期末 SOC）；不申报（None）→ 不加约束，由出清决定。"""
+    from dataclasses import replace
+    from smm import scuc
+    pid = _ps_cfg(da_result.case.cfg)["id"]
+    md = scuc.prepare(da_result.case)
+    assert md.pumped[pid]["v_end"] is not None
+    bids = copy.deepcopy(da_result.case.bids)
+    bids["units"][pid]["vup_end"] = None
+    md2 = scuc.prepare(replace(da_result.case, bids=bids))
+    assert md2.pumped[pid]["v_end"] is None
+
+
+def test_pumped_quantity_only_model(da_result):
+    """报价 mode=quantity_only（同储能报量不报价；旧名 dispatch 视为同义）：报价不进入目标。"""
     from dataclasses import replace
     from smm import scuc
     cfg = da_result.case.cfg
-    mode = copy.deepcopy(cfg.mode)
-    mode["pumped"]["da_mode"] = "dispatch"
-    case = replace(da_result.case, cfg=replace(cfg, mode=mode))
-    bids = copy.deepcopy(case.bids)
-    bids["units"][_ps_cfg(cfg)["id"]].pop("mode", None)
-    case = replace(case, bids=bids)
-    md = scuc.prepare(case)
-    d = md.pumped[_ps_cfg(cfg)["id"]]
-    assert d["mode"] == "dispatch"
-    assert max(d["cg"]) <= 0.1 + 1e-9 and max(d["cp"]) == 0.0      # 发电仅计极小成本 EPS（避免退化）
-    assert len(d["Lg"]) == 1 and d["Lg"][0] == pytest.approx(d["N"] * d["unit_gen_max"])
+    pid = _ps_cfg(cfg)["id"]
+    for mname in ("quantity_only", "dispatch"):
+        bids = copy.deepcopy(da_result.case.bids)
+        bids["units"][pid]["mode"] = mname
+        md = scuc.prepare(replace(da_result.case, bids=bids))
+        d = md.pumped[pid]
+        assert d["mode"] == "quantity_only"
+        assert max(d["cg"]) <= 0.1 + 1e-9 and max(d["cp"]) == 0.0
+        assert len(d["Lg"]) == 1 and d["Lg"][0] == pytest.approx(d["N"] * d["unit_gen_max"])
 
 
-def test_pumped_rt_band_default(full_result):
-    """实时默认 band：工况/台数沿用日前，上库库容在日前 ±带宽 内（广东 2026 细则 6.6.2.1）。"""
+def test_pumped_rt_default_hourly_eq(full_result):
+    """实时默认同储能 B2 hourly_eq：整点上库库容 = 日前；抽/发 0-1 互斥。"""
     da, rt = full_result["da"], full_result["rt"]
-    cfg = da.case.cfg
-    pc = cfg.mode["pumped"]
-    assert pc["rt_mode"] == "band"
-    bw = float(pc["rt_band_1e4m3"])
+    sc = da.case.cfg.mode["realtime"]["storage"]
+    assert sc["mode"] == "sced_anchor" and sc["anchor"] == "hourly_eq"
     d = da.tables["pumped"].set_index("period")
     r = rt["pumped"].set_index("period")
-    for t, row in r.iterrows():
-        assert row.n_gen == d.loc[t, "n_gen"] and row.n_pump == d.loc[t, "n_pump"]
-        assert abs(row.V_up - d.loc[t, "V_up"]) <= bw + 1e-4
-    # 实时库容连续
+    assert ((r.P_gen > 1e-3) & (r.P_pump > 1e-3)).sum() == 0
+    for t in r.index:
+        if (t + 1) % 4 == 0:
+            assert abs(r.loc[t, "V_up"] - d.loc[t, "V_up"]) < 1e-3
     v = r.V_up.to_numpy()
     assert np.allclose(r.V_start.to_numpy()[1:], v[:-1], atol=1e-6)
 
 
-@pytest.mark.parametrize("pm", ["fixed_da", "hourly_eq"])
-def test_pumped_rt_alternatives(da_result, pm):
-    """可选实时方式：fixed_da（执行日前抽发曲线，同水电）/ hourly_eq（整点库容=日前，同储能 B2）。"""
+@pytest.mark.parametrize("sm", ["fixed_da", "window_end_pct"])
+def test_pumped_rt_alternatives(da_result, sm):
+    """可选实时方式与储能共用开关：fixed_da（A，执行日前曲线）/ window_end_pct（B1，窗口末 ±x）。"""
     from dataclasses import replace
     cfg = da_result.case.cfg
     mode = copy.deepcopy(cfg.mode)
-    mode["pumped"]["rt_mode"] = pm
+    if sm == "fixed_da":
+        mode["realtime"]["storage"]["mode"] = "fixed_da"
+    else:
+        mode["realtime"]["storage"]["anchor"] = "window_end_pct"
     da2 = replace(da_result, case=replace(da_result.case, cfg=replace(cfg, mode=mode)))
     res = _short_run(da2, periods=8)
     d = da_result.tables["pumped"].set_index("period")
     r = res["rt"]["pumped"].set_index("period")
-    if pm == "fixed_da":
+    if sm == "fixed_da":
         assert np.allclose(r.P_gen, d.loc[r.index, "P_gen"], atol=1e-5)
         assert np.allclose(r.P_pump, d.loc[r.index, "P_pump"], atol=1e-5)
     else:
-        for t in r.index:
-            if (t + 1) % 4 == 0:
-                assert abs(r.loc[t, "V_up"] - d.loc[t, "V_up"]) < 1e-3
+        assert ((r.P_gen > 1e-3) & (r.P_pump > 1e-3)).sum() == 0
+
+
+def test_pumped_anchors_function():
+    """抽蓄锚点与储能锚点同一规则：hourly_eq 取窗口内整点、window_end_pct 取窗口末 ±x（并截到库容上下限）。"""
+    from smm.config import load_config
+    from smm.rolling import pumped_anchors
+    cfg = load_config()
+    pid = cfg.units["pumped"][0]["id"]
+    Vu = {pid: np.full(cfg.T, 300.0)}
+    a = pumped_anchors(cfg, Vu, 0, 8)[pid]
+    assert [k for k, _, _ in a] == [3, 7] and all(lo == hi == 300.0 for _, lo, hi in a)
+    cfg.mode["realtime"]["storage"]["anchor"] = "window_end_pct"
+    a = pumped_anchors(cfg, Vu, 0, 8)[pid]
+    x = float(cfg.mode["realtime"]["storage"]["x"])
+    assert len(a) == 1 and a[0][0] == 7 and a[0][1] == pytest.approx(300 * (1 - x)) and a[0][2] == pytest.approx(300 * (1 + x))
 
 
 def test_pumped_settlement_entities(full_result):
@@ -152,6 +174,10 @@ def test_pumped_bids_rules():
     miss = copy.deepcopy(b)
     del miss["units"][pid]
     assert pid in fill_missing_bids(cfg, miss)["units"]
+    assert ub["vup_end"] == cfg.units["pumped"][0].get("vup_end_bid", cfg.units["pumped"][0]["vup0"])
+    bad2 = copy.deepcopy(b)
+    bad2["units"][pid]["vup_end"] = 1.0e4                   # 申报日末库容越限 → 违规
+    assert [i for i in validate_bids(cfg, bad2) if i.level == "error" and i.rule == "日末库容"]
 
 
 def test_hydro_reservoir_vs_run_of_river():

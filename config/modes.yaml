@@ -35,7 +35,7 @@ MKT:
     rho_RE_dn: 0.0                   # 假设值
     include_ctg: true                # 甘V3.2：正备用 ≥ max(单一交流元件故障最大功率缺额, 最大单机)
     mu_RE: 0.0                       # 风光计入正备用的置信因子（甘V3.2 有该项但未给数值，取 0，假设值）
-    storage_reserve: false
+    storage_reserve: false           # 储能与抽蓄（规则同储能）是否提供备用；默认不计（假设）
     providers: [coal, gas_ccgt, gas_gt, hydro]
   penalties: {balance: 1.0e+6, line: 1.0e+5, reserve: 1.0e+5}       # 甘工作方案：平衡 1e6、断面 1e5；备用 1e5 为假设值
   pricing_penalties: {balance: 1.0e+4, line: 500, reserve: 500}     # 甘V3.2：节点电价计算断面罚因子 500；平衡 1e4 为假设值
@@ -70,19 +70,14 @@ MKT:
       anchor_penalty: 1.0e5          # 假设值：锚点松弛罚 元/MWh，仅防无解；触发时放宽到实际值后重算价格，不进入电价
     mip_rel_gap: 1.0e-4              # 求解参数
     time_limit_s: 30
-  pumped:                            # 抽水蓄能参与方式（依据与链接见 README“抽水蓄能”）
-    da_mode: price_quantity          # 默认：报量报价、全电量出清（广东 2026 现货细则 5.1；广东抽蓄交易细则征求意见稿 第 6 章）
-                                     #   申报：抽水状态报价（额定抽水功率一个价）+ 发电价格曲线，发电首段价 ≥ 抽水价（征求意见稿 6.1）
-                                     # 可选 dispatch：“安全调控”（广东 2026 细则 5.1：作为边界条件/调度统一安排），不计报价成本
-    rt_mode: band                    # 默认：工况/台数沿用日前，实时上库库容在日前结果 ±rt_band 内优化（广东 2026 细则 6.6.2.1 实时 SCED 库容约束、5.3.1.4(11) 带宽量）
-                                     # 可选 fixed_da：执行日前抽发曲线（与水电 fixed_da 一致）；hourly_eq：各整点上库库容 = 日前（与储能 B2 一致）
-    rt_band_1e4m3: 20                # 假设值：实时库容带宽 万m3（≈ 可用库容 5%）
-    pricing: fixed                   # 定价模型中抽蓄出力处理：fixed = 按“不可定价机组”取 SCED 中标出力（广东 2026 细则 5.8.2.3 约束(14)）
-                                     # 可选 band：发电出力限制在 SCED 结果 ±pricing_eps（同条“可定价机组”）；free：不处理（仅对比）
-    pricing_eps: 0.1                 # 假设值：可定价机组允许偏离比例
-    mode_step_periods: 4             # 工程简化（假设）：日前抽/发台数按小时决策（1 = 每 15 min），用于提速；类比广东2026细则 5.8.2.1 约束(17)“独立储能小时内充放电状态一致”（该条针对储能，对抽蓄属类推）
-    reserve: false                   # 是否作为备用提供者（假设：默认不参与，可改 true）
-    anchor_penalty: 1.0e5            # 仅 rt_mode=band/hourly_eq：库容约束松弛罚 元/(万m3)，仅防无解
+  pumped:                            # 抽水蓄能：市场规则与电化学储能完全一致（rules: storage，不另设一套），依据见 README“抽水蓄能”
+    rules: storage                   # 报价：发电曲线≙放电、抽水报价≙充电，段数 segments.storage_*，发电最低价>抽水最高价（storage_dis_gt_ch）
+                                     # 定价：正常参与出清与定价（与储能相同，无“不可定价”固定处理）
+                                     # 日前日末上库库容：报价申报 vup_end → 硬约束（≙ storage_end_soc 申报期末 SOC，川V4.0 7.7.4）；未申报由出清决定
+                                     # 实时：realtime.storage（sced_anchor + B2 hourly_eq 默认；B1 window_end_pct ±x；fixed_da 执行日前）
+                                     # 备用：reserve.storage_reserve；结算：两级结算（发电/抽水分列主体）
+                                     # 已弃用（2026-11-01 删除）：da_mode、rt_mode(band/fixed_da/hourly_eq)、rt_band_1e4m3、pricing(fixed/band/free)、pricing_eps、reserve
+    mode_step_periods: 4             # 抽蓄物理/工程简化（非市场规则，假设）：日前抽/发台数按小时决策（1 = 每 15 min），用于提速
   settlement:
     scheme: two_settlement           # 日前电量×日前 LMP + (实际−日前)×实时 LMP（甘工作方案两级结算）
     interval_min: 15                 # 假设值：统一 15 min（川结算：储能 15 min、其他 1 h；甘 15 min）

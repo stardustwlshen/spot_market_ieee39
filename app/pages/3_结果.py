@@ -251,7 +251,8 @@ with tabs[4]:
             ps = PSs.get(un) or {}
             dsum = (DS.get("pumped") or {}).get(un, {})
             head = (f"{un}（节点 {info.get('bus', '?')}，{info.get('n_units', '?')}×{info.get('unit_gen_max', '?')} MW，"
-                    f"日前模式 {ps.get('da_mode', '—')}，实时模式 {ps.get('rt_mode', '—')}）")
+                    + (f"规则同储能：报价 {ps.get('da_mode', '—')}，实时 {ps.get('rt_mode', '—')}）" if ps.get("rules") == "storage"
+                       else f"旧规则结果：日前模式 {ps.get('da_mode', '—')}，实时模式 {ps.get('rt_mode', '—')}）"))
             st.markdown(f"**{head}**")
             items = [("日前 发电 / 抽水（MWh）", f"{dsum.get('gen_mwh', 0):,.0f} / {dsum.get('pump_mwh', 0):,.0f}"),
                      ("日前 发电 / 抽水小时", f"{dsum.get('gen_hours', 0):.2f} / {dsum.get('pump_hours', 0):.2f}"),

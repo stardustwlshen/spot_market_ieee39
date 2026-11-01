@@ -253,8 +253,8 @@ with tabs[3]:
         cn = {"segments": "报价曲线", "dis_segments": "放电曲线", "ch_segments": "充电曲线",
               "gen_segments": "抽蓄发电曲线", "pump_segments": "抽蓄抽水报价"}
         if tmap.get(uid) == "pumped":
-            st.caption("抽蓄：发电曲线（价格递增，≤10 段）+ 抽水状态报价（额定抽水功率一个价）；发电首段价须高于抽水价"
-                       "（广东抽蓄交易细则征求意见稿 6.1）。da_mode=dispatch（安全调控）时报价不计入目标。")
+            st.caption("抽蓄报价规则同储能：发电曲线 ≙ 放电曲线、抽水报价 ≙ 充电曲线（段数按储能 1–5 段），"
+                       "发电最低价须高于抽水最高价（同储能，川V4.0）；申报日末上库库容 ≙ 储能申报期末 SOC（日前硬约束）。")
         cols = st.columns(len(curves))
         for c, cv in zip(cols, curves):
             with c:
@@ -270,6 +270,14 @@ with tabs[3]:
             se = c2.number_input("期末申报 SOC（日前硬约束）", 0.0, 1.0, float(ub.get("soc_end") or 0.5), 0.05, key=f"se_{key}_{uid}")
             ub["soc_end"] = float(se) if dec else None
             c3.caption("不申报则由出清决定期末 SOC（川V4.0 7.7.4）")
+        if tmap.get(uid) == "pumped":
+            pu = [x for x in cfg.units.get("pumped", []) if x["id"] == uid][0]
+            c1, c2, c3 = st.columns(3)
+            dec = c1.checkbox("申报日末上库库容", value=ub.get("vup_end") is not None, key=f"ve_on_{key}_{uid}")
+            ve = c2.number_input("日末上库库容 万m³（日前硬约束）", float(pu["vup_min"]), float(pu["vup_max"]),
+                                 float(ub.get("vup_end") if ub.get("vup_end") is not None else pu["vup0"]), 10.0, key=f"ve_{key}_{uid}")
+            ub["vup_end"] = float(ve) if dec else None
+            c3.caption("同储能申报期末 SOC：不申报则由出清决定（川V4.0 7.7.4 类推）")
         if tmap.get(uid) in ("coal", "gas_ccgt", "gas_gt"):
             c1, c2 = st.columns(2)
             su = ub.get("startup_cost", {})
@@ -497,30 +505,31 @@ with tabs[8]:
                 ("capacity_price", "容量电价 元/kW·年（仅展示）")]
         pdf = pd.DataFrame([{"参数": lab, "键": k, "值": float(ps.get(k) or 0)} for k, lab in keys])
         pe = st.data_editor(pdf, disabled=["参数", "键"], hide_index=True, width="stretch", key="ps_ed")
-        c = st.columns(2)
-        ve_on = c[0].checkbox("设置日末上库库容（不设 = 回到日初值）", ps.get("vup_end") is not None)
-        ve = c[1].number_input("日末上库库容 万m³（广东2026细则 5.6(10)）", 0.0, 2000.0, float(ps.get("vup_end") or ps["vup0"]), disabled=not ve_on)
         eff = float(pe.loc[pe["键"] == "e_gen", "值"].iloc[0]) / max(float(pe.loc[pe["键"] == "e_pump", "值"].iloc[0]), 1e-9)
         st.caption(f"综合循环效率 = e_gen / e_pump ≈ {eff:.3f}")
-        st.markdown("**参与方式**（config/modes.yaml → MKT.pumped）")
-        c = st.columns(3)
-        dm_opts = {"price_quantity": "报量报价（默认，广东2026细则 5.1/征求意见稿 第6章）", "dispatch": "安全调控（边界条件，不计报价）"}
-        rt_opts = {"band": "库容带宽（默认，广东2026细则 6.6.2.1）", "fixed_da": "执行日前抽发曲线（同水电）", "hourly_eq": "整点库容=日前（同储能 B2）"}
-        pr_opts = {"fixed": "不可定价：定价取 SCED 出力（默认，5.8.2.3 约束(14)）", "band": "可定价：SCED±ε", "free": "不处理（仅对比）"}
-        dm = c[0].selectbox("日前方式", list(dm_opts), index=list(dm_opts).index(pm.get("da_mode", "price_quantity")), format_func=dm_opts.get)
-        rm = c[1].selectbox("实时方式", list(rt_opts), index=list(rt_opts).index(pm.get("rt_mode", "band")), format_func=rt_opts.get)
-        pr = c[2].selectbox("节点电价计算", list(pr_opts), index=list(pr_opts).index(pm.get("pricing", "fixed")), format_func=pr_opts.get)
-        c = st.columns(3)
-        bw = c[0].number_input("实时库容带宽 万m³（假设值）", 0.0, 500.0, float(pm.get("rt_band_1e4m3", 20)), disabled=rm != "band")
-        peps = c[1].number_input("可定价 ε（假设值）", 0.0, 1.0, float(pm.get("pricing_eps", 0.1)), 0.01, disabled=pr != "band")
-        mstep = c[2].selectbox("抽/发台数决策步长（工程简化）", [1, 2, 4], index=[1, 2, 4].index(int(pm.get("mode_step_periods", 4))),
-                               format_func=lambda v: {1: "15 min", 2: "30 min", 4: "1 h（默认）"}[v])
-        if st.button("保存抽蓄参数与参与方式", type="primary"):
+        c = st.columns(2)
+        veb = c[0].number_input("缺省报价申报的日末上库库容 万m³（vup_end_bid，≙ 储能 soc_end_bid）", 0.0, 2000.0,
+                                float(ps.get("vup_end_bid") if ps.get("vup_end_bid") is not None else ps["vup0"]))
+        c[1].caption("实际生效的是报价中的“申报日末上库库容”（报价页可改或不申报）；此处只用于生成缺省报价。")
+        st.markdown("**市场规则：同电化学储能**（MKT.pumped.rules = storage，不另设一套）")
+        stc = (mk.get("realtime") or {}).get("storage") or {}
+        st.markdown(
+            f"- 报价：报量报价，发电曲线 ≙ 放电、抽水报价 ≙ 充电；发电最低价 > 抽水最高价（storage_dis_gt_ch = {mk.get('storage_dis_gt_ch', 'error')}）\n"
+            f"- 定价：正常参与出清与节点电价形成（已删除旧的“不可定价 fixed / 可定价 band / free”处理）\n"
+            f"- 日前日末库容：申报即硬约束（≙ 申报期末 SOC）\n"
+            f"- 实时：{stc.get('mode', 'sced_anchor')} / 锚点 {stc.get('anchor', 'hourly_eq')}（x = {stc.get('x', 0.05)}），抽/发 0-1 互斥在窗口 MIP 内决策 —— 改动请到“实时与滚动”页的储能设置，二者同时生效\n"
+            f"- 备用：reserve.storage_reserve = {(mk.get('reserve') or {}).get('storage_reserve', False)}（“市场限价与备用”页）\n"
+            f"- 结算：两级结算，发电/抽水分列主体\n"
+            f"- 已弃用并删除：实时库容带宽 ±20 万m³（band）、不可定价/可定价处理、安全调控 dispatch（改为报价 mode=quantity_only，同储能）")
+        mstep = st.selectbox("抽/发台数决策步长（抽蓄工程简化，非市场规则）", [1, 2, 4], index=[1, 2, 4].index(int(pm.get("mode_step_periods", 4))),
+                             format_func=lambda v: {1: "15 min", 2: "30 min", 4: "1 h（默认）"}[v])
+        if st.button("保存抽蓄参数", type="primary"):
             ps["enabled"], ps["bus"], ps["n_units"], ps["variable_speed"] = bool(p_en), int(p_bus), int(p_n), bool(p_vs)
             for _, r in pe.iterrows():
                 v = py(r["值"])
                 ps[r["键"]] = int(v) if r["键"] in ("max_gen_starts", "max_pump_starts") else v
-            ps["vup_end"] = py(ve) if ve_on else None
+            ps["vup_end_bid"] = py(veb)
+            ps.pop("vup_end", None)
             bad = []
             if ps["vup_min"] >= ps["vup_max"] or not (ps["vup_min"] <= ps["vup0"] <= ps["vup_max"]):
                 bad.append("上库库容 vup_min ≤ vup0 ≤ vup_max")
@@ -532,7 +541,8 @@ with tabs[8]:
                 st.error("参数不合理：" + "；".join(bad))
             else:
                 sc.write_yaml(name, "units", units)
-                pm["da_mode"], pm["rt_mode"], pm["pricing"] = dm, rm, pr
-                pm["rt_band_1e4m3"], pm["pricing_eps"], pm["mode_step_periods"] = py(bw), py(peps), int(mstep)
+                for k in ("da_mode", "rt_mode", "pricing", "rt_band_1e4m3", "pricing_eps", "reserve", "anchor_penalty"):
+                    pm.pop(k, None)                       # 旧规则键（已弃用）
+                pm["rules"], pm["mode_step_periods"] = "storage", int(mstep)
                 sc.write_yaml(name, "modes", modes)
                 saved("已保存 units.yaml 与 modes.yaml（台数改变时请到“报价”页按新容量校验/重建抽蓄报价）")

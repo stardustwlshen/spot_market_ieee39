@@ -201,8 +201,9 @@ def pumped_full_summary(res) -> dict:
         dps = da.tables["pumped"]
         dps = dps[(dps.unit == pid) & (dps.period < T)]
         rps = rt["pumped"][rt["pumped"].unit == pid]
-        o = dict(bus=p["bus"], da_mode=(cfg.mode.get("pumped") or {}).get("da_mode", "price_quantity"),
-                 rt_mode=(cfg.mode.get("pumped") or {}).get("rt_mode", "fixed_da"))
+        stc = cfg.mode["realtime"]["storage"]
+        o = dict(bus=p["bus"], rules="storage", da_mode=(da.case.bids["units"].get(pid) or {}).get("mode", "price_quantity"),
+                 rt_mode=stc.get("mode", "sced_anchor") + ("/" + stc.get("anchor", "hourly_eq") if stc.get("mode", "sced_anchor") == "sced_anchor" else ""))
         for tag, d in (("da", dps), ("rt", rps)):
             eg, ep = float(d.P_gen.sum() * dt), float(d.P_pump.sum() * dt)
             o[tag] = dict(gen_mwh=eg, pump_mwh=ep, cycle_eff=eg / ep if ep > 1e-6 else None,

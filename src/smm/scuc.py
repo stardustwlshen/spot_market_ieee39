@@ -92,26 +92,32 @@ def prepare(case: DACase) -> ModelData:
                                    soc_end=b.get("soc_end"), sched=b.get("self_schedule"))   # 申报期末 SOC；None = 未申报，由出清决定
         if case.init and s["id"] in case.init.get("storage", {}):
             md.storage[s["id"]]["soc0"] = float(case.init["storage"][s["id"]]) / s["ecap"]
-    pmode = (cfg.mode.get("pumped") or {}).get("da_mode", "price_quantity")
+    # 抽蓄市场规则同储能（MKT.pumped.rules = storage）：报价方式取报价文件 mode（price_quantity / quantity_only），
+    # 日末上库库容按申报值硬约束（同储能申报期末 SOC），未申报由出清决定。
     for p in cfg.units.get("pumped", []):
         b = bids.get(p["id"]) or {}
-        mode = b.get("mode", pmode)
+        mode = b.get("mode", "price_quantity")
+        if mode == "dispatch":          # 旧名（已弃用）→ quantity_only
+            mode = "quantity_only"
         N = int(p["n_units"])
         if mode == "price_quantity":
             Lg, cg = _seg_lists(b["gen_segments"])
             Lp, cp = _seg_lists(b["pump_segments"])
-        else:   # dispatch：报量不报价，调度按系统成本最小统一优化（不计报价，发电计极小成本避免退化）
+        else:   # quantity_only：同储能报量不报价（发电计极小成本 EPS 避免退化，抽水 0）
             Lg, cg, Lp, cp = [p["unit_gen_max"] * N], [EPS_STORAGE], [p["unit_pump"] * N], [0.0]
         init_mode = p.get("init_mode", "idle")
         st0 = dict(V=float(p["vup0"]), ng=N if init_mode == "gen" else 0, np=N if init_mode == "pump" else 0,
                    xg=int(init_mode == "gen"), xp=int(init_mode == "pump"))
         if case.init and p["id"] in case.init.get("pumped", {}):
             st0.update(case.init["pumped"][p["id"]])
-        vend = p.get("vup_end")
+        if "vup_end" in b:                       # 报价申报的日末上库库容（None = 不申报）
+            vend = b["vup_end"]
+        else:                                    # 报价未含该字段（旧报价）：用 units.yaml 的 vup_end_bid 作为缺省申报
+            vend = p.get("vup_end", p.get("vup_end_bid", p["vup0"]))
         md.pumped[p["id"]] = dict(p, mode=mode, N=N, Lg=Lg, cg=cg, Lp=Lp, cp=cp, init=st0,
                                   v_lo=max(float(p["vup_min"]), float(p["v_total"]) - float(p["vdn_max"])),
                                   v_hi=min(float(p["vup_max"]), float(p["v_total"]) - float(p["vdn_min"])),
-                                  v_end=float(p["vup0"] if vend is None else vend))
+                                  v_end=None if vend is None else float(vend))
     return md
 
 
@@ -388,8 +394,9 @@ def build_model(case: DACase, penalties: dict | None = None) -> pyo.ConcreteMode
         return m.Vu[p, t] == Vp + (m.Pp[p, t] / d["e_pump"] - m.Pg[p, t] / d["e_gen"]) * dt
     m.c_pres = pyo.Constraint(m.PS, m.T, rule=pres)            # 上库库容平衡（万m3；电量/库容转换系数）
     m.c_pvlim = pyo.Constraint(m.PS, m.T, rule=lambda m, p, t: pyo.inequality(md.pumped[p]["v_lo"], m.Vu[p, t], md.pumped[p]["v_hi"]))
-    if term is None or term.get("hydro_vend", False):           # 日前：日末上库库容 = 目标值（广东 2026 细则 日末库容约束）
-        m.c_pvend = pyo.Constraint(m.PS, rule=lambda m, p: m.Vu[p, T - 1] == md.pumped[p]["v_end"])
+    if term is None:   # 日前：同储能申报期末 SOC —— 申报了日末上库库容即硬约束，未申报由出清决定
+        P_end = [p for p in m.PS if md.pumped[p]["v_end"] is not None]
+        m.c_pvend = pyo.Constraint(P_end, rule=lambda m, p: m.Vu[p, T - 1] == md.pumped[p]["v_end"])
 
     # ---------------- 储能
     # 分段上限直接乘状态变量（逐段 big-M = 段长，比只约束总功率更紧）
@@ -415,7 +422,7 @@ def build_model(case: DACase, penalties: dict | None = None) -> pyo.ConcreteMode
     if term is None:
         S_end = [s for s in m.S if md.storage[s]["soc_end"] is not None]
         m.c_eend = pyo.Constraint(S_end, rule=lambda m, s: m.E[s, T - 1] == float(md.storage[s]["soc_end"]) * md.storage[s]["ecap"])
-    # 锚点：储能 E（MWh）与抽蓄上库库容 Vu（万m3，仅抽蓄 rt_mode=hourly_eq）
+    # 锚点：储能 E（MWh）与抽蓄上库库容 Vu（万m3），规则相同（realtime.storage.anchor）
     anchors = [] if term is None else (
         [(s, int(t), float(lo), float(hi), "E") for s, lst in term.get("storage_anchor", {}).items() for (t, lo, hi) in lst]
         + [(p, int(t), float(lo), float(hi), "Vu") for p, lst in term.get("pumped_anchor", {}).items() for (t, lo, hi) in lst])
@@ -504,7 +511,7 @@ def build_model(case: DACase, penalties: dict | None = None) -> pyo.ConcreteMode
         Tdur = float(rcfg.get("T_dur_h", 1.0))
         m.c_rsup_soc = pyo.Constraint(m.S, m.T, rule=lambda m, s, t: m.E[s, t] - md.storage[s]["soc_min"] * md.storage[s]["ecap"] >= (m.Pd[s, t] + m.rs_up[s, t] - m.Pc[s, t]) * Tdur / md.storage[s]["eta_d"])
         m.c_rsdn_soc = pyo.Constraint(m.S, m.T, rule=lambda m, s, t: md.storage[s]["soc_max"] * md.storage[s]["ecap"] - m.E[s, t] >= md.storage[s]["eta_c"] * (m.Pc[s, t] + m.rs_dn[s, t] - m.Pd[s, t]) * Tdur)
-    use_ps = bool((cfg.mode.get("pumped") or {}).get("reserve", False))
+    use_ps = use_sto   # 抽蓄备用参与方式同储能（reserve.storage_reserve）
     m.c_rpup = pyo.Constraint(m.PS, m.T, rule=lambda m, p, t: (m.rp_up[p, t] <= md.pumped[p]["unit_gen_max"] * m.ngen[p, t] - m.Pg[p, t] + m.Pp[p, t])
                               if use_ps else m.rp_up[p, t] == 0)
     m.c_rpdn = pyo.Constraint(m.PS, m.T, rule=lambda m, p, t: (m.rp_dn[p, t] <= m.Pg[p, t] - md.pumped[p]["unit_gen_min"] * m.ngen[p, t])
@@ -629,30 +636,6 @@ def fix_integers(m):
                 val = 1 if pyo.value((m.Pc if name == "u_ch" else m.Pd)[idx]) > 1e-6 else 0
             var[idx].domain = pyo.Reals  # 放松整数域，使 HiGHS 按 LP 求解并给出对偶
             var[idx].fix(val)
-
-
-def fix_pumped_for_pricing(m, mode: str = "fixed", eps: float = 0.1) -> int:
-    """定价模型中抽蓄出力处理（广东2026现货细则 5.8.2.3 约束(14)、广东抽蓄交易细则征求意见稿 7.3.3“节点电价计算模型”出力上下限）：
-    - fixed：作为“不可定价机组”，发电/抽水功率固定为 SCED 结果（默认，避免水价值退化使抽蓄成为边际机组）；
-    - band：发电功率限制在 SCED 结果 ±eps 比例内，抽水功率固定（定速泵）；
-    - free：不处理（与 SCED 同一 LP，仅供对比）。
-    返回被固定/收紧的变量数。"""
-    if mode == "free" or not hasattr(m, "PS") or len(m.PS) == 0:
-        return 0
-    n = 0
-    for idx in m.Pg:
-        pg, pp = pyo.value(m.Pg[idx]), pyo.value(m.Pp[idx])
-        if not m.Pp[idx].fixed:
-            m.Pp[idx].fix(max(pp, 0.0)); n += 1
-        if m.Pg[idx].fixed:
-            continue
-        if mode == "band" and pg > 1e-6:
-            lo, hi = m.Pg[idx].bounds
-            m.Pg[idx].setlb(max(lo or 0.0, (1 - eps) * pg)); m.Pg[idx].setub(min(hi if hi is not None else 1e9, (1 + eps) * pg))
-        else:
-            m.Pg[idx].fix(max(pg, 0.0))
-        n += 1
-    return n
 
 
 def set_penalties(m, pen):

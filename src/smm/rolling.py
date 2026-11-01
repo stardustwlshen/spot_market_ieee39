@@ -172,9 +172,7 @@ def clear_window(case: DACase, log=lambda *a: None) -> dict:
     if scuc.has_slack(m):
         scuc.set_penalties(m, {k: float(v) for k, v in cfg.mode["pricing_penalties"].items()})
         repriced = True
-    pcfg = cfg.mode.get("pumped", {})
-    n_pf = scuc.fix_pumped_for_pricing(m, pcfg.get("pricing", "fixed"), float(pcfg.get("pricing_eps", 0.1)))
-    if repriced or n_relax or n_pf:
+    if repriced or n_relax:
         scuc.solve_sced(m)
     pr = scuc.extract_prices(m)
     pr["lmp_clamped"] = np.clip(pr["lmp"], lim["clear_min"], lim["clear_max"])
@@ -212,6 +210,33 @@ def storage_anchors(cfg, E_da: dict, t: int, t1: int) -> dict:
     return out
 
 
+def pumped_anchors(cfg, Vu_da: dict, t: int, t1: int) -> dict:
+    """实时窗口 [t, t1) 的抽蓄上库库容锚点（万m³），规则与储能 SOC 锚点相同（realtime.storage.anchor / x）。"""
+    sc = cfg.mode["realtime"]["storage"]
+    kind = sc.get("anchor", "hourly_eq")
+    x = float(sc.get("x", 0.05))
+    out = {}
+    for d in cfg.units.get("pumped", []):
+        p = d["id"]
+        if p not in Vu_da:
+            continue
+        vlo = max(float(d["vup_min"]), float(d["v_total"]) - float(d["vdn_max"]))
+        vhi = min(float(d["vup_max"]), float(d["v_total"]) - float(d["vdn_min"]))
+        if kind == "window_end_pct":
+            ks, xx = [t1 - 1], x
+        elif kind == "hourly_eq":
+            ks, xx = [k for k in range(t, t1) if (k + 1) % 4 == 0], 0.0
+        else:
+            raise ValueError(f"未知锚点方式 {kind}")
+        lst = []
+        for k in ks:
+            v = float(Vu_da[p][k])
+            lo, hi = max(vlo, (1 - xx) * v), min(vhi, (1 + xx) * v)
+            lst.append((k - t, lo, max(lo, hi)))
+        out[p] = lst
+    return out
+
+
 def run_intraday_round(da_case, da_plan, cfg, state: SysState, tau: int, log=print) -> dict:
     """（可选，默认关闭）τ 时刻的一轮日内滚动（窗口至日末）：锁定煤电/CCGT；水电期末库容硬约束；
     储能日末 SOC 锚定日前出清日末值（同实时 window_end_pct 规则）。"""
@@ -226,6 +251,8 @@ def run_intraday_round(da_case, da_plan, cfg, state: SysState, tau: int, log=pri
     sc = cfg.mode["realtime"]["storage"]
     term = dict(hydro_vend=True, storage_anchor=storage_anchors(cfg, da_plan["E"], tau, T),
                 anchor_penalty=float(sc.get("anchor_penalty", 1e5)))
+    if da_plan.get("Vu"):
+        term["pumped_anchor"] = pumped_anchors(cfg, da_plan["Vu"], tau, T)
     c2 = _sub_cfg(cfg, mip_rel_gap=ic.get("mip_rel_gap", 0.005), time_limit_s=ic.get("time_limit_s", 60),
                   warm_start=False, tighten=False)
     issue = max(0, tau - int(ic.get("lead_issue_periods", 1)))
@@ -264,26 +291,16 @@ def run_rt_period(da_case, da_plan: dict, plan: dict, cfg, state: SysState, t: i
         term["storage_anchor"] = storage_anchors(cfg, da_plan["E"], t, t1)
     else:
         raise ValueError(f"未知储能实时模式 {mode}")
-    pc = cfg.mode.get("pumped") or {}
-    pmode = pc.get("rt_mode", "fixed_da")
     if da_plan.get("Pg"):
-        # 抽蓄：工况与台数沿用日前（两种方式一致，转换需数分钟、不在 15 min 实时内改变工况）
-        for key in ("xg", "xp", "ngen", "npump"):
-            fixed[key] = {(p, k - t): int(da_plan[key][p][k]) for p in da_plan[key] for k in win}
-        if pmode == "fixed_da":                            # 执行日前发电/抽水曲线（与水电 fixed_da 一致）
+        # 抽蓄实时规则同储能（realtime.storage）：fixed_da = 执行日前抽发曲线（工况、台数、功率）；
+        # sced_anchor = 抽/发 0-1 工况与台数在窗口 MIP 内决策，上库库容按储能同一锚点规则（B2 hourly_eq / B1 window_end_pct）。
+        if mode == "fixed_da":
+            for key in ("xg", "xp", "ngen", "npump"):
+                fixed[key] = {(p, k - t): int(da_plan[key][p][k]) for p in da_plan[key] for k in win}
             fix_power["Pg"] = {(p, k - t): float(da_plan["Pg"][p][k]) for p in da_plan["Pg"] for k in win}
             fix_power["Pp"] = {(p, k - t): float(da_plan["Pp"][p][k]) for p in da_plan["Pp"] for k in win}
-        elif pmode == "hourly_eq":                         # 出力实时可调，上库库容在整点等于日前（与储能 B2 一致）
-            term["pumped_anchor"] = {p: [(k - t, float(da_plan["Vu"][p][k]), float(da_plan["Vu"][p][k]))
-                                         for k in win if (k + 1) % 4 == 0] for p in da_plan["Vu"]}
-            term["pumped_anchor_penalty"] = float(pc.get("anchor_penalty", 1e5))
-        elif pmode == "band":                              # 广东 2026 细则 6.6.2.1：实时上库库容在日前结果 ±带宽 内优化
-            bw = float(pc.get("rt_band_1e4m3", 20.0))
-            term["pumped_anchor"] = {p: [(k - t, float(da_plan["Vu"][p][k]) - bw, float(da_plan["Vu"][p][k]) + bw)
-                                         for k in win] for p in da_plan["Vu"]}
-            term["pumped_anchor_penalty"] = float(pc.get("anchor_penalty", 1e5))
         else:
-            raise ValueError(f"未知抽蓄实时模式 {pmode}")
+            term["pumped_anchor"] = pumped_anchors(cfg, da_plan["Vu"], t, t1)
     term["fix_power"] = fix_power
     c2 = _sub_cfg(cfg, mip_rel_gap=float(rc.get("mip_rel_gap", 1e-4)), time_limit_s=float(rc.get("time_limit_s", 30)),
                   warm_start=False, tighten=False)

@@ -70,13 +70,15 @@ PUMPED_PUMP_PRICES = [300]              # 假设值：抽水状态单一报价�
 
 
 def pumped_default(p) -> dict:
-    """抽蓄缺省报价（假设值）：发电 3 段等分全厂容量；抽水按额定抽水功率单一报价；发电首段价 > 抽水价
-    （广东抽蓄交易细则征求意见稿 6.1 要求“第一段报价须大于等于抽水状态报价”，本模型取严格大于避免抽发无差价循环）。"""
+    """抽蓄缺省报价（假设值）：市场规则同储能——发电曲线 ≙ 放电曲线、抽水报价 ≙ 充电曲线，
+    发电最低价 > 抽水最高价（同储能 storage_dis_gt_ch，川V4.0）；申报日末上库库容 vup_end ≙ 储能申报期末 SOC
+    （缺省 = units.yaml vup_end_bid，null = 不申报、由出清决定）。抽水单一报价：定速机组抽水功率只能取台数×额定。"""
     N = int(p["n_units"])
     gb = np.linspace(0, N * p["unit_gen_max"], len(PUMPED_GEN_PRICES) + 1)
     pb = np.linspace(0, N * p["unit_pump"], len(PUMPED_PUMP_PRICES) + 1)
     return dict(mode="price_quantity", gen_segments=_segments(gb, PUMPED_GEN_PRICES),
-                pump_segments=_segments(pb, PUMPED_PUMP_PRICES))
+                pump_segments=_segments(pb, PUMPED_PUMP_PRICES),
+                vup_end=p.get("vup_end_bid", p["vup0"]))
 
 
 def fill_missing_bids(cfg: Config, bids: dict) -> dict:
@@ -280,8 +282,15 @@ def validate_bids(cfg: Config, bids: dict) -> list[Issue]:
                     lvl = cfg.mode.get("storage_dis_gt_ch", "error")
                     issues.append(Issue(uid, lvl, "放电首段>充电末段", "放电最低价须高于充电最高价"))
             continue
-        if typ == "pumped":
-            if mode == "dispatch":
+        if typ == "pumped":                # 规则同储能
+            ve = b.get("vup_end")          # 申报日末上库库容（≙ 储能申报期末 SOC），可不报
+            if ve is not None:
+                pu = [x for x in cfg.units["pumped"] if x["id"] == uid][0]
+                lo = max(float(pu["vup_min"]), float(pu["v_total"]) - float(pu["vdn_max"]))
+                hi = min(float(pu["vup_max"]), float(pu["v_total"]) - float(pu["vdn_min"]))
+                if not (lo - 1e-9 <= float(ve) <= hi + 1e-9):
+                    issues.append(Issue(uid, "error", "日末库容", f"申报日末上库库容 {ve} 超出 [{lo}, {hi}]"))
+            if mode in ("quantity_only", "dispatch"):
                 continue
             _check_curve(uid, b.get("gen_segments"), mt["cap"], typ, cfg, issues, "gen_segments")
             _check_curve(uid, b.get("pump_segments"), mt["cap_pump"], typ, cfg, issues, "pump_segments", decreasing=True)
