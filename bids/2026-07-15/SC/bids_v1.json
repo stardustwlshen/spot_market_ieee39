@@ -1,0 +1,464 @@
+{
+  "date": "2026-07-15",
+  "rule_set": "SC",
+  "version": 1,
+  "created": "2026-11-01T07:36:53",
+  "note": "缺省报价（假设值）",
+  "units": {
+    "C1": {
+      "mode": "price_quantity",
+      "segments": [
+        {
+          "p_start": 0.0,
+          "p_end": 290.0,
+          "price": -50.0
+        },
+        {
+          "p_start": 290.0,
+          "p_end": 361.2,
+          "price": 300.0
+        },
+        {
+          "p_start": 361.2,
+          "p_end": 432.4,
+          "price": 320.0
+        },
+        {
+          "p_start": 432.4,
+          "p_end": 503.6,
+          "price": 345.0
+        },
+        {
+          "p_start": 503.6,
+          "p_end": 574.8,
+          "price": 375.0
+        },
+        {
+          "p_start": 574.8,
+          "p_end": 646.0,
+          "price": 410.0
+        }
+      ],
+      "startup_cost": {
+        "cold": 600000,
+        "warm": 400000,
+        "hot": 250000
+      },
+      "noload_cost": 6000.0
+    },
+    "C2": {
+      "mode": "price_quantity",
+      "segments": [
+        {
+          "p_start": 0.0,
+          "p_end": 325.0,
+          "price": -50.0
+        },
+        {
+          "p_start": 325.0,
+          "p_end": 405.0,
+          "price": 300.0
+        },
+        {
+          "p_start": 405.0,
+          "p_end": 485.0,
+          "price": 320.0
+        },
+        {
+          "p_start": 485.0,
+          "p_end": 565.0,
+          "price": 345.0
+        },
+        {
+          "p_start": 565.0,
+          "p_end": 645.0,
+          "price": 375.0
+        },
+        {
+          "p_start": 645.0,
+          "p_end": 725.0,
+          "price": 410.0
+        }
+      ],
+      "startup_cost": {
+        "cold": 700000,
+        "warm": 450000,
+        "hot": 280000
+      },
+      "noload_cost": 6500.0
+    },
+    "C3": {
+      "mode": "price_quantity",
+      "segments": [
+        {
+          "p_start": 0.0,
+          "p_end": 390.0,
+          "price": -50.0
+        },
+        {
+          "p_start": 390.0,
+          "p_end": 485.0,
+          "price": 300.0
+        },
+        {
+          "p_start": 485.0,
+          "p_end": 580.0,
+          "price": 320.0
+        },
+        {
+          "p_start": 580.0,
+          "p_end": 675.0,
+          "price": 345.0
+        },
+        {
+          "p_start": 675.0,
+          "p_end": 770.0,
+          "price": 375.0
+        },
+        {
+          "p_start": 770.0,
+          "p_end": 865.0,
+          "price": 410.0
+        }
+      ],
+      "startup_cost": {
+        "cold": 800000,
+        "warm": 520000,
+        "hot": 320000
+      },
+      "noload_cost": 7500.0
+    },
+    "CCGT": {
+      "mode": "price_quantity",
+      "segments": [
+        {
+          "p_start": 0.0,
+          "p_end": 310.0,
+          "price": 420.0
+        },
+        {
+          "p_start": 310.0,
+          "p_end": 385.4,
+          "price": 520.0
+        },
+        {
+          "p_start": 385.4,
+          "p_end": 460.8,
+          "price": 540.0
+        },
+        {
+          "p_start": 460.8,
+          "p_end": 536.2,
+          "price": 560.0
+        },
+        {
+          "p_start": 536.2,
+          "p_end": 611.6,
+          "price": 580.0
+        },
+        {
+          "p_start": 611.6,
+          "p_end": 687.0,
+          "price": 600.0
+        }
+      ],
+      "startup_cost": {
+        "cold": 300000,
+        "warm": 220000,
+        "hot": 150000
+      },
+      "noload_cost": 9000.0
+    },
+    "GT": {
+      "mode": "price_quantity",
+      "segments": [
+        {
+          "p_start": 0.0,
+          "p_end": 75.0,
+          "price": 550.0
+        },
+        {
+          "p_start": 75.0,
+          "p_end": 120.0,
+          "price": 650.0
+        },
+        {
+          "p_start": 120.0,
+          "p_end": 165.0,
+          "price": 670.0
+        },
+        {
+          "p_start": 165.0,
+          "p_end": 210.0,
+          "price": 690.0
+        },
+        {
+          "p_start": 210.0,
+          "p_end": 255.0,
+          "price": 720.0
+        },
+        {
+          "p_start": 255.0,
+          "p_end": 300.0,
+          "price": 750.0
+        }
+      ],
+      "startup_cost": {
+        "cold": 60000,
+        "warm": 50000,
+        "hot": 40000
+      },
+      "noload_cost": 4000.0
+    },
+    "W1": {
+      "mode": "price_quantity",
+      "segments": [
+        {
+          "p_start": 0.0,
+          "p_end": 208.0,
+          "price": 0.0
+        },
+        {
+          "p_start": 208.0,
+          "p_end": 416.0,
+          "price": 20.0
+        },
+        {
+          "p_start": 416.0,
+          "p_end": 624.0,
+          "price": 40.0
+        },
+        {
+          "p_start": 624.0,
+          "p_end": 832.0,
+          "price": 60.0
+        },
+        {
+          "p_start": 832.0,
+          "p_end": 1040.0,
+          "price": 80.0
+        }
+      ],
+      "avail_pmax": null
+    },
+    "W2": {
+      "mode": "price_quantity",
+      "segments": [
+        {
+          "p_start": 0.0,
+          "p_end": 112.8,
+          "price": 0.0
+        },
+        {
+          "p_start": 112.8,
+          "p_end": 225.6,
+          "price": 20.0
+        },
+        {
+          "p_start": 225.6,
+          "p_end": 338.4,
+          "price": 40.0
+        },
+        {
+          "p_start": 338.4,
+          "p_end": 451.2,
+          "price": 60.0
+        },
+        {
+          "p_start": 451.2,
+          "p_end": 564.0,
+          "price": 80.0
+        }
+      ],
+      "avail_pmax": null
+    },
+    "PV1": {
+      "mode": "price_quantity",
+      "segments": [
+        {
+          "p_start": 0.0,
+          "p_end": 130.4,
+          "price": 0.0
+        },
+        {
+          "p_start": 130.4,
+          "p_end": 260.8,
+          "price": 20.0
+        },
+        {
+          "p_start": 260.8,
+          "p_end": 391.2,
+          "price": 40.0
+        },
+        {
+          "p_start": 391.2,
+          "p_end": 521.6,
+          "price": 60.0
+        },
+        {
+          "p_start": 521.6,
+          "p_end": 652.0,
+          "price": 80.0
+        }
+      ],
+      "avail_pmax": null
+    },
+    "H1": {
+      "mode": "price_quantity",
+      "hydro_bid": {
+        "method": "segments",
+        "season": "wet"
+      },
+      "segments": [
+        {
+          "p_start": 0.0,
+          "p_end": 101.6,
+          "price": 100.0
+        },
+        {
+          "p_start": 101.6,
+          "p_end": 203.2,
+          "price": 130.0
+        },
+        {
+          "p_start": 203.2,
+          "p_end": 304.8,
+          "price": 160.0
+        },
+        {
+          "p_start": 304.8,
+          "p_end": 406.4,
+          "price": 200.0
+        },
+        {
+          "p_start": 406.4,
+          "p_end": 508.0,
+          "price": 240.0
+        }
+      ]
+    },
+    "ES1": {
+      "mode": "price_quantity",
+      "dis_segments": [
+        {
+          "p_start": 0.0,
+          "p_end": 33.333,
+          "price": 420.0
+        },
+        {
+          "p_start": 33.333,
+          "p_end": 66.667,
+          "price": 450.0
+        },
+        {
+          "p_start": 66.667,
+          "p_end": 100.0,
+          "price": 480.0
+        }
+      ],
+      "ch_segments": [
+        {
+          "p_start": 0.0,
+          "p_end": 33.333,
+          "price": 300.0
+        },
+        {
+          "p_start": 33.333,
+          "p_end": 66.667,
+          "price": 280.0
+        },
+        {
+          "p_start": 66.667,
+          "p_end": 100.0,
+          "price": 260.0
+        }
+      ],
+      "soc_min": 0.1,
+      "soc_max": 0.9,
+      "soc_end": 0.5,
+      "self_schedule": null
+    },
+    "ES2": {
+      "mode": "price_quantity",
+      "dis_segments": [
+        {
+          "p_start": 0.0,
+          "p_end": 66.667,
+          "price": 420.0
+        },
+        {
+          "p_start": 66.667,
+          "p_end": 133.333,
+          "price": 450.0
+        },
+        {
+          "p_start": 133.333,
+          "p_end": 200.0,
+          "price": 480.0
+        }
+      ],
+      "ch_segments": [
+        {
+          "p_start": 0.0,
+          "p_end": 66.667,
+          "price": 300.0
+        },
+        {
+          "p_start": 66.667,
+          "p_end": 133.333,
+          "price": 280.0
+        },
+        {
+          "p_start": 133.333,
+          "p_end": 200.0,
+          "price": 260.0
+        }
+      ],
+      "soc_min": 0.1,
+      "soc_max": 0.9,
+      "soc_end": 0.5,
+      "self_schedule": null
+    },
+    "ES3": {
+      "mode": "price_quantity",
+      "dis_segments": [
+        {
+          "p_start": 0.0,
+          "p_end": 33.333,
+          "price": 420.0
+        },
+        {
+          "p_start": 33.333,
+          "p_end": 66.667,
+          "price": 450.0
+        },
+        {
+          "p_start": 66.667,
+          "p_end": 100.0,
+          "price": 480.0
+        }
+      ],
+      "ch_segments": [
+        {
+          "p_start": 0.0,
+          "p_end": 33.333,
+          "price": 300.0
+        },
+        {
+          "p_start": 33.333,
+          "p_end": 66.667,
+          "price": 280.0
+        },
+        {
+          "p_start": 66.667,
+          "p_end": 100.0,
+          "price": 260.0
+        }
+      ],
+      "soc_min": 0.1,
+      "soc_max": 0.9,
+      "soc_end": 0.5,
+      "self_schedule": null
+    }
+  }
+}

@@ -1,0 +1,44 @@
+# IEEE39 资源映射（与方案第 4 节一致）。所有技术与成本参数均为“假设值”，不来自川/甘规则。
+# bus 为 MATPOWER 1 基母线号。ramp 单位 MW/min；ut/dt 单位 h；启动费单位 元/次；noload 元/h。
+thermal:
+  - {id: C1, type: coal, bus: 31, pmax: 646, pmin: 290, ramp: 9.7, ut: 8, dt: 8, noload: 6000,
+     startup: {cold: 600000, warm: 400000, hot: 250000, very_hot: 150000}, init: {online: true, p0: 450, hours: 48}}
+  - {id: C2, type: coal, bus: 32, pmax: 725, pmin: 325, ramp: 10.9, ut: 8, dt: 8, noload: 6500,
+     startup: {cold: 700000, warm: 450000, hot: 280000, very_hot: 170000}, init: {online: true, p0: 500, hours: 48}}
+  - {id: C3, type: coal, bus: 38, pmax: 865, pmin: 390, ramp: 13.0, ut: 8, dt: 8, noload: 7500,
+     startup: {cold: 800000, warm: 520000, hot: 320000, very_hot: 200000}, init: {online: true, p0: 600, hours: 48}}
+  - {id: CCGT, type: gas_ccgt, bus: 35, pmax: 687, pmin: 310, ramp: 27.5, ut: 4, dt: 4, noload: 9000,
+     startup: {cold: 300000, warm: 220000, hot: 150000, very_hot: 100000}, init: {online: false, p0: 0, hours: 10}}
+  - {id: GT, type: gas_gt, bus: 36, pmax: 300, pmin: 75, ramp: 27.0, ut: 1, dt: 1, noload: 4000,
+     startup: {cold: 60000, warm: 50000, hot: 40000, very_hot: 30000}, init: {online: false, p0: 0, hours: 12}}
+
+# 区外来电（四川模式：G10 作为联络线固定计划；甘肃模式可改为燃煤 C4，见 config/modes.yaml）
+tie:
+  - {id: TIE, bus: 39, pmax: 1100, schedule_pu_file: tie_schedule}
+
+renewable:
+  - {id: W1, type: wind, bus: 30, cap: 1040, profile: wind_a}
+  - {id: W2, type: wind, bus: 37, cap: 564, profile: wind_b}
+  - {id: PV1, type: pv, bus: 33, cap: 652, profile: pv}
+
+hydro:
+  - id: H1
+    bus: 34
+    n_units: 4
+    unit_pmax: 127
+    zones: [[45, 60], [85, 127]]        # 稳定运行子区（振动区 60–85 MW 示意）
+    ramp: 40                             # MW/min/台，快
+    ut: 1
+    dt: 1
+    water_rate: 1.2                      # 耗水率 m3/s 每 MW（固定，忽略水头变化）
+    init_units_on: 2
+    init_p_unit: 100
+    seasons:
+      wet: {qin: 560, v0: 18000, vmin: 8000, vmax: 20000, v_end: 18000, qeco: 80, e_day: 12000}
+      dry: {qin: 220, v0: 15000, vmin: 8000, vmax: 24000, v_end: 15000, qeco: 60, e_day: 5000}
+    spill_penalty: 50                    # 元 / (m3/s · 15min)，弃水惩罚（假设值）
+
+storage:
+  - {id: ES1, bus: 19, pmax: 100, ecap: 200, eta_c: 0.95, eta_d: 0.95, soc_min: 0.1, soc_max: 0.9, soc0: 0.5, soc_end: 0.5}
+  - {id: ES2, bus: 16, pmax: 200, ecap: 400, eta_c: 0.95, eta_d: 0.95, soc_min: 0.1, soc_max: 0.9, soc0: 0.5, soc_end: 0.5}
+  - {id: ES3, bus: 25, pmax: 100, ecap: 200, eta_c: 0.95, eta_d: 0.95, soc_min: 0.1, soc_max: 0.9, soc0: 0.5, soc_end: 0.5}

@@ -1,0 +1,24 @@
+# 运行配置。标“假设值”的均非规则原文数值。
+date: "2026-07-15"
+season: wet               # wet 丰水期 / dry 枯水期
+rule_set: SC              # SC 四川 / GS 甘肃
+periods: 96
+dt_h: 0.25
+load_scale: 0.68          # case39 节点负荷 × 标幺日曲线 × load_scale（假设值：保证可满足四川口径正备用≈最大单机+负荷3%+新能源10%）
+seed: 20260715
+
+# 线路限额压缩（方案第 4 节：16–19、2–25、25–26、6–31 一带按 0.5–0.7 倍）
+line_scale:
+  L16-19: 0.6
+  L2-25: 0.6
+  L25-26: 0.7
+  T6-31: 0.5
+  T2-30: 0.7
+
+solver:
+  name: highs
+  mip_rel_gap: 0.002
+  time_limit_s: 300
+  threads: 4
+  storage_binary: false   # 储能充放互斥 0-1 变量；false 时松弛并在求解后校验，若出现同时充放则自动改用 0-1 重解
+  log: false

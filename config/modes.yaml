@@ -1,0 +1,42 @@
+# 省规则集参数。来源见方案第 2、9 节；未查到原文的数值均标注为假设值。
+SC:
+  price_limits: {bid_min: -50, bid_max: 800, clear_min: -50, clear_max: 800}   # V4.0 附件3
+  segments: {min: 5, max: 10, storage_min: 1, storage_max: 5}
+  beta0: 85            # 第2段−首段 ≥ β0
+  beta1: 20            # 后续段差下限
+  beta2: 150           # 后续段差上限
+  seg_len_A1: 0.05     # 段长系数下限（储能 0.10）
+  seg_len_A2: {hydro: 1.0, wind: 1.0, pv: 1.0, coal: 0.2, gas_ccgt: 0.2, gas_gt: 0.2, storage: 0.4}
+  startup_states: {hot: 8, warm: 72}          # h：<8h 热，8–72h 温，>72h 冷
+  demand_bid: false
+  tie_mode: fixed
+  reserve:
+    rho_L: 0.03        # 假设值（参考 DL/T 5429-2009 负荷备用 2%–5%）
+    rho_RE: 0.10       # 假设值（未查到规则数值）
+    rho_L_dn: 0.03     # 假设值
+    rho_RE_dn: 0.0     # 假设值
+    include_ctg: true  # + R_ctg = max(ΔP_N-1, 最大单机)
+    mu_RE: 0.0         # 风光计入正备用的置信因子（四川不用）
+    storage_reserve: false
+    providers: [coal, gas_ccgt, gas_gt, hydro]   # 四川：火电、水电（燃气按火电计）
+  penalties: {balance: 1.0e+6, line: 1.0e+5, reserve: 1.0e+5}   # 附件8 未给数值，自定
+  pricing_penalties: {balance: 1.0e+4, line: 2000, reserve: 2000}  # 假设值
+GS:
+  price_limits: {bid_min: 40, bid_max: 500, clear_min: 40, clear_max: 650}    # 甘发改价格规〔2025〕4号
+  segments: {min: 1, max: 10, storage_min: 1, storage_max: 10}
+  min_seg_frac: 0.10   # 每段 ≥ 装机 10%
+  price_step: 10       # 价格步长 10 元/MWh
+  startup_states: {very_hot: 1, hot: 10, warm: 72}
+  demand_bid: false    # 第一阶段负荷固定（用户报价留到后续）
+  tie_mode: fixed
+  reserve:
+    rho_L: 0.0
+    rho_RE: 0.0
+    rho_L_dn: 0.03     # 假设值
+    rho_RE_dn: 0.0
+    include_ctg: true  # R⁺ = max(单一交流元件故障最大功率缺额, 最大单机)（V3.2）
+    mu_RE: 0.0         # 置信因子数值未查到，默认 0（假设值）
+    storage_reserve: false
+    providers: [coal, gas_ccgt, gas_gt, hydro]   # 甘肃计全部开机机组；风光经 mu_RE 计入
+  penalties: {balance: 1.0e+6, line: 1.0e+5, reserve: 1.0e+5}   # 工作方案稿：日前平衡 1e6、断面 1e5
+  pricing_penalties: {balance: 1.0e+4, line: 500, reserve: 500}  # 节点电价计算罚因子 500
