@@ -57,6 +57,8 @@ def main():
     ap.add_argument("--periods", type=int, default=None)
     ap.add_argument("--no-plots", action="store_true")
     ap.add_argument("--bid-version", type=int, default=None)
+    ap.add_argument("--time-limit", type=float, default=None, help="覆盖日前 MIP 时限（秒）")
+    ap.add_argument("--solver-log", action="store_true", help="打印 HiGHS 日志")
     ap.add_argument("--reuse", action="store_true", help="输出目录已有 summary.json 时直接复用（分步保存，中断后可续跑）")
     a = ap.parse_args()
     out = {}
@@ -64,11 +66,15 @@ def main():
     for tag, on in (("ps_off", False), ("ps_on", True)):
         cfg = load_config()
         root = cfg.root
+        if a.time_limit:
+            cfg.base["solver"]["time_limit_s"] = a.time_limit
+        if a.solver_log:
+            cfg.base["solver"]["log"] = True
         if not on:
             cfg.units["pumped"] = []
         print(f"[{tag}] 开始 {datetime.now(ZoneInfo("America/Los_Angeles")):%H:%M:%S} PST", flush=True)
         if a.reuse:
-            hit = sorted((cfg.root / "outputs").glob(f"full_{cfg.base['date']}_{cfg.rule_set}_{cfg.base['season']}_v*_{tag}/summary.json"))
+            hit = sorted((cfg.root / "outputs").glob(f"full_{cfg.base['date']}_{cfg.rule_set}_{cfg.base['season']}_v{a.bid_version or '*'}_{tag}/summary.json"))
             if hit:
                 s = json.loads(hit[-1].read_text(encoding="utf-8"))
                 out[tag] = dict(dir=str(hit[-1].parent.relative_to(cfg.root)), metrics=metrics(s), time_s=s["time_s"], checks=s["checks"])
