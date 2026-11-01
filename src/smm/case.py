@@ -28,7 +28,7 @@ class DACase:
     init: dict | None = None             # 初始状态：thermal{g:{online,p0,hours}}, storage{s:E0}, hydro{h:V0}
     fixed: dict = field(default_factory=dict)   # 固定整数变量：{"u": {(g,t): 0/1}, "delta": {...}, "u_ch": ..., "u_dis": ...}
     hydro_e_budget: dict | None = None   # 水电剩余日电量上限 MWh；None = 季节 e_day
-    terminal: dict | None = None         # None = 日前硬约束（日末 SOC=soc_end、V≥v_end）；否则软目标 {storage:{s:E}, hydro:{h:V}, penalty}
+    terminal: dict | None = None         # None = 日前（申报期末 SOC 硬约束、V≥v_end）；实时：{storage_anchor:{s:[(t,lo,hi)]}, anchor_penalty, fix_power:{Ph/Pd/Pc:{idx:val}}, hydro_vend}
     stage: str = "DA"
 
 

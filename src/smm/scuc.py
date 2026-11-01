@@ -81,7 +81,7 @@ def prepare(case: DACase) -> ModelData:
             Ld, cd, Lc, cc = [s["pmax"]], [EPS_STORAGE], [s["pmax"]], [0.0]
         md.storage[s["id"]] = dict(s, mode=mode, Ld=Ld, cd=cd, Lc=Lc, cc=cc,
                                    soc_min=b.get("soc_min", s["soc_min"]), soc_max=b.get("soc_max", s["soc_max"]),
-                                   soc_end=b.get("soc_end", s["soc_end"]), sched=b.get("self_schedule"))
+                                   soc_end=b.get("soc_end"), sched=b.get("self_schedule"))   # 申报期末 SOC；None = 未申报，由出清决定
         if case.init and s["id"] in case.init.get("storage", {}):
             md.storage[s["id"]]["soc0"] = float(case.init["storage"][s["id"]]) / s["ecap"]
     return md
@@ -258,17 +258,10 @@ def build_model(case: DACase, penalties: dict | None = None) -> pyo.ConcreteMode
     m.c_vlim = pyo.Constraint(m.HS, m.T, rule=lambda m, h, t: pyo.inequality(md.hydro[h]["vmin"], m.V[h, t], md.hydro[h]["vmax"]))
     m.c_eco = pyo.Constraint(m.HS, m.T, rule=lambda m, h, t: qgen(h, t) + m.Qspill[h, t] >= md.hydro[h]["qeco"])
     term = case.terminal
-    m.sV = pyo.Var(m.HS, domain=pyo.NonNegativeReals)
-    m.sE_up = pyo.Var(m.S, domain=pyo.NonNegativeReals)
-    m.sE_dn = pyo.Var(m.S, domain=pyo.NonNegativeReals)
-    if term is None:  # 日前：硬约束
-        for x in list(m.sV.values()) + list(m.sE_up.values()) + list(m.sE_dn.values()):
-            x.fix(0)
+    if term is None or term.get("hydro_vend", False):   # 日前 / 至日末的日内窗口：期末库容硬约束
         m.c_vend = pyo.Constraint(m.HS, rule=lambda m, h: m.V[h, T - 1] >= md.hydro[h]["v_end"])
-    else:             # 日内/实时：窗口末软目标（罚 terminal_penalty，见 _objective_expr）
-        vt = term.get("hydro", {})
-        m.c_vend = pyo.Constraint(m.HS, rule=lambda m, h: m.V[h, T - 1] + m.sV[h] >= float(vt.get(h, md.hydro[h]["v_end"])))
-    m.c_eday = pyo.Constraint(m.HS, rule=lambda m, h: sum(m.Ph[j, t] for j in md.hydro[h]["units"] for t in range(T)) * dt <= md.hydro[h]["e_day"])
+    # 实时：水电执行日前计划曲线（甘V3.2 运营细则第六十条(四)：水电报量不报价、执行经校核的计划曲线），不设库容跟踪
+    m.c_eday = pyo.Constraint(m.HS, rule=lambda m, h: sum(m.Ph[j, t] for j in md.hydro[h]["units"] for t in range(T)) * dt <= md.hydro[h]["e_day"] + 1e-6)
 
     # ---------------- 储能
     # 分段上限直接乘状态变量（逐段 big-M = 段长，比只约束总功率更紧）
@@ -286,9 +279,24 @@ def build_model(case: DACase, penalties: dict | None = None) -> pyo.ConcreteMode
         return m.E[s, t] == Ep + (d["eta_c"] * m.Pc[s, t] - m.Pd[s, t] / d["eta_d"]) * dt
     m.c_soc = pyo.Constraint(m.S, m.T, rule=soc)
     m.c_elim = pyo.Constraint(m.S, m.T, rule=lambda m, s, t: pyo.inequality(md.storage[s]["soc_min"] * md.storage[s]["ecap"], m.E[s, t], md.storage[s]["soc_max"] * md.storage[s]["ecap"]))
-    et = (term or {}).get("storage", {})
-    m.c_eend = pyo.Constraint(m.S, rule=lambda m, s: m.E[s, T - 1] + m.sE_dn[s] - m.sE_up[s]
-                              == float(et.get(s, md.storage[s]["soc_end"] * md.storage[s]["ecap"])))
+    # 期末 SOC：
+    #   日前：储能申报了运行日末期望 SOC → 硬约束 E[T−1] = soc_end·ecap（川V4.0 7.7.4、附件8 式(20)）；未申报 → 不约束，由出清决定。
+    #   实时（甘V3.2 运营细则附录5 第9项）：窗口内锚点时段 lo ≤ E ≤ hi（硬约束），lo/hi 由 rolling 按日前 SOC 计算：
+    #     window_end_pct：窗口末时段 (1−x)E_DA ≤ E_RT ≤ (1+x)E_DA；hourly_eq：窗口内各整点 E_RT = E_DA（广东）。
+    #   sA_up/sA_dn 只为防止无解（罚 anchor_penalty），被触发时 rolling 放宽锚点到实际值后重算价格，罚因子不进入电价。
+    if term is None:
+        S_end = [s for s in m.S if md.storage[s]["soc_end"] is not None]
+        m.c_eend = pyo.Constraint(S_end, rule=lambda m, s: m.E[s, T - 1] == float(md.storage[s]["soc_end"]) * md.storage[s]["ecap"])
+    anchors = [] if term is None else [(s, int(t), float(lo), float(hi)) for s, lst in term.get("storage_anchor", {}).items()
+                                       for (t, lo, hi) in lst]
+    m.A = pyo.Set(initialize=list(range(len(anchors))))
+    m._anchors = anchors
+    m.A_lo = pyo.Param(m.A, mutable=True, initialize={i: a[2] for i, a in enumerate(anchors)})
+    m.A_hi = pyo.Param(m.A, mutable=True, initialize={i: a[3] for i, a in enumerate(anchors)})
+    m.sA_up = pyo.Var(m.A, domain=pyo.NonNegativeReals)
+    m.sA_dn = pyo.Var(m.A, domain=pyo.NonNegativeReals)
+    m.c_anc_hi = pyo.Constraint(m.A, rule=lambda m, i: m.E[anchors[i][0], anchors[i][1]] <= m.A_hi[i] + m.sA_up[i])
+    m.c_anc_lo = pyo.Constraint(m.A, rule=lambda m, i: m.E[anchors[i][0], anchors[i][1]] >= m.A_lo[i] - m.sA_dn[i])
 
     def sched(m, s, t):
         d = md.storage[s]
@@ -377,6 +385,10 @@ def build_model(case: DACase, penalties: dict | None = None) -> pyo.ConcreteMode
         var = getattr(m, name)
         for idx, val in vals.items():
             var[idx].fix(int(round(val)))
+    for name, vals in ((term or {}).get("fix_power") or {}).items():   # 实时固定功率（水电/储能执行日前曲线）
+        var = getattr(m, name)
+        for idx, val in vals.items():
+            var[idx].fix(max(0.0, float(val)))
 
     # ---------------- 目标
     m.obj = pyo.Objective(expr=_objective_expr(m), sense=pyo.minimize)
@@ -506,10 +518,9 @@ def _objective_expr(m):
         + sum(pen["reserve"] * (m.sR_up[t] + m.sR_dn[t]) * dt for t in m.T)
     term = m._case.terminal
     tp = 0
-    if term is not None:
-        P = float(term.get("penalty", 1000.0))
-        tp = sum(P * (m.sE_up[s] + m.sE_dn[s]) for s in m.S) \
-            + sum(P / (md.hydro[h]["water_rate"] * 0.36) * m.sV[h] for h in m.HS)   # 1 MWh ≈ water_rate×0.36 万m³
+    if term is not None and len(m.A):
+        Pa = float(term.get("anchor_penalty", 1.0e5))
+        tp = sum(Pa * (m.sA_up[i] + m.sA_dn[i]) for i in m.A)
     return th + nl + su + rw + hy + sp + st + pn + tp
 
 
@@ -540,12 +551,28 @@ def slack_summary(m) -> dict:
         line_slack_max=max(pyo.value(m.sl[l, t]) for l in m.L for t in T),
         reserve_up_short_max=max(pyo.value(m.sR_up[t]) for t in T),
         reserve_dn_short_max=max(pyo.value(m.sR_dn[t]) for t in T),
+        anchor_slack_max_mwh=max([pyo.value(m.sA_up[i]) + pyo.value(m.sA_dn[i]) for i in m.A] or [0.0]),
     )
 
 
 def has_slack(m, tol=1e-6) -> bool:
+    """调度松弛（切负荷/弃电/线路/备用）是否被触发；锚点松弛单独处理（relax_anchors）。"""
     s = slack_summary(m)
-    return any(v > tol for v in s.values())
+    return any(v > tol for k, v in s.items() if k != "anchor_slack_max_mwh")
+
+
+def relax_anchors(m, tol=1e-6) -> int:
+    """锚点松弛被触发时：把锚点边界放宽到实际解的 E，并固定 sA=0，使防无解罚因子不进入对偶电价。返回放宽个数。"""
+    n = 0
+    for i in m.A:
+        s, t = m._anchors[i][0], m._anchors[i][1]
+        e = pyo.value(m.E[s, t])
+        if pyo.value(m.sA_up[i]) > tol:
+            m.A_hi[i] = e; n += 1
+        if pyo.value(m.sA_dn[i]) > tol:
+            m.A_lo[i] = e; n += 1
+        m.sA_up[i].fix(0); m.sA_dn[i].fix(0)
+    return n
 
 
 def extract_prices(m) -> dict:

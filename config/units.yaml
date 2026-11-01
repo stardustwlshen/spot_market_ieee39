@@ -38,7 +38,7 @@ hydro:
       dry: {qin: 220, v0: 15000, vmin: 8000, vmax: 24000, v_end: 15000, qeco: 60, e_day: 5000}
     spill_penalty: 50                    # 元 / (m3/s · 15min)，弃水惩罚（假设值）
 
-storage:
-  - {id: ES1, bus: 19, pmax: 100, ecap: 200, eta_c: 0.95, eta_d: 0.95, soc_min: 0.1, soc_max: 0.9, soc0: 0.5, soc_end: 0.5}
-  - {id: ES2, bus: 16, pmax: 200, ecap: 400, eta_c: 0.95, eta_d: 0.95, soc_min: 0.1, soc_max: 0.9, soc0: 0.5, soc_end: 0.5}
-  - {id: ES3, bus: 25, pmax: 100, ecap: 200, eta_c: 0.95, eta_d: 0.95, soc_min: 0.1, soc_max: 0.9, soc0: 0.5, soc_end: 0.5}
+storage:   # soc_end_bid：缺省报价中申报的运行日末期望 SOC（假设值；报价 soc_end 置 null = 不申报，由出清决定）
+  - {id: ES1, bus: 19, pmax: 100, ecap: 200, eta_c: 0.95, eta_d: 0.95, soc_min: 0.1, soc_max: 0.9, soc0: 0.5, soc_end_bid: 0.5}
+  - {id: ES2, bus: 16, pmax: 200, ecap: 400, eta_c: 0.95, eta_d: 0.95, soc_min: 0.1, soc_max: 0.9, soc0: 0.5, soc_end_bid: 0.5}
+  - {id: ES3, bus: 25, pmax: 100, ecap: 200, eta_c: 0.95, eta_d: 0.95, soc_min: 0.1, soc_max: 0.9, soc0: 0.5, soc_end_bid: 0.5}

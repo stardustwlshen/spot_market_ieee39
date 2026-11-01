@@ -1,8 +1,10 @@
-"""一键全流程：日前出清 → 日内滚动优化 → 实时 15 min SCED → 两级偏差结算。
+"""一键全流程：日前出清 →（可选日内）→ 实时 15 min 滚动 SCED → 两级偏差结算。
 
 用法：
   python scripts/main_full.py                       # 统一规则 MKT、丰水期、最新版本报价、全天 96 时段
-  python scripts/main_full.py --id-interval-h 2 --rt-lookahead-h 1 --storage-state fixed
+  python scripts/main_full.py --storage-mode fixed_da          # 储能执行日前曲线（模式 A）
+  python scripts/main_full.py --anchor hourly_eq               # 广东式整点 SOC 相等（模式 B2）
+  python scripts/main_full.py --intraday --id-interval-h 2     # 打开独立日内滚动（对比用）
   python scripts/main_full.py --periods 24 --no-plots   # 只滚动前 6 h（调试）
 """
 import argparse
@@ -22,8 +24,12 @@ ap.add_argument("--season", default=None)
 ap.add_argument("--periods", type=int, default=None, help="只滚动前 N 个时段（默认 96）")
 ap.add_argument("--id-interval-h", type=float, default=None, help="日内滚动周期（h），默认见 modes.yaml")
 ap.add_argument("--rt-lookahead-h", type=float, default=None, help="实时前瞻窗口（h），默认 2")
-ap.add_argument("--storage-state", choices=["redecide", "fixed"], default=None)
+ap.add_argument("--storage-mode", choices=["sced_anchor", "fixed_da"], default=None, help="储能实时模式，默认 sced_anchor")
+ap.add_argument("--anchor", choices=["window_end_pct", "hourly_eq"], default=None, help="SOC 锚点：甘肃窗口末±x / 广东整点相等")
+ap.add_argument("--anchor-x", type=float, default=None, help="甘肃锚点浮动比例 x（假设值 0.05）")
+ap.add_argument("--intraday", action="store_true", help="打开独立日内滚动（默认关闭）")
 ap.add_argument("--no-plots", action="store_true")
+ap.add_argument("--tag", default="", help="输出目录后缀（对比方案用，如 _fixed_da）")
 a = ap.parse_args()
 
 cfg = load_config(season=a.season)
@@ -31,13 +37,20 @@ if a.id_interval_h:
     cfg.mode["intraday"]["interval_h"] = a.id_interval_h
 if a.rt_lookahead_h:
     cfg.mode["realtime"]["lookahead_h"] = a.rt_lookahead_h
-if a.storage_state:
-    cfg.mode["realtime"]["storage_state"] = a.storage_state
+sto = cfg.mode["realtime"]["storage"]
+if a.storage_mode:
+    sto["mode"] = a.storage_mode
+if a.anchor:
+    sto["anchor"] = a.anchor
+if a.anchor_x is not None:
+    sto["x"] = a.anchor_x
+if a.intraday:
+    cfg.mode["intraday"]["enabled"] = True
 print(f"开始 {datetime.now():%Y-%m-%d %H:%M:%S}（本机时区）")
 case = prepare(cfg, a.bid_version)
 res = run_full(cfg, case, periods=a.periods)
 v = case.bids["version"]
-d = cfg.root / "outputs" / f"full_{cfg.base['date']}_{cfg.rule_set}_{cfg.base['season']}_v{v}"
+d = cfg.root / "outputs" / f"full_{cfg.base['date']}_{cfg.rule_set}_{cfg.base['season']}_v{v}{a.tag}"
 s = write_full_outputs(res, d, make_plots=not a.no_plots)
 sp, ch, ts = s["spread"], s["checks"], s["time_s"]
 print("=" * 70)
@@ -53,6 +66,10 @@ fe = s["forecast_error"]
 print(f"  预测误差（负荷+风光）偏差 |ΔQ| {fe['dev_abs_mwh']:.1f} MWh，实时偏差结算 {fe['rt_amount']/1e4:.2f} 万元，偏差损益 {fe['dev_pnl']/1e4:.2f} 万元")
 for k, r in s["reconciliation"].items():
     print(f"  对账[{k}] 市场盈余 {r['merchandising_surplus']/1e4:.2f} 万 = 阻塞盈余 {r['congestion_rent']/1e4:.2f} 万 + 限价修正 {r['clamp_adjustment']/1e4:.2f} 万，残差 {r['residual']:.2e} 元")
+rtc = s["realtime"]
+print(f"  储能实时 {rtc['storage_mode']}/{rtc['anchor']} x={rtc['x']}；锚点松弛触发 {rtc['anchor_relaxed_periods']} 个时段（最大 {rtc['anchor_slack_max_mwh']:.4f} MWh）；"
+      f"调度松弛重算价格 {rtc['repriced_periods']} 个时段")
+print(f"  日末 21:00–24:00 负荷加权均价 日前 {sp['da_lw_tail']:.2f} / 实时 {sp['rt_lw_tail']:.2f}；实时节点价最大 {sp['rt_lmp_max']:.1f}")
 print(f"  校核 {ch}")
 print(f"  用时 日前 {ts['da']:.0f}s / 日内 {ts['intraday']:.0f}s / 实时 {ts['realtime']:.0f}s / 结算 {ts['settlement']:.0f}s / 合计 {ts['total']:.0f}s")
 print(f"  输出目录 {d}")

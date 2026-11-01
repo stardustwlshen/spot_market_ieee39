@@ -1,6 +1,6 @@
-# IEEE39 电力现货市场出清模型（日前 → 日内滚动 → 实时 SCED → 偏差结算）
+# IEEE39 电力现货市场出清模型（日前 → 实时滚动 SCED → 偏差结算）
 
-在改造的 IEEE 39 节点系统上实现完整的现货流程：**日前 SCUC/SCED 节点电价出清 → 日内滚动优化 → 实时 15 min SCED → 日前/实时两部制偏差结算**，支持报价版本管理和改报价。
+在改造的 IEEE 39 节点系统上实现完整的现货流程：**日前 SCUC/SCED 节点电价出清 → 实时 15 min 滚动 SCED（前瞻 2 h，甘肃模式；独立日内可选）→ 日前/实时两部制偏差结算**，支持报价版本管理和改报价。
 
 **规则**：只有一套自有统一规则 `MKT`（“自有统一现货市场规则（参考川、甘）”，`config/modes.yaml`）。每个参数取四川 V4.0 / 甘肃 V3.2 中合理的一边，并在行内注明出处；规则原文没有给出数值的标为“假设值”。所有参数都可配置，流水线只运行这一套规则。
 
@@ -13,10 +13,12 @@ cd /workspace/spot_market_ieee39
 python3 -m venv .venv && . .venv/bin/activate && pip install -r requirements.txt   # 已建好可跳过
 . .venv/bin/activate
 
-python scripts/main_full.py                    # 一键全流程：日前→日内(每1h)→实时(15min,前瞻2h)→结算，最新报价版本（约 6 min）
+python scripts/main_full.py                    # 一键全流程：日前→实时(15min 滚动,前瞻2h)→结算，最新报价版本（约 3 min）
 python scripts/main_full.py --bid-version 1    # 复现下文“一次全流程结果”（v2 为 demo_rebid 生成的改报价版本）
-python scripts/main_full.py --periods 8 --id-interval-h 2   # 只滚动前 8 个时段（快速检查，约 2.5 min）
-python scripts/main_full.py --rt-lookahead-h 1 --storage-state fixed --no-plots
+python scripts/main_full.py --periods 8       # 只滚动前 8 个时段（快速检查，约 2 min）
+python scripts/main_full.py --bid-version 1 --anchor hourly_eq --tag _hourly_eq      # 储能 B2：整点 SOC 相等
+python scripts/main_full.py --bid-version 1 --storage-mode fixed_da --tag _fixed_da  # 储能 A：执行日前曲线
+python scripts/main_full.py --anchor-x 0.1 --rt-lookahead-h 1 --intraday --no-plots # 改 x、前瞻；打开独立日内做对比
 python scripts/main_da.py                      # 只做日前出清（丰水期、最新报价版本，约 2 min）
 python scripts/main_da.py --bid-version 1      # 指定报价版本
 python scripts/main_da.py --season dry --time-limit 120 --no-plots
@@ -39,9 +41,9 @@ src/smm/
   config.py   network.py(PTDF)   forecast.py   bids.py(报价生成/校验/存取)
   case.py(日前算例、备用需求)   scuc.py(Pyomo MILP/LP、对偶取价)   da.py(日前流程)
   results.py   plots.py   pipeline.py
-  rolling.py(日内滚动 + 实时 SCED，系统状态推进)   settlement.py(两部制偏差结算、对账)   full.py(全流程、校核、输出)
+  rolling.py(实时滚动 SCED、储能锚点、可选日内，系统状态推进)   settlement.py(两部制偏差结算、对账)   full.py(全流程、校核、输出)
 scripts/  main_full.py  main_da.py  demo_rebid.py  make_default_bids.py  export_case39.py  bench_scuc.py
-tests/    test_bids.py（快速）  test_da.py（一次日前出清共享）  test_rolling.py（缩短滚动 8 时段）
+tests/    test_bids.py（快速）  test_da.py（一次日前出清共享）  test_rolling.py（缩短滚动 6–8 时段）
 outputs/  每次运行的结果（不入库）
 ```
 
@@ -85,31 +87,35 @@ outputs/  每次运行的结果（不入库）
 
 需要更快时，可在 `config/base.yaml` 调 `time_limit_s`、`mip_rel_gap`，或打开 `commit_step_periods: 4`；其他 HiGHS 参数可通过 `solver.highs_extra` 透传。
 
-## 日内滚动、实时 SCED 与偏差结算
+## 滚动出清（甘肃模式）、实时 SCED 与偏差结算
 
-### 滚动时序（推荐默认值，均可在 `modes.yaml` 的 `intraday` / `realtime` 下修改）
+### 滚动时序（默认值，可在 `modes.yaml` 的 `intraday` / `realtime` 下修改）
 
 | 环节 | 默认 | 依据 |
 |---|---|---|
-| 日内触发 | 每 1 h（00:00、01:00…，`interval_h`） | 假设值。川V4.0 8.1 为“边界变化时触发”，没有固定周期 |
-| 日内窗口 | 触发时刻 → 当日 24:00（`window: day_end`） | 川V4.0 8.1、8.3.1 |
-| 日内粒度 | 15 min | 川V4.0 8.2.5（96 点） |
-| 日内锁定 | 燃煤、CCGT 启停 = 日前；GT、水电（开机台数）、储能（0-1 充放状态）重新决策 | 川V4.0 8.2.4；基本规则第五十四条 |
-| 日内价格 | 只输出参考价，不结算 | 川V4.0 4.1、8.1 |
+| 独立日内市场 | **关闭**（`intraday.enabled: false`，`--intraday` 可打开做对比，代码保留川式事件触发日内） | 甘肃模式：不设独立日内市场 |
 | 实时周期 | 15 min | 川V4.0 9.1；甘V3.2 第六十三条 |
-| 实时前瞻 | 2 h（8 个时段），只执行首时段 | 甘V3.2 第六十三条（未来 15 min–2 h）；川写“未来 M 小时”，未给 M |
-| 实时首时段 | 用实际负荷/风光；后续时段用超短期预测 | 假设做法 |
+| 实时前瞻 | 2 h（T~T+120，8 个时段），只执行首时段 | 甘V3.2 第六十三条（未来 15 min–2 h） |
+| 边界时序 | T−30 读取边界；模型中首时段直接用实际负荷/风光（T−30 到 T 的残差视为由 AGC 处理） | 时序参考甘V3.2 第六十三条；“首时段用实际值”为假设做法 |
+| 启停 | 燃煤、CCGT 启停 = 日前（锁定）；燃气 GT 在每个 2 h 窗口 MIP 内自由启停 | 甘V3.2 第十八条（煤电启停日前确定）；GT 自由为假设做法（参考基本规则第五十四条“快速启停资源”） |
+| 水电 | **执行日前出清曲线**（开机台数和出力都固定为日前值，`hydro: fixed_da`），实时不再优化，也不设软惩罚 | 甘V3.2 第六十条(四) |
+| 储能 | 见下文模式 B1（默认） | 甘V3.2 运营细则 附录5 第9项 |
 
-**预测**：每个时段的预测随提前量收敛（`forecast_view`）：提前量 ≥ 16 个时段用日前预测；1–16 个时段在日前预测和超短期预测之间线性过渡；当前时段可用实际值。
+**预测**：每个时段的预测随提前量收敛（`forecast_view`）：提前量 ≥ 16 个时段用日前预测；1–16 个时段在日前预测和超短期预测之间线性过渡；当前时段用实际值。
 
-**状态衔接**：每次实时执行后推进系统状态：火电在线/离线时长、上一时段出力（爬坡）、水库库容和已用日电量、储能 SOC。下一轮日内或实时以**实际执行后的状态**为初值。日内/实时窗口不到日末时，末 SOC、末库容取最近计划值作**软目标**（偏离罚 `terminal_penalty`，假设值）；日前仍是硬约束。
+**状态衔接**：每个实时时段执行后推进系统状态：火电在线/离线时长、上一时段出力（爬坡）、水库库容和已用日电量、储能 SOC。下一时段以**实际执行后的状态**为初值。日前的日末 SOC 按申报值作硬约束；实时窗口不再设末状态软目标（旧的 `terminal_penalty` 已删除）。
 
-**实时中储能的处理**（`realtime.storage_state`）：
-- `redecide`（默认）：每个实时时段先解一个 2 h 窗口的小 MIP，重新决定储能充放 0-1 状态（其他整数沿用日内计划），再固定这些整数解 LP，用对偶求实时 LMP。储能因此可以随实时价格调整充放方向，价格仍来自 LP。
-- `fixed`：直接沿用最近一轮日内计划的充放状态，只解 LP。
-燃煤/CCGT 启停固定为日前（= 日内）；GT 启停、水电开机台数沿用最近一轮日内计划。
+**储能在实时中的三种模式**（`realtime.storage`）：
 
-**实时价格**：带切负荷、弃电/过剩松弛。出现松弛时改用 `pricing_penalties` 重算价格；物理量取调度罚因子下的解。LMP 最后截断到 [clear_min, clear_max]。
+| 模式 | 配置 | 做法 | 依据 |
+|---|---|---|---|
+| **B1（默认）** | `mode: sced_anchor`，`anchor: window_end_pct`，`x: 0.05` | 储能沿用日前封存报价进入实时 SCED，充放 0-1 状态在窗口 MIP 内决定，初值取实际 SOC。窗口末时段：`max(Emin,(1−x)E_DA) ≤ E_RT ≤ min(Emax,(1+x)E_DA)`，为硬约束 | 甘V3.2 运营细则 附录5 第9项原文：“独立储能实时市场各优化周期末时段的荷电状态跟随日前市场优化结果，并在满足荷电状态上下限约束的前提下允许上下浮动一定比例”。比例原文未给，**x = 0.05 为假设值** |
+| B2 | `anchor: hourly_eq`（`--anchor hourly_eq`） | 同 B1，但窗口内每个整点（第 4、8… 个 15 min 末）`E_RT = E_DA` | 参考广东整点 SOC 相等的做法（条款号查不到） |
+| A | `mode: fixed_da`（`--storage-mode fixed_da`） | 储能执行日前充放电曲线，作为价格接受者 | 对比用 |
+
+锚点带松弛 `sA_up/sA_dn`，罚 `anchor_penalty = 1e5 元/MWh`（假设值），只用于防止无解。一旦触发，就把锚点边界放宽到实际 E、松弛固定为 0 后重解 LP，因此该罚**不进入电价**。`summary.json` 的 `realtime.anchor_relaxed_periods` 记录触发次数。
+
+**实时价格**：带切负荷、弃电/过剩松弛。出现调度松弛时，改用 `pricing_penalties` 重算价格（锚点松弛不算在内）；物理量取调度罚因子下的解。LMP 最后截断到 [clear_min, clear_max]。
 
 ### 偏差结算（两部制）
 
@@ -123,21 +129,32 @@ outputs/  每次运行的结果（不入库）
 | 文件 | 内容 |
 |---|---|
 | da_unit_awards / da_nodal_prices / da_storage .csv | 日前结果 |
-| id_rounds_summary.csv | 每轮日内：窗口、用时、gap、松弛、首小时参考价 |
+| id_rounds_summary.csv | 每轮日内：窗口、用时、gap、松弛、首小时参考价（默认无日内，仅表头） |
 | id_plans.csv / id_prices_indicative.csv / id_storage.csv | 每轮日内各机组计划、参考 LMP、储能计划 |
-| rt_units / rt_prices / rt_lines / rt_storage / rt_system .csv、rt_lmp_matrix.csv | 实时执行出力、LMP（含分解）、潮流、SOC、切负荷/弃电 |
+| rt_units / rt_prices / rt_lines / rt_storage / rt_system .csv、rt_lmp_matrix.csv | 实时执行出力、LMP（含分解）、潮流、SOC、切负荷/弃电、锚点是否松弛（rt_system.anchor_relaxed） |
 | settlement_detail / by_entity / by_type .csv | 结算明细、按主体、按类型（日前金额、实时偏差金额、偏差损益、偏差电量） |
 | settlement_reconciliation.csv / settlement_line_rent.csv | 结算对账、各线路阻塞盈余 |
 | summary.json | 价差、结算、预测误差影响、对账、校核、用时 |
-| lmp_da_vs_rt.png / rolling_plans.png / settlement_bars.png | 日前 vs 实时 LMP；各轮日内计划与实时执行；结算柱状图 |
+| lmp_da_vs_rt.png / rolling_plans.png / settlement_bars.png | 日前 vs 实时 LMP；实时执行 vs 日前计划（SOC 面板含 ±x 锚点带）；结算柱状图 |
 
-### 一次全流程结果（2026-07-15 丰水期，MKT v1，2026-11-01 运行）
+### 一次全流程结果（2026-07-15 丰水期，MKT v1，`--bid-version 1`，2026-11-01 运行）
 
-- 用时 354 s：日前 115 s，日内 24 轮 187 s（早轮 12–19 s，后轮 < 3 s），实时 96 时段 52 s。
-- 负荷加权均价：日前 291.6、实时 332.4 元/MWh，平均价差 +41.1（节点 |RT−DA| 最大 604.5）。
-- 预测误差（负荷 + 风光）导致的偏差电量 4,557 MWh，实时偏差结算 −66.0 万元，偏差损益 −25.6 万元。风、光偏差损益分别为 −11.9 万和 −8.2 万元。
-- 校核全部通过：SOC 连续、锁定启停 0 偏差、实时功率平衡误差 1e-11 MW、对账残差 1e-9 元。
-- 已知现象：21:30 以后实时价格冲到 700–800 元（截断上限）。原因是实时窗口在日末收缩，储能末 SOC 软目标（罚 1000 元/MWh，假设值）要求储能在最后几个时段充电，而此时煤电、水电已接近上限，能量价 λ 被储能末 SOC 罚因子抬到 1,100–1,460 元，节点价被截断到 800 元。这是日末边界效应，可调低 `terminal_penalty` 或按次日计划给末 SOC 解决。
+默认 B1（outputs/full_2026-07-15_MKT_wet_v1/）：
+- 用时 169 s：日前 114 s，日内 0（关闭），实时 96 时段 54 s。旧方案（川式每小时日内 + 软目标）为 354 s。
+- 负荷加权均价：日前 291.6、实时 291.6 元/MWh。逐小时价差（RT−DA）的平均值为 −6.1，绝对值平均为 55.3，范围 −145.7 ~ +502.1；节点 |RT−DA| 最大 564.1。旧方案实时均价 332.4，平均价差 +41.1。
+- 锚点松弛触发 0 次；调度松弛重算价格 0 次。校核全部通过：水电与日前偏差 0 MW，锁定启停 0 偏差，功率平衡误差 1e-12 MW，SOC 方程误差 3e-14，对账残差 1e-9 元。
+- 预测误差（负荷 + 风光）导致的偏差电量 4,733 MWh，实时偏差结算 −61.8 万元，偏差损益 −20.9 万元（旧方案 −25.6 万）。水电偏差为 0（旧方案 378 MWh / +14.4 万元）。
+- 日末价格：旧方案 21:30 以后连续 700–800 元的问题已基本消除（旧原因是末 SOC 软目标罚 1000）。但 B1 仍在两个时段出现尖峰：**时段 86（21:30）和 93（23:15）**，节点价被截断到 800，能量价 λ 分别为 1,000 和 2,253。原因是硬锚点约束紧：实时中储能在 21:30–23:00 放电比日前更深（ES1 降到 84.7 MWh），日末锚点进入窗口后，最后几个时段必须充回 ≥0.95·E_DA（ES1 末值正好 95 = 0.95×100），而这时供给已经很紧。21–24 时负荷加权均价为：日前 321.1、实时 407.9。
+
+三种储能模式对比（同一日前结果，同一份实际值）：
+
+| 模式 | 实时均价 | 21–24 时实时均价（日前 321.1） | 实时 LMP 最大 | ≥700 的时段 | 储能偏差电量 充/放 (MWh) | 储能偏差损益 充/放（万元） | 预测误差偏差损益（万元） | 用时 |
+|---|---|---|---|---|---|---|---|---|
+| **B1 甘肃窗口末 ±5%（默认）** | 291.6 | 407.9 | 800 | 86、93 | −34.8 / +40.9 | +0.86 / +2.16 | −20.9 | 169 s |
+| B2 整点相等 | 277.3 | 277.9 | 519.6 | 无 | +1.3 / −1.2 | +0.33 / +1.03 | −15.8 | 171 s |
+| A 执行日前曲线 | 278.6 | 260.9 | 800 | 40（10:00，λ=840） | 0 / 0 | 0 / 0 | −20.2 | 163 s |
+
+> B1 的日末尖峰来自锚点约束本身（x、前瞻长度、日末 SOC 申报值），不是数值问题。可选的处理（尚未实施）：加大 x、日末几个时段改用 B2、延长前瞻窗口，或接入次日计划的末 SOC。
 
 ## 日前输出（outputs/da_{date}_MKT_{season}_v{n}/）
 
@@ -157,7 +174,7 @@ outputs/  每次运行的结果（不入库）
 
 - `test_bids.py`：只有统一规则 MKT；默认报价合规；违规（非严格递增、超限价、非 10 元步长、段长不足、相邻价差 >150、储能放电价 ≤ 充电价）能被拦截；PTDF 参考列为 0；`storage_binary` 默认开启。
 - `test_da.py`：功率平衡、注入和为 0、线路不越限；LMP 分解一致、参考母线 LMP = λ、阻塞对偶非负且满足互补松弛；出现阻塞和节点价差；**有限差分检验**（固定整数的 SCED 中把节点负荷改动 ±0.5 MW，目标函数增量 / dt 与 LMP 一致）；储能 SOC、充放 0-1 状态（SCED 中已固定、取值 0/1、u_ch+u_dis≤1、P≤M·u），水电水量/电量/振动区、备用充足、火电出力/爬坡。
-- `test_rolling.py`（日内每 1 h、滚动 8 个时段）：预测随提前量收敛；SOC 连续且满足方程、日内初值 = 实际 SOC；锁定启停与日前一致、实时启停 = 日内计划、最小开停机；实时功率平衡、注入和为 0、LMP 分解；结算每时段电量平衡、联络线无偏差、储能充放符号、对账残差 ≈ 0。
+- `test_rolling.py`（默认 B1 滚动 8 个时段；A、B2 各滚动 6 个时段）：预测随提前量收敛；SOC 连续且满足方程；燃煤/CCGT 启停与日前一致、GT 可自由启停、水电出力 = 日前；B1 窗口末 SOC 在 (1±x)E_DA 内且锚点未松弛；B2 整点 SOC = 日前；A 储能出力 = 日前；从日前状态起算的日末时段（t=92）不出现末状态罚导致的尖峰；实时功率平衡、注入和为 0、LMP 分解；结算每时段电量平衡、联络线无偏差、储能充放符号、对账残差 ≈ 0。
 
 ## 主要假设与简化（假设值）
 
@@ -169,7 +186,7 @@ outputs/  每次运行的结果（不入库）
 6. 罚因子：按甘肃工作方案稿的量级取值；备用罚、平衡定价罚为假设值。
 7. MIP gap 0.2%（`mip_rel_gap: 0.002`，`time_limit_s: 300`）：启停解为近优，不同 gap 下价格可能略有差异（非凸）。改报价对比同样受此影响。
 
-8. 日内每 1 h 定时触发、实时首时段用实际值、日内/实时末状态软目标罚 1000、结算统一 15 min：均为假设值。
+8. 实时首时段用实际值、GT 实时自由启停、储能锚点浮动比例 x = 0.05、锚点松弛罚 1e5、结算统一 15 min：均为假设值。
 9. 日内只输出参考价，不结算；实时按 15 min 结算（川规则中发电和用户按小时结算、独立储能按 15 min 结算，此处统一为 15 min）。
 10. 储能、新能源偏差不另做考核；仅按实时价结算偏差。
 

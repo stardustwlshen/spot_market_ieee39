@@ -105,7 +105,9 @@ def test_storage_and_hydro(da_result):
     cfg = da_result.case.cfg
     for s in cfg.units["storage"]:
         d = st[st.unit == s["id"]]
-        assert abs(d.soc.iloc[-1] - s["soc_end"]) < 1e-6
+        se = da_result.case.bids["units"][s["id"]].get("soc_end")   # 申报期末 SOC → 日前硬约束
+        if se is not None:
+            assert abs(d.soc.iloc[-1] - se) < 1e-6
         assert d.soc.min() >= s["soc_min"] - 1e-6 and d.soc.max() <= s["soc_max"] + 1e-6
     hy = da_result.tables["hydro"]
     h = cfg.units["hydro"][0]["seasons"][cfg.base["season"]]

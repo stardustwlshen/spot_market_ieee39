@@ -56,7 +56,7 @@ def default_bids(cfg: Config, version: int = 1) -> dict:
         bnd = np.linspace(0, s["pmax"], 4)
         units[s["id"]] = dict(mode="price_quantity", dis_segments=_segments(bnd, [420, 450, 480]),
                               ch_segments=_segments(bnd, [300, 280, 260]),
-                              soc_min=s["soc_min"], soc_max=s["soc_max"], soc_end=s["soc_end"], self_schedule=None)
+                              soc_min=s["soc_min"], soc_max=s["soc_max"], soc_end=s.get("soc_end_bid"), self_schedule=None)
     return dict(date=cfg.base["date"], rule_set=cfg.rule_set, version=version,
                 created=_dt.datetime.now().isoformat(timespec="seconds"), note="缺省报价（假设值）", units=units)
 
@@ -218,6 +218,12 @@ def validate_bids(cfg: Config, bids: dict) -> list[Issue]:
         typ = mt["type"]
         mode = b.get("mode", "price_quantity")
         if typ == "storage":
+            se = b.get("soc_end")          # 申报的运行日末期望 SOC（川V4.0 7.7.4），可不报
+            if se is not None:
+                su = [x for x in cfg.units["storage"] if x["id"] == uid][0]
+                lo, hi = b.get("soc_min", su["soc_min"]), b.get("soc_max", su["soc_max"])
+                if not (lo - 1e-9 <= float(se) <= hi + 1e-9):
+                    issues.append(Issue(uid, "error", "期末SOC", f"申报期末 SOC {se} 超出 [{lo}, {hi}]"))
             if mode == "self_schedule":
                 sch = b.get("self_schedule")
                 if not sch or len(sch) != cfg.T:

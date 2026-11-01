@@ -23,15 +23,35 @@ def da_result():
     return run_da(case, verbose=False)
 
 
-@pytest.fixture(scope="session")
-def full_result(da_result):
-    """缩短的滚动：日内每 1 h 一轮、只执行前 8 个时段（2 轮日内 + 8 次实时）。"""
+def _short_run(da_result, periods=8, **storage):
+    """缩短的实时滚动（默认甘肃式：无日内，执行前 periods 个 15 min 时段）。storage 覆盖 realtime.storage。"""
+    import copy
+    from dataclasses import replace
+
     from smm import rolling, settlement
     from smm.full import checks
 
     cfg = da_result.case.cfg
-    cfg.mode["intraday"]["interval_h"] = 1
-    rr = rolling.run_rolling(da_result, periods=8, log=lambda *a: None)
-    rt = rolling.rt_tables(da_result, rr)
-    return dict(da=da_result, rr=rr, rt=rt, id=rolling.intraday_tables(da_result, rr),
-                settle=settlement.settle(da_result, rr), checks=checks(da_result, rr, rt))
+    mode = copy.deepcopy(cfg.mode)
+    mode["realtime"]["storage"].update(storage)
+    cfg2 = replace(cfg, mode=mode)
+    da2 = replace(da_result, case=replace(da_result.case, cfg=cfg2))
+    rr = rolling.run_rolling(da2, periods=periods, log=lambda *a: None)
+    rt = rolling.rt_tables(da2, rr)
+    return dict(da=da2, rr=rr, rt=rt, id=rolling.intraday_tables(da2, rr),
+                settle=settlement.settle(da2, rr), checks=checks(da2, rr, rt))
+
+
+@pytest.fixture(scope="session")
+def full_result(da_result):
+    return _short_run(da_result)
+
+
+@pytest.fixture(scope="session")
+def fixed_da_result(da_result):
+    return _short_run(da_result, periods=6, mode="fixed_da")
+
+
+@pytest.fixture(scope="session")
+def hourly_result(da_result):
+    return _short_run(da_result, periods=6, anchor="hourly_eq")

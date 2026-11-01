@@ -1,12 +1,14 @@
-"""日内滚动优化 + 实时 15 min SCED（滚动窗口，首时段执行）。
+"""实时 15 min 滚动 SCED（甘肃方式，默认不设独立日内市场）。
 
-时序（参数见 config/modes.yaml 的 MKT.intraday / MKT.realtime）：
-  日前（DA）出清 → 对每个日内触发时刻 τ（默认每 1 h）：
-      日内滚动：窗口 [τ, 96)，边界=τ 时刻的实际系统状态（上一轮实时执行结果），预测=τ−1 发布的滚动预测；
-                煤电、燃气 CCGT 开停沿用日前（锁定），燃气 GT、水电台数、储能充放 0-1 状态重新优化；输出参考价（不结算）。
-      实时：对 τ..τ+interval−1 的每个 15 min 时段 t，窗口 [t, t+8)（2 h 前瞻），首时段用实际负荷/风光；
-                火电开停、水电台数取最近一轮日内计划；储能 0-1 状态按 storage_state 重新决定或沿用；
-                固定整数 → LP 求 LMP；只执行首时段，SOC/库容/机组状态滚入下一时段。
+时序（参数见 config/modes.yaml 的 MKT.realtime；窗口与时序见该文件注明的甘V3.2 条款）：
+  日前（DA）出清 → 对每个 15 min 时段 t：窗口 [t, t+8)（2 h，日末截断），首时段用实际负荷/风光（假设做法）；
+    - 煤电、燃气 CCGT 启停锁定日前结果；燃气 GT 启停在窗口 MIP 内按需决策；
+    - 水电执行日前出清曲线（运营细则第六十条(四)）；
+    - 储能按 realtime.storage.mode：
+        sced_anchor（默认）：沿用日前封存报价进入 SCED，初值 = 实际 SOC，锚点约束跟随日前 SOC（附录5 第9项）；
+        fixed_da：执行日前出清充放电曲线，价格接受者（山西第九十五条等）；
+    - 固定整数 → LP 求 LMP；只执行首时段，SOC/库容/机组状态滚入下一时段。
+  MKT.intraday.enabled=true 时另做事件式日内滚动（川V4.0 8.1，仅对比用）。
 """
 from __future__ import annotations
 
@@ -43,6 +45,29 @@ def initial_state(cfg) -> SysState:
     for s in cfg.units["storage"]:
         st[s["id"]] = float(s["soc0"]) * float(s["ecap"])
     return SysState(0, th, st, hy, {h: 0.0 for h in hy})
+
+
+def state_from_plan(cfg, plan: dict, t: int) -> SysState:
+    """假设 [0, t) 完全按 plan（全天数组，如日前快照）执行时，时段 t 的系统状态（测试/诊断用）。"""
+    if t == 0:
+        return initial_state(cfg)
+    dt = cfg.dt
+    th = {}
+    for u in cfg.units["thermal"]:
+        g = u["id"]
+        seq = [int(x) for x in plan["u"][g][:t]]
+        on = seq[-1]
+        n = 0
+        for x in reversed(seq):
+            if x != on:
+                break
+            n += 1
+        hrs = n * dt + (u["init"]["hours"] if n == t and bool(u["init"]["online"]) == bool(on) else 0.0)
+        th[g] = dict(online=bool(on), p0=float(plan["P"][g][t - 1]), hours=hrs)
+    sto = {s["id"]: float(plan["E"][s["id"]][t - 1]) for s in cfg.units["storage"]}
+    hy = {h: float(plan["Vh"][h][t - 1]) for h in plan["Vh"]}
+    used = {h: float(np.sum(plan["Ph"][h][:t]) * dt) for h in plan["Ph"]}
+    return SysState(t, th, sto, hy, used)
 
 
 def _sub_cfg(cfg, **solver):
@@ -114,13 +139,15 @@ def clear_window(case: DACase, log=lambda *a: None) -> dict:
     sn = snapshot(m)
     slack = scuc.slack_summary(m)
     repriced = False
+    n_relax = scuc.relax_anchors(m) if slack["anchor_slack_max_mwh"] > 1e-6 else 0   # 锚点防无解松弛不参与定价
     if scuc.has_slack(m):
         scuc.set_penalties(m, {k: float(v) for k, v in cfg.mode["pricing_penalties"].items()})
-        scuc.solve_sced(m)
         repriced = True
+    if repriced or n_relax:
+        scuc.solve_sced(m)
     pr = scuc.extract_prices(m)
     pr["lmp_clamped"] = np.clip(pr["lmp"], lim["clear_min"], lim["clear_max"])
-    return dict(model=m, snap=sn, prices=pr, slack=slack, repriced=repriced, mip=info, sced=sced,
+    return dict(model=m, snap=sn, prices=pr, slack=slack, repriced=repriced, anchor_relaxed=n_relax, mip=info, sced=sced,
                 time_s=time.perf_counter() - t0)
 
 
@@ -130,8 +157,33 @@ def _da_plan_arrays(da_res) -> dict:
     return snapshot(m)
 
 
+def storage_anchors(cfg, E_da: dict, t: int, t1: int) -> dict:
+    """实时窗口 [t, t1) 的储能 SOC 锚点：{s: [(窗口内相对时段, lo, hi)]}（MWh）。"""
+    sc = cfg.mode["realtime"]["storage"]
+    kind = sc.get("anchor", "window_end_pct")
+    x = float(sc.get("x", 0.05))
+    out = {}
+    for d in cfg.units["storage"]:
+        s = d["id"]
+        emin, emax = d["soc_min"] * d["ecap"], d["soc_max"] * d["ecap"]
+        if kind == "window_end_pct":
+            ks, xx = [t1 - 1], x
+        elif kind == "hourly_eq":
+            ks, xx = [k for k in range(t, t1) if (k + 1) % 4 == 0], 0.0
+        else:
+            raise ValueError(f"未知锚点方式 {kind}")
+        lst = []
+        for k in ks:
+            e = float(E_da[s][k])
+            lo, hi = max(emin, (1 - xx) * e), min(emax, (1 + xx) * e)   # 在满足 SOC 上下限的前提下浮动
+            lst.append((k - t, lo, max(lo, hi)))
+        out[s] = lst
+    return out
+
+
 def run_intraday_round(da_case, da_plan, cfg, state: SysState, tau: int, log=print) -> dict:
-    """τ 时刻触发的一轮日内滚动优化（窗口至日末）。"""
+    """（可选，默认关闭）τ 时刻的一轮日内滚动（窗口至日末）：锁定煤电/CCGT；水电期末库容硬约束；
+    储能日末 SOC 锚定日前出清日末值（同实时 window_end_pct 规则）。"""
     ic = cfg.mode["intraday"]
     T = cfg.T
     lock = set(ic["lock_types"])
@@ -140,9 +192,9 @@ def run_intraday_round(da_case, da_plan, cfg, state: SysState, tau: int, log=pri
         if u["type"] in lock:
             for t in range(tau, T):
                 fixed_u[(u["id"], t - tau)] = int(da_plan["u"][u["id"]][t])
-    term = dict(storage={s["id"]: s["soc_end"] * s["ecap"] for s in cfg.units["storage"]},
-                hydro={h["id"]: h["seasons"][cfg.base["season"]]["v_end"] for h in cfg.units["hydro"]},
-                penalty=cfg.mode.get("terminal_penalty", 1000))
+    sc = cfg.mode["realtime"]["storage"]
+    term = dict(hydro_vend=True, storage_anchor=storage_anchors(cfg, da_plan["E"], tau, T),
+                anchor_penalty=float(sc.get("anchor_penalty", 1e5)))
     c2 = _sub_cfg(cfg, mip_rel_gap=ic.get("mip_rel_gap", 0.005), time_limit_s=ic.get("time_limit_s", 60),
                   warm_start=False, tighten=False)
     issue = max(0, tau - int(ic.get("lead_issue_periods", 1)))
@@ -154,26 +206,36 @@ def run_intraday_round(da_case, da_plan, cfg, state: SysState, tau: int, log=pri
     return r
 
 
-def run_rt_period(da_case, plan: dict, cfg, state: SysState, t: int) -> dict:
-    """时段 t 的实时 SCED：窗口 [t, t+H)，首时段实际值；plan = 最近一轮日内计划（全天绝对时段数组）。"""
+def run_rt_period(da_case, da_plan: dict, plan: dict, cfg, state: SysState, t: int) -> dict:
+    """时段 t 的实时 SCED：窗口 [t, t+H)（日末截断），首时段实际值。
+    da_plan = 日前出清（全天），plan = 参考计划（无日内时即日前；开日内时为最近一轮日内计划）。"""
     rc = cfg.mode["realtime"]
     T = cfg.T
     H = int(round(rc["lookahead_h"] * 60 / rc["interval_min"]))
     t1 = min(T, t + H)
-    fixed = {"u": {}, "delta": {}}
-    for g in plan["u"]:
-        for k in range(t, t1):
-            fixed["u"][(g, k - t)] = int(plan["u"][g][k])
-    for (j, z), arr in plan["delta"].items():
-        for k in range(t, t1):
-            fixed["delta"][(j, z, k - t)] = int(arr[k])
-    if rc.get("storage_state", "redecide") == "fixed":
-        fixed["u_ch"] = {(s, k - t): int(plan["u_ch"][s][k]) for s in plan["u_ch"] for k in range(t, t1)}
-        fixed["u_dis"] = {(s, k - t): int(plan["u_dis"][s][k]) for s in plan["u_dis"] for k in range(t, t1)}
-    term = dict(storage={s: float(plan["E"][s][t1 - 1]) for s in plan["E"]},
-                hydro={h: float(plan["Vh"][h][t1 - 1]) for h in plan["Vh"]},
-                penalty=cfg.mode.get("terminal_penalty", 1000))
-    c2 = _sub_cfg(cfg, mip_rel_gap=1e-4, time_limit_s=30, warm_start=False, tighten=False)
+    win = range(t, t1)
+    lock = set(rc["lock_types"])
+    types = {u["id"]: u["type"] for u in cfg.units["thermal"]}
+    fixed = {"u": {(g, k - t): int(plan["u"][g][k]) for g in plan["u"] if types[g] in lock for k in win}}
+    fix_power = {}
+    if rc.get("hydro", "fixed_da") == "fixed_da":          # 水电执行日前曲线（台数、出力）
+        fixed["delta"] = {(j, z, k - t): int(da_plan["delta"][(j, z)][k]) for (j, z) in da_plan["delta"] for k in win}
+        fix_power["Ph"] = {(h, k - t): float(da_plan["Ph"][h][k]) for h in da_plan["Ph"] for k in win}
+    sc = rc["storage"]
+    mode = sc.get("mode", "sced_anchor")
+    term = dict(anchor_penalty=float(sc.get("anchor_penalty", 1e5)))
+    if mode == "fixed_da":                                 # 执行日前出清充放电曲线
+        fixed["u_ch"] = {(s, k - t): int(da_plan["u_ch"][s][k]) for s in da_plan["u_ch"] for k in win}
+        fixed["u_dis"] = {(s, k - t): int(da_plan["u_dis"][s][k]) for s in da_plan["u_dis"] for k in win}
+        fix_power["Pd"] = {(s, k - t): float(da_plan["Pd"][s][k]) for s in da_plan["Pd"] for k in win}
+        fix_power["Pc"] = {(s, k - t): float(da_plan["Pc"][s][k]) for s in da_plan["Pc"] for k in win}
+    elif mode == "sced_anchor":                            # 进入 SCED，锚定日前 SOC
+        term["storage_anchor"] = storage_anchors(cfg, da_plan["E"], t, t1)
+    else:
+        raise ValueError(f"未知储能实时模式 {mode}")
+    term["fix_power"] = fix_power
+    c2 = _sub_cfg(cfg, mip_rel_gap=float(rc.get("mip_rel_gap", 1e-4)), time_limit_s=float(rc.get("time_limit_s", 30)),
+                  warm_start=False, tighten=False)
     case = make_window_case(da_case, c2, t, t1, t, bool(rc.get("first_period_actual", True)), state, fixed, term, "RT")
     r = clear_window(case)
     r["t"] = t
@@ -219,19 +281,21 @@ class RollingResult:
 
 
 def run_rolling(da_res, periods: int | None = None, log=print) -> RollingResult:
-    """交替执行：日内第 k 轮（τ）→ 实时 τ..τ+interval−1 → 下一轮日内。"""
+    """逐时段实时滚动；MKT.intraday.enabled 时在每个日内触发时刻先做一轮日内，实时开机沿用日内计划。"""
     case = da_res.case
     cfg = case.cfg
     T = cfg.T if periods is None else min(cfg.T, periods)
     ic = cfg.mode["intraday"]
+    use_id = bool(ic.get("enabled", False))
     step = max(1, int(round(ic["interval_h"] / cfg.dt)))
     da_plan = _da_plan_arrays(da_res)
     plan = _abs_plan(da_plan, 0, cfg.T)
     state = initial_state(cfg)
     out = RollingResult()
+    out.plans.append(plan)
     t_id = t_rt = 0.0
     for t in range(T):
-        if t % step == 0:
+        if use_id and t % step == 0:
             a = time.perf_counter()
             r = run_intraday_round(case, da_plan, cfg, state, t, log)
             t_id += time.perf_counter() - a
@@ -240,15 +304,17 @@ def run_rolling(da_res, periods: int | None = None, log=print) -> RollingResult:
             out.id_rounds.append(r)
             out.plans.append(plan)
         a = time.perf_counter()
-        r = run_rt_period(case, plan, cfg, state, t)
+        r = run_rt_period(case, da_plan, plan, cfg, state, t)
         t_rt += time.perf_counter() - a
         out.states.append(state)
         out.rt.append(dict(t=t, snap=r["snap"], prices=r["prices"], slack=r["slack"], repriced=r["repriced"],
-                           time_s=r["time_s"], mip_time=r["mip"]["time_s"]))
+                           anchor_relaxed=r["anchor_relaxed"], time_s=r["time_s"], mip_time=r["mip"]["time_s"],
+                           plan_idx=len(out.plans) - 1))
         state = advance(state, r["snap"], cfg)
         if t % 4 == 3:
             log(f"[RT] 已执行至 {(t+1)//4:02d}:00（时段 {t}），首时段 LMP {r['prices']['lmp_clamped'][:, 0].min():.1f}"
-                f"~{r['prices']['lmp_clamped'][:, 0].max():.1f}{'，含松弛' if r['repriced'] else ''}")
+                f"~{r['prices']['lmp_clamped'][:, 0].max():.1f}{'，含松弛' if r['repriced'] else ''}"
+                f"{'，锚点松弛' if r['anchor_relaxed'] else ''}")
     out.states.append(state)
     out.time_s = dict(intraday=t_id, realtime=t_rt)
     return out
@@ -284,6 +350,11 @@ def intraday_tables(da_res, rr: RollingResult) -> dict:
     plans = pd.DataFrame(rows)
     prices = pd.DataFrame(prow)
     sto = pd.DataFrame(srow)
+    if not rr.id_rounds:
+        cols = ["round", "tau", "period", "unit", "type", "P_mw", "on"]
+        return dict(plans=pd.DataFrame(columns=cols), prices=pd.DataFrame(columns=["round", "tau", "period", "bus", "lmp"]),
+                    storage=pd.DataFrame(columns=["round", "tau", "period", "unit", "P_dis", "P_ch", "u_dis", "u_ch", "E_mwh"]),
+                    summary=pd.DataFrame(columns=["round", "tau", "window"]))
     summ = pd.DataFrame([dict(round=f"{r['tau']//4:02d}:{(r['tau']%4)*15:02d}", tau=r["tau"], window=f"{r['tau']}-{cfg.T-1}",
                               mip_s=r["mip"]["time_s"], gap=r["mip"]["gap"], obj=r["mip"]["objective"],
                               repriced=r["repriced"], **{k: v for k, v in r["slack"].items()},
@@ -328,7 +399,8 @@ def rt_tables(da_res, rr: RollingResult) -> dict:
         sysrow.append(dict(period=t, load_mw=sum(v[0] for v in sn["load_bus"].values()),
                            shed_mw=sum(v[0] for v in sn["shed"].values()), surplus_mw=sn["surplus"][0],
                            curtail_mw=sum(sn["ren_fc"][w][0] - sn["Pw"][w][0] for w in sn["Pw"]),
-                           energy_price=pr["energy"][0], repriced=r["repriced"], solve_s=r["time_s"],
+                           energy_price=pr["energy"][0], repriced=r["repriced"], anchor_relaxed=r["anchor_relaxed"],
+                           solve_s=r["time_s"],
                            **{f"{k}_win": v for k, v in r["slack"].items()}))
     units = pd.DataFrame(urows)
     units["curtail_mw"] = np.where(units.type.isin(["wind", "pv"]), units.get("avail_mw", 0) - units.P_mw, 0.0)

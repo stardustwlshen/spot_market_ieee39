@@ -228,8 +228,8 @@ def da_vs_rt_lmp(da_prices: np.ndarray, rt_prices: np.ndarray, load_da: np.ndarr
 
 
 def rolling_plans(id_plans: pd.DataFrame, id_sto: pd.DataFrame, rt_units: pd.DataFrame, rt_sto: pd.DataFrame,
-                  da_units: pd.DataFrame, da_sto: pd.DataFrame, path: Path, units=("GT", "CCGT", "H1"), sto="ES1"):
-    """各轮日内计划（细线，颜色随轮次变深）vs 日前（虚线）vs 实时执行（黑线）。"""
+                  da_units: pd.DataFrame, da_sto: pd.DataFrame, path: Path, units=("GT", "CCGT", "H1"), sto="ES1", x=None):
+    """（开日内时）各轮日内计划（细线）vs 日前（虚线）vs 实时执行（黑线）；x 给出时画日前 SOC ±x 锚点带。"""
     T = int(rt_units.period.max()) + 1
     rounds = sorted(id_plans.tau.unique())
     cmap = plt.cm.viridis
@@ -243,9 +243,12 @@ def rolling_plans(id_plans: pd.DataFrame, id_sto: pd.DataFrame, rt_units: pd.Dat
                 ax.plot(d.period, d.E_mwh, color=cmap(k / max(1, len(rounds) - 1)), lw=0.8, alpha=0.8)
             d = da_sto[da_sto.unit == s]
             ax.plot(d.period, d.E_mwh, "--", color="#1f77b4", lw=1.6, label="日前")
+            if x:
+                ax.fill_between(d.period, (1 - x) * d.E_mwh, (1 + x) * d.E_mwh, color="#1f77b4", alpha=0.15,
+                                label=f"锚点带 日前±{x:.0%}（窗口末时段约束）")
             d = rt_sto[rt_sto.unit == s]
             ax.plot(d.period, d.E_mwh, "-", color="k", lw=2, label="实时执行")
-            ax.set_ylabel("MWh"); ax.set_title(f"{s} 电量 SOC：各轮日内计划 / 日前 / 实时")
+            ax.set_ylabel("MWh"); ax.set_title(f"{s} 电量 SOC：{'各轮日内计划 / ' if rounds else ''}日前 / 实时执行")
         else:
             for k, tau in enumerate(rounds):
                 d = id_plans[(id_plans.tau == tau) & (id_plans.unit == name)]
@@ -254,12 +257,13 @@ def rolling_plans(id_plans: pd.DataFrame, id_sto: pd.DataFrame, rt_units: pd.Dat
             ax.plot(d.period, d.P_mw, "--", color="#1f77b4", lw=1.6, label="日前")
             d = rt_units[rt_units.unit == name]
             ax.plot(d.period, d.P_mw, "-", color="k", lw=2, label="实时执行")
-            ax.set_ylabel("MW"); ax.set_title(f"{name} 出力：各轮日内计划（浅→深 = 早→晚轮次）/ 日前 / 实时")
+            ax.set_ylabel("MW"); ax.set_title(f"{name} 出力：{'各轮日内计划（浅→深）/ ' if rounds else ''}日前 / 实时执行")
         ax.grid(alpha=.3); ax.legend(loc="upper left", fontsize=8)
         _xt(ax, 96)
         ax.axvspan(T - 0.5, 95, color="#eeeeee", zorder=0) if T < 96 else None
-    sm = plt.cm.ScalarMappable(cmap=cmap, norm=plt.Normalize(0, max(rounds) / 4))
-    fig.colorbar(sm, ax=axes, fraction=0.015, label="日内轮次触发时刻 (h)")
+    if rounds:
+        sm = plt.cm.ScalarMappable(cmap=cmap, norm=plt.Normalize(0, max(rounds) / 4))
+        fig.colorbar(sm, ax=axes, fraction=0.015, label="日内轮次触发时刻 (h)")
     fig.savefig(path, dpi=130, bbox_inches="tight"); plt.close(fig)
 
 

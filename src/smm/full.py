@@ -1,4 +1,4 @@
-"""一键全流程：日前 → 日内滚动 → 实时 SCED → 两级偏差结算，并输出表、图与摘要。"""
+"""一键全流程：日前 →（可选日内）→ 实时 15 min 滚动 SCED → 两级偏差结算，并输出表、图与摘要。"""
 from __future__ import annotations
 
 import json
@@ -33,7 +33,7 @@ def checks(da_res, rr, rt_tab) -> dict:
     out["soc_continuity_err_mwh"] = err_cont
     out["soc_equation_err_mwh"] = err_eq
     # 机组组合连续：锁定类型（煤电/CCGT）在日内各轮与实时均等于日前
-    lock = set(cfg.mode["intraday"]["lock_types"])
+    lock = set(cfg.mode["realtime"]["lock_types"])
     da_u = da_res.tables["units"].set_index(["unit", "period"]).on
     mism_id = mism_rt = 0
     ru = rt_tab["units"]
@@ -47,14 +47,29 @@ def checks(da_res, rr, rt_tab) -> dict:
         mism_rt += int(sum(int(o) != int(da_u[(u["id"], p)]) for o, p in zip(d.on, d.period)))
     out["locked_commitment_mismatch_id"] = mism_id
     out["locked_commitment_mismatch_rt"] = mism_rt
-    # 实时开机状态 = 执行时所用的最近一轮日内计划
+    # 实时锁定机组开机状态 = 执行时所用参考计划（无日内时即日前）
     mism = 0
-    step = max(1, int(round(cfg.mode["intraday"]["interval_h"] / dt)))
+    types = {u["id"]: u["type"] for u in cfg.units["thermal"]}
     for r in rr.rt:
-        plan = rr.plans[r["t"] // step]
+        plan = rr.plans[r["plan_idx"]]
         for g, arr in r["snap"]["u"].items():
-            mism += int(arr[0] != plan["u"][g][r["t"]])
-    out["rt_vs_intraday_commitment_mismatch"] = mism
+            if types[g] in lock:
+                mism += int(arr[0] != plan["u"][g][r["t"]])
+    out["rt_vs_plan_commitment_mismatch"] = mism
+    # 水电执行日前曲线
+    rc = cfg.mode["realtime"]
+    if rc.get("hydro", "fixed_da") == "fixed_da":
+        dah = da_res.tables["units"].set_index(["unit", "period"]).P_mw
+        dh = ru[ru.type == "hydro"]
+        out["hydro_vs_da_err_mw"] = float(max([abs(p - dah[(u, t)]) for u, t, p in zip(dh.unit, dh.period, dh.P_mw)] or [0.0]))
+    # 储能：锚点满足情况（实时各窗口末 E 相对日前 E 的偏差占比）/ 模式 A 跟随日前
+    sc = rc["storage"]
+    da_sto = da_res.tables["storage"].set_index(["unit", "period"])
+    if sc.get("mode") == "fixed_da":
+        out["storage_vs_da_err_mw"] = float(max(abs((r.P_dis - r.P_ch) - (da_sto.loc[(r.unit, r.period), "P_dis"] - da_sto.loc[(r.unit, r.period), "P_ch"]))
+                                                for r in st.itertuples()))
+    out["anchor_relaxed_periods"] = int(sum(1 for r in rr.rt if r.get("anchor_relaxed", 0)))
+    out["anchor_slack_max_mwh"] = float(max(r["slack"].get("anchor_slack_max_mwh", 0.0) for r in rr.rt))
     # 最小开停机（实际执行序列）
     viol = 0
     for u in cfg.units["thermal"]:
@@ -113,10 +128,13 @@ def summarize_full(res) -> dict:
     fe = bt.reindex(["load", "wind", "pv"]).fillna(0)
     s = dict(
         rule_set=cfg.rule_set, rule_name=cfg.mode["name"], date=cfg.base["date"], season=cfg.base["season"], periods=T,
-        intraday=dict(interval_h=cfg.mode["intraday"]["interval_h"], rounds=len(res["rr"].id_rounds),
+        intraday=dict(enabled=bool(cfg.mode["intraday"].get("enabled", False)), interval_h=cfg.mode["intraday"]["interval_h"], rounds=len(res["rr"].id_rounds),
                       lock_types=cfg.mode["intraday"]["lock_types"]),
         realtime=dict(interval_min=cfg.mode["realtime"]["interval_min"], lookahead_h=cfg.mode["realtime"]["lookahead_h"],
-                      storage_state=cfg.mode["realtime"]["storage_state"],
+                      storage_mode=cfg.mode["realtime"]["storage"]["mode"], anchor=cfg.mode["realtime"]["storage"]["anchor"],
+                      x=cfg.mode["realtime"]["storage"]["x"], hydro=cfg.mode["realtime"].get("hydro", "fixed_da"),
+                      anchor_relaxed_periods=res["checks"]["anchor_relaxed_periods"],
+                      anchor_slack_max_mwh=res["checks"]["anchor_slack_max_mwh"],
                       repriced_periods=int(rt["system"].repriced.sum()),
                       shed_mwh=float(rt["system"].shed_mw.sum() * cfg.dt), surplus_mwh=float(rt["system"].surplus_mw.sum() * cfg.dt),
                       curtail_mwh=float(rt["system"].curtail_mw.sum() * cfg.dt)),
@@ -128,7 +146,11 @@ def summarize_full(res) -> dict:
                     lw_spread_max=float((wrt - wda).max()), lw_spread_min=float((wrt - wda).min()),
                     nodal_spread_abs_max=float(np.abs(sp).max()), nodal_spread_rms=float(np.sqrt((sp ** 2).mean())),
                     rt_lmp_min=float(prt.min()), rt_lmp_max=float(prt.max()),
-                    da_lmp_min=float(pda.min()), da_lmp_max=float(pda.max())),
+                    da_lmp_min=float(pda.min()), da_lmp_max=float(pda.max()),
+                    da_lw_tail=float((wda[84:] * load_da.sum(0)[84:]).sum() / load_da.sum(0)[84:].sum()) if T > 84 else float("nan"),
+                    rt_lw_tail=float((wrt[84:] * load_rt.sum(0)[84:]).sum() / load_rt.sum(0)[84:].sum()) if T > 84 else float("nan"),
+                    rt_lw_hourly=[float(x) for x in (wrt[: T // 4 * 4].reshape(-1, 4).mean(1))],
+                    da_lw_hourly=[float(x) for x in (wda[: T // 4 * 4].reshape(-1, 4).mean(1))]),
         settlement_by_type={k: {c: float(v) for c, v in r.items()} for k, r in bt.iterrows()},
         forecast_error=dict(dev_abs_mwh=float(fe.dev_abs_mwh.sum()), rt_amount=float(fe.rt_amount.sum()),
                             dev_pnl=float(fe.dev_pnl.sum()),
@@ -144,6 +166,7 @@ def summarize_full(res) -> dict:
 def write_full_outputs(res, d: Path, make_plots=True) -> dict:
     d.mkdir(parents=True, exist_ok=True)
     da, st, rt, idt = res["da"], res["settle"], res["rt"], res["id"]
+    cfg = da.case.cfg
     f = dict(index=False, float_format="%.4f")
     da.tables["units"].to_csv(d / "da_unit_awards.csv", **f)
     da.tables["prices"].to_csv(d / "da_nodal_prices.csv", **f)
@@ -170,6 +193,7 @@ def write_full_outputs(res, d: Path, make_plots=True) -> dict:
         load_rt = rt["prices"].pivot(index="bus", columns="period", values="load_mw").reindex(net.buses).to_numpy()
         plots.da_vs_rt_lmp(st["prices"]["da"], st["prices"]["rt"], load_da, load_rt, list(net.buses), d / "lmp_da_vs_rt.png")
         plots.rolling_plans(idt["plans"], idt["storage"], rt["units"], rt["storage"], da.tables["units"], da.tables["storage"],
-                            d / "rolling_plans.png")
+                            d / "rolling_plans.png", x=cfg.mode["realtime"]["storage"]["x"]
+                            if cfg.mode["realtime"]["storage"]["mode"] == "sced_anchor" and cfg.mode["realtime"]["storage"]["anchor"] == "window_end_pct" else None)
         plots.settlement_bars(st["by_type"], st["by_entity"], d / "settlement_bars.png")
     return s
