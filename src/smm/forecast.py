@@ -57,20 +57,23 @@ def generate_profiles(cfg: Config, seed: int | None = None) -> pd.DataFrame:
     """返回 96 行：各对象的 actual / da / id / rt 四列（MW）及 tie 计划。"""
     T = cfg.T
     rng = np.random.default_rng(cfg.base["seed"] if seed is None else seed)
+    # 可选覆盖（base.yaml 的 forecast 段，网页应用“风光预测误差”用）：sigma.{wind,pv,load}.{da,id,rt}、phi.{wind,pv,load}
+    fo = cfg.base.get("forecast") or {}
+    SIG = {k: {**v, **((fo.get("sigma") or {}).get(k) or {})} for k, v in SIGMA.items()}
+    PH = {**PHI, **(fo.get("phi") or {})}
     peak = cfg.base["load_scale"] * 6254.23
     out = pd.DataFrame({"period": np.arange(1, T + 1)})
     out["time"] = [f"{(t*15)//60:02d}:{(t*15)%60:02d}" for t in range(T)]
 
     def make(name, actual, cap_for_sigma, kind, xi=None, daylight=None, clip_cap=None):
-        base = ar1(T, PHI[kind], rng, xi)
+        base = ar1(T, PH[kind], rng, xi)
         scale = cap_for_sigma if np.ndim(cap_for_sigma) else np.full(T, cap_for_sigma)
         if daylight is not None:
             scale = scale * daylight
         out[f"{name}_actual"] = actual
         for stage in ("da", "id", "rt"):
-            ratio = SIGMA[kind][stage] / SIGMA[kind]["da"]
-            indep = ar1(T, PHI[kind], rng) * 0.3 if stage != "da" else 0.0
-            e = SIGMA[kind]["da"] * scale * (ratio * base + (indep * ratio))
+            indep = ar1(T, PH[kind], rng) * 0.3 if stage != "da" else 0.0
+            e = SIG[kind][stage] * scale * (base + indep)   # = σ_da·scale·(ratio·base + ratio·indep)，ratio = σ_stage/σ_da
             f = actual - e
             if kind in ("wind", "pv"):
                 f = np.clip(f, 0, clip_cap)  # 物理截断
@@ -94,6 +97,42 @@ def generate_profiles(cfg: Config, seed: int | None = None) -> pd.DataFrame:
             make(spec["id"], cap * shp, cap, "pv", daylight=(shp > 0).astype(float) * np.sqrt(shp / shp.max()), clip_cap=cap)
     for tie in cfg.units.get("tie", []):
         out[f"{tie['id']}_sched"] = np.round(tie["pmax"] * interp96(TIE_SHAPE, T), 3)
+    return out
+
+
+def apply_profile_overrides(cfg: Config, df: pd.DataFrame, overrides: pd.DataFrame | None = None) -> pd.DataFrame:
+    """用 cfg.root/data/profile_overrides.csv（96 行，列为 {对象}_actual / {对象}_da 的子集）覆盖生成的曲线。
+
+    覆盖实际值而未覆盖预测时，各阶段预测保持原误差（负荷按实际值比例缩放误差，风光保持绝对误差并截断到 [0, 装机]）；
+    覆盖日前预测只改日前列。网页应用的“负荷 96 点编辑 / 上传 CSV”即写这个文件。
+    """
+    if overrides is None:
+        p = cfg.root / "data" / "profile_overrides.csv"
+        if not p.exists():
+            return df
+        overrides = pd.read_csv(p)
+    if len(overrides) != len(df):
+        raise ValueError(f"profile_overrides 需 {len(df)} 行，实际 {len(overrides)} 行")
+    out = df.copy()
+    caps = {r["id"]: r["cap"] for r in cfg.units["renewable"]}
+    names = ["load"] + list(caps)
+    for n in names:
+        a_col = f"{n}_actual"
+        if a_col in overrides and overrides[a_col].notna().all():
+            a_old = df[a_col].to_numpy(float)
+            a_new = overrides[a_col].to_numpy(float)
+            for st in ("da", "id", "rt"):
+                e = a_old - df[f"{n}_{st}"].to_numpy(float)
+                if n == "load":
+                    e = e * np.divide(a_new, a_old, out=np.ones_like(a_new), where=a_old > 0)
+                f = a_new - e
+                if n in caps:
+                    f = np.clip(f, 0, caps[n])
+                out[f"{n}_{st}"] = np.round(f, 3)
+            out[a_col] = a_new
+        d_col = f"{n}_da"
+        if d_col in overrides and overrides[d_col].notna().all():
+            out[d_col] = overrides[d_col].to_numpy(float)
     return out
 
 

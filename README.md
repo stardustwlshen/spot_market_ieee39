@@ -28,6 +28,48 @@ python -m pytest -q tests/                     # 全部测试（约 3 min）
 python scripts/bench_scuc.py plain tight ws hourly   # SCUC 求解参数/提速措施对比（逐个顺序运行）
 ```
 
+## 网页应用（Streamlit，中文界面）
+
+用于修改边界条件、后台运行、交互查看结果。
+
+### 启动 / 停止
+
+```bash
+bash scripts/run_app.sh            # 启动（nohup 后台常驻），默认监听 0.0.0.0:8501
+bash scripts/run_app.sh restart    # 修改代码后重启（未开文件监视）
+bash scripts/run_app.sh stop
+PORT=8600 bash scripts/run_app.sh  # 换端口
+```
+
+- 访问：box 本机 `http://127.0.0.1:8501`；PID 在 `outputs/app.pid`，日志在 `outputs/app.log`，健康检查 `curl http://127.0.0.1:8501/_stcore/health`。
+- 脚本设置 `TZ=America/Los_Angeles`，从网页发起的运行，时间戳和日志时间都是太平洋时间。
+- **不带登录鉴权，也没有做公网暴露。** 云端 box 的 localhost 外部无法直接访问；要在自己电脑上看，请自行用 SSH 端口转发等受控方式（例如 `ssh -L 8501:127.0.0.1:8501 <box>`），或在 box 桌面的浏览器里打开。
+
+### 页面
+
+| 页面 | 功能 |
+|---|---|
+| 主页 | 场景列表、最近运行 |
+| 边界条件 | 8 个标签页：①场景管理（新建/复制/删除/备注）②负荷（load_scale/季节/随机种子；96 点表格编辑、整体倍率、上传 CSV）③风/光（各阶段误差 σ、自相关 φ；96 点实际/日前预测覆盖、上传 CSV；预测精度表）④报价（按版本编辑段价段量、储能放/充电段与期末 SOC、火电启动/空载费；实时调用 `validate_bids` 列出违规项，有错误时不能提交；提交后另存为新版本 vN+1）⑤机组/储能/水电（火电、新能源/联络线、水电来水与库容、储能容量/效率/初始 SOC/期末申报 SOC）⑥线路限额（逐线 rate_mw 与全网系数）⑦市场（限价、备用系数、N-1 开关）⑧实时与滚动（储能模式 B2 默认/B1/A、x、前瞻时长、日内滚动开关与间隔、求解器参数）|
+| 运行 | 选择场景、模式（仅日前 / 全流程）、报价版本、调试时段数，一键后台运行；页面每 2 秒刷新进度条和日志尾部，不阻塞界面；可以停止运行 |
+| 结果 | 7 个标签页：概览指标卡（总成本、负荷加权均价、实时−日前价差、弃电、阻塞时段、偏差损益）；LMP 热力图与节点曲线（日前/实时/差值）；出力堆叠图；储能 SOC 与锚点/带宽；线路负载率热力图与潮流曲线；网络拓扑着色（节点电价、线路负载率，时段滑块）；结算表（按类型/主体/对账/阻塞盈余/明细，可下载 CSV） |
+| 场景对比 | 任选两个结果：指标表 A/B/B−A、负荷加权价曲线、节点均价、分类型电量；两者都是全流程时再对比结算和储能 |
+
+### 数据组织
+
+- `scenarios/<场景名>/`：一个场景就是一套完整边界条件，包括 `config/*.yaml`（ruamel 读写，保留注释）、`data/case39/*.csv`、`data/profile_overrides.csv`（可选的 96 点覆盖）、`bids/{date}/MKT/bids_v{n}.json` 和 `scenario.json`（备注）。首次打开时从仓库自动生成“默认”场景。“默认”场景不能删除。
+- `runs/<场景名>/<YYYYmmdd-HHMMSS>_<da|full>/`：每次运行的输出，内容与命令行 `outputs/` 相同（日前结果在 `da/` 子目录）。另有 `meta.json`（状态/阶段/用时）、`run.log`，以及 `scenario_snapshot/`（运行时边界条件的快照，便于复现）。
+- 命令行也能运行场景：`python scripts/run_scenario.py --scenario 默认 --mode full [--bid-version 1] [--periods 8]`。
+- 结果页也会列出命令行生成的 `outputs/full_*_MKT_*`、`outputs/da_*_MKT_*`，标注为“命令行outputs”。
+- `runs/`、`scenarios/` 属于本地数据，已加入 `.gitignore`。
+
+### 96 点曲线覆盖（profile_overrides.csv）
+
+可选列：`load_actual, load_da, W1_actual, W1_da, W2_actual, W2_da, PV1_actual, PV1_da`（MW，96 行）。
+- 覆盖 `*_actual` 时，日前/日内/实时预测仍按误差模型在新实际值上生成：负荷用相对误差，新能源用绝对误差并截断到 [0, 装机]。
+- 覆盖 `*_da` 时只替换日前预测。
+- 负荷一旦被覆盖，`load_scale` 对总量不再起作用（覆盖优先）。
+
 ## 目录结构
 
 ```
@@ -40,9 +82,12 @@ bids/{date}/MKT/bids_v{n}.json|csv   版本化报价（JSON 为准，CSV 便于�
 src/smm/
   config.py   network.py(PTDF)   forecast.py   bids.py(报价生成/校验/存取)
   case.py(日前算例、备用需求)   scuc.py(Pyomo MILP/LP、对偶取价)   da.py(日前流程)
-  results.py   plots.py   pipeline.py
+  results.py   plots.py   pipeline.py   scenario.py(场景/运行目录管理)
   rolling.py(实时滚动 SCED、储能锚点、可选日内，系统状态推进)   settlement.py(两部制偏差结算、对账)   full.py(全流程、校核、输出)
 scripts/  main_full.py  main_da.py  demo_rebid.py  make_default_bids.py  export_case39.py  bench_scuc.py
+          run_scenario.py(按场景运行)  run_app.sh(网页启动)
+app/      主页.py  common.py  pages/1_边界条件.py 2_运行.py 3_结果.py 4_场景对比.py
+scenarios/ runs/   网页应用的场景与运行结果（不入库）
 tests/    test_bids.py（快速）  test_da.py（一次日前出清共享）  test_rolling.py（缩短滚动 6–8 时段）
 outputs/  每次运行的结果（不入库）
 ```

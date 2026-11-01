@@ -9,7 +9,7 @@ from .bids import bid_dir, bids_to_csv, default_bids, load_bids, raise_on_errors
 from .case import build_da_case
 from .config import Config
 from .da import DAResult, run_da, summarize
-from .forecast import accuracy_summary, generate_profiles, save_profiles
+from .forecast import accuracy_summary, apply_profile_overrides, generate_profiles, save_profiles
 from .network import build_network
 
 
@@ -26,7 +26,7 @@ def ensure_default_bids(cfg: Config) -> Path:
 
 def prepare(cfg: Config, bid_version: int | None = None, verbose=True):
     net = build_network(cfg)
-    prof = generate_profiles(cfg, cfg.base["seed"])
+    prof = apply_profile_overrides(cfg, generate_profiles(cfg, cfg.base["seed"]))   # 无覆盖文件时不变
     save_profiles(cfg, prof)
     ensure_default_bids(cfg)
     bids = load_bids(cfg, bid_version)
