@@ -75,28 +75,33 @@ def _anchor_ok(res, x):
     return worst
 
 
-def test_storage_anchor_window_end(full_result):
-    """模式 B1（默认，甘V3.2 附录5 第9项）：窗口末 SOC 在日前 ±x 内，防无解松弛未触发。"""
-    cfg = full_result["da"].case.cfg
-    sc = cfg.mode["realtime"]["storage"]
-    assert sc["mode"] == "sced_anchor" and sc["anchor"] == "window_end_pct"
-    assert _anchor_ok(full_result, sc["x"]) < 1e-6
-    assert full_result["checks"]["anchor_slack_max_mwh"] < 1e-6
-    assert full_result["checks"]["anchor_relaxed_periods"] == 0
-
-
-def test_storage_hourly_eq(hourly_result):
-    """模式 B2（广东式）：窗口内整点 E_RT = E_DA。"""
-    da = hourly_result["da"]
+def test_storage_hourly_eq_default(full_result):
+    """模式 B2（默认，广东式）：窗口内整点 E_RT = E_DA，防无解松弛未触发。"""
+    da = full_result["da"]
     cfg = da.case.cfg
+    sc = cfg.mode["realtime"]["storage"]
+    assert sc["mode"] == "sced_anchor" and sc["anchor"] == "hourly_eq"
     E_da = da.tables["storage"].set_index(["unit", "period"]).E_mwh
-    for r in hourly_result["rr"].rt:
+    n = 0
+    for r in full_result["rr"].rt:
         for k in range(len(r["snap"]["surplus"])):
             t = r["t"] + k
             if (t + 1) % 4 == 0:
                 for s in cfg.units["storage"]:
                     assert r["snap"]["E"][s["id"]][k] == pytest.approx(float(E_da[(s["id"], t)]), abs=1e-5)
-    assert hourly_result["checks"]["soc_equation_err_mwh"] < 1e-6
+                    n += 1
+    assert n > 0
+    assert full_result["checks"]["soc_equation_err_mwh"] < 1e-6
+    assert full_result["checks"]["anchor_slack_max_mwh"] < 1e-6
+    assert full_result["checks"]["anchor_relaxed_periods"] == 0
+
+
+def test_storage_anchor_window_end(window_end_result):
+    """模式 B1（可选，甘V3.2 附录5 第9项）：窗口末 SOC 在日前 ±x 内。"""
+    sc = window_end_result["da"].case.cfg.mode["realtime"]["storage"]
+    assert sc["anchor"] == "window_end_pct"
+    assert _anchor_ok(window_end_result, sc["x"]) < 1e-6
+    assert window_end_result["checks"]["anchor_relaxed_periods"] == 0
 
 
 def test_storage_fixed_da(fixed_da_result):

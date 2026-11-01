@@ -24,7 +24,7 @@ def da_result():
 
 
 def _short_run(da_result, periods=8, **storage):
-    """缩短的实时滚动（默认甘肃式：无日内，执行前 periods 个 15 min 时段）。storage 覆盖 realtime.storage。"""
+    """缩短的实时滚动（默认：无日内，储能 B2 整点锚点，执行前 periods 个 15 min 时段）。storage 覆盖 realtime.storage。"""
     import copy
     from dataclasses import replace
 
@@ -53,5 +53,5 @@ def fixed_da_result(da_result):
 
 
 @pytest.fixture(scope="session")
-def hourly_result(da_result):
-    return _short_run(da_result, periods=6, anchor="hourly_eq")
+def window_end_result(da_result):
+    return _short_run(da_result, periods=6, anchor="window_end_pct")

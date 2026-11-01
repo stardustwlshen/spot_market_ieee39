@@ -5,7 +5,9 @@
     - 煤电、燃气 CCGT 启停锁定日前结果；燃气 GT 启停在窗口 MIP 内按需决策；
     - 水电执行日前出清曲线（运营细则第六十条(四)）；
     - 储能按 realtime.storage.mode：
-        sced_anchor（默认）：沿用日前封存报价进入 SCED，初值 = 实际 SOC，锚点约束跟随日前 SOC（附录5 第9项）；
+        sced_anchor（默认）：沿用日前封存报价进入 SCED，初值 = 实际 SOC，锚点约束跟随日前 SOC：
+            anchor=hourly_eq（默认，B2 广东式）：窗口内各整点 E_RT = E_DA；
+            anchor=window_end_pct（可选，B1 甘肃附录5 第9项）：窗口末 (1±x)E_DA；
         fixed_da：执行日前出清充放电曲线，价格接受者（山西第九十五条等）；
     - 固定整数 → LP 求 LMP；只执行首时段，SOC/库容/机组状态滚入下一时段。
   MKT.intraday.enabled=true 时另做事件式日内滚动（川V4.0 8.1，仅对比用）。
@@ -160,7 +162,7 @@ def _da_plan_arrays(da_res) -> dict:
 def storage_anchors(cfg, E_da: dict, t: int, t1: int) -> dict:
     """实时窗口 [t, t1) 的储能 SOC 锚点：{s: [(窗口内相对时段, lo, hi)]}（MWh）。"""
     sc = cfg.mode["realtime"]["storage"]
-    kind = sc.get("anchor", "window_end_pct")
+    kind = sc.get("anchor", "hourly_eq")
     x = float(sc.get("x", 0.05))
     out = {}
     for d in cfg.units["storage"]:
