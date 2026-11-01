@@ -50,15 +50,51 @@ def default_bids(cfg: Config, version: int = 1) -> dict:
                               avail_pmax=None)
     for h in cfg.units["hydro"]:
         cap = h["n_units"] * h["unit_pmax"]
-        units[h["id"]] = dict(mode="price_quantity", hydro_bid=dict(method="segments", season=cfg.base["season"]),
+        # 径流式缺省“planned”（价格接受，0 价进入出清，按来水不弃电）：对应川V4.0 7.7.2 方式一（径流式水电可全容量报申报价格下限）
+        units[h["id"]] = dict(mode="planned" if h.get("regulation") == "run_of_river" else "price_quantity",
+                              hydro_bid=dict(method="segments", season=cfg.base["season"]),
                               segments=_segments(np.linspace(0, cap, 6), [100, 130, 160, 200, 240]))
     for s in cfg.units["storage"]:
         bnd = np.linspace(0, s["pmax"], 4)
         units[s["id"]] = dict(mode="price_quantity", dis_segments=_segments(bnd, [420, 450, 480]),
                               ch_segments=_segments(bnd, [300, 280, 260]),
                               soc_min=s["soc_min"], soc_max=s["soc_max"], soc_end=s.get("soc_end_bid"), self_schedule=None)
+    for p in cfg.units.get("pumped", []):
+        units[p["id"]] = pumped_default(p)
     return dict(date=cfg.base["date"], rule_set=cfg.rule_set, version=version,
                 created=_dt.datetime.now().isoformat(timespec="seconds"), note="缺省报价（假设值）", units=units)
+
+
+PUMPED_GEN_PRICES = [420, 450, 480]     # 假设值：发电三段（元/MWh），高于抽水报价并覆盖晚高峰价位
+PUMPED_PUMP_PRICES = [300]              # 假设值：抽水状态单一报价（额定抽水功率对应价格，广东抽蓄交易细则征求意见稿 6.1）
+
+
+def pumped_default(p) -> dict:
+    """抽蓄缺省报价（假设值）：发电 3 段等分全厂容量；抽水按额定抽水功率单一报价；发电首段价 > 抽水价
+    （广东抽蓄交易细则征求意见稿 6.1 要求“第一段报价须大于等于抽水状态报价”，本模型取严格大于避免抽发无差价循环）。"""
+    N = int(p["n_units"])
+    gb = np.linspace(0, N * p["unit_gen_max"], len(PUMPED_GEN_PRICES) + 1)
+    pb = np.linspace(0, N * p["unit_pump"], len(PUMPED_PUMP_PRICES) + 1)
+    return dict(mode="price_quantity", gen_segments=_segments(gb, PUMPED_GEN_PRICES),
+                pump_segments=_segments(pb, PUMPED_PUMP_PRICES))
+
+
+def fill_missing_bids(cfg: Config, bids: dict) -> dict:
+    """报价文件中缺少的资源（如新增的抽蓄 PS1、启用的 H2）用缺省报价补齐；已停用资源的报价忽略。"""
+    disabled = set(cfg.units.get("_disabled", []))
+    dflt = None
+    filled = []
+    for uid in list(bids["units"]):
+        if uid in disabled:
+            bids["units"].pop(uid)
+    for uid in _unit_meta(cfg):
+        if uid not in bids["units"]:
+            dflt = dflt or default_bids(cfg)
+            bids["units"][uid] = copy.deepcopy(dflt["units"][uid])
+            filled.append(uid)
+    if filled:
+        bids["_filled_default"] = filled
+    return bids
 
 
 # ----------------------------------------------------------------------------- 读写
@@ -87,13 +123,13 @@ def load_bids(cfg: Config, version: int | None = None) -> dict:
     if not files:
         raise FileNotFoundError(f"{d} 下没有报价文件，先运行 scripts/make_default_bids.py")
     p = files[-1] if version is None else d / f"bids_v{version}.json"
-    return json.loads(p.read_text(encoding="utf-8"))
+    return fill_missing_bids(cfg, json.loads(p.read_text(encoding="utf-8")))
 
 
 def bids_to_csv(bids: dict, path: Path) -> None:
     rows = []
     for uid, b in bids["units"].items():
-        for kind in ("segments", "dis_segments", "ch_segments"):
+        for kind in ("segments", "dis_segments", "ch_segments", "gen_segments", "pump_segments"):
             for k, s in enumerate(b.get(kind) or [], start=1):
                 rows.append(dict(unit_id=uid, mode=b.get("mode"), curve=kind, seg=k, **s))
     pd.DataFrame(rows).to_csv(path, index=False)
@@ -134,6 +170,8 @@ def _unit_meta(cfg: Config) -> dict:
         meta[h["id"]] = dict(type="hydro", cap=h["n_units"] * h["unit_pmax"], pmin=0)
     for s in cfg.units["storage"]:
         meta[s["id"]] = dict(type="storage", cap=s["pmax"], pmin=0)
+    for p in cfg.units.get("pumped", []):
+        meta[p["id"]] = dict(type="pumped", cap=p["n_units"] * p["unit_gen_max"], cap_pump=p["n_units"] * p["unit_pump"], pmin=0)
     return meta
 
 
@@ -145,7 +183,7 @@ def _check_curve(uid, segs, cap, typ, cfg, issues, curve="segments", decreasing=
         E("段数", f"{curve} 为空")
         return
     n = len(segs)
-    is_sto = typ == "storage"
+    is_sto = typ in ("storage", "pumped")   # 抽蓄量价曲线段数按储能规则（假设：两省未单列抽蓄段数）
     nmin = m["segments"]["storage_min" if is_sto else "min"]
     nmax = m["segments"]["storage_max" if is_sto else "max"]
     if not (n >= nmin or typ == "hydro_planned") or n > nmax:
@@ -212,6 +250,8 @@ def validate_bids(cfg: Config, bids: dict) -> list[Issue]:
             issues.append(Issue(uid, "warn", "缺失报价", "将使用缺省报价"))
     for uid, b in bids["units"].items():
         if uid not in meta:
+            if uid in set(cfg.units.get("_disabled", [])):
+                continue
             issues.append(Issue(uid, "error", "未知资源", "配置中无此资源"))
             continue
         mt = meta[uid]
@@ -239,6 +279,16 @@ def validate_bids(cfg: Config, bids: dict) -> list[Issue]:
                 if min(s["price"] for s in b["dis_segments"]) <= max(s["price"] for s in b["ch_segments"]):
                     lvl = cfg.mode.get("storage_dis_gt_ch", "error")
                     issues.append(Issue(uid, lvl, "放电首段>充电末段", "放电最低价须高于充电最高价"))
+            continue
+        if typ == "pumped":
+            if mode == "dispatch":
+                continue
+            _check_curve(uid, b.get("gen_segments"), mt["cap"], typ, cfg, issues, "gen_segments")
+            _check_curve(uid, b.get("pump_segments"), mt["cap_pump"], typ, cfg, issues, "pump_segments", decreasing=True)
+            if b.get("gen_segments") and b.get("pump_segments"):
+                if min(s["price"] for s in b["gen_segments"]) <= max(s["price"] for s in b["pump_segments"]):
+                    lvl = cfg.mode.get("storage_dis_gt_ch", "error")
+                    issues.append(Issue(uid, lvl, "发电首段>抽水末段", "发电最低价须高于抽水最高价"))
             continue
         t2 = "hydro_planned" if (typ == "hydro" and mode == "planned") else typ
         _check_curve(uid, b.get("segments"), mt["cap"], t2 if t2 == "hydro_planned" else typ, cfg, issues)

@@ -1,0 +1,199 @@
+"""抽水蓄能与水电（库容型/径流式）测试。"""
+import copy
+
+import numpy as np
+import pytest
+
+from conftest import _short_run
+
+
+def _ps_cfg(cfg):
+    return cfg.units["pumped"][0]
+
+
+def test_pumped_da_constraints(da_result):
+    """日前：不同时抽发、台数限制、库容平衡、库容上下限、日末库容回到初值。"""
+    cfg = da_result.case.cfg
+    p = _ps_cfg(cfg)
+    ps = da_result.tables["pumped"]
+    ps = ps[ps.unit == p["id"]].sort_values("period")
+    assert len(ps) == cfg.T
+    assert ((ps.P_gen > 1e-3) & (ps.P_pump > 1e-3)).sum() == 0
+    assert (ps.n_gen <= p["n_units"]).all() and (ps.n_pump <= p["n_units"]).all()
+    assert (ps.P_gen <= ps.n_gen * p["unit_gen_max"] + 1e-6).all()
+    assert (ps.P_gen >= ps.n_gen * p["unit_gen_min"] - 1e-6).all()
+    if not p.get("variable_speed"):
+        assert np.allclose(ps.P_pump, ps.n_pump * p["unit_pump"], atol=1e-4)   # 定速泵：抽水功率 = 台数 × 额定
+    V = np.concatenate([[p["vup0"]], ps.V_up.to_numpy()])
+    dV = (ps.P_pump / p["e_pump"] - ps.P_gen / p["e_gen"]).to_numpy() * cfg.dt
+    assert np.allclose(np.diff(V), dV, atol=1e-5)
+    assert ps.V_up.min() >= p["vup_min"] - 1e-6 and ps.V_up.max() <= p["vup_max"] + 1e-6
+    assert abs(ps.V_up.iloc[-1] - (p["vup_end"] if p.get("vup_end") is not None else p["vup0"])) < 1e-5
+    # 发电量 = 抽水量 × 综合效率（日末回到初值时）
+    eg, ep = ps.P_gen.sum() * cfg.dt, ps.P_pump.sum() * cfg.dt
+    if ep > 1:
+        assert abs(eg / ep - p["e_gen"] / p["e_pump"]) < 1e-4
+
+
+def test_pumped_hourly_mode_step(da_result):
+    """mode_step_periods=4：每小时内抽/发台数不变（工程简化）。"""
+    cfg = da_result.case.cfg
+    step = int(cfg.mode["pumped"].get("mode_step_periods", 1))
+    ps = da_result.tables["pumped"].sort_values("period")
+    if step > 1:
+        for col in ("n_gen", "n_pump"):
+            a = ps[col].to_numpy().reshape(-1, step)
+            assert (a == a[:, :1]).all()
+
+
+def test_pumped_pricing_fixed(da_result):
+    """定价 LP 中抽蓄按“不可定价机组”固定为 SCED 中标出力（广东 2026 细则 5.8.2.3 约束(14)）。"""
+    m = da_result.model
+    assert da_result.case.cfg.mode["pumped"]["pricing"] == "fixed"
+    assert all(m.Pg[i].fixed and m.Pp[i].fixed for i in m.Pg)
+
+
+def test_fix_pumped_for_pricing_modes():
+    """fix_pumped_for_pricing 三种方式（不求解，直接对变量值操作）。"""
+    import pyomo.environ as pyo
+    from smm import scuc
+    m = pyo.ConcreteModel()
+    m.PS = pyo.Set(initialize=["PS1"])
+    m.T = pyo.RangeSet(0, 1)
+    m.Pg = pyo.Var(m.PS, m.T, bounds=(0, 600))
+    m.Pp = pyo.Var(m.PS, m.T, bounds=(0, 600))
+    m.Pg["PS1", 0].value, m.Pg["PS1", 1].value = 400.0, 0.0
+    m.Pp["PS1", 0].value, m.Pp["PS1", 1].value = 0.0, 300.0
+    assert scuc.fix_pumped_for_pricing(m, "free") == 0
+    m2 = m.clone()
+    scuc.fix_pumped_for_pricing(m2, "band", 0.1)
+    assert m2.Pg["PS1", 0].lb == pytest.approx(360) and m2.Pg["PS1", 0].ub == pytest.approx(440)
+    assert m2.Pg["PS1", 1].fixed and m2.Pp["PS1", 1].fixed and m2.Pp["PS1", 1].value == 300
+    n = scuc.fix_pumped_for_pricing(m, "fixed")
+    assert n == 4 and all(v.fixed for v in m.Pg.values())
+
+
+def test_pumped_dispatch_mode_model(da_result):
+    """da_mode=dispatch（安全调控）：报价不进入目标（发电计极小成本、抽水 0）。"""
+    from dataclasses import replace
+    from smm import scuc
+    cfg = da_result.case.cfg
+    mode = copy.deepcopy(cfg.mode)
+    mode["pumped"]["da_mode"] = "dispatch"
+    case = replace(da_result.case, cfg=replace(cfg, mode=mode))
+    bids = copy.deepcopy(case.bids)
+    bids["units"][_ps_cfg(cfg)["id"]].pop("mode", None)
+    case = replace(case, bids=bids)
+    md = scuc.prepare(case)
+    d = md.pumped[_ps_cfg(cfg)["id"]]
+    assert d["mode"] == "dispatch"
+    assert max(d["cg"]) <= 0.1 + 1e-9 and max(d["cp"]) == 0.0      # 发电仅计极小成本 EPS（避免退化）
+    assert len(d["Lg"]) == 1 and d["Lg"][0] == pytest.approx(d["N"] * d["unit_gen_max"])
+
+
+def test_pumped_rt_band_default(full_result):
+    """实时默认 band：工况/台数沿用日前，上库库容在日前 ±带宽 内（广东 2026 细则 6.6.2.1）。"""
+    da, rt = full_result["da"], full_result["rt"]
+    cfg = da.case.cfg
+    pc = cfg.mode["pumped"]
+    assert pc["rt_mode"] == "band"
+    bw = float(pc["rt_band_1e4m3"])
+    d = da.tables["pumped"].set_index("period")
+    r = rt["pumped"].set_index("period")
+    for t, row in r.iterrows():
+        assert row.n_gen == d.loc[t, "n_gen"] and row.n_pump == d.loc[t, "n_pump"]
+        assert abs(row.V_up - d.loc[t, "V_up"]) <= bw + 1e-4
+    # 实时库容连续
+    v = r.V_up.to_numpy()
+    assert np.allclose(r.V_start.to_numpy()[1:], v[:-1], atol=1e-6)
+
+
+@pytest.mark.parametrize("pm", ["fixed_da", "hourly_eq"])
+def test_pumped_rt_alternatives(da_result, pm):
+    """可选实时方式：fixed_da（执行日前抽发曲线，同水电）/ hourly_eq（整点库容=日前，同储能 B2）。"""
+    from dataclasses import replace
+    cfg = da_result.case.cfg
+    mode = copy.deepcopy(cfg.mode)
+    mode["pumped"]["rt_mode"] = pm
+    da2 = replace(da_result, case=replace(da_result.case, cfg=replace(cfg, mode=mode)))
+    res = _short_run(da2, periods=8)
+    d = da_result.tables["pumped"].set_index("period")
+    r = res["rt"]["pumped"].set_index("period")
+    if pm == "fixed_da":
+        assert np.allclose(r.P_gen, d.loc[r.index, "P_gen"], atol=1e-5)
+        assert np.allclose(r.P_pump, d.loc[r.index, "P_pump"], atol=1e-5)
+    else:
+        for t in r.index:
+            if (t + 1) % 4 == 0:
+                assert abs(r.loc[t, "V_up"] - d.loc[t, "V_up"]) < 1e-3
+
+
+def test_pumped_settlement_entities(full_result):
+    """结算：抽蓄发电、抽水分列两个结算主体（633 号文：抽水电量按现货价格结算）。"""
+    be = full_result["settle"]["by_entity"]
+    ents = set(be["entity"]) if "entity" in be else set(be.index)
+    pid = _ps_cfg(full_result["da"].case.cfg)["id"]
+    assert {f"{pid}_发电", f"{pid}_抽水"} <= ents
+
+
+def test_pumped_bids_rules():
+    from smm.bids import default_bids, fill_missing_bids, validate_bids
+    from smm.config import load_config
+    cfg = load_config()
+    b = default_bids(cfg)
+    pid = cfg.units["pumped"][0]["id"]
+    ub = b["units"][pid]
+    assert len(ub["pump_segments"]) == 1                     # 抽水状态单一报价（征求意见稿 6.1）
+    assert min(s["price"] for s in ub["gen_segments"]) > ub["pump_segments"][0]["price"]
+    assert not [i for i in validate_bids(cfg, b) if i.level == "error"]
+    bad = copy.deepcopy(b)
+    bad["units"][pid]["pump_segments"][0]["price"] = 500.0   # 抽水价 ≥ 发电首段价 → 违规
+    assert [i for i in validate_bids(cfg, bad) if i.level == "error" and i.unit_id == pid]
+    miss = copy.deepcopy(b)
+    del miss["units"][pid]
+    assert pid in fill_missing_bids(cfg, miss)["units"]
+
+
+def test_hydro_reservoir_vs_run_of_river():
+    """库容型/径流式开关：径流式不受日电量约束，库容仅日调节池且日末回初值；H2 梯级上游滞时入流。"""
+    from smm.bids import default_bids
+    from smm.case import build_da_case
+    from smm.config import load_config
+    from smm.forecast import generate_profiles
+    from smm.network import build_network
+    from smm import scuc
+    cfg = load_config()
+    assert cfg.units["hydro"][0]["regulation"] == "reservoir"
+    assert "H2" in cfg.units["_disabled"]                    # 可选径流站默认关闭
+    import yaml
+    from smm.config import filter_enabled
+    raw = yaml.safe_load(open(cfg.root / "config" / "units.yaml", encoding="utf-8"))
+    for h in raw["hydro"]:
+        h["enabled"] = True
+    cfg.units["hydro"] = filter_enabled(raw)["hydro"]
+    net = build_network(cfg)
+    prof = generate_profiles(cfg, cfg.base["seed"])
+    case = build_da_case(cfg, net, prof, default_bids(cfg))
+    md = scuc.prepare(case)
+    h2 = md.hydro["H2"]
+    assert h2["regulation"] == "run_of_river" and h2["e_day"] is None
+    assert h2["vmin"] == h2["vmax"] == h2["v_end"]           # pondage=0：纯径流
+    m = scuc.build_model(case)
+    assert "H1" in m.c_eday and "H2" not in m.c_eday        # 日电量约束仅库容型（川V4.0 附件8 约束(16)）
+    # 梯级：H2 第 t 时段入流含 H1 在 t−lag 的出库
+    lag = int(h2["lag_periods"])
+    expr = str(m.c_water["H2", lag + 2].body)
+    assert "Ph[H1" in expr or "Ph['H1'" in expr or "Qspill[H1" in expr
+
+
+def test_run_of_river_default_bid_planned():
+    import yaml
+    from smm.bids import default_bids
+    from smm.config import filter_enabled, load_config
+    cfg = load_config()
+    raw = yaml.safe_load(open(cfg.root / "config" / "units.yaml", encoding="utf-8"))
+    for h in raw["hydro"]:
+        h["enabled"] = True
+    cfg.units["hydro"] = filter_enabled(raw)["hydro"]
+    b = default_bids(cfg)
+    assert b["units"]["H2"]["mode"] == "planned" and b["units"]["H1"]["mode"] == "price_quantity"

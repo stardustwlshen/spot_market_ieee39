@@ -17,6 +17,7 @@ def da_result():
 
     cfg = load_config()
     cfg.base["solver"]["mip_rel_gap"] = 0.01  # 测试放宽 gap 以缩短用时
+    cfg.base["solver"]["time_limit_s"] = 150  # 测试限时（含抽蓄时 MIP 可能达不到 gap，取时限内可行解）
     net = build_network(cfg)
     prof = generate_profiles(cfg, cfg.base["seed"])
     case = build_da_case(cfg, net, prof, default_bids(cfg))

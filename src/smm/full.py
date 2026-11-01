@@ -68,6 +68,29 @@ def checks(da_res, rr, rt_tab) -> dict:
     if sc.get("mode") == "fixed_da":
         out["storage_vs_da_err_mw"] = float(max(abs((r.P_dis - r.P_ch) - (da_sto.loc[(r.unit, r.period), "P_dis"] - da_sto.loc[(r.unit, r.period), "P_ch"]))
                                                 for r in st.itertuples()))
+    # 抽水蓄能：上库库容连续与平衡方程、同时抽发、工况沿用日前、fixed_da 出力偏差
+    pst = rt_tab.get("pumped")
+    if pst is not None and len(pst):
+        pcfg = {p["id"]: p for p in cfg.units.get("pumped", [])}
+        da_ps = da_res.tables["pumped"].set_index(["unit", "period"])
+        ec = eq = dev = 0.0
+        mode_mis = 0
+        for pid, d in pst.groupby("unit"):
+            d = d.sort_values("period")
+            c = pcfg[pid]
+            prev = np.r_[float(c["vup0"]), d.V_up.to_numpy()[:-1]]
+            ec = max(ec, float(np.abs(d.V_start.to_numpy() - prev).max()))
+            calc = d.V_start + (d.P_pump / c["e_pump"] - d.P_gen / c["e_gen"]) * dt
+            eq = max(eq, float(np.abs(calc - d.V_up).max()))
+            for r in d.itertuples():
+                dd = da_ps.loc[(pid, r.period)]
+                mode_mis += int(r.n_gen != dd.n_gen or r.n_pump != dd.n_pump)
+                dev = max(dev, abs(r.P_gen - dd.P_gen) + abs(r.P_pump - dd.P_pump))
+        out["pumped_continuity_err"] = ec
+        out["pumped_equation_err"] = eq
+        out["pumped_simultaneous"] = int(((pst.P_gen > 1e-6) & (pst.P_pump > 1e-6)).sum())
+        out["pumped_mode_vs_da_mismatch"] = mode_mis
+        out["pumped_vs_da_dev_mw"] = float(dev)
     out["anchor_relaxed_periods"] = int(sum(1 for r in rr.rt if r.get("anchor_relaxed", 0)))
     out["anchor_slack_max_mwh"] = float(max(r["slack"].get("anchor_slack_max_mwh", 0.0) for r in rr.rt))
     # 最小开停机（实际执行序列）
@@ -159,8 +182,64 @@ def summarize_full(res) -> dict:
                                      for k in fe.index}),
         reconciliation=st["reconciliation"].set_index("stage").to_dict(orient="index"),
         checks=res["checks"], time_s=res["time_s"],
+        pumped=pumped_full_summary(res),
+        running_hours=running_hours(res),
     )
     return s
+
+
+def pumped_full_summary(res) -> dict:
+    """抽蓄：日前/实时发电抽水电量、小时数、综合效率，两部制结算后的电能量净收入，及容量电费（信息项，不进入现货结算）。"""
+    da, st, rt = res["da"], res["settle"], res["rt"]
+    cfg = da.case.cfg
+    dt = cfg.dt
+    out = {}
+    T = len(res["rr"].rt)
+    ent = st["by_entity"].set_index("entity") if "entity" in st["by_entity"] else st["by_entity"]
+    for p in cfg.units.get("pumped", []):
+        pid = p["id"]
+        dps = da.tables["pumped"]
+        dps = dps[(dps.unit == pid) & (dps.period < T)]
+        rps = rt["pumped"][rt["pumped"].unit == pid]
+        o = dict(bus=p["bus"], da_mode=(cfg.mode.get("pumped") or {}).get("da_mode", "price_quantity"),
+                 rt_mode=(cfg.mode.get("pumped") or {}).get("rt_mode", "fixed_da"))
+        for tag, d in (("da", dps), ("rt", rps)):
+            eg, ep = float(d.P_gen.sum() * dt), float(d.P_pump.sum() * dt)
+            o[tag] = dict(gen_mwh=eg, pump_mwh=ep, cycle_eff=eg / ep if ep > 1e-6 else None,
+                          gen_hours=float((d.P_gen > 1e-3).sum() * dt), pump_hours=float((d.P_pump > 1e-3).sum() * dt),
+                          V_up_end=float(d.V_up.iloc[-1]) if len(d) else None)
+        rev = {}
+        for kind in ("发电", "抽水"):
+            e = f"{pid}_{kind}"
+            if e in ent.index:
+                r = ent.loc[e]
+                rev[kind] = {c: float(r[c]) for c in ("da_amount", "rt_amount", "total") if c in r}
+        o["settlement"] = rev
+        o["energy_net_revenue"] = float(sum(v.get("total", 0.0) for v in rev.values()))
+        cap = float(p.get("capacity_price", 0.0))
+        o["capacity_fee_per_day"] = cap * 1000 * p["n_units"] * p["unit_gen_max"] / 365.0
+        out[pid] = o
+    return out
+
+
+def running_hours(res) -> dict:
+    """运行小时（日前 / 实时）：火电各类型开机小时、水电发电小时、抽蓄发电/抽水小时。"""
+    da, rt = res["da"], res["rt"]
+    dt = da.case.cfg.dt
+    T = len(res["rr"].rt)
+    out = {}
+    for tag, u in (("da", da.tables["units"][da.tables["units"].period < T]), ("rt", rt["units"])):
+        th = u[u.type.isin(["coal", "gas_ccgt", "gas_gt"])]
+        o = {f"{k}_unit_hours": float((g.on > 0).sum() * dt) for k, g in th.groupby("type")}
+        o["thermal_unit_hours"] = float((th.on > 0).sum() * dt)
+        o["thermal_starts"] = int(sum(int(((g.sort_values("period").on.diff() > 0)).sum()) for _, g in th.groupby("unit")))
+        hy = u[u.type == "hydro"]
+        o["hydro_gen_hours"] = {k: float((g.P_mw > 1e-3).sum() * dt) for k, g in hy.groupby("unit")}
+        ps = u[u.type == "pumped"]
+        o["pumped_gen_hours"] = float((ps.P_mw > 1e-3).sum() * dt)
+        o["pumped_pump_hours"] = float((ps.P_mw < -1e-3).sum() * dt)
+        out[tag] = o
+    return out
 
 
 def write_full_outputs(res, d: Path, make_plots=True) -> dict:
@@ -171,11 +250,13 @@ def write_full_outputs(res, d: Path, make_plots=True) -> dict:
     da.tables["units"].to_csv(d / "da_unit_awards.csv", **f)
     da.tables["prices"].to_csv(d / "da_nodal_prices.csv", **f)
     da.tables["storage"].to_csv(d / "da_storage.csv", **f)
+    da.tables["hydro"].to_csv(d / "da_hydro.csv", **f)
+    da.tables["pumped"].to_csv(d / "da_pumped.csv", **f)
     idt["summary"].to_csv(d / "id_rounds_summary.csv", **f)
     idt["plans"].to_csv(d / "id_plans.csv", **f)
     idt["prices"].to_csv(d / "id_prices_indicative.csv", **f)
     idt["storage"].to_csv(d / "id_storage.csv", **f)
-    for k in ("units", "prices", "lines", "storage", "system"):
+    for k in ("units", "prices", "lines", "storage", "system", "pumped", "hydro"):
         rt[k].to_csv(d / f"rt_{k}.csv", **f)
     rt["prices"].pivot(index="bus", columns="period", values="lmp").to_csv(d / "rt_lmp_matrix.csv", float_format="%.2f")
     st["detail"].to_csv(d / "settlement_detail.csv", **f)

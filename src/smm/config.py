@@ -41,5 +41,20 @@ def load_config(rule_set: str | None = None, season: str | None = None, override
     if overrides:
         base.update(overrides)
     units = yaml.safe_load((root / "config" / "units.yaml").read_text(encoding="utf-8"))
+    units = filter_enabled(units)
     modes = yaml.safe_load((root / "config" / "modes.yaml").read_text(encoding="utf-8"))
     return Config(base=base, units=units, mode=modes[base["rule_set"]], root=root)
+
+
+def filter_enabled(units: dict) -> dict:
+    """去掉 enabled: false 的资源（水电/抽蓄的可选电站），其 id 记入 units["_disabled"]（报价校验时忽略）。"""
+    units = dict(units)
+    units.setdefault("pumped", [])
+    units["pumped"] = units["pumped"] or []
+    dis = []
+    for g in ("thermal", "renewable", "hydro", "storage", "pumped", "tie"):
+        lst = units.get(g) or []
+        dis += [u["id"] for u in lst if not u.get("enabled", True)]
+        units[g] = [u for u in lst if u.get("enabled", True)]
+    units["_disabled"] = dis
+    return units

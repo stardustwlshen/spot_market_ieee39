@@ -3,7 +3,7 @@
 时序（参数见 config/modes.yaml 的 MKT.realtime；窗口与时序见该文件注明的甘V3.2 条款）：
   日前（DA）出清 → 对每个 15 min 时段 t：窗口 [t, t+8)（2 h，日末截断），首时段用实际负荷/风光（假设做法）；
     - 煤电、燃气 CCGT 启停锁定日前结果；燃气 GT 启停在窗口 MIP 内按需决策；
-    - 水电执行日前出清曲线（运营细则第六十条(四)）；
+    - 水电执行日前出清曲线（甘肃运营实施细则 第六十条，摘要来源）；
     - 储能按 realtime.storage.mode：
         sced_anchor（默认）：沿用日前封存报价进入 SCED，初值 = 实际 SOC，锚点约束跟随日前 SOC：
             anchor=hourly_eq（默认，B2 广东式）：窗口内各整点 E_RT = E_DA；
@@ -37,6 +37,17 @@ class SysState:
     storage: dict                            # s -> E (MWh)
     hydro: dict                              # h -> V (万 m³)
     hydro_used: dict                         # h -> 当日已发电量 MWh
+    pumped: dict = field(default_factory=dict)       # p -> {V, ng, np, xg, xp}（上库库容 万m³、发电/抽水台数与工况）
+    hydro_hist: dict = field(default_factory=dict)   # h -> 全天出库流量数组（已执行时段，m³/s；梯级下游时滞用）
+
+
+def _pumped_init(cfg) -> dict:
+    out = {}
+    for p in cfg.units.get("pumped", []):
+        im, N = p.get("init_mode", "idle"), int(p["n_units"])
+        out[p["id"]] = dict(V=float(p["vup0"]), ng=N if im == "gen" else 0, np=N if im == "pump" else 0,
+                            xg=int(im == "gen"), xp=int(im == "pump"))
+    return out
 
 
 def initial_state(cfg) -> SysState:
@@ -46,7 +57,7 @@ def initial_state(cfg) -> SysState:
     st = {}
     for s in cfg.units["storage"]:
         st[s["id"]] = float(s["soc0"]) * float(s["ecap"])
-    return SysState(0, th, st, hy, {h: 0.0 for h in hy})
+    return SysState(0, th, st, hy, {h: 0.0 for h in hy}, _pumped_init(cfg), {h: np.full(cfg.T, np.nan) for h in hy})
 
 
 def state_from_plan(cfg, plan: dict, t: int) -> SysState:
@@ -69,7 +80,14 @@ def state_from_plan(cfg, plan: dict, t: int) -> SysState:
     sto = {s["id"]: float(plan["E"][s["id"]][t - 1]) for s in cfg.units["storage"]}
     hy = {h: float(plan["Vh"][h][t - 1]) for h in plan["Vh"]}
     used = {h: float(np.sum(plan["Ph"][h][:t]) * dt) for h in plan["Ph"]}
-    return SysState(t, th, sto, hy, used)
+    ps = {p: dict(V=float(plan["Vu"][p][t - 1]), ng=int(plan["ngen"][p][t - 1]), np=int(plan["npump"][p][t - 1]),
+                  xg=int(plan["xg"][p][t - 1]), xp=int(plan["xp"][p][t - 1])) for p in plan.get("Vu", {})}
+    hist = {}
+    for h in plan["Ph"]:
+        a = np.full(cfg.T, np.nan)
+        a[:t] = np.asarray(plan["Qout"][h][:t]) if "Qout" in plan else np.nan
+        hist[h] = a
+    return SysState(t, th, sto, hy, used, ps, hist)
 
 
 def _sub_cfg(cfg, **solver):
@@ -91,7 +109,8 @@ def make_window_case(da_case: DACase, cfg, t0: int, t1: int, issue_t: int, first
     up, dn, info = reserve_requirement(cfg, load, sum(ren_fc.values()))
     e_day = {h["id"]: float(h["seasons"][cfg.base["season"]]["e_day"]) - state.hydro_used[h["id"]]
              for h in cfg.units["hydro"]}
-    init = dict(thermal=copy.deepcopy(state.thermal), storage=dict(state.storage), hydro=dict(state.hydro))
+    init = dict(thermal=copy.deepcopy(state.thermal), storage=dict(state.storage), hydro=dict(state.hydro),
+                pumped=copy.deepcopy(state.pumped), hydro_hist={h: a for h, a in state.hydro_hist.items()})
     return DACase(cfg, net, prof, da_case.bids, load_bus, ren_fc, tie, up, dn, info,
                   T=t1 - t0, t0=t0, init=init, fixed=fixed, hydro_e_budget=e_day, terminal=terminal, stage=stage)
 
@@ -110,6 +129,14 @@ def snapshot(m) -> dict:
         Ph={h: a(lambda t, d=d: sum(m.Ph[j, t] for j in d["units"])) for h, d in md.hydro.items()},
         delta={(j, z): np.rint(a(lambda t, j=j, z=z: m.delta[j, z, t])).astype(int) for (j, z) in m.JZ},
         Vh={h: a(lambda t, h=h: m.V[h, t]) for h in md.hydro},
+        Qout={h: a(lambda t, h=h, d=d: d["water_rate"] * sum(m.Ph[j, t] for j in d["units"]) + m.Qspill[h, t]) for h, d in md.hydro.items()},
+        Pg={p: a(lambda t, p=p: m.Pg[p, t]) for p in md.pumped},
+        Pp={p: a(lambda t, p=p: m.Pp[p, t]) for p in md.pumped},
+        xg={p: np.rint(a(lambda t, p=p: m.xg[p, t])).astype(int) for p in md.pumped},
+        xp={p: np.rint(a(lambda t, p=p: m.xp[p, t])).astype(int) for p in md.pumped},
+        ngen={p: np.rint(a(lambda t, p=p: m.ngen[p, t])).astype(int) for p in md.pumped},
+        npump={p: np.rint(a(lambda t, p=p: m.npump[p, t])).astype(int) for p in md.pumped},
+        Vu={p: a(lambda t, p=p: m.Vu[p, t]) for p in md.pumped},
         Pd={s: a(lambda t, s=s: m.Pd[s, t]) for s in md.storage},
         Pc={s: a(lambda t, s=s: m.Pc[s, t]) for s in md.storage},
         u_ch={s: np.rint(a(lambda t, s=s: m.u_ch[s, t])).astype(int) for s in md.storage},
@@ -145,7 +172,9 @@ def clear_window(case: DACase, log=lambda *a: None) -> dict:
     if scuc.has_slack(m):
         scuc.set_penalties(m, {k: float(v) for k, v in cfg.mode["pricing_penalties"].items()})
         repriced = True
-    if repriced or n_relax:
+    pcfg = cfg.mode.get("pumped", {})
+    n_pf = scuc.fix_pumped_for_pricing(m, pcfg.get("pricing", "fixed"), float(pcfg.get("pricing_eps", 0.1)))
+    if repriced or n_relax or n_pf:
         scuc.solve_sced(m)
     pr = scuc.extract_prices(m)
     pr["lmp_clamped"] = np.clip(pr["lmp"], lim["clear_min"], lim["clear_max"])
@@ -235,6 +264,26 @@ def run_rt_period(da_case, da_plan: dict, plan: dict, cfg, state: SysState, t: i
         term["storage_anchor"] = storage_anchors(cfg, da_plan["E"], t, t1)
     else:
         raise ValueError(f"未知储能实时模式 {mode}")
+    pc = cfg.mode.get("pumped") or {}
+    pmode = pc.get("rt_mode", "fixed_da")
+    if da_plan.get("Pg"):
+        # 抽蓄：工况与台数沿用日前（两种方式一致，转换需数分钟、不在 15 min 实时内改变工况）
+        for key in ("xg", "xp", "ngen", "npump"):
+            fixed[key] = {(p, k - t): int(da_plan[key][p][k]) for p in da_plan[key] for k in win}
+        if pmode == "fixed_da":                            # 执行日前发电/抽水曲线（与水电 fixed_da 一致）
+            fix_power["Pg"] = {(p, k - t): float(da_plan["Pg"][p][k]) for p in da_plan["Pg"] for k in win}
+            fix_power["Pp"] = {(p, k - t): float(da_plan["Pp"][p][k]) for p in da_plan["Pp"] for k in win}
+        elif pmode == "hourly_eq":                         # 出力实时可调，上库库容在整点等于日前（与储能 B2 一致）
+            term["pumped_anchor"] = {p: [(k - t, float(da_plan["Vu"][p][k]), float(da_plan["Vu"][p][k]))
+                                         for k in win if (k + 1) % 4 == 0] for p in da_plan["Vu"]}
+            term["pumped_anchor_penalty"] = float(pc.get("anchor_penalty", 1e5))
+        elif pmode == "band":                              # 广东 2026 细则 6.6.2.1：实时上库库容在日前结果 ±带宽 内优化
+            bw = float(pc.get("rt_band_1e4m3", 20.0))
+            term["pumped_anchor"] = {p: [(k - t, float(da_plan["Vu"][p][k]) - bw, float(da_plan["Vu"][p][k]) + bw)
+                                         for k in win] for p in da_plan["Vu"]}
+            term["pumped_anchor_penalty"] = float(pc.get("anchor_penalty", 1e5))
+        else:
+            raise ValueError(f"未知抽蓄实时模式 {pmode}")
     term["fix_power"] = fix_power
     c2 = _sub_cfg(cfg, mip_rel_gap=float(rc.get("mip_rel_gap", 1e-4)), time_limit_s=float(rc.get("time_limit_s", 30)),
                   warm_start=False, tighten=False)
@@ -247,9 +296,10 @@ def run_rt_period(da_case, da_plan: dict, plan: dict, cfg, state: SysState, t: i
 def _abs_plan(snap: dict, t0: int, T: int, base: dict | None = None) -> dict:
     """把窗口快照写入全天数组（[t0, T) 覆盖，之前沿用 base）。"""
     out = copy.deepcopy(base) if base else {}
-    for key in ("P", "u", "Pw", "Ph", "Vh", "Pd", "Pc", "u_ch", "u_dis", "E", "delta"):
+    for key in ("P", "u", "Pw", "Ph", "Vh", "Pd", "Pc", "u_ch", "u_dis", "E", "delta",
+                "Qout", "Pg", "Pp", "xg", "xp", "ngen", "npump", "Vu"):
         d = out.setdefault(key, {})
-        for k, arr in snap[key].items():
+        for k, arr in snap.get(key, {}).items():
             full = d.get(k)
             if full is None:
                 full = np.zeros(T, dtype=arr.dtype)
@@ -270,7 +320,15 @@ def advance(state: SysState, snap: dict, cfg) -> SysState:
     sto = {s: float(snap["E"][s][0]) for s in state.storage}
     hy = {h: float(snap["Vh"][h][0]) for h in state.hydro}
     used = {h: state.hydro_used[h] + float(snap["Ph"][h][0]) * dt for h in state.hydro}
-    return SysState(state.t + 1, th, sto, hy, used)
+    ps = {p: dict(V=float(snap["Vu"][p][0]), ng=int(snap["ngen"][p][0]), np=int(snap["npump"][p][0]),
+                  xg=int(snap["xg"][p][0]), xp=int(snap["xp"][p][0])) for p in state.pumped}
+    hist = {}
+    for h, a in state.hydro_hist.items():
+        a = a.copy()
+        if state.t < len(a):
+            a[state.t] = float(snap["Qout"][h][0])
+        hist[h] = a
+    return SysState(state.t + 1, th, sto, hy, used, ps, hist)
 
 
 @dataclass
@@ -342,6 +400,9 @@ def intraday_tables(da_res, rr: RollingResult) -> dict:
             for h in sn["Ph"]:
                 non = sum(int(a[t]) for (j, z), a in sn["delta"].items() if j == h)
                 rows.append(dict(round=lab, tau=tau, period=tau + t, unit=h, type="hydro", P_mw=sn["Ph"][h][t], on=non))
+            for p in sn.get("Pg", {}):
+                rows.append(dict(round=lab, tau=tau, period=tau + t, unit=p, type="pumped", P_mw=sn["Pg"][p][t] - sn["Pp"][p][t],
+                                 on=int(sn["ngen"][p][t] + sn["npump"][p][t])))
             for s in sn["Pd"]:
                 rows.append(dict(round=lab, tau=tau, period=tau + t, unit=s, type="storage", P_mw=sn["Pd"][s][t] - sn["Pc"][s][t], on=1))
                 srow.append(dict(round=lab, tau=tau, period=tau + t, unit=s, P_dis=sn["Pd"][s][t], P_ch=sn["Pc"][s][t],
@@ -376,7 +437,9 @@ def rt_tables(da_res, rr: RollingResult) -> dict:
     buses_of.update({r["id"]: r["bus"] for r in cfg.units["renewable"]})
     buses_of.update({h["id"]: h["bus"] for h in cfg.units["hydro"]})
     buses_of.update({s["id"]: s["bus"] for s in cfg.units["storage"]})
-    urows, prow, lrow, srow, sysrow = [], [], [], [], []
+    buses_of.update({p["id"]: p["bus"] for p in cfg.units.get("pumped", [])})
+    vtot = {p["id"]: float(p["v_total"]) for p in cfg.units.get("pumped", [])}
+    urows, prow, lrow, srow, sysrow, psrow, hrow = [], [], [], [], [], [], []
     ptdf = net.ptdf
     for r, st in zip(rr.rt, rr.states):
         t, sn, pr = r["t"], r["snap"], r["prices"]
@@ -392,6 +455,17 @@ def rt_tables(da_res, rr: RollingResult) -> dict:
             urows.append(dict(period=t, unit=s, type="storage", bus=buses_of[s], P_mw=sn["Pd"][s][0] - sn["Pc"][s][0], on=1))
             srow.append(dict(period=t, unit=s, P_dis=sn["Pd"][s][0], P_ch=sn["Pc"][s][0], u_dis=int(sn["u_dis"][s][0]),
                              u_ch=int(sn["u_ch"][s][0]), E_start=st.storage[s], E_mwh=sn["E"][s][0]))
+        for p in sn.get("Pg", {}):
+            xg, xp = int(sn["xg"][p][0]), int(sn["xp"][p][0])
+            urows.append(dict(period=t, unit=p, type="pumped", bus=buses_of[p], P_mw=sn["Pg"][p][0] - sn["Pp"][p][0],
+                              on=int(sn["ngen"][p][0] + sn["npump"][p][0])))
+            psrow.append(dict(period=t, unit=p, bus=buses_of[p], P_gen=sn["Pg"][p][0], P_pump=sn["Pp"][p][0],
+                              n_gen=int(sn["ngen"][p][0]), n_pump=int(sn["npump"][p][0]),
+                              mode="发电" if xg else ("抽水" if xp else "停机"), V_start=st.pumped[p]["V"],
+                              V_up=sn["Vu"][p][0], V_dn=vtot[p] - sn["Vu"][p][0]))
+        for h in sn["Ph"]:
+            hrow.append(dict(period=t, station=h, P_mw=sn["Ph"][h][0], V_start=st.hydro[h], V_1e4m3=sn["Vh"][h][0],
+                             Q_out=sn["Qout"][h][0] if "Qout" in sn else np.nan))
         for i, b in enumerate(net.buses):
             prow.append(dict(period=t, bus=b, lmp=pr["lmp_clamped"][i, 0], lmp_raw=pr["lmp"][i, 0],
                              energy=pr["energy"][0], congestion=pr["congestion"][i, 0],
@@ -406,5 +480,6 @@ def rt_tables(da_res, rr: RollingResult) -> dict:
                            **{f"{k}_win": v for k, v in r["slack"].items()}))
     units = pd.DataFrame(urows)
     units["curtail_mw"] = np.where(units.type.isin(["wind", "pv"]), units.get("avail_mw", 0) - units.P_mw, 0.0)
+    pcols = ["period", "unit", "bus", "P_gen", "P_pump", "n_gen", "n_pump", "mode", "V_start", "V_up", "V_dn"]
     return dict(units=units, prices=pd.DataFrame(prow), lines=pd.DataFrame(lrow), storage=pd.DataFrame(srow),
-                system=pd.DataFrame(sysrow))
+                system=pd.DataFrame(sysrow), pumped=pd.DataFrame(psrow, columns=pcols), hydro=pd.DataFrame(hrow))

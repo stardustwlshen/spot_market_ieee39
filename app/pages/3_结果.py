@@ -38,7 +38,7 @@ ll_da = line_loading(R, "da")
 ll_rt = line_loading(R, "rt") if FULL else None
 PRICE = "电价（元/MWh）"
 TIME = "时刻（15 min）"
-tabs = st.tabs(["📈 系统概览", "💲 节点电价", "⚙️ 出力", "🔋 储能", "🔌 线路", "🗺️ 网络拓扑", "🧾 结算"])
+tabs = st.tabs(["📈 系统概览", "💲 节点电价", "⚙️ 出力", "🔋 储能", "💧 抽蓄/水电", "🔌 线路", "🗺️ 网络拓扑", "🧾 结算"])
 
 
 def stage_radio(key):
@@ -148,20 +148,21 @@ with tabs[2]:
         if not (u.type == "tie").any():
             u = pd.concat([u, tie[u.columns.intersection(tie.columns)]], ignore_index=True)
     u = u.copy()
-    u["typ"] = np.where(u.type == "storage", np.where(u.P_mw >= 0, "storage_dis", "storage_ch"), u.type)
+    u["typ"] = np.where(u.type == "storage", np.where(u.P_mw >= 0, "storage_dis", "storage_ch"),
+                        np.where(u.type == "pumped", np.where(u.P_mw >= 0, "pumped_gen", "pumped_pump"), u.type))
     g = u.groupby(["period", "typ"]).P_mw.sum().unstack(fill_value=0)
-    order = [t for t in ["tie", "coal", "hydro", "gas_ccgt", "gas_gt", "wind", "pv", "storage_dis", "storage_ch"] if t in g]
+    order = [t for t in ["tie", "coal", "hydro", "gas_ccgt", "gas_gt", "wind", "pv", "storage_dis", "pumped_gen", "storage_ch", "pumped_pump"] if t in g]
     fig = go.Figure()
     x = [lbl[t] for t in g.index]
     for t in order:
-        fig.add_scatter(x=x, y=g[t].clip(lower=0) if t != "storage_ch" else g[t], name=TYPE_CN.get(t, t),
-                        stackgroup="neg" if t == "storage_ch" else "pos", mode="lines",
+        fig.add_scatter(x=x, y=g[t].clip(lower=0) if t not in ("storage_ch", "pumped_pump") else g[t], name=TYPE_CN.get(t, t),
+                        stackgroup="neg" if t in ("storage_ch", "pumped_pump") else "pos", mode="lines",
                         line=dict(width=0.5, color=TYPE_COLOR.get(t)), fillcolor=TYPE_COLOR.get(t))
     if stage == "日前" and R["da_system"] is not None:
         fig.add_scatter(x=[lbl[t] for t in R["da_system"].period], y=R["da_system"].load_mw, name="负荷", line=dict(color="#111", width=2))
     elif stage == "实时":
         fig.add_scatter(x=[lbl[t] for t in R["rt_system"].period], y=R["rt_system"].load_mw, name="实际负荷", line=dict(color="#111", width=2))
-    show_fig(style_fig(fig, f"{stage}分类型出力堆叠（储能充电为负）", TIME, "出力（MW）", 480, legend="资源类型"))
+    show_fig(style_fig(fig, f"{stage}分类型出力堆叠（储能充电、抽蓄抽水为负）", TIME, "出力（MW）", 480, legend="资源类型"))
 
     e = u.groupby("typ").P_mw.sum() * 0.25
     e = e.reindex(order).dropna()
@@ -230,8 +231,91 @@ with tabs[3]:
             fig.update_layout(yaxis2=dict(overlaying="y", side="right", title="充放电功率（MW）", showgrid=False))
             show_fig(style_fig(fig, f"{un} 电量与充放电", TIME, "电量（MWh）", 340), key=f"st_{un}")
 
-# ============================================================================ 线路
+# ============================================================================ 抽蓄 / 水电
 with tabs[4]:
+    import yaml
+    try:
+        uy = yaml.safe_load((Path(R["snapshot_root"]) / "config" / "units.yaml").read_text(encoding="utf-8"))
+    except Exception:  # noqa: BLE001
+        uy = {}
+    pcfg = {u["id"]: u for u in (uy.get("pumped") or []) if u.get("enabled", True)}
+    pdd, prt_ = R.get("da_pumped"), R.get("rt_pumped")
+    st.subheader("抽水蓄能")
+    if pdd is None or not len(pdd):
+        empty_state("该结果没有抽蓄数据（旧结果或抽蓄未启用）。", "在“边界条件 → 抽水蓄能”启用 PS1 后重新运行。")
+    else:
+        PSs = S.get("pumped") or {}
+        for un in pdd.unit.unique():
+            a = pdd[pdd.unit == un]
+            info = pcfg.get(un, {})
+            ps = PSs.get(un) or {}
+            dsum = (DS.get("pumped") or {}).get(un, {})
+            head = (f"{un}（节点 {info.get('bus', '?')}，{info.get('n_units', '?')}×{info.get('unit_gen_max', '?')} MW，"
+                    f"日前模式 {ps.get('da_mode', '—')}，实时模式 {ps.get('rt_mode', '—')}）")
+            st.markdown(f"**{head}**")
+            items = [("日前 发电 / 抽水（MWh）", f"{dsum.get('gen_mwh', 0):,.0f} / {dsum.get('pump_mwh', 0):,.0f}"),
+                     ("日前 发电 / 抽水小时", f"{dsum.get('gen_hours', 0):.2f} / {dsum.get('pump_hours', 0):.2f}"),
+                     ("循环效率（日前）", "—" if dsum.get("cycle_eff") is None else f"{dsum['cycle_eff']:.1%}"),
+                     ("日前 发电均价 / 抽水均价（元/MWh）",
+                      f"{dsum.get('avg_gen_price') or 0:.0f} / {dsum.get('avg_pump_price') or 0:.0f}")]
+            if ps:
+                items += [("实时 发电 / 抽水（MWh）", f"{ps['rt']['gen_mwh']:,.0f} / {ps['rt']['pump_mwh']:,.0f}"),
+                          ("电能量结算净收入（万元）", wan(ps.get("energy_net_revenue")), None, "日前 + 实时偏差两部制结算，发电收入 − 抽水电费"),
+                          ("容量电费（万元/日，信息项）", wan(ps.get("capacity_fee_per_day"), 2), None,
+                           "容量电价 × 装机 / 365；按 633 号文由输配电价回收，不进入现货结算（参数为假设值）"),
+                          ("实时 日末上库库容（万m³）", f"{ps['rt'].get('V_up_end') or 0:.0f}")]
+            metric_grid(items, per_row=4)
+            x = [lbl[t] for t in a.period]
+            fig = go.Figure()
+            fig.add_bar(x=x, y=a.P_gen, name="日前 发电 MW", marker_color=TYPE_COLOR["pumped_gen"])
+            fig.add_bar(x=x, y=-a.P_pump, name="日前 抽水 MW（负）", marker_color=TYPE_COLOR["pumped_pump"])
+            if prt_ is not None and len(prt_):
+                b = prt_[prt_.unit == un]
+                fig.add_scatter(x=[lbl[t] for t in b.period], y=b.P_gen - b.P_pump, name="实时 净出力 MW",
+                                line=dict(color=RT_COLOR, dash="dash", width=2))
+            fig.update_layout(barmode="relative")
+            show_fig(style_fig(fig, f"{un} 发电 / 抽水功率", TIME, "功率（MW，抽水为负）", 340), key=f"ps_p_{un}")
+            fig = go.Figure()
+            fig.add_scatter(x=x, y=a.V_up, name="日前 上库库容", line=dict(color=DA_COLOR, width=2))
+            if prt_ is not None and len(prt_):
+                b = prt_[prt_.unit == un]
+                fig.add_scatter(x=[lbl[t] for t in b.period], y=b.V_up, name="实时 上库库容", line=dict(color=RT_COLOR, dash="dash", width=2))
+            if info:
+                for v, nm in ((info["vup_min"], "上库下限"), (info["vup_max"], "上库上限")):
+                    fig.add_hline(y=v, line_dash="dot", line_color="#6b7280", annotation_text=nm, annotation_position="top left")
+            show_fig(style_fig(fig, f"{un} 上库库容（万m³）", TIME, "库容（万m³）", 320), key=f"ps_v_{un}")
+            if FULL and R.get("settlement_by_entity") is not None:
+                se = R["settlement_by_entity"]
+                se = se[se.entity.str.startswith(f"{un}_")]
+                if len(se):
+                    st.markdown("**结算（日前 + 实时偏差）**")
+                    show_df(se.rename(columns={"entity": "主体", "type": "类型", "q_da": "日前电量 MWh", "q_rt": "实际电量 MWh",
+                                               "da_amount": "日前电费 元", "rt_amount": "偏差电费 元", "total": "合计 元",
+                                               "avg_price": "均价 元/MWh"}).drop(columns=["dev_mwh", "dev_abs_mwh", "dev_pnl"], errors="ignore"))
+    st.subheader("水电")
+    hd = R.get("da_hydro")
+    if hd is None or not len(hd):
+        empty_state("该结果没有水电数据。")
+    else:
+        hcfg = {u["id"]: u for u in (uy.get("hydro") or [])}
+        vc = "V_1e4m3" if "V_1e4m3" in hd else ("V" if "V" in hd else None)
+        for hn in hd.station.unique() if "station" in hd else hd.unit.unique():
+            a = hd[(hd.station if "station" in hd else hd.unit) == hn]
+            reg = hcfg.get(hn, {}).get("regulation", "reservoir")
+            fig = go.Figure()
+            pc = "P_mw" if "P_mw" in a else a.columns[2]
+            fig.add_scatter(x=[lbl[t] for t in a.period], y=a[pc], name="日前 出力 MW", line=dict(color=TYPE_COLOR["hydro"]))
+            if vc:
+                fig.add_scatter(x=[lbl[t] for t in a.period], y=a[vc], name="日前 库容 万m³", yaxis="y2", line=dict(color="#6a4c93", dash="dot"))
+            hr = R.get("rt_hydro")
+            if hr is not None and len(hr):
+                b = hr[hr.station == hn]
+                fig.add_scatter(x=[lbl[t] for t in b.period], y=b.P_mw, name="实时 出力 MW", line=dict(color=RT_COLOR, dash="dash"))
+            fig.update_layout(yaxis2=dict(overlaying="y", side="right", title="库容（万m³）", showgrid=False))
+            show_fig(style_fig(fig, f"{hn}（{'库容型' if reg == 'reservoir' else '径流式'}）出力与库容", TIME, "出力（MW）", 320), key=f"hy_{hn}")
+
+# ============================================================================ 线路
+with tabs[5]:
     stage = stage_radio("line_stage")
     ll = ll_da if stage == "日前" else ll_rt
     if ll is None:
@@ -267,7 +351,7 @@ with tabs[4]:
             show_fig(style_fig(fig, f"{stage}线路潮流", TIME, "潮流（MW）", 380, legend="线路"))
 
 # ============================================================================ 拓扑
-with tabs[5]:
+with tabs[6]:
     c1, c2 = st.columns([1, 3])
     with c1:
         stage = st.radio("阶段", ["日前"] + (["实时"] if FULL else []), key="topo_stage")
@@ -317,7 +401,7 @@ with tabs[5]:
     # 资源：形状/颜色 = 类型（偏移到母线右上方）
     xs = [p[0] for p in pos.values()]
     dx = (max(xs) - min(xs)) * 0.028
-    for typ in ["coal", "gas_ccgt", "gas_gt", "hydro", "wind", "pv", "tie", "storage"]:
+    for typ in ["coal", "gas_ccgt", "gas_gt", "hydro", "wind", "pv", "tie", "storage", "pumped"]:
         pts = [(b, uid) for b, lst in ub.items() for uid, ty in lst if ty == typ and b in pos]
         if not pts:
             continue
@@ -335,7 +419,7 @@ with tabs[5]:
         st.caption("该结果无日前线路潮流文件，线路未着色。")
 
 # ============================================================================ 结算
-with tabs[6]:
+with tabs[7]:
     if not FULL:
         st.info("仅日前结果：显示日前中标收入（电量 × 日前 LMP）。全流程结果才有偏差结算。")
         ua = R["da_unit_awards"]

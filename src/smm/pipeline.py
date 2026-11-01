@@ -53,6 +53,7 @@ def write_outputs(res: DAResult, d: Path, make_plots=True) -> dict:
     t["lines"].to_csv(d / "da_line_flows.csv", index=False, float_format="%.4f")
     t["storage"].to_csv(d / "da_storage.csv", index=False, float_format="%.4f")
     t["hydro"].to_csv(d / "da_hydro.csv", index=False, float_format="%.4f")
+    t["pumped"].to_csv(d / "da_pumped.csv", index=False, float_format="%.4f")
     t["system"].to_csv(d / "da_system.csv", index=False, float_format="%.4f")
     if "dispatch_with_slack_units" in t:
         t["dispatch_with_slack_units"].to_csv(d / "da_unit_awards_dispatch_penalty.csv", index=False)

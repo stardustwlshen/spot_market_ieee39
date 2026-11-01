@@ -22,9 +22,11 @@ from smm.config import load_config  # noqa: E402
 
 TYPE_CN = {"coal": "燃煤", "gas_ccgt": "燃气CCGT", "gas_gt": "燃气GT", "hydro": "水电", "wind": "风电", "pv": "光伏",
            "tie": "区外来电", "storage": "储能", "storage_dis": "储能放电", "storage_ch": "储能充电", "load": "负荷",
+           "pumped": "抽水蓄能", "pumped_gen": "抽蓄发电", "pumped_pump": "抽蓄抽水",
            "slack": "平衡松弛"}
 TYPE_COLOR = {"coal": "#5b5b5b", "gas_ccgt": "#e07b39", "gas_gt": "#f2b134", "hydro": "#2f7ed8", "wind": "#3cb371",
-              "pv": "#ffd700", "tie": "#9b59b6", "storage": "#e74c3c", "storage_dis": "#e74c3c", "storage_ch": "#f1948a"}
+              "pv": "#ffd700", "tie": "#9b59b6", "storage": "#e74c3c", "storage_dis": "#e74c3c", "storage_ch": "#f1948a",
+              "pumped": "#0e7c86", "pumped_gen": "#0e7c86", "pumped_pump": "#7fc8cf"}
 MODE_CN = {"da": "仅日前", "full": "全流程"}
 STATUS_CN = {"running": "运行中", "done": "完成", "failed": "失败", "stopped": "已停止"}
 
@@ -37,7 +39,8 @@ LMP_SCALE = "Viridis"                               # 节点电价热力图（�
 LOAD_SCALE = [[0, "#f7fbff"], [0.5, "#fdd49e"], [0.8, "#fc8d59"], [1.0, "#b30000"]]   # 线路负载率
 DIFF_SCALE = "RdBu_r"                               # 差值（以 0 为中心）
 TYPE_SYMBOL = {"coal": "square", "gas_ccgt": "diamond", "gas_gt": "diamond-open", "hydro": "hexagon", "wind": "triangle-up",
-               "pv": "star", "tie": "pentagon", "storage": "cross"}
+               "pv": "star", "tie": "pentagon", "storage": "cross",
+               "pumped": "hourglass"}
 PAGES = [("主页.py", "主页", "🏠", "项目说明与流程"),
          ("pages/1_边界条件.py", "边界条件", "🧩", "场景、负荷/新能源预测、报价、参数"),
          ("pages/2_运行.py", "运行", "▶️", "后台运行日前 / 全流程"),
@@ -331,11 +334,11 @@ def load_result(d: str, mtime: float) -> dict:  # mtime 只用于缓存失效
     def rd(p: Path):
         return pd.read_csv(p) if p.exists() else None
 
-    for k in ("da_unit_awards", "da_nodal_prices", "da_storage", "da_line_flows", "da_system", "da_hydro"):
+    for k in ("da_unit_awards", "da_nodal_prices", "da_storage", "da_line_flows", "da_system", "da_hydro", "da_pumped"):
         R[k] = rd(da_dir / f"{k}.csv")
         if R[k] is None:
             R[k] = rd(d / f"{k}.csv")
-    for k in ("rt_units", "rt_prices", "rt_lines", "rt_storage", "rt_system", "settlement_detail", "settlement_by_entity",
+    for k in ("rt_units", "rt_prices", "rt_lines", "rt_storage", "rt_system", "rt_pumped", "rt_hydro", "settlement_detail", "settlement_by_entity",
               "settlement_by_type", "settlement_line_rent", "settlement_reconciliation"):
         R[k] = rd(d / f"{k}.csv")
     sp = d / "summary.json"
@@ -421,7 +424,7 @@ def topo_layout(case_dir: str) -> dict:
 
 def unit_buses(cfg) -> dict:
     out = {}
-    for grp in ("thermal", "tie", "renewable", "hydro", "storage"):
+    for grp in ("thermal", "tie", "renewable", "hydro", "storage", "pumped"):
         for u in cfg.units.get(grp, []):
             out.setdefault(int(u["bus"]), []).append(u["id"])
     return out
@@ -446,7 +449,9 @@ def bus_resources(snapshot_root: str) -> dict:
     except Exception:  # noqa: BLE001
         return {}
     out: dict = {}
-    for grp in ("thermal", "tie", "renewable", "hydro", "storage"):
+    for grp in ("thermal", "tie", "renewable", "hydro", "storage", "pumped"):
         for u in uy.get(grp, []) or []:
+            if u.get("enabled", True) is False:
+                continue
             out.setdefault(int(u["bus"]), []).append((u["id"], u.get("type") or grp))
     return out

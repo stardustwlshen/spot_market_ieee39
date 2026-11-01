@@ -23,6 +23,7 @@ def _entities(cfg, case, sn, t_index, T):
     ren = {r["id"]: r for r in cfg.units["renewable"]}
     hy = {h["id"]: h for h in cfg.units["hydro"]}
     sto = {s["id"]: s for s in cfg.units["storage"]}
+    ps = {p["id"]: p for p in cfg.units.get("pumped", [])}
     for t in range(T):
         sn_t, k = t_index(t)
         for g, u in th.items():
@@ -34,6 +35,10 @@ def _entities(cfg, case, sn, t_index, T):
         for s, d in sto.items():
             rows.append((f"{s}_放电", "storage_dis", d["bus"], t, sn_t["Pd"][s][k]))
             rows.append((f"{s}_充电", "storage_ch", d["bus"], t, -sn_t["Pc"][s][k]))
+        for pid, d in ps.items():
+            if pid in sn_t.get("Pg", {}):
+                rows.append((f"{pid}_发电", "pumped_gen", d["bus"], t, sn_t["Pg"][pid][k]))
+                rows.append((f"{pid}_抽水", "pumped_pump", d["bus"], t, -sn_t["Pp"][pid][k]))
         for tid, (b, sch) in case.tie.items():
             rows.append((tid, "tie", b, t, float(sch[t])))
         for n, lb in sn_t["load_bus"].items():

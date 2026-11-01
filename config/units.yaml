@@ -21,9 +21,11 @@ renewable:
   - {id: W2, type: wind, bus: 37, cap: 564, profile: wind_b}
   - {id: PV1, type: pv, bus: 33, cap: 652, profile: pv}
 
-hydro:
+hydro:   # 水电（库容型/径流式）。依据与约束对照见 README“水电建模与依据”
   - id: H1
     bus: 34
+    regulation: reservoir                # reservoir 库容型（日及以上调节，报量报价，受日电量/期末库容约束：川V4.0 附件8 约束(16)(17)、7.4.10）
+                                         # run_of_river 径流式（无/日调节池，来水即发，弃水即弃电：川V4.0 7.7.2 方式一、7.4.4）
     n_units: 4
     unit_pmax: 127
     zones: [[45, 60], [85, 127]]        # 稳定运行子区（振动区 60–85 MW 示意）
@@ -36,7 +38,58 @@ hydro:
     seasons:
       wet: {qin: 560, v0: 18000, vmin: 8000, vmax: 20000, v_end: 18000, qeco: 80, e_day: 12000}
       dry: {qin: 220, v0: 15000, vmin: 8000, vmax: 24000, v_end: 15000, qeco: 60, e_day: 5000}
-    spill_penalty: 50                    # 元 / (m3/s · 15min)，弃水惩罚（假设值）
+    spill_penalty: 50                    # 元 / (m3/s · 15min)，弃水惩罚（假设值；川V4.0 附件8 目标函数弃水惩罚项 M_H）
+    e_day_min: null                      # 可选：日发电量下限 MWh（川V4.0 附件8 约束(16) Q_min；null = 不设）
+    qout_max: null                       # 可选：出库流量上限 m3/s（川V4.0 附件2(三) 出库流量限制；null = 不设）
+  - id: H2                               # 可选（默认关闭，仅对比用）：H1 下游小型径流式电站，演示梯级耦合（川V4.0 7.4.9、附件8 约束(17) 上游出库滞时项）
+    enabled: false
+    bus: 20
+    regulation: run_of_river
+    upstream: H1                         # 上游电站（其发电流量+弃水经 lag 个时段到达本站）
+    lag_periods: 4                       # 假设值：1 h 水流滞时（川V4.0 附件2(三)“上下游水流时滞”）
+    n_units: 2
+    unit_pmax: 50
+    zones: [[20, 50]]
+    ramp: 20
+    ut: 1
+    dt: 1
+    water_rate: 5.0                      # 低水头径流站，耗水率大（假设值）
+    pondage: 0                           # 日调节池容积 万m3；0 = 纯径流（库容不变，来水 = 发电流量 + 弃水）
+    init_units_on: 2
+    init_p_unit: 40
+    seasons:
+      wet: {qin: 30, v0: 100, vmin: 100, vmax: 100, v_end: 100, qeco: 80, e_day: 2400}
+      dry: {qin: 10, v0: 100, vmin: 100, vmax: 100, v_end: 100, qeco: 60, e_day: 2400}
+    spill_penalty: 200                   # 假设值：径流站弃水即弃电，罚高于库容站
+    e_day_min: null
+    qout_max: null
+
+pumped:   # 抽水蓄能（全厂级建模；参数均为假设值，取国内 300 MW 级定速机组典型值）。依据见 README“抽水蓄能”
+  - id: PS1
+    enabled: true
+    bus: 2                               # 选址理由见 README：W1 风电(30)经 T2-30 汇入的送出节点，L2-25 限额压缩→弃风集中；本节点无负荷、无其他资源，与储能(16/19/25)、水电(34/20)不重复
+    n_units: 2                           # 2×300 MW（假设值；可改 4 台，600 MW 约占峰荷 10%）
+    unit_gen_max: 300                    # 单机发电额定 MW
+    unit_gen_min: 150                    # 单机发电最小技术出力 MW（约 50%，假设值）
+    unit_pump: 300                       # 单机抽水功率 MW（定速机组抽水功率不可调）
+    variable_speed: false                # true = 变速机组，抽水功率可在 [unit_pump_min, unit_pump] 调节
+    unit_pump_min: 210                   # 仅变速机组使用（约 70%，假设值）
+    e_gen: 9.6                           # 发电电量与上库库容转换系数 MWh/万m3（概念：广东抽蓄细则征求意见稿 3.2(7)/广东2026细则 5.3.1.4 库容电力转换效率；数值假设）
+    e_pump: 12.6                         # 抽水电量与上库库容转换系数 MWh/万m3（征求意见稿 3.2(6)）；综合效率 = e_gen/e_pump ≈ 0.76
+    v_total: 520                         # 上下库总水量 万m3（闭式，下库 = 总量 − 上库）
+    vup_min: 60                          # 上库最低（假设值；对应征求意见稿 3.2(3) 上水库库容下限，不含紧急库容/事故备用）
+    vup_max: 450                         # 上库正常蓄水位对应库容；可用 (450−60)×9.6 ≈ 3744 MWh ≈ 6.2 h 满发
+    vdn_min: 60                          # 下库最低
+    vdn_max: 470                         # 下库最高
+    vup0: 200                            # 运行日初上库库容
+    vup_end: null                        # 日末上库库容硬约束；null = 回到初值 vup0（广东2026细则 5.6(10) 日末库容上下限要求；征求意见稿 7.1.9）
+    switch_gap: 1                        # 抽水↔发电工况转换至少间隔 1 个时段（15 min，假设做法；另按小时统一台数 mode_step_periods，见 modes.yaml）
+    max_gen_starts: 4                    # 每台每日发电启动次数上限（假设值；概念：征求意见稿 4(7)/7.1.13 日最大启停次数）
+    max_pump_starts: 2                   # 每台每日抽水启动次数上限（假设值）
+    start_cost_gen: 2000                 # 元/台次（假设值）
+    start_cost_pump: 4000                # 元/台次（假设值）
+    capacity_price: 600                  # 容量电价 元/kW·年（假设值；发改价格〔2021〕633号 二（二）、三（一）：容量电费纳入输配电价回收，仅展示）
+    init_mode: idle                      # 运行日初工况 idle/gen/pump
 
 storage:   # soc_end_bid：缺省报价中申报的运行日末期望 SOC（假设值；报价 soc_end 置 null = 不申报，由出清决定）
   - {id: ES1, bus: 19, pmax: 100, ecap: 200, eta_c: 0.95, eta_d: 0.95, soc_min: 0.1, soc_max: 0.9, soc0: 0.5, soc_end_bid: 0.5}

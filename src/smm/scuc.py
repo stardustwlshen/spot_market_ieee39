@@ -29,6 +29,7 @@ class ModelData:
     hydro_units: dict = field(default_factory=dict)
     hydro: dict = field(default_factory=dict)
     storage: dict = field(default_factory=dict)
+    pumped: dict = field(default_factory=dict)
 
 
 def _seg_lists(segs):
@@ -64,10 +65,17 @@ def prepare(case: DACase) -> ModelData:
         if b.get("mode") == "planned":
             c = [0.0] * len(c)  # 计划出力/价格接受：不报价，按水量约束优化
         # 同型机组聚合：按“各子区运行台数”建模（整数 0..n），与逐台二进制等价但无对称性
-        md.hydro[h["id"]] = dict(h, **h["seasons"][season], units=[h["id"]])
+        hd = dict(h, **h["seasons"][season], units=[h["id"]])
+        hd.setdefault("regulation", "reservoir")
+        if hd["regulation"] == "run_of_river":
+            # 径流式：库容仅为日调节池（pondage，万m3；0 = 纯径流，来水 = 发电流量 + 弃水），日末回到初值，不受日电量约束
+            v0s = float(hd["v0"])
+            hd["vmin"], hd["vmax"], hd["v_end"] = v0s - float(h.get("pondage", 0) or 0), v0s, v0s
+            hd["e_day"], hd["e_day_min"] = None, None
+        md.hydro[h["id"]] = hd
         if case.init and h["id"] in case.init.get("hydro", {}):
             md.hydro[h["id"]]["v0"] = float(case.init["hydro"][h["id"]])
-        if case.hydro_e_budget and h["id"] in case.hydro_e_budget:
+        if case.hydro_e_budget and h["id"] in case.hydro_e_budget and hd.get("e_day") is not None:
             md.hydro[h["id"]]["e_day"] = max(0.0, float(case.hydro_e_budget[h["id"]]))
         md.hydro_units[h["id"]] = dict(station=h["id"], bus=h["bus"], zones=h["zones"], n_units=n, L=L, c=c,
                                        pmax=h["unit_pmax"] * n)
@@ -84,6 +92,26 @@ def prepare(case: DACase) -> ModelData:
                                    soc_end=b.get("soc_end"), sched=b.get("self_schedule"))   # 申报期末 SOC；None = 未申报，由出清决定
         if case.init and s["id"] in case.init.get("storage", {}):
             md.storage[s["id"]]["soc0"] = float(case.init["storage"][s["id"]]) / s["ecap"]
+    pmode = (cfg.mode.get("pumped") or {}).get("da_mode", "price_quantity")
+    for p in cfg.units.get("pumped", []):
+        b = bids.get(p["id"]) or {}
+        mode = b.get("mode", pmode)
+        N = int(p["n_units"])
+        if mode == "price_quantity":
+            Lg, cg = _seg_lists(b["gen_segments"])
+            Lp, cp = _seg_lists(b["pump_segments"])
+        else:   # dispatch：报量不报价，调度按系统成本最小统一优化（不计报价，发电计极小成本避免退化）
+            Lg, cg, Lp, cp = [p["unit_gen_max"] * N], [EPS_STORAGE], [p["unit_pump"] * N], [0.0]
+        init_mode = p.get("init_mode", "idle")
+        st0 = dict(V=float(p["vup0"]), ng=N if init_mode == "gen" else 0, np=N if init_mode == "pump" else 0,
+                   xg=int(init_mode == "gen"), xp=int(init_mode == "pump"))
+        if case.init and p["id"] in case.init.get("pumped", {}):
+            st0.update(case.init["pumped"][p["id"]])
+        vend = p.get("vup_end")
+        md.pumped[p["id"]] = dict(p, mode=mode, N=N, Lg=Lg, cg=cg, Lp=Lp, cp=cp, init=st0,
+                                  v_lo=max(float(p["vup_min"]), float(p["v_total"]) - float(p["vdn_max"])),
+                                  v_hi=min(float(p["vup_max"]), float(p["v_total"]) - float(p["vdn_min"])),
+                                  v_end=float(p["vup0"] if vend is None else vend))
     return md
 
 
@@ -118,6 +146,9 @@ def build_model(case: DACase, penalties: dict | None = None) -> pyo.ConcreteMode
     m.SD = pyo.Set(dimen=2, initialize=[(s, k) for s, d in md.storage.items() for k in range(len(d["Ld"]))])
     m.SC = pyo.Set(dimen=2, initialize=[(s, k) for s, d in md.storage.items() for k in range(len(d["Lc"]))])
     m.GST = pyo.Set(dimen=2, initialize=[(g, st[0]) for g, d in md.thermal.items() for st in d["states"]])
+    m.PS = pyo.Set(initialize=list(md.pumped))
+    m.PGK = pyo.Set(dimen=2, initialize=[(p, k) for p, d in md.pumped.items() for k in range(len(d["Lg"]))])
+    m.PPK = pyo.Set(dimen=2, initialize=[(p, k) for p, d in md.pumped.items() for k in range(len(d["Lp"]))])
     m._md, m._case, m._pen = md, case, pen
 
     # ---------------- 变量
@@ -158,6 +189,20 @@ def build_model(case: DACase, penalties: dict | None = None) -> pyo.ConcreteMode
     m.rs_dn = pyo.Var(m.S, m.T, domain=pyo.NonNegativeReals)
     m.sR_up = pyo.Var(m.T, domain=pyo.NonNegativeReals)
     m.sR_dn = pyo.Var(m.T, domain=pyo.NonNegativeReals)
+    # 抽水蓄能（全厂级）：工况 0-1（发电 xg / 抽水 xp）+ 各工况运行台数（整数）
+    m.xg = pyo.Var(m.PS, m.T, domain=pyo.Binary)
+    m.xp = pyo.Var(m.PS, m.T, domain=pyo.Binary)
+    m.ngen = pyo.Var(m.PS, m.T, domain=pyo.NonNegativeIntegers, bounds=lambda m, p, t: (0, md.pumped[p]["N"]))
+    m.npump = pyo.Var(m.PS, m.T, domain=pyo.NonNegativeIntegers, bounds=lambda m, p, t: (0, md.pumped[p]["N"]))
+    m.pg = pyo.Var(m.PGK, m.T, domain=pyo.NonNegativeReals)
+    m.pp = pyo.Var(m.PPK, m.T, domain=pyo.NonNegativeReals)
+    m.Pg = pyo.Var(m.PS, m.T, domain=pyo.NonNegativeReals)
+    m.Pp = pyo.Var(m.PS, m.T, domain=pyo.NonNegativeReals)
+    m.Vu = pyo.Var(m.PS, m.T, domain=pyo.NonNegativeReals)
+    m.sg = pyo.Var(m.PS, m.T, domain=pyo.NonNegativeReals)     # 发电启动台次（随整数自然取整）
+    m.sp = pyo.Var(m.PS, m.T, domain=pyo.NonNegativeReals)     # 抽水启动台次
+    m.rp_up = pyo.Var(m.PS, m.T, domain=pyo.NonNegativeReals)
+    m.rp_dn = pyo.Var(m.PS, m.T, domain=pyo.NonNegativeReals)
 
     load_bus = {n: case.load_bus.get(n, np.zeros(T)) for n in md.buses}
     for n in md.buses:
@@ -250,18 +295,101 @@ def build_model(case: DACase, penalties: dict | None = None) -> pyo.ConcreteMode
         d = md.hydro[h]
         return d["water_rate"] * sum(m.Ph[j, t] for j in d["units"])
 
+    hist = (case.init or {}).get("hydro_hist", {})
+
+    def upstream_out(h, t):
+        """梯级：上游电站出库（发电流量 + 弃水）经 lag 个时段到达（川V4.0 附件8 约束(17) 上游项、附件2(三) 上下游时滞）。"""
+        d = md.hydro[h]
+        up = d.get("upstream")
+        if not up:
+            return 0.0
+        tau = t - int(d.get("lag_periods", 0))
+        if tau >= 0 and up in md.hydro:
+            return qgen(up, tau) + m.Qspill[up, tau]
+        a = t0 + tau                                   # 窗口外：取已执行（或日前计划）出库流量；日前之前取初值
+        hh = hist.get(up)
+        if hh is not None and 0 <= a < len(hh) and np.isfinite(hh[a]):
+            return float(hh[a])
+        u = next(x for x in cfg.units["hydro"] if x["id"] == up)
+        return float(u["water_rate"] * u["init_units_on"] * u["init_p_unit"])
+
     def water(m, h, t):
         d = md.hydro[h]
         Vp = d["v0"] if t == 0 else m.V[h, t - 1]
-        return m.V[h, t] == Vp + (d["qin"] - qgen(h, t) - m.Qspill[h, t]) * dt * 0.36
-    m.c_water = pyo.Constraint(m.HS, m.T, rule=water)
+        return m.V[h, t] == Vp + (d["qin"] + upstream_out(h, t) - qgen(h, t) - m.Qspill[h, t]) * dt * 0.36
+    m._upstream_out = upstream_out
+    m.c_water = pyo.Constraint(m.HS, m.T, rule=water)          # 水量平衡（川V4.0 附件8 约束(17)）
     m.c_vlim = pyo.Constraint(m.HS, m.T, rule=lambda m, h, t: pyo.inequality(md.hydro[h]["vmin"], m.V[h, t], md.hydro[h]["vmax"]))
-    m.c_eco = pyo.Constraint(m.HS, m.T, rule=lambda m, h, t: qgen(h, t) + m.Qspill[h, t] >= md.hydro[h]["qeco"])
+    m.c_eco = pyo.Constraint(m.HS, m.T, rule=lambda m, h, t: qgen(h, t) + m.Qspill[h, t] >= md.hydro[h]["qeco"])   # 生态流量
+    m.c_qout = pyo.Constraint(m.HS, m.T, rule=lambda m, h, t: qgen(h, t) + m.Qspill[h, t] <= float(md.hydro[h]["qout_max"])
+                              if md.hydro[h].get("qout_max") else pyo.Constraint.Skip)
     term = case.terminal
-    if term is None or term.get("hydro_vend", False):   # 日前 / 至日末的日内窗口：期末库容硬约束
+    if term is None or term.get("hydro_vend", False):   # 日前 / 至日末的日内窗口：期末库容（水位）控制（川V4.0 附件8 约束(17)、7.4.11）
         m.c_vend = pyo.Constraint(m.HS, rule=lambda m, h: m.V[h, T - 1] >= md.hydro[h]["v_end"])
-    # 实时：水电执行日前计划曲线（甘V3.2 运营细则第六十条(四)：水电报量不报价、执行经校核的计划曲线），不设库容跟踪
-    m.c_eday = pyo.Constraint(m.HS, rule=lambda m, h: sum(m.Ph[j, t] for j in md.hydro[h]["units"] for t in range(T)) * dt <= md.hydro[h]["e_day"] + 1e-6)
+    # 实时：水电执行日前计划曲线（甘肃运营实施细则 第六十条（摘要来源）：水电实时报量不报价、按校核后的自调度曲线；hydro 取其他值（如 sced）时窗口内按库容、振动区约束优化，对应川V4.0 9.2.8、附件10 约束(11)(12)），不设库容跟踪
+    # 日电量约束（川V4.0 附件8 约束(16)、7.4.10）：仅库容型；径流式按来水发电
+    m.c_eday = pyo.Constraint(m.HS, rule=lambda m, h: sum(m.Ph[j, t] for j in md.hydro[h]["units"] for t in range(T)) * dt <= md.hydro[h]["e_day"] + 1e-6
+                              if md.hydro[h].get("e_day") is not None else pyo.Constraint.Skip)
+    m.c_edaymin = pyo.Constraint(m.HS, rule=lambda m, h: sum(m.Ph[j, t] for j in md.hydro[h]["units"] for t in range(T)) * dt >= float(md.hydro[h]["e_day_min"]) - 1e-6
+                                 if (term is None and md.hydro[h].get("e_day_min")) else pyo.Constraint.Skip)
+
+    # ---------------- 抽水蓄能（全厂级，闭式上下库）
+    m.c_pgseg = pyo.Constraint(m.PGK, m.T, rule=lambda m, p, k, t: m.pg[p, k, t] <= md.pumped[p]["Lg"][k])
+    m.c_ppseg = pyo.Constraint(m.PPK, m.T, rule=lambda m, p, k, t: m.pp[p, k, t] <= md.pumped[p]["Lp"][k])
+    m.c_pgsum = pyo.Constraint(m.PS, m.T, rule=lambda m, p, t: m.Pg[p, t] == sum(m.pg[p, k, t] for k in range(len(md.pumped[p]["Lg"]))))
+    m.c_ppsum = pyo.Constraint(m.PS, m.T, rule=lambda m, p, t: m.Pp[p, t] == sum(m.pp[p, k, t] for k in range(len(md.pumped[p]["Lp"]))))
+    m.c_pexcl = pyo.Constraint(m.PS, m.T, rule=lambda m, p, t: m.xg[p, t] + m.xp[p, t] <= 1)        # 全厂不同时抽水与发电
+    m.c_png_hi = pyo.Constraint(m.PS, m.T, rule=lambda m, p, t: m.ngen[p, t] <= md.pumped[p]["N"] * m.xg[p, t])
+    m.c_pnp_hi = pyo.Constraint(m.PS, m.T, rule=lambda m, p, t: m.npump[p, t] <= md.pumped[p]["N"] * m.xp[p, t])
+    m.c_png_lo = pyo.Constraint(m.PS, m.T, rule=lambda m, p, t: m.ngen[p, t] >= m.xg[p, t])
+    m.c_pnp_lo = pyo.Constraint(m.PS, m.T, rule=lambda m, p, t: m.npump[p, t] >= m.xp[p, t])
+    m.c_pgmin = pyo.Constraint(m.PS, m.T, rule=lambda m, p, t: m.Pg[p, t] >= md.pumped[p]["unit_gen_min"] * m.ngen[p, t])
+    m.c_pgmax = pyo.Constraint(m.PS, m.T, rule=lambda m, p, t: m.Pg[p, t] <= md.pumped[p]["unit_gen_max"] * m.ngen[p, t])
+
+    def pump_lo(m, p, t):
+        d = md.pumped[p]
+        lo = d["unit_pump_min"] if d.get("variable_speed") else d["unit_pump"]   # 定速：抽水功率 = 台数 × 额定
+        return m.Pp[p, t] >= lo * m.npump[p, t]
+    m.c_pplo = pyo.Constraint(m.PS, m.T, rule=pump_lo)
+    m.c_pphi = pyo.Constraint(m.PS, m.T, rule=lambda m, p, t: m.Pp[p, t] <= md.pumped[p]["unit_pump"] * m.npump[p, t])
+
+    def xprev(p, key, t):
+        return md.pumped[p]["init"][key] if t < 0 else getattr(m, key)[p, t]
+
+    def gap_gp(m, p, t, k):
+        if t - k < -1:
+            return pyo.Constraint.Skip
+        return xprev(p, "xg", t - k) + m.xp[p, t] <= 1
+    def gap_pg(m, p, t, k):
+        if t - k < -1:
+            return pyo.Constraint.Skip
+        return xprev(p, "xp", t - k) + m.xg[p, t] <= 1
+    gaps = sorted({int(d.get("switch_gap", 1)) for d in md.pumped.values()} or {1})
+    m.PGAP = pyo.Set(initialize=list(range(1, max(gaps) + 1)))
+    # 工况转换间隔：发电→抽水、抽水→发电之间至少停 switch_gap 个时段（转换需数分钟，假设做法）
+    m.c_pgap1 = pyo.Constraint(m.PS, m.T, m.PGAP, rule=lambda m, p, t, k: gap_gp(m, p, t, k) if k <= int(md.pumped[p].get("switch_gap", 1)) else pyo.Constraint.Skip)
+    m.c_pgap2 = pyo.Constraint(m.PS, m.T, m.PGAP, rule=lambda m, p, t, k: gap_pg(m, p, t, k) if k <= int(md.pumped[p].get("switch_gap", 1)) else pyo.Constraint.Skip)
+
+    def nprev(p, key, t):
+        return md.pumped[p]["init"][{"ngen": "ng", "npump": "np"}[key]] if t < 0 else getattr(m, key)[p, t]
+    m.c_psg = pyo.Constraint(m.PS, m.T, rule=lambda m, p, t: m.sg[p, t] >= m.ngen[p, t] - nprev(p, "ngen", t - 1))
+    m.c_psp = pyo.Constraint(m.PS, m.T, rule=lambda m, p, t: m.sp[p, t] >= m.npump[p, t] - nprev(p, "npump", t - 1))
+    pstep = int((cfg.mode.get("pumped") or {}).get("mode_step_periods", 1))
+    if term is None and pstep > 1:   # 工程简化（假设）：抽发台数只在整 pstep 时段边界变化（4 = 小时内工况一致，类比广东 2026 细则储能“小时内充放电状态一致”）
+        m.c_pstep_g = pyo.Constraint(m.PS, m.T, rule=lambda m, p, t: m.ngen[p, t] == m.ngen[p, t - 1] if t % pstep else pyo.Constraint.Skip)
+        m.c_pstep_p = pyo.Constraint(m.PS, m.T, rule=lambda m, p, t: m.npump[p, t] == m.npump[p, t - 1] if t % pstep else pyo.Constraint.Skip)
+    if term is None:   # 日前：每台每日启动次数上限
+        m.c_psg_max = pyo.Constraint(m.PS, rule=lambda m, p: sum(m.sg[p, t] for t in m.T) <= md.pumped[p]["N"] * md.pumped[p]["max_gen_starts"])
+        m.c_psp_max = pyo.Constraint(m.PS, rule=lambda m, p: sum(m.sp[p, t] for t in m.T) <= md.pumped[p]["N"] * md.pumped[p]["max_pump_starts"])
+
+    def pres(m, p, t):
+        d = md.pumped[p]
+        Vp = d["init"]["V"] if t == 0 else m.Vu[p, t - 1]
+        return m.Vu[p, t] == Vp + (m.Pp[p, t] / d["e_pump"] - m.Pg[p, t] / d["e_gen"]) * dt
+    m.c_pres = pyo.Constraint(m.PS, m.T, rule=pres)            # 上库库容平衡（万m3；电量/库容转换系数）
+    m.c_pvlim = pyo.Constraint(m.PS, m.T, rule=lambda m, p, t: pyo.inequality(md.pumped[p]["v_lo"], m.Vu[p, t], md.pumped[p]["v_hi"]))
+    if term is None or term.get("hydro_vend", False):           # 日前：日末上库库容 = 目标值（广东 2026 细则 日末库容约束）
+        m.c_pvend = pyo.Constraint(m.PS, rule=lambda m, p: m.Vu[p, T - 1] == md.pumped[p]["v_end"])
 
     # ---------------- 储能
     # 分段上限直接乘状态变量（逐段 big-M = 段长，比只约束总功率更紧）
@@ -287,16 +415,18 @@ def build_model(case: DACase, penalties: dict | None = None) -> pyo.ConcreteMode
     if term is None:
         S_end = [s for s in m.S if md.storage[s]["soc_end"] is not None]
         m.c_eend = pyo.Constraint(S_end, rule=lambda m, s: m.E[s, T - 1] == float(md.storage[s]["soc_end"]) * md.storage[s]["ecap"])
-    anchors = [] if term is None else [(s, int(t), float(lo), float(hi)) for s, lst in term.get("storage_anchor", {}).items()
-                                       for (t, lo, hi) in lst]
+    # 锚点：储能 E（MWh）与抽蓄上库库容 Vu（万m3，仅抽蓄 rt_mode=hourly_eq）
+    anchors = [] if term is None else (
+        [(s, int(t), float(lo), float(hi), "E") for s, lst in term.get("storage_anchor", {}).items() for (t, lo, hi) in lst]
+        + [(p, int(t), float(lo), float(hi), "Vu") for p, lst in term.get("pumped_anchor", {}).items() for (t, lo, hi) in lst])
     m.A = pyo.Set(initialize=list(range(len(anchors))))
     m._anchors = anchors
     m.A_lo = pyo.Param(m.A, mutable=True, initialize={i: a[2] for i, a in enumerate(anchors)})
     m.A_hi = pyo.Param(m.A, mutable=True, initialize={i: a[3] for i, a in enumerate(anchors)})
     m.sA_up = pyo.Var(m.A, domain=pyo.NonNegativeReals)
     m.sA_dn = pyo.Var(m.A, domain=pyo.NonNegativeReals)
-    m.c_anc_hi = pyo.Constraint(m.A, rule=lambda m, i: m.E[anchors[i][0], anchors[i][1]] <= m.A_hi[i] + m.sA_up[i])
-    m.c_anc_lo = pyo.Constraint(m.A, rule=lambda m, i: m.E[anchors[i][0], anchors[i][1]] >= m.A_lo[i] - m.sA_dn[i])
+    m.c_anc_hi = pyo.Constraint(m.A, rule=lambda m, i: getattr(m, anchors[i][4])[anchors[i][0], anchors[i][1]] <= m.A_hi[i] + m.sA_up[i])
+    m.c_anc_lo = pyo.Constraint(m.A, rule=lambda m, i: getattr(m, anchors[i][4])[anchors[i][0], anchors[i][1]] >= m.A_lo[i] - m.sA_dn[i])
 
     def sched(m, s, t):
         d = md.storage[s]
@@ -310,12 +440,14 @@ def build_model(case: DACase, penalties: dict | None = None) -> pyo.ConcreteMode
     ren_at = {n: [w for w, d in md.ren.items() if d["bus"] == n] for n in md.buses}
     hyd_at = {n: [j for j, d in md.hydro_units.items() if d["bus"] == n] for n in md.buses}
     sto_at = {n: [s for s, d in md.storage.items() if d["bus"] == n] for n in md.buses}
+    ps_at = {n: [p for p, d in md.pumped.items() if d["bus"] == n] for n in md.buses}
     tie_at = {n: sum((sch for (b, sch) in case.tie.values() if b == n), np.zeros(T)) for n in md.buses}
     ref = case.net.ref_bus
 
     def inj_def(m, n, t):
         gen = (sum(m.P[g, t] for g in gens_at[n]) + sum(m.Pw[w, t] for w in ren_at[n])
                + sum(m.Ph[j, t] for j in hyd_at[n]) + sum(m.Pd[s, t] - m.Pc[s, t] for s in sto_at[n])
+               + sum(m.Pg[p, t] - m.Pp[p, t] for p in ps_at[n])
                + float(tie_at[n][t]) + m.shed[n, t] - (m.surplus[t] if n == ref else 0))
         return gen - m.inj[n, t] == float(load_bus[n][t])
     m.c_inj = pyo.Constraint(m.N, m.T, rule=inj_def)            # 对偶 = 节点 LMP × Δt
@@ -372,13 +504,18 @@ def build_model(case: DACase, penalties: dict | None = None) -> pyo.ConcreteMode
         Tdur = float(rcfg.get("T_dur_h", 1.0))
         m.c_rsup_soc = pyo.Constraint(m.S, m.T, rule=lambda m, s, t: m.E[s, t] - md.storage[s]["soc_min"] * md.storage[s]["ecap"] >= (m.Pd[s, t] + m.rs_up[s, t] - m.Pc[s, t]) * Tdur / md.storage[s]["eta_d"])
         m.c_rsdn_soc = pyo.Constraint(m.S, m.T, rule=lambda m, s, t: md.storage[s]["soc_max"] * md.storage[s]["ecap"] - m.E[s, t] >= md.storage[s]["eta_c"] * (m.Pc[s, t] + m.rs_dn[s, t] - m.Pd[s, t]) * Tdur)
+    use_ps = bool((cfg.mode.get("pumped") or {}).get("reserve", False))
+    m.c_rpup = pyo.Constraint(m.PS, m.T, rule=lambda m, p, t: (m.rp_up[p, t] <= md.pumped[p]["unit_gen_max"] * m.ngen[p, t] - m.Pg[p, t] + m.Pp[p, t])
+                              if use_ps else m.rp_up[p, t] == 0)
+    m.c_rpdn = pyo.Constraint(m.PS, m.T, rule=lambda m, p, t: (m.rp_dn[p, t] <= m.Pg[p, t] - md.pumped[p]["unit_gen_min"] * m.ngen[p, t])
+                              if use_ps else m.rp_dn[p, t] == 0)
     mu = float(rcfg.get("mu_RE", 0.0))
     hyd_ok = "hydro" in prov
     m.c_Rup = pyo.Constraint(m.T, rule=lambda m, t: sum(m.r_up[g, t] for g in G_res) + (sum(m.rh_up[j, t] for j in md.hydro_units) if hyd_ok else 0)
-                             + sum(m.rs_up[s, t] for s in md.storage) + mu * sum(float(md.ren[w]["fc"][t]) - m.Pw[w, t] for w in md.ren)
+                             + sum(m.rs_up[s, t] for s in md.storage) + sum(m.rp_up[p, t] for p in md.pumped) + mu * sum(float(md.ren[w]["fc"][t]) - m.Pw[w, t] for w in md.ren)
                              + m.sR_up[t] >= float(case.R_up[t]))
     m.c_Rdn = pyo.Constraint(m.T, rule=lambda m, t: sum(m.r_dn[g, t] for g in G_res) + (sum(m.rh_dn[j, t] for j in md.hydro_units) if hyd_ok else 0)
-                             + sum(m.rs_dn[s, t] for s in md.storage) + m.sR_dn[t] >= float(case.R_dn[t]))
+                             + sum(m.rs_dn[s, t] for s in md.storage) + sum(m.rp_dn[p, t] for p in md.pumped) + m.sR_dn[t] >= float(case.R_dn[t]))
 
     # ---------------- 滚动窗口：固定指定整数变量（日内锁定的启停、实时沿用的水电台数/储能状态）
     for name, vals in (case.fixed or {}).items():
@@ -395,7 +532,7 @@ def build_model(case: DACase, penalties: dict | None = None) -> pyo.ConcreteMode
     return m
 
 
-INT_VARS = ("u", "v", "w", "delta", "u_ch", "u_dis")  # w 为连续变量，固定时一并取整；储能充放状态与启停一起固定
+INT_VARS = ("u", "v", "w", "delta", "u_ch", "u_dis", "xg", "xp", "ngen", "npump")  # w 为连续变量，固定时一并取整；储能充放状态与启停一起固定
 
 
 def _solver(cfg, mip=True):
@@ -494,6 +631,30 @@ def fix_integers(m):
             var[idx].fix(val)
 
 
+def fix_pumped_for_pricing(m, mode: str = "fixed", eps: float = 0.1) -> int:
+    """定价模型中抽蓄出力处理（广东2026现货细则 5.8.2.3 约束(14)、广东抽蓄交易细则征求意见稿 7.3.3“节点电价计算模型”出力上下限）：
+    - fixed：作为“不可定价机组”，发电/抽水功率固定为 SCED 结果（默认，避免水价值退化使抽蓄成为边际机组）；
+    - band：发电功率限制在 SCED 结果 ±eps 比例内，抽水功率固定（定速泵）；
+    - free：不处理（与 SCED 同一 LP，仅供对比）。
+    返回被固定/收紧的变量数。"""
+    if mode == "free" or not hasattr(m, "PS") or len(m.PS) == 0:
+        return 0
+    n = 0
+    for idx in m.Pg:
+        pg, pp = pyo.value(m.Pg[idx]), pyo.value(m.Pp[idx])
+        if not m.Pp[idx].fixed:
+            m.Pp[idx].fix(max(pp, 0.0)); n += 1
+        if m.Pg[idx].fixed:
+            continue
+        if mode == "band" and pg > 1e-6:
+            lo, hi = m.Pg[idx].bounds
+            m.Pg[idx].setlb(max(lo or 0.0, (1 - eps) * pg)); m.Pg[idx].setub(min(hi if hi is not None else 1e9, (1 + eps) * pg))
+        else:
+            m.Pg[idx].fix(max(pg, 0.0))
+        n += 1
+    return n
+
+
 def set_penalties(m, pen):
     """替换罚因子并重建目标（用于定价罚因子重算）。"""
     m._pen = pen
@@ -512,6 +673,9 @@ def _objective_expr(m):
     sp = sum(md.hydro[h]["spill_penalty"] * m.Qspill[h, t] * dt for h in m.HS for t in m.T)
     st = sum(md.storage[s]["cd"][k] * m.pd[s, k, t] * dt for (s, k) in m.SD for t in m.T) \
         - sum(md.storage[s]["cc"][k] * m.pc[s, k, t] * dt for (s, k) in m.SC for t in m.T)
+    ps = sum(md.pumped[p]["cg"][k] * m.pg[p, k, t] * dt for (p, k) in m.PGK for t in m.T) \
+        - sum(md.pumped[p]["cp"][k] * m.pp[p, k, t] * dt for (p, k) in m.PPK for t in m.T) \
+        + sum(md.pumped[p]["start_cost_gen"] * m.sg[p, t] + md.pumped[p]["start_cost_pump"] * m.sp[p, t] for p in m.PS for t in m.T)
     pen = {k: float(v) for k, v in m._pen.items()}
     pn = sum(pen["balance"] * (sum(m.shed[n, t] for n in m.N) + m.surplus[t]) * dt for t in m.T) \
         + sum(pen["line"] * m.sl[l, t] * dt for l in m.L for t in m.T) \
@@ -520,8 +684,9 @@ def _objective_expr(m):
     tp = 0
     if term is not None and len(m.A):
         Pa = float(term.get("anchor_penalty", 1.0e5))
-        tp = sum(Pa * (m.sA_up[i] + m.sA_dn[i]) for i in m.A)
-    return th + nl + su + rw + hy + sp + st + pn + tp
+        Pv = float(term.get("pumped_anchor_penalty", Pa))
+        tp = sum((Pv if m._anchors[i][4] == "Vu" else Pa) * (m.sA_up[i] + m.sA_dn[i]) for i in m.A)
+    return th + nl + su + rw + hy + sp + st + ps + pn + tp
 
 
 def solve_sced(m):
@@ -540,7 +705,8 @@ def solve_sced(m):
 
 
 def storage_simultaneous(m, tol=1e-3) -> int:
-    return sum(1 for s in m.S for t in m.T if pyo.value(m.Pd[s, t]) > tol and pyo.value(m.Pc[s, t]) > tol)
+    return sum(1 for s in m.S for t in m.T if pyo.value(m.Pd[s, t]) > tol and pyo.value(m.Pc[s, t]) > tol) \
+        + sum(1 for p in m.PS for t in m.T if pyo.value(m.Pg[p, t]) > tol and pyo.value(m.Pp[p, t]) > tol)
 
 
 def slack_summary(m) -> dict:
@@ -566,7 +732,7 @@ def relax_anchors(m, tol=1e-6) -> int:
     n = 0
     for i in m.A:
         s, t = m._anchors[i][0], m._anchors[i][1]
-        e = pyo.value(m.E[s, t])
+        e = pyo.value(getattr(m, m._anchors[i][4])[s, t])
         if pyo.value(m.sA_up[i]) > tol:
             m.A_hi[i] = e; n += 1
         if pyo.value(m.sA_dn[i]) > tol:

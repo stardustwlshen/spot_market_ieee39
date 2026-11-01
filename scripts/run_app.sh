@@ -7,7 +7,7 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 PORT="${PORT:-8501}"
-ADDR="${ADDR:-0.0.0.0}"
+ADDR="${ADDR:-127.0.0.1}"  # 默认只监听本机，不对外暴露
 PIDF="outputs/app.pid"
 LOG="outputs/app.log"
 mkdir -p outputs

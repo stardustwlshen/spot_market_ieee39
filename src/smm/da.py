@@ -43,6 +43,11 @@ def run_da(case: DACase, verbose: bool = True) -> DAResult:
     slack = scuc.slack_summary(m)
     pricing = None
     tables = {}
+    pcfg = cfg.mode.get("pumped", {})
+    n_pf = scuc.fix_pumped_for_pricing(m, pcfg.get("pricing", "fixed"), float(pcfg.get("pricing_eps", 0.1)))
+    if n_pf and not scuc.has_slack(m):
+        pricing = scuc.solve_sced(m)
+        log(f"[DA] 抽蓄定价处理（{pcfg.get('pricing', 'fixed')}）后重算价格，用时 {pricing['time_s']:.1f}s")
     if scuc.has_slack(m):
         # 调度用大罚因子；定价改用定价罚因子重算（方案：松弛不把价格推到 1e6）
         tables_dispatch = _tables(m, scuc.extract_prices(m), cfg)
@@ -64,7 +69,7 @@ def _tables(m, prices, cfg):
     if "lmp_clamped" not in prices:
         prices = R.clamp_prices(prices, lim["clear_min"], lim["clear_max"])
     return dict(units=R.unit_results(m, prices), prices=R.price_tables(m, prices, lim["clear_min"], lim["clear_max"]),
-                lines=R.line_results(m, prices), storage=R.storage_results(m), hydro=R.hydro_results(m),
+                lines=R.line_results(m, prices), storage=R.storage_results(m), hydro=R.hydro_results(m), pumped=R.pumped_results(m),
                 system=R.system_results(m, prices))
 
 
@@ -92,6 +97,7 @@ def summarize(res: DAResult) -> dict:
         scuc_time_s=res.scuc_info["time_s"], scuc_gap=res.scuc_info["gap"], sced_time_s=res.sced_info["time_s"],
         slack=res.slack, storage_simultaneous=res.scuc_info.get("storage_simultaneous"),
         pricing_rerun=res.pricing_info is not None,
+        pumped=R.pumped_summary(res.tables.get("pumped"), res.tables["prices"], res.case.cfg.dt),
     )
 
 

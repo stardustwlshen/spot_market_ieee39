@@ -31,7 +31,7 @@ def saved(msg="已保存"):
     st.cache_data.clear()
 
 
-tabs = st.tabs(["场景管理", "负荷曲线", "风/光预测", "报价", "机组/储能/水电", "线路限额", "市场限价与备用", "实时与滚动"])
+tabs = st.tabs(["场景管理", "负荷曲线", "风/光预测", "报价", "机组/储能/水电", "线路限额", "市场限价与备用", "实时与滚动", "抽水蓄能"])
 
 # ============================================================================ 场景管理
 with tabs[0]:
@@ -244,11 +244,17 @@ with tabs[3]:
         tmap = {u["id"]: u["type"] for g in ("thermal", "renewable") for u in cfg.units[g]}
         tmap.update({u["id"]: "hydro" for u in cfg.units["hydro"]})
         tmap.update({u["id"]: "storage" for u in cfg.units["storage"]})
+        tmap.update({u["id"]: "pumped" for u in cfg.units.get("pumped", [])})
         uid = c2.selectbox("主体（机组/场站/储能）", uids, format_func=lambda u: f"{u}（{tmap.get(u, '?')}）")
         ub = draft["units"][uid]
         st.caption("段价单位 元/MWh，段量 MW；各段首尾相接、价格递增（储能充电曲线递减）。市场规则约束见 config/modes.yaml（MKT）。")
-        curves = ["dis_segments", "ch_segments"] if "dis_segments" in ub else ["segments"]
-        cn = {"segments": "报价曲线", "dis_segments": "放电曲线", "ch_segments": "充电曲线"}
+        curves = (["dis_segments", "ch_segments"] if "dis_segments" in ub else
+                  ["gen_segments", "pump_segments"] if "gen_segments" in ub else ["segments"])
+        cn = {"segments": "报价曲线", "dis_segments": "放电曲线", "ch_segments": "充电曲线",
+              "gen_segments": "抽蓄发电曲线", "pump_segments": "抽蓄抽水报价"}
+        if tmap.get(uid) == "pumped":
+            st.caption("抽蓄：发电曲线（价格递增，≤10 段）+ 抽水状态报价（额定抽水功率一个价）；发电首段价须高于抽水价"
+                       "（广东抽蓄交易细则征求意见稿 6.1）。da_mode=dispatch（安全调控）时报价不计入目标。")
         cols = st.columns(len(curves))
         for c, cv in zip(cols, curves):
             with c:
@@ -311,15 +317,24 @@ with tabs[4]:
         re_t = pd.DataFrame([{"id": u["id"], "类型": u["type"], "节点": u["bus"], "装机 MW": u["cap"]} for u in units["renewable"]] +
                             [{"id": u["id"], "类型": "tie", "节点": u["bus"], "装机 MW": u["pmax"]} for u in units["tie"]])
         ree = st.data_editor(re_t, disabled=["id", "类型", "节点"], hide_index=True, key="re_ed")
-    hy = units["hydro"][0]
     with c2:
+        hid = st.selectbox("水电站", [u["id"] for u in units["hydro"]],
+                           format_func=lambda i: next(f"{i}（节点 {u['bus']}，{'库容型' if u.get('regulation', 'reservoir') == 'reservoir' else '径流式'}"
+                                                      f"{'' if u.get('enabled', True) else '，未启用'}）" for u in units["hydro"] if u["id"] == i))
+        hy = next(u for u in units["hydro"] if u["id"] == hid)
+        cc = st.columns(2)
+        hen = cc[0].checkbox("启用", bool(hy.get("enabled", True)), key=f"hy_en_{hid}")
+        hreg = cc[1].selectbox("调节类型", ["reservoir", "run_of_river"], index=0 if hy.get("regulation", "reservoir") == "reservoir" else 1,
+                               format_func={"reservoir": "库容型（日电量+期末库容约束，川V4.0 附件8 约束(16)(17)）",
+                                            "run_of_river": "径流式（来水即发，川V4.0 7.7.2 方式一）"}.get, key=f"hy_reg_{hid}")
         st.markdown(f"**水电 {hy['id']}**（{base['season']} 季参数；来水 qin m³/s，库容 万m³）")
+        hs = hy["seasons"]
         hs = hy["seasons"]
         hye = st.data_editor(pd.DataFrame([{"季节": s, "来水qin": hs[s]["qin"], "初库容v0": hs[s]["v0"], "vmin": hs[s]["vmin"], "vmax": hs[s]["vmax"],
                                            "期末库容v_end": hs[s]["v_end"], "生态流量qeco": hs[s]["qeco"], "日电量e_day": hs[s]["e_day"]} for s in hs]),
-                             disabled=["季节"], hide_index=True, key="hy_ed")
-        hn = st.number_input("台数", 1, 8, int(hy["n_units"]))
-        hp = st.number_input("单台容量 MW", 10.0, 500.0, float(hy["unit_pmax"]))
+                             disabled=["季节"], hide_index=True, key=f"hy_ed_{hid}")
+        hn = st.number_input("台数", 1, 8, int(hy["n_units"]), key=f"hy_n_{hid}")
+        hp = st.number_input("单台容量 MW", 10.0, 500.0, float(hy["unit_pmax"]), key=f"hy_p_{hid}")
     st.markdown("**储能**（soc0 = 初始 SOC；“期末申报SOC(最新报价)”为日前硬约束，修改后会另存为新报价版本；soc_end_bid 仅用于生成缺省报价）")
     try:
         from smm.bids import load_bids as _lb
@@ -349,6 +364,7 @@ with tabs[4]:
                          ("qeco", "生态流量qeco"), ("e_day", "日电量e_day")):
                 s[a] = py(r[b])
         hy["n_units"], hy["unit_pmax"] = int(hn), py(hp)
+        hy["enabled"], hy["regulation"] = bool(hen), hreg
         for u, (_, r) in zip(units["storage"], sse.iterrows()):
             for a, b in (("pmax", "pmax"), ("ecap", "ecap MWh"), ("eta_c", "eta_c"), ("eta_d", "eta_d"), ("soc_min", "soc_min"),
                          ("soc_max", "soc_max"), ("soc0", "初始SOC soc0"), ("soc_end_bid", "soc_end_bid")):
@@ -457,3 +473,66 @@ with tabs[7]:
         sv["mip_rel_gap"], sv["time_limit_s"] = py(dgap), int(dtl)
         sc.write_yaml(name, "base", base)
         saved()
+
+# ============================================================================ 抽水蓄能
+with tabs[8]:
+    pss = units.get("pumped") or []
+    pm = mk.setdefault("pumped", {})
+    if not pss:
+        st.info("本场景 units.yaml 没有抽蓄电站（pumped）。")
+    else:
+        ps = pss[0]
+        st.caption("参数均为假设值（300 MW 级定速机组典型值），依据与条款见 README“抽水蓄能”。库容单位 万m³，转换系数 MWh/万m³。")
+        c = st.columns(4)
+        p_en = c[0].checkbox("启用抽蓄 " + ps["id"], bool(ps.get("enabled", True)))
+        bus_opts = list(range(1, 40))
+        p_bus = c[1].selectbox("接入节点（默认 2：W1 风电送出节点）", bus_opts, index=bus_opts.index(int(ps["bus"])))
+        p_n = c[2].number_input("台数", 1, 8, int(ps["n_units"]))
+        p_vs = c[3].checkbox("变速机组（抽水功率可调）", bool(ps.get("variable_speed", False)))
+        keys = [("unit_gen_max", "单机发电额定 MW"), ("unit_gen_min", "单机发电最小出力 MW"), ("unit_pump", "单机抽水功率 MW"),
+                ("unit_pump_min", "变速机抽水下限 MW"), ("e_gen", "发电转换系数 MWh/万m³"), ("e_pump", "抽水转换系数 MWh/万m³"),
+                ("v_total", "上下库总水量 万m³"), ("vup_min", "上库下限 万m³"), ("vup_max", "上库上限 万m³"), ("vdn_min", "下库下限 万m³"),
+                ("vdn_max", "下库上限 万m³"), ("vup0", "日初上库库容 万m³"), ("max_gen_starts", "每台日发电启动上限"),
+                ("max_pump_starts", "每台日抽水启动上限"), ("start_cost_gen", "发电启动费 元/台次"), ("start_cost_pump", "抽水启动费 元/台次"),
+                ("capacity_price", "容量电价 元/kW·年（仅展示）")]
+        pdf = pd.DataFrame([{"参数": lab, "键": k, "值": float(ps.get(k) or 0)} for k, lab in keys])
+        pe = st.data_editor(pdf, disabled=["参数", "键"], hide_index=True, width="stretch", key="ps_ed")
+        c = st.columns(2)
+        ve_on = c[0].checkbox("设置日末上库库容（不设 = 回到日初值）", ps.get("vup_end") is not None)
+        ve = c[1].number_input("日末上库库容 万m³（广东2026细则 5.6(10)）", 0.0, 2000.0, float(ps.get("vup_end") or ps["vup0"]), disabled=not ve_on)
+        eff = float(pe.loc[pe["键"] == "e_gen", "值"].iloc[0]) / max(float(pe.loc[pe["键"] == "e_pump", "值"].iloc[0]), 1e-9)
+        st.caption(f"综合循环效率 = e_gen / e_pump ≈ {eff:.3f}")
+        st.markdown("**参与方式**（config/modes.yaml → MKT.pumped）")
+        c = st.columns(3)
+        dm_opts = {"price_quantity": "报量报价（默认，广东2026细则 5.1/征求意见稿 第6章）", "dispatch": "安全调控（边界条件，不计报价）"}
+        rt_opts = {"band": "库容带宽（默认，广东2026细则 6.6.2.1）", "fixed_da": "执行日前抽发曲线（同水电）", "hourly_eq": "整点库容=日前（同储能 B2）"}
+        pr_opts = {"fixed": "不可定价：定价取 SCED 出力（默认，5.8.2.3 约束(14)）", "band": "可定价：SCED±ε", "free": "不处理（仅对比）"}
+        dm = c[0].selectbox("日前方式", list(dm_opts), index=list(dm_opts).index(pm.get("da_mode", "price_quantity")), format_func=dm_opts.get)
+        rm = c[1].selectbox("实时方式", list(rt_opts), index=list(rt_opts).index(pm.get("rt_mode", "band")), format_func=rt_opts.get)
+        pr = c[2].selectbox("节点电价计算", list(pr_opts), index=list(pr_opts).index(pm.get("pricing", "fixed")), format_func=pr_opts.get)
+        c = st.columns(3)
+        bw = c[0].number_input("实时库容带宽 万m³（假设值）", 0.0, 500.0, float(pm.get("rt_band_1e4m3", 20)), disabled=rm != "band")
+        peps = c[1].number_input("可定价 ε（假设值）", 0.0, 1.0, float(pm.get("pricing_eps", 0.1)), 0.01, disabled=pr != "band")
+        mstep = c[2].selectbox("抽/发台数决策步长（工程简化）", [1, 2, 4], index=[1, 2, 4].index(int(pm.get("mode_step_periods", 4))),
+                               format_func=lambda v: {1: "15 min", 2: "30 min", 4: "1 h（默认）"}[v])
+        if st.button("保存抽蓄参数与参与方式", type="primary"):
+            ps["enabled"], ps["bus"], ps["n_units"], ps["variable_speed"] = bool(p_en), int(p_bus), int(p_n), bool(p_vs)
+            for _, r in pe.iterrows():
+                v = py(r["值"])
+                ps[r["键"]] = int(v) if r["键"] in ("max_gen_starts", "max_pump_starts") else v
+            ps["vup_end"] = py(ve) if ve_on else None
+            bad = []
+            if ps["vup_min"] >= ps["vup_max"] or not (ps["vup_min"] <= ps["vup0"] <= ps["vup_max"]):
+                bad.append("上库库容 vup_min ≤ vup0 ≤ vup_max")
+            if ps["unit_gen_min"] > ps["unit_gen_max"]:
+                bad.append("发电最小出力 ≤ 额定")
+            if ps["e_gen"] > ps["e_pump"]:
+                bad.append("e_gen ≤ e_pump（循环效率 ≤ 1）")
+            if bad:
+                st.error("参数不合理：" + "；".join(bad))
+            else:
+                sc.write_yaml(name, "units", units)
+                pm["da_mode"], pm["rt_mode"], pm["pricing"] = dm, rm, pr
+                pm["rt_band_1e4m3"], pm["pricing_eps"], pm["mode_step_periods"] = py(bw), py(peps), int(mstep)
+                sc.write_yaml(name, "modes", modes)
+                saved("已保存 units.yaml 与 modes.yaml（台数改变时请到“报价”页按新容量校验/重建抽蓄报价）")
