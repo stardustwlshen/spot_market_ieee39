@@ -114,3 +114,29 @@ def accuracy_summary(df: pd.DataFrame, caps: dict) -> pd.DataFrame:
             nrmse = float(np.sqrt((e ** 2).mean()) / denom)
             rows.append(dict(object=name, stage=st, nrmse=round(nrmse, 4), accuracy=round(1 - nrmse, 4)))
     return pd.DataFrame(rows)
+
+
+# ----------------------------------------------------------------------------- 滚动阶段“当时可见”的预测
+LEAD_ID = 16   # 提前 ≥ 4 h（16 个时段）用日内预测误差；更近按线性过渡到超短期误差（假设做法，见方案第 9 节）
+
+
+def forecast_view(profiles: pd.DataFrame, name: str, issue_t: int, periods, first_actual: bool = False) -> np.ndarray:
+    """在 issue_t 时刻发布、对 periods 各时段的预测（MW）。
+
+    提前量 lead = t − issue_t：lead ≤ 0 且 first_actual → 实际值；1 ≤ lead ≤ 16 时误差由超短期(rt)线性过渡到日内(id)；
+    lead > 16 用日内误差。越临近越准，同一时段的预测随发布时刻推进而收敛到实际值。
+    """
+    a = profiles[f"{name}_actual"].to_numpy()
+    e_id = a - profiles[f"{name}_id"].to_numpy()
+    e_rt = a - profiles[f"{name}_rt"].to_numpy()
+    out = []
+    for t in periods:
+        lead = t - issue_t
+        if lead <= 0:
+            if first_actual:
+                out.append(a[t])
+                continue
+            lead = 1
+        w = min(1.0, (lead - 1) / (LEAD_ID - 1))
+        out.append(a[t] - ((1 - w) * e_rt[t] + w * e_id[t]))
+    return np.clip(np.array(out, float), 0, None)

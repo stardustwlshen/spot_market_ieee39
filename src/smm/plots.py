@@ -29,9 +29,11 @@ TYPE_COLOR = {"tie": "#7f7f7f", "coal": "#4d4d4d", "hydro": "#1f77b4", "wind": "
 
 
 def _xt(ax, T=96):
-    ax.set_xticks(range(0, T + 1, 8))
-    ax.set_xticklabels([f"{h:02d}:00" for h in range(0, 25, 2)], rotation=0, fontsize=8)
-    ax.set_xlim(0, T - 1)
+    step = 8 if T > 24 else 2
+    ticks = list(range(0, T + 1, step))
+    ax.set_xticks(ticks)
+    ax.set_xticklabels([f"{(k*15)//60:02d}:{(k*15)%60:02d}" for k in ticks], rotation=0, fontsize=8)
+    ax.set_xlim(0, max(1, T - 1))
 
 
 def lmp_heatmap(prices: pd.DataFrame, path: Path, title="日前节点电价 LMP（元/MWh）"):
@@ -185,3 +187,104 @@ def forecast_plot(profiles: pd.DataFrame, path: Path, title="日前/日内/实�
     fig.tight_layout()
     fig.savefig(path, dpi=120)
     plt.close(fig)
+
+
+# ----------------------------------------------------------------------------- 全流程（日前→日内→实时→结算）
+SETTLE_LABEL = {"coal": "燃煤", "gas_ccgt": "燃气CCGT", "gas_gt": "燃气GT", "hydro": "水电", "wind": "风电", "pv": "光伏",
+                "storage_dis": "储能放电", "storage_ch": "储能充电", "load": "负荷", "tie": "区外来电", "slack": "平衡松弛"}
+
+
+def da_vs_rt_lmp(da_prices: np.ndarray, rt_prices: np.ndarray, load_da: np.ndarray, load_rt: np.ndarray, buses, path: Path):
+    """上：负荷加权平均 LMP（日前 vs 实时）；中：日前与实时价差最大的 4 个节点；下：RT−DA 价差热力图。"""
+    T = rt_prices.shape[1]
+    da = da_prices[:, :T]
+    wda = (da * load_da[:, :T]).sum(0) / np.maximum(load_da[:, :T].sum(0), 1e-9)
+    wrt = (rt_prices * load_rt).sum(0) / np.maximum(load_rt.sum(0), 1e-9)
+    fig, axes = plt.subplots(3, 1, figsize=(13, 11), gridspec_kw=dict(height_ratios=[1, 1, 1.3]))
+    ax = axes[0]
+    ax.plot(range(T), wda, "-", color="#1f77b4", lw=2, label="日前（负荷加权）")
+    ax.plot(range(T), wrt, "-", color="#d62728", lw=1.5, label="实时（负荷加权）")
+    ax.set_ylabel("元/MWh"); ax.legend(loc="upper left"); ax.grid(alpha=.3)
+    ax.set_title("日前 vs 实时节点电价")
+    ax = axes[1]
+    spread = np.abs(rt_prices - da).max(1)
+    top = np.argsort(-spread)[:4]
+    for k, i in enumerate(top):
+        c = plt.cm.tab10(k)
+        ax.plot(range(T), da[i], "--", color=c, lw=1.2, label=f"母线{buses[i]} 日前")
+        ax.plot(range(T), rt_prices[i], "-", color=c, lw=1.2, label=f"母线{buses[i]} 实时")
+    ax.set_ylabel("元/MWh"); ax.legend(ncol=4, fontsize=8, loc="upper left"); ax.grid(alpha=.3)
+    ax.set_title("价差最大的 4 个节点")
+    ax = axes[2]
+    d = rt_prices - da
+    vm = max(1.0, np.percentile(np.abs(d), 99))
+    im = ax.imshow(d, aspect="auto", cmap="RdBu_r", vmin=-vm, vmax=vm, interpolation="nearest")
+    ax.set_yticks(range(0, len(buses), 2)); ax.set_yticklabels([buses[i] for i in range(0, len(buses), 2)], fontsize=7)
+    ax.set_ylabel("母线"); ax.set_title("实时 − 日前 LMP（元/MWh）")
+    fig.colorbar(im, ax=ax, fraction=0.025)
+    for a in axes:
+        _xt(a, T)
+    fig.tight_layout(); fig.savefig(path, dpi=130); plt.close(fig)
+
+
+def rolling_plans(id_plans: pd.DataFrame, id_sto: pd.DataFrame, rt_units: pd.DataFrame, rt_sto: pd.DataFrame,
+                  da_units: pd.DataFrame, da_sto: pd.DataFrame, path: Path, units=("GT", "CCGT", "H1"), sto="ES1"):
+    """各轮日内计划（细线，颜色随轮次变深）vs 日前（虚线）vs 实时执行（黑线）。"""
+    T = int(rt_units.period.max()) + 1
+    rounds = sorted(id_plans.tau.unique())
+    cmap = plt.cm.viridis
+    panels = list(units) + [f"{sto}:soc"]
+    fig, axes = plt.subplots(len(panels), 1, figsize=(13, 3.0 * len(panels)), sharex=True)
+    for ax, name in zip(axes, panels):
+        if name.endswith(":soc"):
+            s = name.split(":")[0]
+            for k, tau in enumerate(rounds):
+                d = id_sto[(id_sto.tau == tau) & (id_sto.unit == s)]
+                ax.plot(d.period, d.E_mwh, color=cmap(k / max(1, len(rounds) - 1)), lw=0.8, alpha=0.8)
+            d = da_sto[da_sto.unit == s]
+            ax.plot(d.period, d.E_mwh, "--", color="#1f77b4", lw=1.6, label="日前")
+            d = rt_sto[rt_sto.unit == s]
+            ax.plot(d.period, d.E_mwh, "-", color="k", lw=2, label="实时执行")
+            ax.set_ylabel("MWh"); ax.set_title(f"{s} 电量 SOC：各轮日内计划 / 日前 / 实时")
+        else:
+            for k, tau in enumerate(rounds):
+                d = id_plans[(id_plans.tau == tau) & (id_plans.unit == name)]
+                ax.plot(d.period, d.P_mw, color=cmap(k / max(1, len(rounds) - 1)), lw=0.8, alpha=0.8)
+            d = da_units[da_units.unit == name]
+            ax.plot(d.period, d.P_mw, "--", color="#1f77b4", lw=1.6, label="日前")
+            d = rt_units[rt_units.unit == name]
+            ax.plot(d.period, d.P_mw, "-", color="k", lw=2, label="实时执行")
+            ax.set_ylabel("MW"); ax.set_title(f"{name} 出力：各轮日内计划（浅→深 = 早→晚轮次）/ 日前 / 实时")
+        ax.grid(alpha=.3); ax.legend(loc="upper left", fontsize=8)
+        _xt(ax, 96)
+        ax.axvspan(T - 0.5, 95, color="#eeeeee", zorder=0) if T < 96 else None
+    sm = plt.cm.ScalarMappable(cmap=cmap, norm=plt.Normalize(0, max(rounds) / 4))
+    fig.colorbar(sm, ax=axes, fraction=0.015, label="日内轮次触发时刻 (h)")
+    fig.savefig(path, dpi=130, bbox_inches="tight"); plt.close(fig)
+
+
+def settlement_bars(by_type: pd.DataFrame, by_entity: pd.DataFrame, path: Path):
+    """上：按类型的日前结算、实时偏差结算与偏差损益（万元）；下：各主体总结算（万元）。"""
+    bt = by_type[by_type.type != "slack"].copy()
+    bt["label"] = bt.type.map(SETTLE_LABEL).fillna(bt.type)
+    fig, axes = plt.subplots(2, 1, figsize=(13, 10))
+    ax = axes[0]
+    x = np.arange(len(bt)); w = 0.27
+    ax.bar(x - w, bt.da_amount / 1e4, w, label="日前结算（Q_DA×π_DA）", color="#1f77b4")
+    ax.bar(x, bt.rt_amount / 1e4, w, label="实时偏差结算（ΔQ×π_RT）", color="#ff7f0e")
+    ax.bar(x + w, bt.dev_pnl / 1e4, w, label="偏差损益 ΔQ×(π_RT−π_DA)", color="#2ca02c")
+    ax.set_xticks(x); ax.set_xticklabels(bt.label)
+    ax.axhline(0, color="k", lw=.8); ax.set_ylabel("万元（+收入 / −支出）"); ax.legend(); ax.grid(axis="y", alpha=.3)
+    ax.set_title("按类型的两级结算")
+    ax2 = ax.inset_axes([0.62, 0.08, 0.36, 0.38])
+    ax2.bar(x, bt.rt_amount / 1e4, color="#ff7f0e"); ax2.bar(x, bt.dev_pnl / 1e4, 0.4, color="#2ca02c")
+    ax2.set_xticks(x); ax2.set_xticklabels(bt.label, fontsize=6, rotation=45); ax2.tick_params(labelsize=6)
+    ax2.axhline(0, color="k", lw=.5); ax2.set_title("放大：实时偏差/偏差损益", fontsize=8)
+    ax = axes[1]
+    be = by_entity[(by_entity.type != "slack") & (by_entity.total.abs() > 1)].sort_values("total")
+    cols = [TYPE_COLOR.get(t.replace("storage_dis", "storage").replace("storage_ch", "storage"), "#8c564b") if t != "load" else "#17becf"
+            for t in be.type]
+    ax.barh(be.entity, be.total / 1e4, color=cols)
+    ax.axvline(0, color="k", lw=.8); ax.set_xlabel("万元"); ax.set_title("各主体结算总额（日前+实时偏差）")
+    ax.tick_params(axis="y", labelsize=7); ax.grid(axis="x", alpha=.3)
+    fig.tight_layout(); fig.savefig(path, dpi=130); plt.close(fig)

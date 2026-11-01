@@ -1,4 +1,4 @@
-"""生成缺省报价（v 自动递增），校验并另存 CSV。用法：python scripts/make_default_bids.py [--rule-set SC|GS]"""
+"""生成缺省报价（v 自动递增），校验并另存 CSV。用法：python scripts/make_default_bids.py（统一规则 MKT）"""
 import argparse
 import json
 import sys
@@ -9,10 +9,9 @@ from smm.bids import bids_to_csv, default_bids, raise_on_errors, save_bids, vali
 from smm.config import load_config  # noqa: E402
 
 ap = argparse.ArgumentParser()
-ap.add_argument("--rule-set", default=None)
 ap.add_argument("--season", default=None)
 a = ap.parse_args()
-cfg = load_config(a.rule_set, a.season)
+cfg = load_config(season=a.season)
 b = default_bids(cfg)
 iss = validate_bids(cfg, b)
 for i in iss:

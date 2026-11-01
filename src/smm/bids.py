@@ -1,4 +1,4 @@
-"""报价：缺省报价生成、JSON/CSV 读写（带版本号）、按省规则校验（方案第 5 节）。
+"""报价：缺省报价生成、JSON/CSV 读写（带版本号）、按统一规则 MKT 校验（方案第 5 节；参数见 config/modes.yaml）。
 
 报价价格单位 元/MWh，量单位 MW。缺省报价数值均为“假设值”。
 """
@@ -24,58 +24,40 @@ def _segments(bounds, prices):
             for (a, b), c in zip(zip(bounds[:-1], bounds[1:]), prices)]
 
 
-def _thermal_default(u, rs, lim):
+def _thermal_default(u, lim):
+    """煤电/燃气缺省报价（假设值）：首段 0~Pmin，其余 5 段等分（每段 ≥10% 装机），价格为 10 元整数倍且严格递增。"""
     pmin, pmax = u["pmin"], u["pmax"]
-    if rs == "SC":
-        n_rest = 5  # A2(煤电/燃气)=20%：剩余区间分 5 段，每段约 11% 装机
-        base = {"coal": 300, "gas_ccgt": 520, "gas_gt": 650}[u["type"]]
-        step = {"coal": [0, 20, 45, 75, 110], "gas_ccgt": [0, 20, 40, 60, 80], "gas_gt": [0, 20, 40, 70, 100]}[u["type"]]
-        rest_prices = [base + s for s in step]
-        first_price = lim["bid_min"] if u["type"] == "coal" else rest_prices[0] - 100
-    else:
-        n_rest = 3  # 每段 ≥10% 装机
-        base = {"coal": 300, "gas_ccgt": 440, "gas_gt": 480}[u["type"]]
-        step = {"coal": [0, 30, 60], "gas_ccgt": [0, 20, 40], "gas_gt": [0, 10, 20]}[u["type"]]
-        rest_prices = [base + s for s in step]
-        first_price = lim["bid_min"] if u["type"] == "coal" else rest_prices[0] - 50
+    n_rest = 5
+    base = {"coal": 300, "gas_ccgt": 520, "gas_gt": 650}[u["type"]]
+    step = {"coal": [0, 20, 40, 70, 110], "gas_ccgt": [0, 20, 40, 60, 80], "gas_gt": [0, 20, 40, 70, 100]}[u["type"]]
+    rest_prices = [base + s for s in step]
+    first_price = lim["bid_min"] if u["type"] == "coal" else rest_prices[0] - 100
     bounds = [0.0, pmin] + list(np.linspace(pmin, pmax, n_rest + 1)[1:])
     return dict(mode="price_quantity", segments=_segments(bounds, [first_price] + rest_prices),
                 startup_cost=dict(u["startup"]), noload_cost=float(u["noload"]))
 
 
 def default_bids(cfg: Config, version: int = 1) -> dict:
-    rs, lim = cfg.rule_set, cfg.mode["price_limits"]
+    lim = cfg.mode["price_limits"]
+    states = set(cfg.mode["startup_states"]) | {"cold"}
     units = {}
     for u in cfg.units["thermal"]:
-        b = _thermal_default(u, rs, lim)
-        if rs == "SC":
-            b["startup_cost"].pop("very_hot", None)  # 四川三态
+        b = _thermal_default(u, lim)
+        b["startup_cost"] = {k: v for k, v in b["startup_cost"].items() if k in states}
         units[u["id"]] = b
     for r in cfg.units["renewable"]:
-        cap = r["cap"]
-        if rs == "SC":
-            bounds, prices = np.linspace(0, cap, 6), [0, 20, 40, 60, 80]
-        else:
-            bounds, prices = np.linspace(0, cap, 4), [40, 50, 60]
-        units[r["id"]] = dict(mode="price_quantity", segments=_segments(bounds, prices), avail_pmax=None)
+        units[r["id"]] = dict(mode="price_quantity", segments=_segments(np.linspace(0, r["cap"], 6), [0, 20, 40, 60, 80]),
+                              avail_pmax=None)
     for h in cfg.units["hydro"]:
         cap = h["n_units"] * h["unit_pmax"]
-        if rs == "SC":
-            units[h["id"]] = dict(mode="price_quantity", hydro_bid=dict(method="segments", season=cfg.base["season"]),
-                                  segments=_segments(np.linspace(0, cap, 6), [100, 130, 160, 200, 240]))
-        else:
-            units[h["id"]] = dict(mode="planned", hydro_bid=dict(method="planned", season=cfg.base["season"]),
-                                  segments=_segments([0, cap], [lim["bid_min"]]))
+        units[h["id"]] = dict(mode="price_quantity", hydro_bid=dict(method="segments", season=cfg.base["season"]),
+                              segments=_segments(np.linspace(0, cap, 6), [100, 130, 160, 200, 240]))
     for s in cfg.units["storage"]:
-        n = 3
-        bnd = np.linspace(0, s["pmax"], n + 1)
-        if rs == "SC":
-            dis, ch = [420, 450, 480], [300, 280, 260]
-        else:
-            dis, ch = [420, 440, 460], [200, 180, 160]
-        units[s["id"]] = dict(mode="price_quantity", dis_segments=_segments(bnd, dis), ch_segments=_segments(bnd, ch),
+        bnd = np.linspace(0, s["pmax"], 4)
+        units[s["id"]] = dict(mode="price_quantity", dis_segments=_segments(bnd, [420, 450, 480]),
+                              ch_segments=_segments(bnd, [300, 280, 260]),
                               soc_min=s["soc_min"], soc_max=s["soc_max"], soc_end=s["soc_end"], self_schedule=None)
-    return dict(date=cfg.base["date"], rule_set=rs, version=version,
+    return dict(date=cfg.base["date"], rule_set=cfg.rule_set, version=version,
                 created=_dt.datetime.now().isoformat(timespec="seconds"), note="缺省报价（假设值）", units=units)
 
 
@@ -156,7 +138,8 @@ def _unit_meta(cfg: Config) -> dict:
 
 
 def _check_curve(uid, segs, cap, typ, cfg, issues, curve="segments", decreasing=False):
-    rs, m, lim = cfg.rule_set, cfg.mode, cfg.mode["price_limits"]
+    """按统一规则 MKT 校验一条量价曲线（参数见 config/modes.yaml，各项注明川/甘来源）。"""
+    m, lim = cfg.mode, cfg.mode["price_limits"]
     E = lambda rule, msg, lvl="error": issues.append(Issue(uid, lvl, rule, msg))
     if not segs:
         E("段数", f"{curve} 为空")
@@ -165,10 +148,8 @@ def _check_curve(uid, segs, cap, typ, cfg, issues, curve="segments", decreasing=
     is_sto = typ == "storage"
     nmin = m["segments"]["storage_min" if is_sto else "min"]
     nmax = m["segments"]["storage_max" if is_sto else "max"]
-    # 计划/价格接受的水电不受段数下限约束
     if not (n >= nmin or typ == "hydro_planned") or n > nmax:
         E("段数", f"{curve} 共 {n} 段，要求 {nmin}–{nmax}")
-    # 连续性与容量
     if abs(segs[0]["p_start"]) > 1e-6:
         E("分段连续", f"{curve} 首段须从 0 开始")
     for a, b in zip(segs[:-1], segs[1:]):
@@ -183,42 +164,35 @@ def _check_curve(uid, segs, cap, typ, cfg, issues, curve="segments", decreasing=
     for p in prices:
         if p < lim["bid_min"] - 1e-9 or p > lim["bid_max"] + 1e-9:
             E("申报限价", f"{curve} 价格 {p} 超出 [{lim['bid_min']}, {lim['bid_max']}]")
-    diffs = np.diff(prices)
-    sign = -1 if decreasing else 1
-    if rs == "SC":
-        if np.any(sign * diffs <= 0):
-            E("价格严格单调", f"{curve} 价格须严格{'递减' if decreasing else '递增'}：{prices}")
-        start = 1 if typ == "coal" else 0
-        if typ == "coal" and n >= 2 and prices[1] - prices[0] < m["beta0"]:
-            E("β0", f"第2段−首段 = {prices[1]-prices[0]} < β0={m['beta0']}")
-        for d in (sign * diffs)[start:]:
-            if d > 0 and (d < m["beta1"] or d > m["beta2"]):
-                E("β1/β2", f"{curve} 相邻段价差 {d:.0f} 不在 [{m['beta1']}, {m['beta2']}]")
-        a1 = 0.10 if is_sto else m["seg_len_A1"]
-        a2 = m["seg_len_A2"].get("storage" if is_sto else typ, 1.0)
-        for k, s in enumerate(segs):
-            if typ in THERMAL_TYPES and k == 0:
-                continue  # 首段 0~最小可调出力（燃气同样处理，四川原规则燃气为计划机组，假设做法）
-            L = (s["p_end"] - s["p_start"]) / cap
-            if L < a1 - 1e-9 or L > a2 + 1e-9:
-                E("段长 A1/A2", f"{curve} 第{k+1}段长度 {L:.1%} 装机，不在 [{a1:.0%}, {a2:.0%}]")
-    else:  # GS
-        if np.any(sign * diffs < 0):
-            E("价格单调", f"{curve} 价格须单调非{'增' if decreasing else '减'}：{prices}")
-        step = m["price_step"]
+    sd = (-1 if decreasing else 1) * np.diff(prices)
+    word = "递减" if decreasing else "递增"
+    if m.get("price_strict_increasing", True):
+        if np.any(sd <= 0):
+            E("价格严格单调", f"{curve} 价格须严格{word}：{prices}")
+    elif np.any(sd < 0):
+        E("价格单调", f"{curve} 价格须单调{word}：{prices}")
+    step = m.get("price_step")
+    if step:
         for p in prices:
             if abs(p / step - round(p / step)) > 1e-9:
                 E("价格步长", f"{curve} 价格 {p} 不是 {step} 元的整数倍")
-        for k, s in enumerate(segs):
-            if typ == "coal" and k == 0:
-                continue
-            if (s["p_end"] - s["p_start"]) < m["min_seg_frac"] * cap - 1e-6:
-                E("每段≥10%装机", f"{curve} 第{k+1}段 {s['p_end']-s['p_start']:.1f} MW < {m['min_seg_frac']:.0%}×{cap}")
-    if typ == "coal":
+    mx = m.get("max_adjacent_step")
+    if mx:
+        start = 1 if typ in THERMAL_TYPES else 0      # 火电首段（0~Pmin）到第 2 段的价差不限
+        for d in sd[start:]:
+            if d > mx + 1e-9:
+                E("相邻段价差", f"{curve} 相邻段价差 {d:.0f} > {mx}")
+    frac = m.get("min_seg_frac", 0.0)
+    for k, s in enumerate(segs):
+        if typ in THERMAL_TYPES and k == 0:
+            continue                                   # 首段 0~最小技术出力
+        if typ == "hydro_planned":
+            continue
+        if (s["p_end"] - s["p_start"]) < frac * cap - 1e-6:
+            E("段长下限", f"{curve} 第{k+1}段 {s['p_end']-s['p_start']:.1f} MW < {frac:.0%}×{cap}")
+    if typ == "coal" and m.get("coal_first_segment") == "pmin":
         if abs(segs[0]["p_end"] - cfg_pmin(cfg, uid)) > 1e-6:
             E("煤电首段", f"首段须为 0~最小出力 {cfg_pmin(cfg, uid)}")
-        if rs == "SC" and abs(prices[0] - lim["bid_min"]) > 1e-9:
-            E("煤电首段", f"四川首段须按下限价 {lim['bid_min']} 报价")
 
 
 def cfg_pmin(cfg, uid):
@@ -257,7 +231,7 @@ def validate_bids(cfg: Config, bids: dict) -> list[Issue]:
             _check_curve(uid, b.get("ch_segments"), mt["cap"], typ, cfg, issues, "ch_segments", decreasing=True)
             if b.get("dis_segments") and b.get("ch_segments"):
                 if min(s["price"] for s in b["dis_segments"]) <= max(s["price"] for s in b["ch_segments"]):
-                    lvl = "error" if cfg.rule_set == "SC" else "warn"
+                    lvl = cfg.mode.get("storage_dis_gt_ch", "error")
                     issues.append(Issue(uid, lvl, "放电首段>充电末段", "放电最低价须高于充电最高价"))
             continue
         t2 = "hydro_planned" if (typ == "hydro" and mode == "planned") else typ

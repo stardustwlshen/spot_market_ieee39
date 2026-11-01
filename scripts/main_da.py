@@ -1,8 +1,7 @@
 """日前出清主程序。
 
 用法：
-  python scripts/main_da.py                      # 四川规则集、丰水期、最新版本报价
-  python scripts/main_da.py --rule-set GS        # 甘肃规则集
+  python scripts/main_da.py                      # 统一规则 MKT、丰水期、最新版本报价
   python scripts/main_da.py --bid-version 1 --season dry
 """
 import argparse
@@ -16,13 +15,12 @@ from smm.da import run_da  # noqa: E402
 from smm.pipeline import out_dir, prepare, print_summary, write_outputs  # noqa: E402
 
 ap = argparse.ArgumentParser()
-ap.add_argument("--rule-set", default=None)
 ap.add_argument("--season", default=None)
 ap.add_argument("--bid-version", type=int, default=None)
 ap.add_argument("--time-limit", type=float, default=None)
 ap.add_argument("--no-plots", action="store_true")
 a = ap.parse_args()
-cfg = load_config(a.rule_set, a.season)
+cfg = load_config(season=a.season)
 if a.time_limit:
     cfg.base["solver"]["time_limit_s"] = a.time_limit
 case = prepare(cfg, a.bid_version)

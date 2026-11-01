@@ -1,42 +1,61 @@
-# 省规则集参数。来源见方案第 2、9 节；未查到原文的数值均标注为假设值。
-SC:
-  price_limits: {bid_min: -50, bid_max: 800, clear_min: -50, clear_max: 800}   # V4.0 附件3
-  segments: {min: 5, max: 10, storage_min: 1, storage_max: 5}
-  beta0: 85            # 第2段−首段 ≥ β0
-  beta1: 20            # 后续段差下限
-  beta2: 150           # 后续段差上限
-  seg_len_A1: 0.05     # 段长系数下限（储能 0.10）
-  seg_len_A2: {hydro: 1.0, wind: 1.0, pv: 1.0, coal: 0.2, gas_ccgt: 0.2, gas_gt: 0.2, storage: 0.4}
-  startup_states: {hot: 8, warm: 72}          # h：<8h 热，8–72h 温，>72h 冷
-  demand_bid: false
-  tie_mode: fixed
-  reserve:
-    rho_L: 0.03        # 假设值（参考 DL/T 5429-2009 负荷备用 2%–5%）
-    rho_RE: 0.10       # 假设值（未查到规则数值）
-    rho_L_dn: 0.03     # 假设值
-    rho_RE_dn: 0.0     # 假设值
-    include_ctg: true  # + R_ctg = max(ΔP_N-1, 最大单机)
-    mu_RE: 0.0         # 风光计入正备用的置信因子（四川不用）
+# 市场规则参数：一套自有统一规则 MKT（参考四川、甘肃现行规则取值，不再分省口径）。
+# 每项注明参考来源：
+#   川V4.0   = 《四川电力现货市场交易实施细则（V4.0）》2025-11（nxepta.com）
+#   川结算   = 《四川电力市场结算细则 V1.0》
+#   甘V3.2   = 《甘肃电力现货市场管理实施细则（V3.2）》/《运营实施细则》（gxt.gansu.gov.cn）
+#   甘工作方案 = 《甘肃电力现货市场结算运行工作方案》
+#   基本规则 = 《电力现货市场基本规则（试行）》发改能源规〔2023〕1217号
+# 未查到原文数值、由本项目设定的均标“假设值”。所有参数可在此修改。
+MKT:
+  name: 自有统一现货市场规则（参考川、甘）
+  pricing: LMP                       # 节点边际电价（甘V3.2 发电侧节点电价；川为系统电价，本项目统一用 LMP）
+  price_limits:                      # 元/MWh
+    bid_min: 0                       # 假设值：取川(−50, 川V4.0 附件3)与甘(40, 甘发改价格规〔2025〕4号)之间
+    bid_max: 800                     # 川V4.0 附件3（甘申报上限 500、出清上限 650）
+    clear_min: 0                     # 同 bid_min（假设值）
+    clear_max: 800                   # 川V4.0 附件3
+  segments:
+    min: 3                           # 假设值：川 5–10 段，甘 1–10 段，取 3
+    max: 10                          # 两省一致：最多 10 段
+    storage_min: 1
+    storage_max: 5                   # 川V4.0 储能 1–5 段（甘 1–10）
+  price_strict_increasing: true      # 川V4.0：各段价格严格递增（甘为单调非减）
+  price_step: 10                     # 甘V3.2：价格步长 10 元/MWh
+  min_seg_frac: 0.10                 # 甘V3.2：每段 ≥ 装机 10%（川 A1=5%，储能 10%）
+  max_adjacent_step: 150             # 川V4.0 β2=150：相邻段价差上限（煤电首段→第 2 段除外）
+  coal_first_segment: pmin           # 两省一致：煤电首段为 0~最小技术出力
+  storage_dis_gt_ch: error           # 川V4.0：放电最低价须高于充电最高价（不满足即报错）
+  startup_states: {hot: 8, warm: 72} # 川V4.0 三态（<8h 热、8–72h 温、>72h 冷）；甘V3.2 另分极热态 1h，此处不分
+  demand_bid: false                  # 第一阶段负荷固定（两省用户侧报量不报价/暂不定价）
+  tie_mode: fixed                    # 区外来电按联络线计划固定（川V4.0 7.5.2 / 甘V3.2 联络线终计划作边界）
+  reserve:                           # R⁺ = ρ_L·D̂ + ρ_RE·P̂_RE + R_ctg；R⁻ = ρ⁻_L·D̂ + ρ⁻_RE·P̂_RE（基本规则第四十六条要求设正负备用）
+    rho_L: 0.03                      # 假设值（DL/T 5429-2009 负荷备用 2%–5%）
+    rho_RE: 0.10                     # 假设值（两省规则未给数值）
+    rho_L_dn: 0.03                   # 假设值
+    rho_RE_dn: 0.0                   # 假设值
+    include_ctg: true                # 甘V3.2：正备用 ≥ max(单一交流元件故障最大功率缺额, 最大单机)
+    mu_RE: 0.0                       # 风光计入正备用的置信因子（甘V3.2 有该项但未给数值，取 0，假设值）
     storage_reserve: false
-    providers: [coal, gas_ccgt, gas_gt, hydro]   # 四川：火电、水电（燃气按火电计）
-  penalties: {balance: 1.0e+6, line: 1.0e+5, reserve: 1.0e+5}   # 附件8 未给数值，自定
-  pricing_penalties: {balance: 1.0e+4, line: 2000, reserve: 2000}  # 假设值
-GS:
-  price_limits: {bid_min: 40, bid_max: 500, clear_min: 40, clear_max: 650}    # 甘发改价格规〔2025〕4号
-  segments: {min: 1, max: 10, storage_min: 1, storage_max: 10}
-  min_seg_frac: 0.10   # 每段 ≥ 装机 10%
-  price_step: 10       # 价格步长 10 元/MWh
-  startup_states: {very_hot: 1, hot: 10, warm: 72}
-  demand_bid: false    # 第一阶段负荷固定（用户报价留到后续）
-  tie_mode: fixed
-  reserve:
-    rho_L: 0.0
-    rho_RE: 0.0
-    rho_L_dn: 0.03     # 假设值
-    rho_RE_dn: 0.0
-    include_ctg: true  # R⁺ = max(单一交流元件故障最大功率缺额, 最大单机)（V3.2）
-    mu_RE: 0.0         # 置信因子数值未查到，默认 0（假设值）
-    storage_reserve: false
-    providers: [coal, gas_ccgt, gas_gt, hydro]   # 甘肃计全部开机机组；风光经 mu_RE 计入
-  penalties: {balance: 1.0e+6, line: 1.0e+5, reserve: 1.0e+5}   # 工作方案稿：日前平衡 1e6、断面 1e5
-  pricing_penalties: {balance: 1.0e+4, line: 500, reserve: 500}  # 节点电价计算罚因子 500
+    providers: [coal, gas_ccgt, gas_gt, hydro]
+  penalties: {balance: 1.0e+6, line: 1.0e+5, reserve: 1.0e+5}       # 甘工作方案：平衡 1e6、断面 1e5；备用 1e5 为假设值
+  pricing_penalties: {balance: 1.0e+4, line: 500, reserve: 500}     # 甘V3.2：节点电价计算断面罚因子 500；平衡 1e4 为假设值
+  terminal_penalty: 1000             # 假设值：日内/实时窗口末 SOC、库容软目标的偏离罚（元/MWh 当量）
+  intraday:                          # 日内滚动优化（不出清结算价格；本项目输出参考价）
+    interval_h: 1                    # 假设值：川V4.0 8.1 为“边界变化时触发”，未规定固定周期；按每 1 h 定时触发
+    window: day_end                  # 川V4.0 8.1、8.3.1：运行日剩余时段 / 预测至当天 24 点
+    granularity_min: 15              # 川V4.0 8.2.5：96 点
+    lock_types: [coal, gas_ccgt]     # 川V4.0 8.2.4：按日前开/停机曲线执行；基本规则第五十四条：日内滚动优化快速启停资源
+    free_types: [gas_gt, hydro, storage]
+    lead_issue_periods: 1            # 假设值：日内在整点前 15 min 读取边界（预测提前 ≥1 个时段）
+    mip_rel_gap: 0.005               # 假设值（求解参数）
+    time_limit_s: 60
+  realtime:
+    interval_min: 15                 # 川V4.0 9.1、甘V3.2 第六十三条：15 分钟
+    lookahead_h: 2                   # 甘V3.2 第六十三条/运营细则第五十九条：滚动出清未来 15 min–2 h（川V4.0 写“未来 M 小时”，未给 M 值）
+    binding_periods: 1               # 只执行首时段（川V4.0 附件1(10)：决定未来 15 min 最终出力）
+    first_period_actual: true        # 首时段用实际负荷/风光（仿真中以实际值代替 T−15 的超短期预测，假设做法）
+    storage_state: redecide          # redecide：每轮先解小 MIP 定储能充放状态，再固定求 LP 出价；fixed：沿用日内计划状态
+    hydro_units: from_intraday       # 水电各子区开机台数沿用日内计划
+  settlement:
+    scheme: two_settlement           # 日前电量×日前 LMP + (实际−日前)×实时 LMP（甘工作方案两级结算）
+    interval_min: 15                 # 假设值：统一 15 min（川结算：储能 15 min、其他 1 h；甘 15 min）

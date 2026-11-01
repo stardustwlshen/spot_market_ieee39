@@ -39,14 +39,17 @@ def _seg_lists(segs):
 
 def prepare(case: DACase) -> ModelData:
     cfg, bids = case.cfg, case.bids["units"]
-    md = ModelData(T=cfg.T, dt=cfg.dt, buses=case.net.buses, lines=list(case.net.branches.branch_id))
+    md = ModelData(T=case.T or cfg.T, dt=cfg.dt, buses=case.net.buses, lines=list(case.net.branches.branch_id))
     states_cfg = cfg.mode["startup_states"]  # 名称 -> 阈值 h（升序）
     for u in cfg.units["thermal"]:
         b = bids[u["id"]]
         L, c = _seg_lists(b["segments"])
         su = b["startup_cost"]
         states = sorted(states_cfg.items(), key=lambda kv: kv[1])
-        md.thermal[u["id"]] = dict(u, L=L, c=c, noload_bid=b.get("noload_cost", u["noload"]),
+        uu = dict(u)
+        if case.init and u["id"] in case.init.get("thermal", {}):
+            uu["init"] = dict(case.init["thermal"][u["id"]])
+        md.thermal[u["id"]] = dict(uu, L=L, c=c, noload_bid=b.get("noload_cost", u["noload"]),
                                    states=[(k, int(round(h / cfg.dt)), su[k]) for k, h in states],
                                    cold=su["cold"])
     for r in cfg.units["renewable"]:
@@ -62,6 +65,10 @@ def prepare(case: DACase) -> ModelData:
             c = [0.0] * len(c)  # 计划出力/价格接受：不报价，按水量约束优化
         # 同型机组聚合：按“各子区运行台数”建模（整数 0..n），与逐台二进制等价但无对称性
         md.hydro[h["id"]] = dict(h, **h["seasons"][season], units=[h["id"]])
+        if case.init and h["id"] in case.init.get("hydro", {}):
+            md.hydro[h["id"]]["v0"] = float(case.init["hydro"][h["id"]])
+        if case.hydro_e_budget and h["id"] in case.hydro_e_budget:
+            md.hydro[h["id"]]["e_day"] = max(0.0, float(case.hydro_e_budget[h["id"]]))
         md.hydro_units[h["id"]] = dict(station=h["id"], bus=h["bus"], zones=h["zones"], n_units=n, L=L, c=c,
                                        pmax=h["unit_pmax"] * n)
     for s in cfg.units["storage"]:
@@ -75,6 +82,8 @@ def prepare(case: DACase) -> ModelData:
         md.storage[s["id"]] = dict(s, mode=mode, Ld=Ld, cd=cd, Lc=Lc, cc=cc,
                                    soc_min=b.get("soc_min", s["soc_min"]), soc_max=b.get("soc_max", s["soc_max"]),
                                    soc_end=b.get("soc_end", s["soc_end"]), sched=b.get("self_schedule"))
+        if case.init and s["id"] in case.init.get("storage", {}):
+            md.storage[s["id"]]["soc0"] = float(case.init["storage"][s["id"]]) / s["ecap"]
     return md
 
 
@@ -92,7 +101,8 @@ def build_model(case: DACase, penalties: dict | None = None) -> pyo.ConcreteMode
     pen = dict(cfg.mode["penalties"]) if penalties is None else penalties
     rcfg = cfg.mode["reserve"]
     T, dt = md.T, md.dt
-    m = pyo.ConcreteModel("DA_SCUC")
+    m = pyo.ConcreteModel(f"{case.stage}_SCUC")
+    t0 = int(case.t0)
     m.T = pyo.RangeSet(0, T - 1)
     m.N = pyo.Set(initialize=md.buses)
     m.L = pyo.Set(initialize=md.lines)
@@ -247,7 +257,17 @@ def build_model(case: DACase, penalties: dict | None = None) -> pyo.ConcreteMode
     m.c_water = pyo.Constraint(m.HS, m.T, rule=water)
     m.c_vlim = pyo.Constraint(m.HS, m.T, rule=lambda m, h, t: pyo.inequality(md.hydro[h]["vmin"], m.V[h, t], md.hydro[h]["vmax"]))
     m.c_eco = pyo.Constraint(m.HS, m.T, rule=lambda m, h, t: qgen(h, t) + m.Qspill[h, t] >= md.hydro[h]["qeco"])
-    m.c_vend = pyo.Constraint(m.HS, rule=lambda m, h: m.V[h, T - 1] >= md.hydro[h]["v_end"])
+    term = case.terminal
+    m.sV = pyo.Var(m.HS, domain=pyo.NonNegativeReals)
+    m.sE_up = pyo.Var(m.S, domain=pyo.NonNegativeReals)
+    m.sE_dn = pyo.Var(m.S, domain=pyo.NonNegativeReals)
+    if term is None:  # 日前：硬约束
+        for x in list(m.sV.values()) + list(m.sE_up.values()) + list(m.sE_dn.values()):
+            x.fix(0)
+        m.c_vend = pyo.Constraint(m.HS, rule=lambda m, h: m.V[h, T - 1] >= md.hydro[h]["v_end"])
+    else:             # 日内/实时：窗口末软目标（罚 terminal_penalty，见 _objective_expr）
+        vt = term.get("hydro", {})
+        m.c_vend = pyo.Constraint(m.HS, rule=lambda m, h: m.V[h, T - 1] + m.sV[h] >= float(vt.get(h, md.hydro[h]["v_end"])))
     m.c_eday = pyo.Constraint(m.HS, rule=lambda m, h: sum(m.Ph[j, t] for j in md.hydro[h]["units"] for t in range(T)) * dt <= md.hydro[h]["e_day"])
 
     # ---------------- 储能
@@ -266,13 +286,15 @@ def build_model(case: DACase, penalties: dict | None = None) -> pyo.ConcreteMode
         return m.E[s, t] == Ep + (d["eta_c"] * m.Pc[s, t] - m.Pd[s, t] / d["eta_d"]) * dt
     m.c_soc = pyo.Constraint(m.S, m.T, rule=soc)
     m.c_elim = pyo.Constraint(m.S, m.T, rule=lambda m, s, t: pyo.inequality(md.storage[s]["soc_min"] * md.storage[s]["ecap"], m.E[s, t], md.storage[s]["soc_max"] * md.storage[s]["ecap"]))
-    m.c_eend = pyo.Constraint(m.S, rule=lambda m, s: m.E[s, T - 1] == md.storage[s]["soc_end"] * md.storage[s]["ecap"])
+    et = (term or {}).get("storage", {})
+    m.c_eend = pyo.Constraint(m.S, rule=lambda m, s: m.E[s, T - 1] + m.sE_dn[s] - m.sE_up[s]
+                              == float(et.get(s, md.storage[s]["soc_end"] * md.storage[s]["ecap"])))
 
     def sched(m, s, t):
         d = md.storage[s]
         if d["mode"] != "self_schedule":
             return pyo.Constraint.Skip
-        return m.Pd[s, t] - m.Pc[s, t] == float(d["sched"][t])
+        return m.Pd[s, t] - m.Pc[s, t] == float(d["sched"][t0 + t])
     m.c_ssched = pyo.Constraint(m.S, m.T, rule=sched)
 
     # ---------------- 节点注入、功率平衡、PTDF 线路约束
@@ -349,6 +371,12 @@ def build_model(case: DACase, penalties: dict | None = None) -> pyo.ConcreteMode
                              + m.sR_up[t] >= float(case.R_up[t]))
     m.c_Rdn = pyo.Constraint(m.T, rule=lambda m, t: sum(m.r_dn[g, t] for g in G_res) + (sum(m.rh_dn[j, t] for j in md.hydro_units) if hyd_ok else 0)
                              + sum(m.rs_dn[s, t] for s in md.storage) + m.sR_dn[t] >= float(case.R_dn[t]))
+
+    # ---------------- 滚动窗口：固定指定整数变量（日内锁定的启停、实时沿用的水电台数/储能状态）
+    for name, vals in (case.fixed or {}).items():
+        var = getattr(m, name)
+        for idx, val in vals.items():
+            var[idx].fix(int(round(val)))
 
     # ---------------- 目标
     m.obj = pyo.Objective(expr=_objective_expr(m), sense=pyo.minimize)
@@ -476,7 +504,13 @@ def _objective_expr(m):
     pn = sum(pen["balance"] * (sum(m.shed[n, t] for n in m.N) + m.surplus[t]) * dt for t in m.T) \
         + sum(pen["line"] * m.sl[l, t] * dt for l in m.L for t in m.T) \
         + sum(pen["reserve"] * (m.sR_up[t] + m.sR_dn[t]) * dt for t in m.T)
-    return th + nl + su + rw + hy + sp + st + pn
+    term = m._case.terminal
+    tp = 0
+    if term is not None:
+        P = float(term.get("penalty", 1000.0))
+        tp = sum(P * (m.sE_up[s] + m.sE_dn[s]) for s in m.S) \
+            + sum(P / (md.hydro[h]["water_rate"] * 0.36) * m.sV[h] for h in m.HS)   # 1 MWh ≈ water_rate×0.36 万m³
+    return th + nl + su + rw + hy + sp + st + pn + tp
 
 
 def solve_sced(m):

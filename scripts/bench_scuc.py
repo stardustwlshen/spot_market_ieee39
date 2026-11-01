@@ -1,4 +1,4 @@
-"""SCUC 求解参数对比（只跑 SCUC，不出图）。用法：python scripts/bench_scuc.py SC base threads8 ..."""
+"""SCUC 求解参数对比（只跑 SCUC，不出图）。用法：python scripts/bench_scuc.py base threads8 ..."""
 import json
 import sys
 import time
@@ -24,17 +24,16 @@ VARIANTS = {
     "presolve_off": dict(highs_extra={"presolve": "off"}),
 }
 
-rs = sys.argv[1]
 out = []
-for name in sys.argv[2:]:
-    cfg = load_config(rs)
+for name in sys.argv[1:]:
+    cfg = load_config()
     cfg.base["solver"].update(VARIANTS[name])
     case = prepare(cfg, bid_version=1, verbose=False)
     t0 = time.perf_counter()
     m = scuc.build_model(case)
     info = scuc.solve_scuc(m, print)
     nb = sum(1 for v in m.component_data_objects(scuc.pyo.Var) if v.is_integer() or v.is_binary())
-    r = dict(rule_set=rs, variant=name, total_s=round(time.perf_counter() - t0, 1),
+    r = dict(rule_set=cfg.rule_set, variant=name, total_s=round(time.perf_counter() - t0, 1),
              solve_s=round(info["time_s"], 1), obj=round(info["objective"]), bound=round(info["best_bound"]),
              gap=round(info["gap"] * 100, 3), int_vars=nb, ws=(info.get("warm_start") or {}).get("incumbent"), simultaneous=scuc.storage_simultaneous(m))
     print(json.dumps(r, ensure_ascii=False), flush=True)
