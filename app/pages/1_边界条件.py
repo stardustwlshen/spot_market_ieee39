@@ -7,9 +7,9 @@ import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
 
-from common import page_setup, period_labels, sc, scen_config, scenario_selector
+from common import page_setup, period_labels, sc, scen_config, scenario_selector, style_fig
 
-page_setup("边界条件")
+page_setup("边界条件", "场景 = 一组边界条件；在此修改负荷、风光预测、报价、机组/储能/水电参数、线路限额与市场参数，保存后到“运行”页出清")
 name = scenario_selector()
 SP = sc.scenario_path(name)
 
@@ -114,9 +114,8 @@ def curve_fig(df, cols, names, title, ytitle="MW"):
     fig = go.Figure()
     for c, n in zip(cols, names):
         fig.add_scatter(x=labels, y=df[c], name=n, mode="lines")
-    fig.update_layout(title=title, height=320, margin=dict(l=40, r=10, t=40, b=30), yaxis_title=ytitle,
-                      legend=dict(orientation="h", y=-0.2))
-    return fig
+    unit = {"MW": "功率（MW）"}.get(ytitle, ytitle)
+    return style_fig(fig, title, "时刻（15 min）", unit, 340)
 
 
 # ============================================================================ 负荷

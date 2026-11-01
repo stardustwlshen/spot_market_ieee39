@@ -29,9 +29,175 @@ MODE_CN = {"da": "仅日前", "full": "全流程"}
 STATUS_CN = {"running": "运行中", "done": "完成", "failed": "失败", "stopped": "已停止"}
 
 
-def page_setup(title: str):
-    st.set_page_config(page_title=f"{title}｜IEEE39 现货出清", page_icon="⚡", layout="wide")
+# ----------------------------------------------------------------------------- 统一视觉风格
+FONT_FAMILY = "Noto Sans CJK SC, Noto Sans SC, PingFang SC, Microsoft YaHei, sans-serif"
+PALETTE = ["#1f5fa8", "#d1495b", "#2a9d8f", "#e9a03b", "#6a4c93", "#8d99ae", "#3cb371", "#c97b63"]
+DA_COLOR, RT_COLOR = "#1f5fa8", "#d1495b"           # 日前 / 实时 在所有图中固定配色
+LMP_SCALE = "Viridis"                               # 节点电价热力图（顺序色阶，色盲友好）
+LOAD_SCALE = [[0, "#f7fbff"], [0.5, "#fdd49e"], [0.8, "#fc8d59"], [1.0, "#b30000"]]   # 线路负载率
+DIFF_SCALE = "RdBu_r"                               # 差值（以 0 为中心）
+TYPE_SYMBOL = {"coal": "square", "gas_ccgt": "diamond", "gas_gt": "diamond-open", "hydro": "hexagon", "wind": "triangle-up",
+               "pv": "star", "tie": "pentagon", "storage": "cross"}
+PAGES = [("主页.py", "主页", "🏠", "项目说明与流程"),
+         ("pages/1_边界条件.py", "边界条件", "🧩", "场景、负荷/新能源预测、报价、参数"),
+         ("pages/2_运行.py", "运行", "▶️", "后台运行日前 / 全流程"),
+         ("pages/3_结果.py", "结果", "📊", "电价、出力、储能、线路、结算"),
+         ("pages/4_场景对比.py", "场景对比", "⚖️", "两次运行结果对比")]
+
+_CSS = """
+<style>
+/* 指标卡：边框卡片，数值不截断（自动换行、字号适中） */
+div[data-testid="stMetric"] {background: var(--secondary-background-color, #f2f5f9); border: 1px solid #dde3ea;
+    border-radius: 0.5rem; padding: 0.6rem 0.8rem; min-height: 96px;}
+div[data-testid="stMetricValue"] > div {font-size: 1.45rem; white-space: normal !important; overflow: visible !important;
+    text-overflow: clip !important; line-height: 1.25;}
+div[data-testid="stMetricLabel"] p {font-size: 0.85rem; color: #4b5563; white-space: normal !important;}
+div[data-testid="stMetricDelta"] {font-size: 0.8rem;}
+/* 页面留白与标题 */
+.block-container {padding-top: 2.2rem; padding-bottom: 3rem; max-width: 1500px;}
+h1 {font-size: 1.75rem !important; font-weight: 700;}
+h2, h3 {font-weight: 600;}
+.smm-sub {color: #6b7280; margin-top: -0.6rem; margin-bottom: 0.8rem; font-size: 0.95rem;}
+.smm-brand {font-weight: 700; font-size: 1.05rem; color: #1f5fa8; margin-bottom: 0.1rem;}
+.smm-card {border: 1px solid #dde3ea; border-radius: 0.6rem; padding: 0.8rem 1rem; background: #fff; height: 100%;}
+.smm-card b {color: #1f5fa8;}
+.stTabs [data-baseweb="tab-list"] {gap: 0.2rem; flex-wrap: wrap;}
+.stTabs [data-baseweb="tab"] {padding: 0.4rem 0.8rem;}
+/* 窄屏适配：列纵向堆叠、指标字号缩小、图表不溢出 */
+@media (max-width: 760px) {
+  .block-container {padding-left: 0.8rem; padding-right: 0.8rem; padding-top: 1.2rem;}
+  div[data-testid="stHorizontalBlock"] {flex-wrap: wrap; gap: 0.5rem;}
+  div[data-testid="stHorizontalBlock"] > div[data-testid="stColumn"] {min-width: calc(50% - 0.5rem) !important; flex: 1 1 calc(50% - 0.5rem) !important;}
+  div[data-testid="stMetricValue"] > div {font-size: 1.15rem;}
+  div[data-testid="stMetric"] {min-height: 0; padding: 0.45rem 0.7rem;}
+  h1 {font-size: 1.35rem !important;}
+}
+@media (max-width: 480px) {
+  div[data-testid="stHorizontalBlock"] > div[data-testid="stColumn"] {min-width: 100% !important;}
+}
+</style>
+"""
+
+
+def _register_plotly_template():
+    import plotly.graph_objects as go
+    import plotly.io as pio
+    if "smm" in pio.templates:
+        return
+    t = go.layout.Template(pio.templates["plotly_white"])
+    t.layout.update(
+        font=dict(family=FONT_FAMILY, size=13, color="#1f2937"),
+        title=dict(font=dict(size=15, color="#111827"), x=0.0, xanchor="left", y=0.97, yanchor="top"),
+        colorway=PALETTE,
+        margin=dict(l=60, r=20, t=60, b=50),
+        legend=dict(orientation="h", yanchor="bottom", y=1.0, xanchor="right", x=1.0, bgcolor="rgba(0,0,0,0)",
+                    font=dict(size=12)),
+        hoverlabel=dict(font=dict(family=FONT_FAMILY)),
+        xaxis=dict(showgrid=True, gridcolor="#eef1f5", linecolor="#9ca3af", ticks="outside", title=dict(standoff=8)),
+        yaxis=dict(showgrid=True, gridcolor="#eef1f5", linecolor="#9ca3af", zeroline=True, zerolinecolor="#d1d5db",
+                   title=dict(standoff=8)),
+        coloraxis=dict(colorbar=dict(thickness=14, outlinewidth=0)),
+        hovermode="x unified",
+    )
+    pio.templates["smm"] = t
+    pio.templates.default = "smm"
+    import plotly.express as px
+    px.defaults.template = "smm"
+    px.defaults.color_discrete_sequence = PALETTE
+
+
+_register_plotly_template()
+
+
+def style_fig(fig, title: str | None = None, x: str | None = None, y: str | None = None, height: int | None = None,
+              legend: str | None = None, hover: str | None = None):
+    """统一补齐图表标题、坐标轴（含单位）、图例标题、高度。"""
+    kw = {}
+    if title is not None:
+        kw["title_text"] = title
+    if height:
+        kw["height"] = height
+    if legend is not None:
+        kw["legend_title_text"] = legend
+    if hover:
+        kw["hovermode"] = hover
+    fig.update_layout(**kw)
+    if x is not None:
+        fig.update_xaxes(title_text=x)
+        if x.startswith("时刻"):                      # 96 个 15 min 时刻：只标约每 2 h 一个刻度，水平显示
+            fig.update_xaxes(nticks=13, tickangle=0)
+    if y is not None:
+        fig.update_yaxes(title_text=y)
+    return fig
+
+
+def show_fig(fig, key=None):
+    st.plotly_chart(fig, width="stretch", key=key, config={"displaylogo": False, "responsive": True})
+
+
+def sidebar_nav():
+    with st.sidebar:
+        st.markdown('<div class="smm-brand">⚡ IEEE39 现货市场出清仿真</div>', unsafe_allow_html=True)
+        st.caption("日前 SCUC/SCED · 实时 15 min 滚动 · 节点电价 · 偏差结算")
+        for path, label, icon, helptext in PAGES:
+            try:
+                st.page_link(path, label=label, icon=icon, help=helptext)
+            except Exception:  # noqa: BLE001  （测试环境未注册多页时跳过）
+                pass
+        st.divider()
+
+
+def page_setup(title: str, subtitle: str | None = None):
+    st.set_page_config(page_title=f"{title}｜IEEE39 现货出清", page_icon="⚡", layout="wide",
+                       initial_sidebar_state="auto")   # 宽屏展开、窄屏自动收起
+    st.markdown(_CSS, unsafe_allow_html=True)
+    sidebar_nav()
     st.title(title)
+    if subtitle:
+        st.markdown(f'<div class="smm-sub">{subtitle}</div>', unsafe_allow_html=True)
+
+
+def metric_grid(items: list[tuple], per_row: int = 4):
+    """items: (标签, 数值字符串[, delta[, help]])，按行排布的带边框指标卡。"""
+    for i in range(0, len(items), per_row):
+        cols = st.columns(per_row)
+        for c, it in zip(cols, items[i:i + per_row]):
+            lab, val = it[0], it[1]
+            delta = it[2] if len(it) > 2 else None
+            hlp = it[3] if len(it) > 3 else None
+            plain = delta is not None and not str(delta).lstrip().startswith(("+", "-", "−"))
+            c.metric(lab, val, delta=delta, help=hlp, delta_color="off" if plain else "normal",
+                     delta_arrow="off" if plain else "auto")
+
+
+def empty_state(msg: str, hint: str | None = None, icon: str = "📭"):
+    st.info(f"{msg}" + (f"\n\n{hint}" if hint else ""), icon=icon)
+
+
+def wan(x, nd: int = 1) -> str:
+    """元 → 万元 字符串。"""
+    if x is None or (isinstance(x, float) and np.isnan(x)):
+        return "—"
+    return f"{x / 1e4:,.{nd}f}"
+
+
+def num_cols(df: pd.DataFrame, fmt: str = "%.1f", overrides: dict | None = None) -> dict:
+    """为数值列生成统一的 column_config（右对齐、固定小数位）。"""
+    cfg = {}
+    for c in df.columns:
+        if pd.api.types.is_numeric_dtype(df[c]) and not pd.api.types.is_bool_dtype(df[c]):
+            if pd.api.types.is_integer_dtype(df[c]):
+                cfg[c] = st.column_config.NumberColumn(c, format="%d")
+            else:
+                cfg[c] = st.column_config.NumberColumn(c, format=fmt)
+    for k, v in (overrides or {}).items():
+        cfg[k] = st.column_config.NumberColumn(k, format=v)
+    return cfg
+
+
+def show_df(df: pd.DataFrame, fmt: str = "%.1f", overrides: dict | None = None, height=None, **kw):
+    st.dataframe(df, hide_index=True, width="stretch", column_config=num_cols(df, fmt, overrides),
+                 height=height or "auto", **kw)
 
 
 def period_labels(T: int = 96) -> list[str]:
@@ -269,3 +435,18 @@ def fmt_money(x) -> str:
 
 def df_download(df: pd.DataFrame, name: str, label: str = "下载 CSV", key=None):
     st.download_button(label, df.to_csv(index=False).encode("utf-8-sig"), file_name=name, mime="text/csv", key=key)
+
+
+@st.cache_data(show_spinner=False)
+def bus_resources(snapshot_root: str) -> dict:
+    """{母线: [(机组id, 资源类型), ...]}；类型取 units.yaml 的 type，缺省按分组（tie/hydro/storage）。"""
+    import yaml
+    try:
+        uy = yaml.safe_load((Path(snapshot_root) / "config" / "units.yaml").read_text(encoding="utf-8"))
+    except Exception:  # noqa: BLE001
+        return {}
+    out: dict = {}
+    for grp in ("thermal", "tie", "renewable", "hydro", "storage"):
+        for u in uy.get(grp, []) or []:
+            out.setdefault(int(u["bus"]), []).append((u["id"], u.get("type") or grp))
+    return out
