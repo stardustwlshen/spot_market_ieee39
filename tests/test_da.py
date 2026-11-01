@@ -83,9 +83,25 @@ def test_lmp_finite_difference(da_result):
     assert checked >= 1
 
 
+def test_storage_binary_exclusive(da_result):
+    """储能充放状态为 0-1 变量，u_ch+u_dis≤1，SCED 中与启停一起固定。"""
+    m = da_result.model
+    assert da_result.case.cfg.base["solver"]["storage_binary"] is True
+    for s in m.S:
+        for t in m.T:
+            uc, ud = m.u_ch[s, t], m.u_dis[s, t]
+            assert uc.fixed and ud.fixed                      # SCED 固定
+            assert uc.value in (0, 1) and ud.value in (0, 1)
+            assert uc.value + ud.value <= 1
+            pmax = m._md.storage[s]["pmax"]
+            assert pyo.value(m.Pc[s, t]) <= pmax * uc.value + 1e-6
+            assert pyo.value(m.Pd[s, t]) <= pmax * ud.value + 1e-6
+
+
 def test_storage_and_hydro(da_result):
     st = da_result.tables["storage"]
     assert ((st.P_dis > 1e-3) & (st.P_ch > 1e-3)).sum() == 0
+    assert (st.u_ch + st.u_dis <= 1).all()
     cfg = da_result.case.cfg
     for s in cfg.units["storage"]:
         d = st[st.unit == s["id"]]

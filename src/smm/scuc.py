@@ -78,6 +78,14 @@ def prepare(case: DACase) -> ModelData:
     return md
 
 
+def _sto_M(d, kind, dt):
+    """储能 big-M 收紧：取 min(额定功率, 报价总量, 单时段可用能量折算功率)。"""
+    E_rng = (d["soc_max"] - d["soc_min"]) * d["ecap"]
+    if kind == "dis":
+        return min(d["pmax"], sum(d["Ld"]), E_rng * d["eta_d"] / dt)
+    return min(d["pmax"], sum(d["Lc"]), E_rng / d["eta_c"] / dt)
+
+
 def build_model(case: DACase, penalties: dict | None = None) -> pyo.ConcreteModel:
     cfg, net = case.cfg, case.net
     md = prepare(case)
@@ -119,8 +127,10 @@ def build_model(case: DACase, penalties: dict | None = None) -> pyo.ConcreteMode
     m.Ph = pyo.Var(m.J, m.T, domain=pyo.NonNegativeReals)
     m.V = pyo.Var(m.HS, m.T, domain=pyo.NonNegativeReals)
     m.Qspill = pyo.Var(m.HS, m.T, domain=pyo.NonNegativeReals)
-    sto_bin = bool(cfg.base["solver"].get("storage_binary", False))
-    m.x = pyo.Var(m.S, m.T, domain=pyo.Binary if sto_bin else pyo.UnitInterval)  # 1=充电；默认松弛，事后校验不同时充放
+    sto_bin = bool(cfg.base["solver"].get("storage_binary", True))
+    sdom = pyo.Binary if sto_bin else pyo.UnitInterval   # 默认 0-1；false 仅用于对比试验（LP 松弛）
+    m.u_ch = pyo.Var(m.S, m.T, domain=sdom)              # 1=充电状态
+    m.u_dis = pyo.Var(m.S, m.T, domain=sdom)             # 1=放电状态
     m.pd = pyo.Var(m.SD, m.T, domain=pyo.NonNegativeReals)
     m.pc = pyo.Var(m.SC, m.T, domain=pyo.NonNegativeReals)
     m.Pd = pyo.Var(m.S, m.T, domain=pyo.NonNegativeReals)
@@ -167,6 +177,9 @@ def build_model(case: DACase, penalties: dict | None = None) -> pyo.ConcreteMode
     def min_dn(m, g, t):
         DT = int(round(md.thermal[g]["dt"] / dt))
         return sum(m.w[g, tau] for tau in range(max(0, t - DT + 1), t + 1)) <= 1 - m.u[g, t]
+    step = int(cfg.base["solver"].get("commit_step_periods", 1))
+    if step > 1:  # 可选工程简化：启停只在整 step 个时段边界变化（如 4 = 按小时决策）
+        m.c_cstep = pyo.Constraint(m.G, m.T, rule=lambda m, g, t: m.v[g, t] + m.w[g, t] == 0 if t % step else pyo.Constraint.Skip)
     m.c_minup = pyo.Constraint(m.G, m.T, rule=min_up)
     m.c_mindn = pyo.Constraint(m.G, m.T, rule=min_dn)
     # 初始状态未满最小开/停机时间的锁定
@@ -238,12 +251,14 @@ def build_model(case: DACase, penalties: dict | None = None) -> pyo.ConcreteMode
     m.c_eday = pyo.Constraint(m.HS, rule=lambda m, h: sum(m.Ph[j, t] for j in md.hydro[h]["units"] for t in range(T)) * dt <= md.hydro[h]["e_day"])
 
     # ---------------- 储能
-    m.c_sdseg = pyo.Constraint(m.SD, m.T, rule=lambda m, s, k, t: m.pd[s, k, t] <= md.storage[s]["Ld"][k])
-    m.c_scseg = pyo.Constraint(m.SC, m.T, rule=lambda m, s, k, t: m.pc[s, k, t] <= md.storage[s]["Lc"][k])
+    # 分段上限直接乘状态变量（逐段 big-M = 段长，比只约束总功率更紧）
+    m.c_sdseg = pyo.Constraint(m.SD, m.T, rule=lambda m, s, k, t: m.pd[s, k, t] <= md.storage[s]["Ld"][k] * m.u_dis[s, t])
+    m.c_scseg = pyo.Constraint(m.SC, m.T, rule=lambda m, s, k, t: m.pc[s, k, t] <= md.storage[s]["Lc"][k] * m.u_ch[s, t])
     m.c_sdsum = pyo.Constraint(m.S, m.T, rule=lambda m, s, t: m.Pd[s, t] == sum(m.pd[s, k, t] for k in range(len(md.storage[s]["Ld"]))))
     m.c_scsum = pyo.Constraint(m.S, m.T, rule=lambda m, s, t: m.Pc[s, t] == sum(m.pc[s, k, t] for k in range(len(md.storage[s]["Lc"]))))
-    m.c_sdmax = pyo.Constraint(m.S, m.T, rule=lambda m, s, t: m.Pd[s, t] <= md.storage[s]["pmax"] * (1 - m.x[s, t]))
-    m.c_scmax = pyo.Constraint(m.S, m.T, rule=lambda m, s, t: m.Pc[s, t] <= md.storage[s]["pmax"] * m.x[s, t])
+    m.c_sexcl = pyo.Constraint(m.S, m.T, rule=lambda m, s, t: m.u_ch[s, t] + m.u_dis[s, t] <= 1)   # 充放互斥
+    m.c_sdmax = pyo.Constraint(m.S, m.T, rule=lambda m, s, t: m.Pd[s, t] <= _sto_M(md.storage[s], "dis", dt) * m.u_dis[s, t])
+    m.c_scmax = pyo.Constraint(m.S, m.T, rule=lambda m, s, t: m.Pc[s, t] <= _sto_M(md.storage[s], "ch", dt) * m.u_ch[s, t])
 
     def soc(m, s, t):
         d = md.storage[s]
@@ -291,7 +306,18 @@ def build_model(case: DACase, penalties: dict | None = None) -> pyo.ConcreteMode
     # ---------------- 备用 (12)–(13)
     prov = set(rcfg["providers"])
     G_res = [g for g, d in md.thermal.items() if d["type"] in prov]
-    m.c_rup_cap = pyo.Constraint(m.G, m.T, rule=lambda m, g, t: m.r_up[g, t] <= md.thermal[g]["pmax"] * m.u[g, t] - m.P[g, t])
+    tight = bool(cfg.base["solver"].get("tighten", False))
+
+    def rup_cap(m, g, t):
+        d = md.thermal[g]
+        rhs = d["pmax"] * m.u[g, t]
+        if tight and int(round(d["ut"] / dt)) > 1:
+            # 收紧（Morales-España 启停能力）：启动/停机当段出力+备用不超过 SU/SD（此处取 Pmin）
+            rhs = rhs - (d["pmax"] - d["pmin"]) * m.v[g, t]
+            if t + 1 < T:
+                rhs = rhs - (d["pmax"] - d["pmin"]) * m.w[g, t + 1]
+        return m.P[g, t] + m.r_up[g, t] <= rhs
+    m.c_rup_cap = pyo.Constraint(m.G, m.T, rule=rup_cap)
     m.c_rdn_cap = pyo.Constraint(m.G, m.T, rule=lambda m, g, t: m.r_dn[g, t] <= m.P[g, t] - md.thermal[g]["pmin"] * m.u[g, t])
     zhi = lambda j, t: sum(md.hydro_units[j]["zones"][z][1] * m.delta[j, z, t] for z in range(len(md.hydro_units[j]["zones"])))
     zlo = lambda j, t: sum(md.hydro_units[j]["zones"][z][0] * m.delta[j, z, t] for z in range(len(md.hydro_units[j]["zones"])))
@@ -329,7 +355,7 @@ def build_model(case: DACase, penalties: dict | None = None) -> pyo.ConcreteMode
     return m
 
 
-INT_VARS = ("u", "v", "w", "delta", "x")  # w 为连续变量，固定时一并取整
+INT_VARS = ("u", "v", "w", "delta", "u_ch", "u_dis")  # w 为连续变量，固定时一并取整；储能充放状态与启停一起固定
 
 
 def _solver(cfg, mip=True):
@@ -338,19 +364,80 @@ def _solver(cfg, mip=True):
     opt.highs_options = {"threads": int(sc.get("threads", 4)), "output_flag": bool(sc.get("log", False)),
                          "time_limit": float(sc.get("time_limit_s", 300)),
                          "mip_rel_gap": float(sc.get("mip_rel_gap", 0.002))}
+    opt.config.stream_solver = bool(sc.get("log", False))
+    if mip:
+        opt.highs_options.update(sc.get("highs_extra") or {})   # presolve / mip_heuristic_effort 等
     return opt
 
 
-def solve_scuc(m: pyo.ConcreteModel):
+def _heuristic_commitment(m, ulp, theta):
+    """由 LP 松弛的开机变量构造一个满足最小开停机的单段开机计划（启发式，仅用于热启动）。"""
+    md, dt, T = m._md, m._md.dt, len(m.T)
+    plan = {}
+    for g, d in md.thermal.items():
+        on = [t for t in range(T) if ulp[g, t] > theta or (m.u[g, t].fixed and m.u[g, t].value > 0.5)]
+        u = [0] * T
+        if on:
+            first, last = on[0], on[-1]
+            if d["init"]["online"]:
+                first = 0                                   # 初始在线：不安排“停机再启动”
+            last = max(last, min(T - 1, first + int(round(d["ut"] / dt)) - 1))
+            for t in range(first, last + 1):
+                u[t] = 1
+        for t in range(T):
+            if m.u[g, t].fixed:
+                u[t] = int(round(m.u[g, t].value))
+        plan[g] = u
+    return plan
+
+
+def warm_start(m, log=lambda *a: None) -> dict:
+    """热启动：① LP 松弛 → ② 启发式开机计划 → ③ 固定火电启停求小 MIP（水电台数、储能状态） → 作为 HiGHS 初始可行解。"""
     cfg = m._case.cfg
-    opt = _solver(cfg)
+    sc = cfg.base["solver"]
     t0 = time.perf_counter()
+    opt = _solver(cfg)
+    opt.highs_options["solve_relaxation"] = True       # 只解 LP 松弛
+    opt.solve(m)
+    ulp = {(g, t): pyo.value(m.u[g, t]) for g in m.G for t in m.T}
+    lp_bound = pyo.value(m.obj)
+    plan = _heuristic_commitment(m, ulp, float(sc.get("warm_start_theta", 0.2)))
+    prefixed = {(g, t) for g in m.G for t in m.T if m.u[g, t].fixed}
+    for g in m.G:
+        for t in m.T:
+            m.u[g, t].fix(plan[g][t])
+    opt = _solver(cfg)
+    opt.highs_options.update(time_limit=float(sc.get("warm_start_time_s", 30)), mip_rel_gap=0.01)
+    try:
+        opt.solve(m)          # 罚松弛保证该子问题总可行
+        ok = True
+    except RuntimeError:
+        ok = False
+    inc = pyo.value(m.obj) if ok else None
+    for g in m.G:
+        for t in m.T:
+            if (g, t) not in prefixed:
+                m.u[g, t].unfix()
+    el = time.perf_counter() - t0
+    log(f"[DA] 热启动：LP 下界 {lp_bound:.0f}，启发式可行解 {inc if inc is None else round(inc)}，用时 {el:.1f}s")
+    return dict(time_s=el, lp_bound=lp_bound, incumbent=inc, ok=ok)
+
+
+def solve_scuc(m: pyo.ConcreteModel, log=lambda *a: None):
+    cfg = m._case.cfg
+    ws = None
+    t0 = time.perf_counter()
+    if cfg.base["solver"].get("warm_start", False):
+        ws = warm_start(m, log)
+    opt = _solver(cfg)
+    if ws and ws["ok"]:
+        opt.config.warmstart = True
     res = opt.solve(m)
     el = time.perf_counter() - t0
     tc = str(res.solver.termination_condition)
     if "optimal" not in tc.lower() and not ("maxtime" in tc.lower() or "time" in tc.lower()):
         raise RuntimeError(f"SCUC 未得到可行解：{tc}")
-    info = dict(time_s=el, termination=tc, objective=pyo.value(m.obj),
+    info = dict(time_s=el, termination=tc, objective=pyo.value(m.obj), warm_start=ws,
                 best_bound=res.problem.lower_bound,
                 gap=(pyo.value(m.obj) - res.problem.lower_bound) / max(1.0, abs(pyo.value(m.obj))))
     return info
@@ -360,10 +447,9 @@ def fix_integers(m):
     for name in INT_VARS:
         var = getattr(m, name)
         for idx in var:
-            if name == "x":  # 储能状态按实际充电与否确定（松弛时 x 可能为小数）
-                val = 1 if pyo.value(m.Pc[idx]) > 1e-6 else 0
-            else:
-                val = round(pyo.value(var[idx]))
+            val = round(pyo.value(var[idx]))
+            if name in ("u_ch", "u_dis") and not var[idx].is_binary():   # 仅对比试验的松弛模式：按实际功率确定状态
+                val = 1 if pyo.value((m.Pc if name == "u_ch" else m.Pd)[idx]) > 1e-6 else 0
             var[idx].domain = pyo.Reals  # 放松整数域，使 HiGHS 按 LP 求解并给出对偶
             var[idx].fix(val)
 

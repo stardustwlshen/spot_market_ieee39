@@ -89,7 +89,8 @@ def storage_results(m) -> pd.DataFrame:
     rows = []
     for s, d in md.storage.items():
         for t in range(md.T):
-            rows.append(dict(period=t, unit=s, bus=d["bus"], P_dis=V(m.Pd[s, t]), P_ch=V(m.Pc[s, t]), E_mwh=V(m.E[s, t]),
+            rows.append(dict(period=t, unit=s, bus=d["bus"], P_dis=V(m.Pd[s, t]), P_ch=V(m.Pc[s, t]),
+                             u_ch=int(round(V(m.u_ch[s, t]))), u_dis=int(round(V(m.u_dis[s, t]))), E_mwh=V(m.E[s, t]),
                              soc=V(m.E[s, t]) / d["ecap"]))
     return pd.DataFrame(rows)
 

@@ -20,5 +20,10 @@ solver:
   mip_rel_gap: 0.002
   time_limit_s: 300
   threads: 4
-  storage_binary: false   # 储能充放互斥 0-1 变量；false 时松弛并在求解后校验，若出现同时充放则自动改用 0-1 重解
+  storage_binary: true    # 储能充放状态 0-1 变量 u_ch+u_dis≤1（始终开启；false 仅用于对比试验）
+  highs_extra: {}         # 透传 HiGHS MIP 参数，如 presolve、mip_heuristic_effort
+  # 以下为提速选项（对比见 README“求解提速”与 scripts/bench_scuc.py），默认均关闭：
+  tighten: false          # 启停当段“出力+上调备用 ≤ Pmin”收紧；实测 SC 更慢（142s vs 110s）且改变备用语义
+  warm_start: false       # LP 松弛→启发式启停→子 MIP 热启动；实测无收益（初始可行解质量差）
+  commit_step_periods: 1  # 火电启停决策步长（时段数）；4=按小时启停，SC 约快一半但成本 +0.4%，属工程简化，仅可选
   log: false

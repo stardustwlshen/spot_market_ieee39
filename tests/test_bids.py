@@ -49,3 +49,8 @@ def test_ptdf_reference_column_zero():
     net = build_network(cfg)
     assert np.allclose(net.ptdf[:, net.bus_index(net.ref_bus)], 0)
     assert net.ptdf.shape == (46, 39)
+
+
+def test_storage_binary_default_on():
+    cfg = load_config()
+    assert cfg.base["solver"]["storage_binary"] is True

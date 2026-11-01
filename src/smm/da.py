@@ -32,13 +32,10 @@ def run_da(case: DACase, verbose: bool = True) -> DAResult:
     t0 = time.perf_counter()
     m = scuc.build_model(case)
     log(f"[DA] 模型构建 {time.perf_counter()-t0:.1f}s，开始 SCUC（HiGHS MILP）…")
-    info = scuc.solve_scuc(m)
+    info = scuc.solve_scuc(m, log)
     log(f"[DA] SCUC {info['termination']}，用时 {info['time_s']:.1f}s，目标 {info['objective']:.0f}，gap {info['gap']:.4%}")
-    if not cfg.base["solver"].get("storage_binary") and scuc.storage_simultaneous(m) > 0:
-        log("[DA] 松弛储能出现同时充放，改用 0-1 互斥变量重解")
-        cfg.base["solver"]["storage_binary"] = True
-        m = scuc.build_model(case)
-        info = scuc.solve_scuc(m)
+    if not cfg.base["solver"].get("storage_binary", True):
+        log("[DA] 警告：storage_binary=false，储能充放互斥被松弛（仅供对比试验）")
     info["storage_simultaneous"] = scuc.storage_simultaneous(m)
     scuc.fix_integers(m)
     sced = scuc.solve_sced(m)
