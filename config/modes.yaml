@@ -10,9 +10,9 @@ MKT:
   name: 自有统一现货市场规则（参考川、甘）
   pricing: LMP                       # 节点边际电价（甘V3.2 发电侧节点电价；川为系统电价，本项目统一用 LMP）
   price_limits:                      # 元/MWh
-    bid_min: 0                       # 假设值：取川(−50, 川V4.0 附件3)与甘(40, 甘发改价格规〔2025〕4号)之间
-    bid_max: 800                     # 川V4.0 附件3（甘申报上限 500、出清上限 650）
-    clear_min: 0                     # 同 bid_min（假设值）
+    bid_min: -50                     # 广东2025方案参考下限；本项目统一能量报价下限，资源差异可覆写
+    bid_max: 800                     # 本研究假设上限；不是广东周度煤电申报上限，不由出清限价推导
+    clear_min: 0                     # 现有结算裁剪下限（研究假设），与报价下限独立
     clear_max: 800                   # 川V4.0 附件3
   segments:
     min: 3                           # 假设值：川 5–10 段，甘 1–10 段，取 3
@@ -23,6 +23,16 @@ MKT:
   price_step: 10                     # 甘V3.2：价格步长 10 元/MWh
   min_seg_frac: 0.10                 # 甘V3.2：每段 ≥ 装机 10%（川 A1=5%，储能 10%）
   max_adjacent_step: 150             # 川V4.0 β2=150：相邻段价差上限（煤电首段→第 2 段除外）
+  bid_rules:
+    # 广东2025细则结构参考，仅作用于火电市场段；原0~Pmin是内部模型基座，不计市场段数。
+    # https://www.gzpec.cn/law/jygz/202505/P020250516601779253100.pdf pp.13–19
+    # 最多10市场段、连续到额定出力、非递减；宽度>=max(5%可调范围,1MW)，可调范围<1MW取实际。
+    # 整条内部曲线（含基座）也须非递减且在报价上下限内，防止独立分段变量错误排序。
+    profile: gd_reference_thermal
+    default: {}                     # 可覆写独立报价规则，不读取 clear_min/clear_max
+    by_type:
+      wind: {require_capacity_coverage: true}  # 新能源报价曲线覆盖0~额定容量
+      pv: {require_capacity_coverage: true}    # 可用预测量仍另行限制实际出力
   coal_first_segment: pmin           # 两省一致：煤电首段为 0~最小技术出力
   storage_dis_gt_ch: error           # 川V4.0：放电最低价须高于充电最高价（不满足即报错）
   startup_states: {hot: 8, warm: 72} # 川V4.0 三态（<8h 热、8–72h 温、>72h 冷）；甘V3.2 另分极热态 1h，此处不分
@@ -37,8 +47,10 @@ MKT:
     mu_RE: 0.0                       # 风光计入正备用的置信因子（甘V3.2 有该项但未给数值，取 0，假设值）
     storage_reserve: false           # 储能与抽蓄（规则同储能）是否提供备用；默认不计（假设）
     providers: [coal, gas_ccgt, gas_gt, hydro]
-  penalties: {balance: 1.0e+6, line: 1.0e+5, reserve: 1.0e+5}       # 甘工作方案：平衡 1e6、断面 1e5；备用 1e5 为假设值
-  pricing_penalties: {balance: 1.0e+4, line: 500, reserve: 500}     # 甘V3.2：节点电价计算断面罚因子 500；平衡 1e4 为假设值
+  # 线路5000为用户指定的研究参数，不宣称广东现行出清规则；其余罚项未改。
+  penalties: {balance: 1.0e+6, line: 5000, reserve: 1.0e+5}
+  # 历史兼容参数，标准 SCUC→SCED 流程不读取、不触发额外重定价。
+  pricing_penalties: {balance: 1.0e+4, line: 500, reserve: 500}
   # ---- 滚动方式（甘肃模式）：不设独立日内市场；煤电/CCGT 启停在日前确定（甘V3.2 第十八条），
   #      实时每 15 min 滚动出清未来 2 h（甘V3.2 第六十三条），只执行首时段。
   storage_end_soc:                   # 储能期末 SOC
@@ -61,13 +73,16 @@ MKT:
     first_period_actual: true        # 假设做法：首时段负荷/风光用实际值（T−30 超短期预测残差由 AGC 承担，不建模）
     lock_types: [coal, gas_ccgt]     # 启停沿用日前（甘V3.2 第十八条：煤电启停日前确定）
     free_types: [gas_gt]             # 燃气 GT 启停在每个 2 h 窗口 MIP 内按需决策（假设做法，参考基本规则第五十四条“快速启停资源”）
-    hydro: fixed_da                  # 水电执行日前出清曲线（台数+出力）；甘肃运营实施细则(V3.2征求意见稿) 第六十条（摘要来源，原文本次未能下载）：水电实时报量不报价、执行经安全校核的曲线
+    hydro: window_end_da             # 固定DA稳定区台数；实际V/P起步，2h窗口内Ph可调，窗口末V硬等同钟点DA值
+                                     # fixed_da保留为固定DA出力对照；不改变电池/抽蓄策略，不新增日电量等式
+                                     # 甘肃2026 V3.2第64(四)/73允许经安全校核的自调度申报结合最新能力参与实时优化
     storage:
       mode: sced_anchor              # 充放 0-1 状态在窗口 MIP 内决策； sced_anchor：沿用日前封存报价（第六十二条）进入实时 SCED，初值 = 实际 SOC；fixed_da：执行日前充放电曲线（价格接受者）
-      anchor: hourly_eq              # 已确认默认（模式 B2）：广东式，窗口内各整点 E_RT = E_DA，硬约束（条款号未核实）
+      anchor: hourly_eq              # 研究默认（模式 B2）：各整点以 E_RT = E_DA 为带罚软锚点目标；广东对应条款未核实
                                      # 可选 window_end_pct（模式 B1）：甘V3.2 运营细则附录5 第9项，窗口末 (1−x)E_DA ≤ E_RT ≤ (1+x)E_DA（同时满足 SOC 上下限）
       x: 0.05                        # 假设值：仅 window_end_pct 使用；甘肃细则未给出 x
-      anchor_penalty: 1.0e5          # 假设值：锚点松弛罚 元/MWh，仅防无解；触发时放宽到实际值后重算价格，不进入电价
+      anchor_penalty: 1.0e5          # 研究假设值：储能锚点松弛罚，单位元/MWh，保留在同一 SCUC/SCED 目标中并可影响其对偶价格
+                                     # 抽蓄沿用此数值，单位元/万m³；可因代价权衡松弛，不另放宽锚点或重算价格
     mip_rel_gap: 1.0e-4              # 求解参数
     time_limit_s: 30
   pumped:                            # 抽水蓄能：市场规则与电化学储能完全一致（rules: storage，不另设一套），依据见 docs/开发记录.md“抽水蓄能”
@@ -81,3 +96,21 @@ MKT:
   settlement:
     scheme: two_settlement           # 日前电量×日前 LMP + (实际−日前)×实时 LMP（甘工作方案两级结算）
     interval_min: 15                 # 假设值：统一 15 min（川结算：储能 15 min、其他 1 h；甘 15 min）
+  regulation:
+    enabled: false                  # 历史调频实验默认关闭；当前仅完善现货电能量市场
+    research_note: "通用研究假设；首版仅认证火电与电化学储能。物理需求按MW，不乘性能K；不模拟AGC信号轨迹。"
+    demand_ratio: 0.01              # 每时段预测/实际负荷的1%，研究需求假设
+    mileage_ratio: 4.0              # 每15分钟预计里程/中标MW；目标与结算均不再乘dt
+    response_minutes: 1.0           # 对称调频响应时间，研究假设
+    sustain_h: 0.25                 # 储能最不利方向增量能量预算，研究假设
+    slack_budget_tolerance: 0.00001 # 非调频松弛不超过预SCUC实际值+数值容差；拍卖/最终SCED同上界
+    shortage_penalty: 100000.0      # 元/(MW·时段)，显式调频缺额惩罚；不作为结算价
+    resources:                      # 独立AGC资格；capacity技术认证，offered_capacity申报上限；未列出/eligible=false不参与
+      C1: {eligible: true, capacity_mw: 20, offered_capacity_mw: 20, ramp_mw_per_min: 9.7, performance: 0.8, bid_yuan_per_mw: 12.0}
+      C2: {eligible: true, capacity_mw: 20, offered_capacity_mw: 20, ramp_mw_per_min: 10.9, performance: 0.8, bid_yuan_per_mw: 11.0}
+      C3: {eligible: true, capacity_mw: 20, offered_capacity_mw: 20, ramp_mw_per_min: 13.0, performance: 0.8, bid_yuan_per_mw: 13.0}
+      CCGT: {eligible: true, capacity_mw: 40, offered_capacity_mw: 40, ramp_mw_per_min: 27.5, performance: 1.0, bid_yuan_per_mw: 10.0}
+      GT: {eligible: true, capacity_mw: 40, offered_capacity_mw: 40, ramp_mw_per_min: 27.0, performance: 1.0, bid_yuan_per_mw: 9.0}
+      ES1: {eligible: true, capacity_mw: 10, offered_capacity_mw: 10, ramp_mw_per_min: 100.0, performance: 1.5, bid_yuan_per_mw: 8.0}
+      ES2: {eligible: true, capacity_mw: 10, offered_capacity_mw: 10, ramp_mw_per_min: 200.0, performance: 1.5, bid_yuan_per_mw: 8.0}
+      ES3: {eligible: true, capacity_mw: 10, offered_capacity_mw: 10, ramp_mw_per_min: 100.0, performance: 1.5, bid_yuan_per_mw: 8.0}

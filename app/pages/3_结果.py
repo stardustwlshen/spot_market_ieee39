@@ -23,8 +23,10 @@ lab = {m["dir"]: result_label(m) for m in res}
 w = st.session_state.get("result_sel")
 sel = st.selectbox("选择结果", keys, index=keys.index(w) if w in keys else 0, format_func=lab.get)
 st.session_state["result_sel"] = sel
+selected_meta=next(m for m in res if m["dir"]==sel)
+if selected_meta.get("demo_description"):st.info(selected_meta["demo_description"])
 with st.spinner("读取结果文件…"):
-    R = get_result(next(m for m in res if m["dir"] == sel))
+    R = get_result(selected_meta)
 S, DS = R["summary"], R["da_summary"]
 FULL = R["full"]
 buses = pd.read_csv(Path(R["case_dir"]) / "buses.csv")
@@ -38,7 +40,7 @@ ll_da = line_loading(R, "da")
 ll_rt = line_loading(R, "rt") if FULL else None
 PRICE = "电价（元/MWh）"
 TIME = "时刻（15 min）"
-tabs = st.tabs(["📈 系统概览", "💲 节点电价", "⚙️ 出力", "🔋 储能", "💧 抽蓄/水电", "🔌 线路", "🗺️ 网络拓扑", "🧾 结算"])
+tabs = st.tabs(["📈 系统概览", "💲 节点电价", "⚙️ 出力", "🔋 储能", "💧 抽蓄/水电", "🔌 线路", "🗺️ 网络拓扑", "🧾 结算", "🔎 主体 / 阶段诊断"])
 
 
 def stage_radio(key):
@@ -53,12 +55,12 @@ with tabs[0]:
     st.subheader("关键指标")
     if FULL:
         sp, rt = S["spread"], S["realtime"]
-        smode = {"fixed_da": "A 执行日前"}.get(rt["storage_mode"], "B1 窗口末±x" if rt["anchor"] == "window_end_pct" else "B2 整点等值")
+        smode = {"fixed_da": "A 执行日前"}.get(rt["storage_mode"], "B1 窗口末±x" if rt["anchor"] == "window_end_pct" else "B2 整点带罚软锚点")
         metric_grid([
             ("日前负荷加权均价（元/MWh）", f"{sp['da_lw_avg']:.1f}"),
             ("实时负荷加权均价（元/MWh）", f"{sp['rt_lw_avg']:.1f}", f"{sp['rt_lw_avg'] - sp['da_lw_avg']:+.1f} 较日前"),
             ("实时−日前价差（元/MWh）", f"{sp['lw_spread_mean']:+.1f}", f"绝对均值 {sp['lw_spread_abs_mean']:.1f}", "负荷加权价差的均值；delta 为绝对值均值"),
-            ("日前总报价成本（万元）", wan(DS.get("objective")), None, "SCUC 目标值：电能量报价成本 + 启动 + 空载"),
+            ("日前总报价成本（万元）", wan(DS.get("objective")), None, "正式能量SCED目标：能量报价、启停空载及软约束罚项，不是社会真实成本"),
             ("弃电 日前 / 实时（MWh）", f"{DS.get('curtailment_mwh', 0):,.0f} / {rt['curtail_mwh']:,.0f}"),
             ("新能源+负荷偏差损益（万元）", wan(S["forecast_error"]["dev_pnl"]), None, "(实际−日前)×(实时价−日前价) 汇总；负值为偏差损失"),
             ("阻塞时段 日前 / 实时", f"{cong_da if cong_da is not None else '—'}/{T_da} · {cong_rt}/{T_rt}"),
@@ -68,7 +70,7 @@ with tabs[0]:
         metric_grid([
             ("日前负荷加权均价（元/MWh）", f"{DS.get('lmp_load_weighted_avg', lw_da.mean()):.1f}"),
             ("节点电价 最低 / 最高（元/MWh）", f"{DS.get('lmp_min', 0):.0f} / {DS.get('lmp_max', 0):.0f}"),
-            ("日前总报价成本（万元）", wan(DS.get("objective")), None, "SCUC 目标值：电能量报价成本 + 启动 + 空载"),
+            ("日前总报价成本（万元）", wan(DS.get("objective")), None, "正式能量SCED目标：能量报价、启停空载及软约束罚项，不是社会真实成本"),
             ("启动费（万元）", wan(DS.get("startup_cost"), 2)),
             ("日前弃电（MWh）", f"{DS.get('curtailment_mwh', 0):,.0f}"),
             ("日前阻塞时段", "—" if cong_da is None else f"{cong_da} / {T_da}"),
@@ -200,7 +202,7 @@ with tabs[3]:
     xx = S.get("realtime", {}).get("x", 0.05) if FULL else 0
     if FULL:
         st.info({"fixed_da": "实时模式 A：执行日前充放电曲线"}.get(smode, "实时模式 B1：窗口末 E_RT 在 (1±x)·E_DA 带内（阴影）"
-                if anchor == "window_end_pct" else "实时模式 B2（默认）：窗口内各整点 E_RT = E_DA（菱形为整点锚点）"), icon="🔋")
+                if anchor == "window_end_pct" else "实时模式 B2（默认）：各整点以 E_RT = E_DA 为带罚软锚点目标，可产生有代价的偏差（菱形为目标）"), icon="🔋")
     if sd is None or not len(sd):
         empty_state("该结果没有储能数据。")
     for k, un in enumerate(sd.unit.unique() if sd is not None else []):
@@ -262,8 +264,6 @@ with tabs[4]:
             if ps:
                 items += [("实时 发电 / 抽水（MWh）", f"{ps['rt']['gen_mwh']:,.0f} / {ps['rt']['pump_mwh']:,.0f}"),
                           ("电能量结算净收入（万元）", wan(ps.get("energy_net_revenue")), None, "日前 + 实时偏差两部制结算，发电收入 − 抽水电费"),
-                          ("容量电费（万元/日，信息项）", wan(ps.get("capacity_fee_per_day"), 2), None,
-                           "容量电价 × 装机 / 365；按 633 号文由输配电价回收，不进入现货结算（参数为假设值）"),
                           ("实时 日末上库库容（万m³）", f"{ps['rt'].get('V_up_end') or 0:.0f}")]
             metric_grid(items, per_row=4)
             x = [lbl[t] for t in a.period]
@@ -308,12 +308,35 @@ with tabs[4]:
             fig.add_scatter(x=[lbl[t] for t in a.period], y=a[pc], name="日前 出力 MW", line=dict(color=TYPE_COLOR["hydro"]))
             if vc:
                 fig.add_scatter(x=[lbl[t] for t in a.period], y=a[vc], name="日前 库容 万m³", yaxis="y2", line=dict(color="#6a4c93", dash="dot"))
+            rh=R.get('rt_hydro')
+            if FULL and rh is not None and len(rh):
+                idcol='station' if 'station' in rh else 'unit'
+                executed_hydro=rh[rh[idcol]==hn]
+                if len(executed_hydro):
+                    fig.add_scatter(x=[lbl[int(t)] for t in executed_hydro.period],y=executed_hydro.P_mw,
+                                    name="实时 已执行出力 MW",line=dict(color=RT_COLOR))
+                    if 'V_1e4m3' in executed_hydro:
+                        fig.add_scatter(x=[lbl[int(t)] for t in executed_hydro.period],y=executed_hydro.V_1e4m3,
+                                        name="实时 已执行库容 万m³",yaxis="y2",line=dict(color=RT_COLOR,dash="dot"))
+
             hr = R.get("rt_hydro")
             if hr is not None and len(hr):
                 b = hr[hr.station == hn]
                 fig.add_scatter(x=[lbl[t] for t in b.period], y=b.P_mw, name="实时 出力 MW", line=dict(color=RT_COLOR, dash="dash"))
             fig.update_layout(yaxis2=dict(overlaying="y", side="right", title="库容（万m³）", showgrid=False))
             show_fig(style_fig(fig, f"{hn}（{'库容型' if reg == 'reservoir' else '径流式'}）出力与库容", TIME, "出力（MW）", 320), key=f"hy_{hn}")
+
+# Water targets are a lookahead diagnostic, distinct from executed reservoir state.
+with tabs[4]:
+    from market_views import hydro_window_dashboard
+    from smm.live_runner import read_live
+    target_file=Path(sel)/'hydro_window_targets.csv'
+    if target_file.exists():
+        try:target_table=pd.read_csv(target_file)
+        except pd.errors.EmptyDataError:target_table=pd.DataFrame()
+        target_history={str(t):g.to_dict('records') for t,g in target_table.groupby('window_start')} if len(target_table) else {}
+    else:target_history=read_live(sel).get('hydro_window_history',{})
+    hydro_window_dashboard(target_history,prefix='result_hydro:'+sel)
 
 # ============================================================================ 线路
 with tabs[5]:
@@ -481,3 +504,38 @@ with tabs[7]:
             ent = st.selectbox("主体", sorted(R["settlement_detail"].entity.unique()))
             show_df(R["settlement_detail"][R["settlement_detail"].entity == ent], "%.2f", height=320)
             df_download(R["settlement_detail"], "settlement_detail.csv", "下载全部明细 CSV", key="dl_d")
+
+
+# Historical regulation outputs remain on disk, not a current market feature.
+if S.get('regulation',{}).get('enabled',False):
+    st.warning('历史调频实验结果：不属于当前纯电能量版本，不应作为当前默认研究结果。')
+    with st.expander('历史调频实验只读原始表（不纳入当前能量收益）'):
+        if R.get('rt_regulation_system') is not None:show_df(R['rt_regulation_system'])
+        if R.get('rt_regulation') is not None:show_df(R['rt_regulation'])
+
+with tabs[8]:
+    from market_views import unit_dashboard, stages_dashboard, frozen_bids, system_metrics, frozen_units
+    stage=st.radio('诊断正式结果阶段',['实时','日前'] if FULL else ['日前'],key='unit_diagnostic_stage')
+    is_rt=stage=='实时'
+    tables={'units':R.get('rt_units') if is_rt else R.get('da_unit_awards'),
+            'prices':R.get('rt_prices') if is_rt else R.get('da_nodal_prices'),
+            'storage':R.get('rt_storage') if is_rt else R.get('da_storage'),
+            'pumped':R.get('rt_pumped') if is_rt else R.get('da_pumped'),
+            'hydro':R.get('rt_hydro') if is_rt else R.get('da_hydro'),
+            'regulation':R.get('rt_regulation') if is_rt else R.get('da_regulation_indicative'),
+            'regulation_system':R.get('rt_regulation_system') if is_rt else R.get('da_regulation_system_indicative'),
+            'system':R.get('rt_system') if is_rt else R.get('da_system')}
+    system_metrics(tables)
+    unit_dashboard(tables,bids=frozen_bids(sel),settlement=R.get('settlement_detail') if is_rt else None,prefix='result:'+sel+stage,indicative=not is_rt,units_config=frozen_units(sel))
+    from smm.live_runner import read_live
+    import json
+    diagnostic_file=Path(sel)/'stage_diagnostics.json'
+    diagnostics=json.loads(diagnostic_file.read_text()) if diagnostic_file.exists() else {}
+    history={str(r['t']):r['stages'] for r in diagnostics.get('rt_windows',[])} or read_live(sel).get('stage_history',{})
+    if diagnostics.get('da'):
+        with st.expander('日前SCUC/SCED完整诊断'):
+            stages_dashboard(diagnostics['da'],prefix='result_da_stage:'+sel)
+    if history:
+        window=st.selectbox('窗口起点',list(history),key='result_window:'+sel)
+        stages_dashboard(history[window],prefix='result_stage:'+sel)
+    else:stages_dashboard(None,prefix='result_stage:'+sel)

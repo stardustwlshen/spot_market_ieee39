@@ -162,7 +162,16 @@ def cost_breakdown(m) -> dict:
     out["pumped_net"] = sum(md.pumped[p]["cg"][k] * V(m.pg[p, k, t]) * dt for (p, k) in m.PGK for t in m.T) \
         - sum(md.pumped[p]["cp"][k] * V(m.pp[p, k, t]) * dt for (p, k) in m.PPK for t in m.T) \
         + sum(md.pumped[p]["start_cost_gen"] * V(m.sg[p, t]) + md.pumped[p]["start_cost_pump"] * V(m.sp[p, t]) for p in m.PS for t in m.T)
-    out["bid_cost_total"] = sum(out.values())
+    out["bid_cost_total"] = sum(out.values())  # legacy energy bids only, not regulation procurement payment
+    spec = getattr(m, "_agc", {})
+    if spec.get("enabled"):
+        out["regulation_performance_adjusted_score_cost"] = sum(
+            d["bid_yuan_per_mw"] / d["performance"] * spec["mileage_ratio"] * V(m.q_agc[u, t])
+            for u, d in spec["resources"].items() for t in m.T)
+        out["regulation_shortage_penalty"] = spec["shortage_penalty"] * sum(V(m.s_agc[t]) for t in m.T)
+    else:
+        out["regulation_performance_adjusted_score_cost"] = 0.0
+        out["regulation_shortage_penalty"] = 0.0
     out["objective_incl_penalties"] = V(m.obj)
     return out
 

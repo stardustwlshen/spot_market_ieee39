@@ -12,6 +12,177 @@ from . import plots, rolling, settlement
 from .da import run_da, summarize
 
 
+
+def execution_safety_checks(da_res, rt_tab, tolerance_mw=1e-5) -> dict:
+    """Check dispatched flows against the actual scenario limits, not pricing flows.
+
+    Network feasibility alone is not a certification of all unit constraints. Missing
+    or non-finite flow data is a failure, never a silent zero-overload pass.
+    """
+    rates = da_res.case.net.branches.set_index("branch_id").rate_mw
+    da_periods = set(range(da_res.case.T or da_res.case.cfg.T))
+    sys_periods = pd.to_numeric(rt_tab["system"].period, errors="coerce").to_numpy(dtype=float)
+    system_valid = bool(len(sys_periods) and np.isfinite(sys_periods).all()
+                        and (sys_periods == np.floor(sys_periods)).all()
+                        and len(set(sys_periods)) == len(sys_periods))
+    rt_periods = set(sys_periods) if system_valid else set()
+    out = {"rt_system_periods_valid": system_valid,
+           "safety_tolerance_mw": float(tolerance_mw),
+           "physical_quantity_source": "fixed_integer_SCED_dispatch_snapshot",
+           "price_source": "same_fixed_integer_SCED_raw_duals;settlement_prices_clipped_to_market_limits"}
+    for stage, lines in (("da", da_res.tables["lines"]), ("rt", rt_tab["lines"])):
+        limits = lines.line.map(rates).to_numpy(dtype=float)
+        flows = lines.flow_mw.to_numpy(dtype=float)
+        periods = da_periods if stage == "da" else rt_periods
+        expected = {(line, period) for line in rates.index for period in periods}
+        actual = set(zip(lines.line, lines.period))
+        valid = (bool(expected) and actual == expected and rates.index.is_unique
+                 and len(lines) > 0 and np.isfinite(flows).all()
+                 and np.isfinite(limits).all() and (limits > 0).all()
+                 and not lines.duplicated(["line", "period"]).any()
+                 and len(lines) == len(expected))
+        if valid:
+            excess = np.maximum(np.abs(flows) - limits, 0.0)
+            violation = excess > tolerance_mw
+            out[f"{stage}_line_overload_count"] = int(violation.sum())
+            out[f"{stage}_line_overload_periods"] = int(lines.loc[violation, "period"].nunique())
+            out[f"{stage}_line_overload_max_mw"] = float(excess.max())
+            out[f"{stage}_line_loading_max"] = float((np.abs(flows) / limits).max())
+            out[f"{stage}_network_feasible"] = not bool(violation.any())
+        else:
+            for suffix in ("line_overload_count", "line_overload_periods", "line_overload_max_mw", "line_loading_max"):
+                out[f"{stage}_{suffix}"] = None
+            out[f"{stage}_network_feasible"] = False
+        out[f"{stage}_line_data_valid"] = bool(valid)
+    da_lines = da_res.tables["lines"]
+    out["da_dispatch_line_slack_max_mw"] = float(da_lines.slack_mw.max()) if len(da_lines) else None
+    # Raw prices decompose; clipped settlement prices need not do so.
+    rp = rt_tab["prices"]
+    out["rt_raw_lmp_decomposition_max_err"] = float(np.abs(rp.lmp_raw - rp.energy - rp.congestion).max())
+    out["network_feasible"] = out["da_network_feasible"] and out["rt_network_feasible"]
+    return out
+
+
+
+def slack_policy_checks(da_slack, rt_rounds, tolerance=1e-6) -> dict:
+    """Window maxima are not executed-period violations; report them separately."""
+    keys = ("shed_mwh", "surplus_mwh", "line_slack_max", "reserve_up_short_max",
+            "reserve_dn_short_max", "anchor_slack_max_mwh")
+    summaries = [da_slack] + [r["slack"] for r in rt_rounds]
+    complete = bool(rt_rounds) and all(
+        all(k in summary and np.isfinite(summary[k]) for k in keys) for summary in summaries)
+    split = {}
+    for kind, key in (("storage", "storage_anchor_slack_max_mwh"), ("pumped", "pumped_anchor_slack_max_1e4m3")):
+        available = bool(rt_rounds) and all(key in r["slack"] and np.isfinite(r["slack"][key]) for r in rt_rounds)
+        split[key] = float(max(r["slack"][key] for r in rt_rounds)) if available else None
+        split[f"{kind}_anchor_slack_periods"] = int(sum(r["slack"][key] > tolerance for r in rt_rounds)) if available else None
+    return {
+        **split,
+        "anchor_slack_max_mwh_legacy_note": "DEPRECATED:mixed_numeric_max_of_storage_MWh_and_pumped_1e4m3;not_an_energy_quantity;use_split_fields",
+        "anchor_slack_periods": int(sum(r["slack"].get("anchor_slack_max_mwh", 0.0) > tolerance for r in rt_rounds)),
+        "slack_summary_data_valid": bool(complete),
+        "rules_satisfied_no_slack": bool(complete and all(
+            abs(summary[k]) <= tolerance for summary in summaries for k in keys)),
+        "no_slack_scope": "DA_entire_horizon_and_each_RT_lookahead_window:shed,surplus,line,reserve_up,reserve_down,anchor;not_a_full_model_or_uncertainty_certificate",
+    }
+
+
+def hydro_window_checks(da_res, rr, tolerance=1e-5) -> dict:
+    """Station-aggregate hydro checks using detached, unit-labelled window evidence.
+
+    A hard window target is not a per-hour DA power lock. Lagged incoming water
+    and state are reported by the constructed model; the separate audit script
+    additionally reconstructs history routing independently.
+    """
+    cfg = da_res.case.cfg
+    if not cfg.units["hydro"]:
+        return {"hydro_window_checks_available": True, "hydro_window_constraints_satisfied": True,
+                "hydro_window_records": []}
+    out = dict(hydro_window_checks_available=True, hydro_water_balance_max_err_1e4m3=0.,
+               hydro_window_terminal_max_err_1e4m3=0., hydro_station_ramp_excess_max_mw=0.,
+               hydro_da_station_ramp_excess_max_mw=0., hydro_state_volume_continuity_max_err_1e4m3=0.,
+               hydro_state_power_continuity_max_err_mw=0., hydro_energy_budget_excess_max_mwh=0.,
+               hydro_volume_bound_excess_max_1e4m3=0., hydro_ecological_shortage_max_m3s=0.,
+               hydro_outflow_limit_excess_max_m3s=0., hydro_da_zone_count_mismatch=0,
+               hydro_window_records=[])
+    specs = {h["id"]: h for h in cfg.units["hydro"]}
+    da_sn = rolling.snapshot(da_res.model)
+    if len(rr.states) not in (len(rr.rt),len(rr.rt)+1) or [r["t"] for r in rr.rt] != list(range(len(rr.rt))):
+        out["hydro_window_checks_available"] = False
+    def check_snapshot(sn, stage, start, state=None):
+        metadata = sn.get("hydro_constraints", {})
+        if set(metadata) != set(specs):
+            out["hydro_window_checks_available"] = False
+            return
+        if any(set(sn.get(key,{})) != set(specs) for key in ("Ph","Vh","Qout")) or set(sn.get("delta",{})) != set(da_sn["delta"]):
+            out["hydro_window_checks_available"] = False
+            return
+        for h, meta in metadata.items():
+            power = np.asarray(sn["Ph"][h], float); volume = np.asarray(sn["Vh"][h], float)
+            arrays = [power,volume,np.asarray(sn["Qout"][h],float)] + [np.asarray(meta.get(k,[]),float) for k in ("qin_m3s","upstream_in_m3s","ramp_up_limit_mw","ramp_down_limit_mw")]
+            arrays += [np.asarray(a,float) for (uid,z),a in sn["delta"].items() if uid==h]
+            scalars=[meta.get("p_start_mw",np.nan),meta.get("v_start_1e4m3",np.nan)]
+            if stage=="RT": scalars += [state.hydro.get(h,np.nan),state.hydro_p.get(h,np.nan)]
+            if not len(power) or any(len(a)!=len(power) or not np.isfinite(a).all() for a in arrays) or not np.isfinite(scalars).all():
+                out["hydro_window_checks_available"] = False
+                continue
+            prev_p = np.r_[meta["p_start_mw"], power[:-1]]
+            prev_v = np.r_[meta["v_start_1e4m3"], volume[:-1]]
+            delta_p = power-prev_p
+            ramp_excess = max(0., float(np.max(delta_p-np.asarray(meta["ramp_up_limit_mw"]))),
+                              float(np.max(-delta_p-np.asarray(meta["ramp_down_limit_mw"]))))
+            key = "hydro_da_station_ramp_excess_max_mw" if stage == "DA" else "hydro_station_ramp_excess_max_mw"
+            out[key] = max(out[key], ramp_excess)
+            expected_v = prev_v + (np.asarray(meta["qin_m3s"])+np.asarray(meta["upstream_in_m3s"])-np.asarray(sn["Qout"][h]))*cfg.dt*.36
+            water_error = float(np.abs(volume-expected_v).max())
+            out["hydro_water_balance_max_err_1e4m3"] = max(out["hydro_water_balance_max_err_1e4m3"],water_error)
+            target = meta.get("v_end_target_1e4m3")
+            if stage=="RT" and cfg.mode["realtime"].get("hydro")=="window_end_da":
+                k=start+len(power)-1
+                if target is None or not np.isfinite(target) or k>=len(da_sn["Vh"][h]):
+                    out["hydro_window_checks_available"]=False
+                else:
+                    out["hydro_window_terminal_max_err_1e4m3"] = max(out["hydro_window_terminal_max_err_1e4m3"],abs(float(target)-float(da_sn["Vh"][h][k])))
+            if target is not None and not np.isfinite(target):
+                out["hydro_window_checks_available"]=False
+                target=None
+            terminal_error = abs(float(volume[-1])-target) if target is not None else None
+            if terminal_error is not None:
+                out["hydro_window_terminal_max_err_1e4m3"] = max(out["hydro_window_terminal_max_err_1e4m3"],terminal_error)
+            budget = meta.get("remaining_energy_budget_mwh")
+            if budget is not None:
+                out["hydro_energy_budget_excess_max_mwh"] = max(out["hydro_energy_budget_excess_max_mwh"], float(power.sum()*cfg.dt-budget),0.)
+            spec=specs[h]; season=spec["seasons"][cfg.base["season"]]
+            vmin,vmax=float(season["vmin"]),float(season["vmax"])
+            if spec.get("regulation")=="run_of_river":
+                vmax=float(season["v0"]);vmin=vmax-float(spec.get("pondage",0) or 0)
+            out["hydro_volume_bound_excess_max_1e4m3"] = max(out["hydro_volume_bound_excess_max_1e4m3"], float(np.max(vmin-volume)),float(np.max(volume-vmax)),0.)
+            q=np.asarray(sn["Qout"][h])
+            out["hydro_ecological_shortage_max_m3s"] = max(out["hydro_ecological_shortage_max_m3s"],float(np.max(float(season["qeco"])-q)),0.)
+            if spec.get("qout_max") is not None:
+                out["hydro_outflow_limit_excess_max_m3s"] = max(out["hydro_outflow_limit_excess_max_m3s"],float(np.max(q-float(spec["qout_max"]))),0.)
+            if stage=="RT":
+                out["hydro_state_volume_continuity_max_err_1e4m3"] = max(out["hydro_state_volume_continuity_max_err_1e4m3"],abs(float(meta["v_start_1e4m3"])-state.hydro[h]))
+                out["hydro_state_power_continuity_max_err_mw"] = max(out["hydro_state_power_continuity_max_err_mw"],abs(float(meta["p_start_mw"])-state.hydro_p[h]))
+                if cfg.mode["realtime"].get("hydro") in ("fixed_da","window_end_da"):
+                    for (uid,z),arr in sn["delta"].items():
+                        if uid==h:
+                            expected=da_sn["delta"][(uid,z)][start:start+len(arr)]
+                            out["hydro_da_zone_count_mismatch"] += int(np.count_nonzero(np.asarray(arr)!=expected))
+                out["hydro_window_records"].append(dict(window_start=start,window_end_exclusive=start+len(power),station=h,
+                    start_volume_1e4m3=float(meta["v_start_1e4m3"]),start_power_mw=float(meta["p_start_mw"]),
+                    terminal_target_1e4m3=target,terminal_actual_1e4m3=float(volume[-1]),terminal_error_1e4m3=terminal_error,
+                    water_balance_max_err_1e4m3=water_error,station_ramp_excess_max_mw=ramp_excess,
+                    remaining_energy_budget_mwh=budget,window_generation_mwh=float(power.sum()*cfg.dt)))
+    check_snapshot(da_sn,"DA",0)
+    for r,state in zip(rr.rt,rr.states):
+        check_snapshot(r["snap"],"RT",r["t"],state)
+    numeric = [v for k,v in out.items() if k not in ("hydro_window_checks_available","hydro_window_records")]
+    out["hydro_window_constraints_satisfied"] = bool(out["hydro_window_checks_available"] and all(np.isfinite(v) and v<=tolerance for v in numeric))
+    out["hydro_check_scope"] = "DA_and_RT_station_aggregate_ramp,water,volume,eco,outflow,budget;RT_actual_state,DA_zone_count,hard_window_terminal_if_configured;not_individual_turbine_ramp"
+    return out
+
+
 def checks(da_res, rr, rt_tab) -> dict:
     """连续性与平衡性校核（测试同样使用）。"""
     cfg = da_res.case.cfg
@@ -93,6 +264,13 @@ def checks(da_res, rr, rt_tab) -> dict:
         out["pumped_vs_da_dev_mw"] = float(dev)
     out["anchor_relaxed_periods"] = int(sum(1 for r in rr.rt if r.get("anchor_relaxed", 0)))
     out["anchor_slack_max_mwh"] = float(max(r["slack"].get("anchor_slack_max_mwh", 0.0) for r in rr.rt))
+    out.update(slack_policy_checks(da_res.slack, rr.rt))
+    from .regulation import snapshot as regulation_snapshot
+    agc_states = [regulation_snapshot(da_res.model)] + [r["snap"].get("regulation", {}) for r in rr.rt]
+    agc_short = [float(v) for sn in agc_states if sn.get("enabled") for v in sn["shortage_mw"]]
+    out["regulation_shortage_max_mw_all_windows"] = max(agc_short, default=0.)
+    out["regulation_demand_met_all_windows"] = max(agc_short, default=0.) <= 1e-6
+    out["all_declared_market_requirements_without_slack"] = out["rules_satisfied_no_slack"] and out["regulation_demand_met_all_windows"]
     # 最小开停机（实际执行序列）
     viol = 0
     for u in cfg.units["thermal"]:
@@ -118,14 +296,41 @@ def checks(da_res, rr, rt_tab) -> dict:
     out["rt_balance_err_mw"] = float(np.abs(bal).max())
     inj = rt_tab["prices"].groupby("period").inj_mw.sum()
     out["rt_injection_sum_err_mw"] = float(np.abs(inj).max())
+    out.update(execution_safety_checks(da_res, rt_tab))
+    out.update(hydro_window_checks(da_res, rr))
+    tol = out["safety_tolerance_mw"]
+    # Deliberately separate checked physical constraints from anchors/forecast-window
+    # reserve shortages. Neither a monetary reconciliation nor balance proves safety.
+    residuals = ("rt_balance_err_mw", "rt_injection_sum_err_mw", "soc_continuity_err_mwh",
+                 "soc_equation_err_mwh", "pumped_continuity_err", "pumped_equation_err")
+    violations = ("storage_simultaneous", "pumped_simultaneous", "min_updown_violations",
+                  "locked_commitment_mismatch_rt", "rt_vs_plan_commitment_mismatch")
+    out["physical_feasible_checked_constraints"] = bool(
+        out["network_feasible"] and all(out.get(k, 0.0) <= tol for k in residuals)
+        and all(out.get(k, 0) == 0 for k in violations)
+        and float(sysd.shed_mw.max()) <= tol and float(sysd.surplus_mw.max()) <= tol)
+    out["physical_feasibility_scope"] = "DA:network_limits_only;RT:network_limits,balance,SOC_and_pumped_continuity,exclusivity,commitment,min_updown_completed_interior_runs_only,no_shed_or_surplus;not_all_model_constraints"
     return out
 
 
-def run_full(cfg, case, log=print, periods: int | None = None) -> dict:
+def run_full(cfg, case, log=print, periods: int | None = None, *, progress_callback=None, should_cancel=None) -> dict:
     t0 = time.perf_counter()
-    da = run_da(case, verbose=True)
+    if should_cancel and should_cancel():
+        from .live_runner import RunCancelled
+        raise RunCancelled("Cancelled before DA")
+    if progress_callback:
+        progress_callback({"phase": "da_start", "completed": 0, "total": cfg.T if periods is None else min(cfg.T, periods)})
+    da = run_da(case, verbose=True, stage_callback=progress_callback) if progress_callback else run_da(case, verbose=True)
     t_da = time.perf_counter() - t0
-    rr = rolling.run_rolling(da, periods=periods, log=log)
+    if progress_callback:
+        progress_callback({"phase": "da_done", "da": da})
+    def emit(event):
+        if progress_callback:
+            progress_callback(dict(event, da=da))
+    rr = rolling.run_rolling(da, periods=periods, log=log, progress_callback=emit, should_cancel=should_cancel)
+    if should_cancel and should_cancel():
+        from .live_runner import RunCancelled
+        raise RunCancelled("Cancelled before settlement")
     t1 = time.perf_counter()
     rt_tab = rolling.rt_tables(da, rr)
     id_tab = rolling.intraday_tables(da, rr)
@@ -157,11 +362,17 @@ def summarize_full(res) -> dict:
                       storage_mode=cfg.mode["realtime"]["storage"]["mode"], anchor=cfg.mode["realtime"]["storage"]["anchor"],
                       x=cfg.mode["realtime"]["storage"]["x"], hydro=cfg.mode["realtime"].get("hydro", "fixed_da"),
                       anchor_relaxed_periods=res["checks"]["anchor_relaxed_periods"],
+                      anchor_slack_periods=res["checks"]["anchor_slack_periods"],
                       anchor_slack_max_mwh=res["checks"]["anchor_slack_max_mwh"],
+                      anchor_slack_max_mwh_legacy_note=res["checks"]["anchor_slack_max_mwh_legacy_note"],
+                      storage_anchor_slack_max_mwh=res["checks"]["storage_anchor_slack_max_mwh"],
+                      pumped_anchor_slack_max_1e4m3=res["checks"]["pumped_anchor_slack_max_1e4m3"],
+                      storage_anchor_slack_periods=res["checks"]["storage_anchor_slack_periods"],
+                      pumped_anchor_slack_periods=res["checks"]["pumped_anchor_slack_periods"],
                       repriced_periods=int(rt["system"].repriced.sum()),
                       shed_mwh=float(rt["system"].shed_mw.sum() * cfg.dt), surplus_mwh=float(rt["system"].surplus_mw.sum() * cfg.dt),
                       curtail_mwh=float(rt["system"].curtail_mw.sum() * cfg.dt)),
-        da=dict(objective=da.scuc_info["objective"], gap=da.scuc_info["gap"],
+        da=dict(objective=da.sced_info["objective"], scuc_objective=da.scuc_info["objective"], gap=da.scuc_info["gap"],
                 curtail_mwh=float(da.tables["units"].curtail_mw.sum() * cfg.dt)),
         spread=dict(da_lw_avg=float((wda * load_da.sum(0)).sum() / load_da.sum()),
                     rt_lw_avg=float((wrt * load_rt.sum(0)).sum() / load_rt.sum()),
@@ -189,7 +400,7 @@ def summarize_full(res) -> dict:
 
 
 def pumped_full_summary(res) -> dict:
-    """抽蓄：日前/实时发电抽水电量、小时数、综合效率，两部制结算后的电能量净收入，及容量电费（信息项，不进入现货结算）。"""
+    """抽蓄：日前/实时发电抽水电量、小时数、综合效率及两结算电能量净收入；不计算容量市场收入。"""
     da, st, rt = res["da"], res["settle"], res["rt"]
     cfg = da.case.cfg
     dt = cfg.dt
@@ -217,8 +428,6 @@ def pumped_full_summary(res) -> dict:
                 rev[kind] = {c: float(r[c]) for c in ("da_amount", "rt_amount", "total") if c in r}
         o["settlement"] = rev
         o["energy_net_revenue"] = float(sum(v.get("total", 0.0) for v in rev.values()))
-        cap = float(p.get("capacity_price", 0.0))
-        o["capacity_fee_per_day"] = cap * 1000 * p["n_units"] * p["unit_gen_max"] / 365.0
         out[pid] = o
     return out
 
@@ -246,7 +455,26 @@ def running_hours(res) -> dict:
 def write_full_outputs(res, d: Path, make_plots=True) -> dict:
     d.mkdir(parents=True, exist_ok=True)
     da, st, rt, idt = res["da"], res["settle"], res["rt"], res["id"]
+    stage_data = {"da": getattr(da, "stage_diagnostics", {}), "rt_windows": [{"t": r["t"], "stages": r.get("stage_diagnostics", {})} for r in res["rr"].rt]}
+    (d / "stage_diagnostics.json").write_text(json.dumps(stage_data, ensure_ascii=False, default=float), encoding="utf-8")
     cfg = da.case.cfg
+    # Full-precision window evidence for independent hydro state/lag/target audits.
+    def hydro_evidence(sn):
+        data = {key: {h: np.asarray(a).tolist() for h,a in sn.get(key, {}).items()}
+                for key in ("Ph", "Vh", "Qout")}
+        data["delta"] = [{"station": h, "zone": int(z), "values": np.asarray(a).tolist()}
+                         for (h,z),a in sn.get("delta", {}).items()]
+        data["constraints"] = sn.get("hydro_constraints", {})
+        return data
+    evidence = dict(dt_h=cfg.dt, season=cfg.base["season"], hydro_mode=cfg.mode["realtime"].get("hydro"),
+                    specifications=cfg.units["hydro"], da=hydro_evidence(rolling.snapshot(da.model)), rt_windows=[])
+    for r,state in zip(res["rr"].rt,res["rr"].states):
+        evidence["rt_windows"].append(dict(t=r["t"], snapshot=hydro_evidence(r["snap"]),
+            state=dict(volume=state.hydro, power=getattr(state,"hydro_p",{}), online=getattr(state,"hydro_online",{}),
+                       energy_used_mwh=state.hydro_used,
+                       outflow_history={h:np.asarray(a[:state.t]).tolist() for h,a in state.hydro_hist.items()})))
+    (d / "hydro_window_evidence.json").write_text(json.dumps(evidence,ensure_ascii=False,
+        default=lambda x:x.tolist() if hasattr(x,"tolist") else float(x)),encoding="utf-8")
     f = dict(index=False, float_format="%.4f")
     da.tables["units"].to_csv(d / "da_unit_awards.csv", **f)
     da.tables["prices"].to_csv(d / "da_nodal_prices.csv", **f)
@@ -265,8 +493,27 @@ def write_full_outputs(res, d: Path, make_plots=True) -> dict:
     st["by_type"].to_csv(d / "settlement_by_type.csv", **f)
     st["reconciliation"].to_csv(d / "settlement_reconciliation.csv", **f)
     st["line_rent"].to_csv(d / "settlement_line_rent.csv", **f)
+    pd.DataFrame(res["checks"].get("hydro_window_records",[])).to_csv(d / "hydro_window_targets.csv",**f)
     s = summarize_full(res)
     s["da_summary"] = summarize(da)
+    from . import regulation, regulation_results
+    da_reg, da_reg_system = regulation_results.table_for_snapshot(regulation.snapshot(da.model), da.prices.get("regulation", {}))
+    da_reg.to_csv(d / "da_regulation_indicative.csv", **f)
+    da_reg_system.to_csv(d / "da_regulation_system_indicative.csv", **f)
+    rt["regulation"].to_csv(d / "rt_regulation.csv", **f)
+    rt["regulation_system"].to_csv(d / "rt_regulation_system.csv", **f)
+    s["regulation"] = regulation_results.summarize(rt["regulation"], rt["regulation_system"])
+    agc_snapshots = {"da": regulation.snapshot(da.model), "rt_windows": [r["snap"].get("regulation", {}) for r in res["rr"].rt]}
+    (d / "regulation_window_snapshots.json").write_text(json.dumps(agc_snapshots, ensure_ascii=False), encoding="utf-8")
+    if s["regulation"]["enabled"]:
+        diagnostics = [x["diagnostics"] for x in [agc_snapshots["da"], *agc_snapshots["rt_windows"]]]
+        for key in ("constraint_violation_max_mw", "energy_constraint_violation_max_mwh"):
+            s["regulation"][key] = max(x[key] for x in diagnostics)
+        s["regulation"]["slack_budget_final_max_violation"] = max(x["slack_budget"]["final_max_violation"] for x in [agc_snapshots["da"], *agc_snapshots["rt_windows"]])
+        s["regulation"]["slack_budget_auxiliary_max_violation"] = max(x["slack_budget"]["auction_max_violation"] for x in [agc_snapshots["da"], *agc_snapshots["rt_windows"]])
+        s["regulation"]["da_shortage_max_mw"] = max(agc_snapshots["da"]["shortage_mw"], default=0.)
+        s["regulation"]["stage_counts"] = dict(energy_scuc=1+len(res["rr"].rt)+len(res["rr"].id_rounds), regulation_allocation_lp=1+len(res["rr"].rt)+len(res["rr"].id_rounds), final_energy_sced=1+len(res["rr"].rt)+len(res["rr"].id_rounds))
+        s["regulation"]["physical_check_scope"] = "DA_and_all_RT_lookahead_windows_AGC_mode_headroom_response_baseline_ramp_SOC_budget;not_seconds_AGC_or_network_activation_certificate"
     (d / "summary.json").write_text(json.dumps(s, ensure_ascii=False, indent=2, default=float), encoding="utf-8")
     if make_plots:
         net = da.case.net

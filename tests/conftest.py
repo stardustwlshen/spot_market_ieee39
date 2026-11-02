@@ -16,6 +16,13 @@ def da_result():
     from smm.network import build_network
 
     cfg = load_config()
+    # Preserve the original energy-only regression contract when new markets default on.
+    if "regulation" in cfg.mode:
+        cfg.mode["regulation"]["enabled"] = False
+    # 保留原始500 MW网络作为回归基准；新600 MW默认场景另做全天端到端校核。
+    cfg.base.get("line_scale", {}).pop("L2-3", None)
+    cfg.base["line_capacity_multiplier"] = 1.0
+    cfg.mode["penalties"]["line"] = 1.0e5  # 原500MW/高罚回归基准；新默认另有完整96段验证。
     cfg.base["solver"]["mip_rel_gap"] = 0.01  # 测试放宽 gap 以缩短用时
     cfg.base["solver"]["time_limit_s"] = 150  # 测试限时（含抽蓄时 MIP 可能达不到 gap，取时限内可行解）
     net = build_network(cfg)

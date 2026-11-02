@@ -67,8 +67,9 @@ print(f"  预测误差（负荷+风光）偏差 |ΔQ| {fe['dev_abs_mwh']:.1f} MW
 for k, r in s["reconciliation"].items():
     print(f"  对账[{k}] 市场盈余 {r['merchandising_surplus']/1e4:.2f} 万 = 阻塞盈余 {r['congestion_rent']/1e4:.2f} 万 + 限价修正 {r['clamp_adjustment']/1e4:.2f} 万，残差 {r['residual']:.2e} 元")
 rtc = s["realtime"]
-print(f"  储能实时 {rtc['storage_mode']}/{rtc['anchor']} x={rtc['x']}；锚点松弛触发 {rtc['anchor_relaxed_periods']} 个时段（最大 {rtc['anchor_slack_max_mwh']:.4f} MWh）；"
-      f"调度松弛重算价格 {rtc['repriced_periods']} 个时段")
+print(f"  储能实时 {rtc['storage_mode']}/{rtc['anchor']} x={rtc['x']}；锚点松弛触发 {rtc['anchor_slack_periods']} 个窗口；"
+      f"额外重定价（标准流程应为0） {rtc['repriced_periods']} 个时段")
+print(f"  锚点最大松弛：储能 {rtc.get('storage_anchor_slack_max_mwh', '不可得')} MWh；抽蓄 {rtc.get('pumped_anchor_slack_max_1e4m3', '不可得')} 万m³（旧混合指标不作能量值）")
 print(f"  日末 21:00–24:00 负荷加权均价 日前 {sp['da_lw_tail']:.2f} / 实时 {sp['rt_lw_tail']:.2f}；实时节点价最大 {sp['rt_lmp_max']:.1f}")
 print(f"  校核 {ch}")
 print(f"  用时 日前 {ts['da']:.0f}s / 日内 {ts['intraday']:.0f}s / 实时 {ts['realtime']:.0f}s / 结算 {ts['settlement']:.0f}s / 合计 {ts['total']:.0f}s")

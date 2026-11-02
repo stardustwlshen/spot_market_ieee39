@@ -27,6 +27,8 @@ def _errs(cfg, b):
 
 def test_rules_catch_errors():
     cfg = load_config()
+    # Preserve regression coverage of the legacy research step/strictness rules.
+    cfg.mode["bid_rules"] = {"profile": "generic"}
     b0 = default_bids(cfg)
     b = copy.deepcopy(b0)
     s = b["units"]["CCGT"]["segments"]

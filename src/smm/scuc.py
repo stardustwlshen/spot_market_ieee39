@@ -58,6 +58,12 @@ def prepare(case: DACase) -> ModelData:
         L, c = _seg_lists(b["segments"])
         md.ren[r["id"]] = dict(r, L=L, c=c, fc=case.ren_fc[r["id"]])
     season = cfg.base["season"]
+    if case.init is not None:
+        hydro_v = case.init.get("hydro", {})
+        expected_hydro = {h["id"] for h in cfg.units["hydro"]}
+        if (not isinstance(hydro_v, dict) or set(hydro_v) != expected_hydro
+                or any(not np.isfinite(float(v)) for v in hydro_v.values())):
+            raise ValueError("滚动初值hydro必须完整包含所有启用水电的有限实际库容，不能退回季节初值")
     for h in cfg.units["hydro"]:
         b = bids[h["id"]]
         L, c = _seg_lists(b["segments"])
@@ -76,9 +82,29 @@ def prepare(case: DACase) -> ModelData:
         if case.init and h["id"] in case.init.get("hydro", {}):
             md.hydro[h["id"]]["v0"] = float(case.init["hydro"][h["id"]])
         if case.hydro_e_budget and h["id"] in case.hydro_e_budget and hd.get("e_day") is not None:
-            md.hydro[h["id"]]["e_day"] = max(0.0, float(case.hydro_e_budget[h["id"]]))
+            remaining = float(case.hydro_e_budget[h["id"]])
+            if not np.isfinite(remaining) or remaining < -1e-6:
+                raise ValueError(f"水电 {h['id']} 实际执行已超日电量预算: 剩余 {remaining} MWh")
+            md.hydro[h["id"]]["e_day"] = remaining  # never clip away an actual budget violation
+        # Each j currently represents a station's identical units aggregated by
+        # stable-zone counts, not an individually identified physical turbine.
+        for required in ("ramp", "init_units_on", "init_p_unit"):
+            if required not in h:
+                raise ValueError(f"水电 {h['id']} 缺少显式 {required}，不能猜测初始出力/爬坡")
+        ramp = float(h["ramp"])  # MW/min per physical unit
+        n0 = float(h["init_units_on"])
+        p0 = n0 * float(h["init_p_unit"])
+        if case.init is not None:
+            if h["id"] not in case.init.get("hydro_p", {}) or h["id"] not in case.init.get("hydro_online", {}):
+                raise ValueError(f"水电 {h['id']} 滚动初值必须带实际hydro_p和hydro_online")
+            p0 = float(case.init["hydro_p"][h["id"]])
+            n0 = float(case.init["hydro_online"][h["id"]])
+        if (not np.isfinite(ramp) or ramp <= 0 or not np.isfinite(n0) or n0 != round(n0)
+                or not 0 <= n0 <= n or not np.isfinite(p0) or p0 < -1e-6
+                or p0 > n0 * float(h["unit_pmax"]) + 1e-6):
+            raise ValueError(f"水电 {h['id']} 初始出力/在线台数/爬坡参数非法")
         md.hydro_units[h["id"]] = dict(station=h["id"], bus=h["bus"], zones=h["zones"], n_units=n, L=L, c=c,
-                                       pmax=h["unit_pmax"] * n)
+                                       pmax=h["unit_pmax"] * n, ramp=ramp, p0=p0, units0=int(n0))
     for s in cfg.units["storage"]:
         b = bids[s["id"]]
         mode = b.get("mode", "price_quantity")
@@ -130,6 +156,10 @@ def _sto_M(d, kind, dt):
 
 
 def build_model(case: DACase, penalties: dict | None = None) -> pyo.ConcreteModel:
+    # DACase is mutable and can be constructed directly (including RT/ID windows).
+    # Revalidate every build; never cache approval of a mutable bid dictionary.
+    from .bids import validate_bids, raise_on_errors
+    raise_on_errors(validate_bids(case.cfg, case.bids, require_complete=True))
     cfg, net = case.cfg, case.net
     md = prepare(case)
     pen = dict(cfg.mode["penalties"]) if penalties is None else penalties
@@ -297,6 +327,23 @@ def build_model(case: DACase, penalties: dict | None = None) -> pyo.ConcreteMode
     m.c_hzhi = pyo.Constraint(m.JZ, m.T, rule=lambda m, j, z, t: m.pz[j, z, t] <= md.hydro_units[j]["zones"][z][1] * m.delta[j, z, t])
     m.c_hzone = pyo.Constraint(m.J, m.T, rule=lambda m, j, t: sum(m.delta[j, z, t] for z in range(len(md.hydro_units[j]["zones"]))) <= md.hydro_units[j]["n_units"])
 
+    def hydro_on(j, t):
+        return sum(m.delta[j, z, t] for z in range(len(md.hydro_units[j]["zones"])))
+
+    def hydro_prev_p(j, t):
+        return md.hydro_units[j]["p0"] if t == 0 else m.Ph[j, t - 1]
+
+    def hydro_prev_on(j, t):
+        return md.hydro_units[j]["units0"] if t == 0 else hydro_on(j, t - 1)
+
+    # Station aggregate endpoint envelope. Upward ramp uses current online count;
+    # downward ramp uses previous count, including the executed cross-window state.
+    # A unit's rating is MW/min; multiply by 60*dt exactly once. No new commitment.
+    m.c_hramp_up = pyo.Constraint(m.J, m.T, rule=lambda m, j, t:
+        m.Ph[j, t] - hydro_prev_p(j, t) <= md.hydro_units[j]["ramp"] * 60 * dt * hydro_on(j, t))
+    m.c_hramp_dn = pyo.Constraint(m.J, m.T, rule=lambda m, j, t:
+        hydro_prev_p(j, t) - m.Ph[j, t] <= md.hydro_units[j]["ramp"] * 60 * dt * hydro_prev_on(j, t))
+
     def qgen(h, t):
         d = md.hydro[h]
         return d["water_rate"] * sum(m.Ph[j, t] for j in d["units"])
@@ -314,8 +361,12 @@ def build_model(case: DACase, penalties: dict | None = None) -> pyo.ConcreteMode
             return qgen(up, tau) + m.Qspill[up, tau]
         a = t0 + tau                                   # 窗口外：取已执行（或日前计划）出库流量；日前之前取初值
         hh = hist.get(up)
-        if hh is not None and 0 <= a < len(hh) and np.isfinite(hh[a]):
+        if a >= 0:
+            if hh is None or a >= len(hh) or not np.isfinite(float(hh[a])):
+                raise ValueError(f"梯级水电 {h} 缺少上游 {up} 时段 {a} 已执行/已计划出库历史，不能退回设备初值")
             return float(hh[a])
+        # Only pre-day water travel is represented by the explicit equipment
+        # initial-outflow assumption; within-day missing history must fail closed.
         u = next(x for x in cfg.units["hydro"] if x["id"] == up)
         return float(u["water_rate"] * u["init_units_on"] * u["init_p_unit"])
 
@@ -332,7 +383,16 @@ def build_model(case: DACase, penalties: dict | None = None) -> pyo.ConcreteMode
     term = case.terminal
     if term is None or term.get("hydro_vend", False):   # 日前 / 至日末的日内窗口：期末库容（水位）控制（川V4.0 附件8 约束(17)、7.4.11）
         m.c_vend = pyo.Constraint(m.HS, rule=lambda m, h: m.V[h, T - 1] >= md.hydro[h]["v_end"])
-    # 实时：水电执行日前计划曲线（甘肃运营实施细则 第六十条（摘要来源）：水电实时报量不报价、按校核后的自调度曲线；hydro 取其他值（如 sced）时窗口内按库容、振动区约束优化，对应川V4.0 9.2.8、附件10 约束(11)(12)），不设库容跟踪
+    if term is not None and "hydro_window_end" in term:
+        targets = term["hydro_window_end"]
+        if not isinstance(targets, dict) or set(targets) != set(md.hydro):
+            raise ValueError("hydro_window_end须为所有启用水电的同钟点日前库容目标")
+        for h, target in targets.items():
+            if not np.isfinite(float(target)):
+                raise ValueError(f"水电 {h} 窗口末库容目标必须有限；不可截断/软化目标")
+        m.c_hydro_window_end = pyo.Constraint(m.HS, rule=lambda m, h:
+            m.V[h, T - 1] == float(targets[h]))  # hard equality, no slack or price rerun
+    # 实时fixed_da为本模型保守研究设置，并非甘肃2026规则要求永久沿用日前曲线。
     # 日电量约束（川V4.0 附件8 约束(16)、7.4.10）：仅库容型；径流式按来水发电
     m.c_eday = pyo.Constraint(m.HS, rule=lambda m, h: sum(m.Ph[j, t] for j in md.hydro[h]["units"] for t in range(T)) * dt <= md.hydro[h]["e_day"] + 1e-6
                               if md.hydro[h].get("e_day") is not None else pyo.Constraint.Skip)
@@ -416,9 +476,9 @@ def build_model(case: DACase, penalties: dict | None = None) -> pyo.ConcreteMode
     m.c_elim = pyo.Constraint(m.S, m.T, rule=lambda m, s, t: pyo.inequality(md.storage[s]["soc_min"] * md.storage[s]["ecap"], m.E[s, t], md.storage[s]["soc_max"] * md.storage[s]["ecap"]))
     # 期末 SOC：
     #   日前：储能申报了运行日末期望 SOC → 硬约束 E[T−1] = soc_end·ecap（川V4.0 7.7.4、附件8 式(20)）；未申报 → 不约束，由出清决定。
-    #   实时（甘V3.2 运营细则附录5 第9项）：窗口内锚点时段 lo ≤ E ≤ hi（硬约束），lo/hi 由 rolling 按日前 SOC 计算：
+    #   实时（甘V3.2 运营细则附录5 第9项）：窗口内锚点时段 lo ≤ E ≤ hi（带显式松弛与罚项的软锚点），lo/hi 由 rolling 按日前 SOC 计算：
     #     window_end_pct：窗口末时段 (1−x)E_DA ≤ E_RT ≤ (1+x)E_DA；hourly_eq：窗口内各整点 E_RT = E_DA（广东）。
-    #   sA_up/sA_dn 只为防止无解（罚 anchor_penalty），被触发时 rolling 放宽锚点到实际值后重算价格，罚因子不进入电价。
+    #   sA_up/sA_dn 为软锚点松弛（罚 anchor_penalty）；标准流程不再放宽边界或重定价，直接使用同次SCED对偶。
     if term is None:
         S_end = [s for s in m.S if md.storage[s]["soc_end"] is not None]
         m.c_eend = pyo.Constraint(S_end, rule=lambda m, s: m.E[s, T - 1] == float(md.storage[s]["soc_end"]) * md.storage[s]["ecap"])
@@ -524,6 +584,10 @@ def build_model(case: DACase, penalties: dict | None = None) -> pyo.ConcreteMode
     m.c_Rdn = pyo.Constraint(m.T, rule=lambda m, t: sum(m.r_dn[g, t] for g in G_res) + (sum(m.rh_dn[j, t] for j in md.hydro_units) if hyd_ok else 0)
                              + sum(m.rs_dn[s, t] for s in md.storage) + sum(m.rp_dn[p, t] for p in md.pumped) + m.sR_dn[t] >= float(case.R_dn[t]))
 
+    # ---------------- 调频：独立AGC资格，与能量/备用共享物理能力
+    from . import regulation
+    regulation.attach(m)
+
     # ---------------- 滚动窗口：固定指定整数变量（日内锁定的启停、实时沿用的水电台数/储能状态）
     for name, vals in (case.fixed or {}).items():
         var = getattr(m, name)
@@ -608,6 +672,8 @@ def warm_start(m, log=lambda *a: None) -> dict:
 
 
 def solve_scuc(m: pyo.ConcreteModel, log=lambda *a: None):
+    if getattr(m, "_agc", {}).get("enabled", False) and getattr(m, "_agc_stage", None) != "energy_scuc":
+        raise ValueError("启用调频时必须先prepare_energy，再执行唯一能量SCUC")
     cfg = m._case.cfg
     ws = None
     t0 = time.perf_counter()
@@ -669,11 +735,15 @@ def _objective_expr(m):
         Pa = float(term.get("anchor_penalty", 1.0e5))
         Pv = float(term.get("pumped_anchor_penalty", Pa))
         tp = sum((Pv if m._anchors[i][4] == "Vu" else Pa) * (m.sA_up[i] + m.sA_dn[i]) for i in m.A)
-    return th + nl + su + rw + hy + sp + st + ps + pn + tp
+    from . import regulation
+    return th + nl + su + rw + hy + sp + st + ps + pn + tp + regulation.objective_term(m)
 
 
 def solve_sced(m):
     """固定整数后的 LP，读取对偶。"""
+    if getattr(m, "_agc", {}).get("enabled", False) and getattr(m, "_agc_stage", None) not in (
+            "agc_reservation_lp", "reserved_for_energy_sced"):
+        raise ValueError("启用调频时SCED必须通过clear_reservations完成独立预留，不能绕过阶段顺序")
     cfg = m._case.cfg
     if not hasattr(m, "dual"):
         m.dual = pyo.Suffix(direction=pyo.Suffix.IMPORT)
@@ -693,21 +763,29 @@ def storage_simultaneous(m, tol=1e-3) -> int:
 
 
 def slack_summary(m) -> dict:
+    """Numeric reporting only; anchor slack units follow E (MWh) / Vu (10^4 m3).
+
+    anchor_slack_max_mwh is a deprecated, mixed-unit legacy key. Its numeric
+    value is preserved for old consumers; use the two typed keys for magnitudes.
+    """
     T = list(m.T)
+    anchor_values = {i: pyo.value(m.sA_up[i]) + pyo.value(m.sA_dn[i]) for i in m.A}
     return dict(
         shed_mwh=sum(pyo.value(m.shed[n, t]) for n in m.N for t in T) * m._md.dt,
         surplus_mwh=sum(pyo.value(m.surplus[t]) for t in T) * m._md.dt,
         line_slack_max=max(pyo.value(m.sl[l, t]) for l in m.L for t in T),
         reserve_up_short_max=max(pyo.value(m.sR_up[t]) for t in T),
         reserve_dn_short_max=max(pyo.value(m.sR_dn[t]) for t in T),
-        anchor_slack_max_mwh=max([pyo.value(m.sA_up[i]) + pyo.value(m.sA_dn[i]) for i in m.A] or [0.0]),
+        anchor_slack_max_mwh=max(anchor_values.values(), default=0.0),
+        storage_anchor_slack_max_mwh=max((v for i, v in anchor_values.items() if m._anchors[i][4] == "E"), default=0.0),
+        pumped_anchor_slack_max_1e4m3=max((v for i, v in anchor_values.items() if m._anchors[i][4] == "Vu"), default=0.0),
     )
 
 
 def has_slack(m, tol=1e-6) -> bool:
     """调度松弛（切负荷/弃电/线路/备用）是否被触发；锚点松弛单独处理（relax_anchors）。"""
     s = slack_summary(m)
-    return any(v > tol for k, v in s.items() if k != "anchor_slack_max_mwh")
+    return any(s[k] > tol for k in ("shed_mwh", "surplus_mwh", "line_slack_max", "reserve_up_short_max", "reserve_dn_short_max"))
 
 
 def relax_anchors(m, tol=1e-6) -> int:
@@ -741,7 +819,8 @@ def extract_prices(m) -> dict:
     energy = lam
     cong = -(ptdf.T @ (mu_p - mu_m))  # (N, T)：−Σ PTDF·(μ⁺−μ⁻)
     lmp_dec = energy[None, :] + cong
+    from . import regulation
     r_up = np.array([m.dual[m.c_Rup[t]] for t in range(T)]) / dt
     r_dn = np.array([m.dual[m.c_Rdn[t]] for t in range(T)]) / dt
     return dict(lmp=pi, lmp_decomp=lmp_dec, energy=energy, congestion=cong, mu_plus=mu_p, mu_minus=mu_m,
-                reserve_up_price=r_up, reserve_dn_price=r_dn)
+                reserve_up_price=r_up, reserve_dn_price=r_dn, regulation=regulation.prices(m))

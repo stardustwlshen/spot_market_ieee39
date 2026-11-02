@@ -501,8 +501,7 @@ with tabs[8]:
                 ("unit_pump_min", "变速机抽水下限 MW"), ("e_gen", "发电转换系数 MWh/万m³"), ("e_pump", "抽水转换系数 MWh/万m³"),
                 ("v_total", "上下库总水量 万m³"), ("vup_min", "上库下限 万m³"), ("vup_max", "上库上限 万m³"), ("vdn_min", "下库下限 万m³"),
                 ("vdn_max", "下库上限 万m³"), ("vup0", "日初上库库容 万m³"), ("max_gen_starts", "每台日发电启动上限"),
-                ("max_pump_starts", "每台日抽水启动上限"), ("start_cost_gen", "发电启动费 元/台次"), ("start_cost_pump", "抽水启动费 元/台次"),
-                ("capacity_price", "容量电价 元/kW·年（仅展示）")]
+                ("max_pump_starts", "每台日抽水启动上限"), ("start_cost_gen", "发电启动费 元/台次"), ("start_cost_pump", "抽水启动费 元/台次")]
         pdf = pd.DataFrame([{"参数": lab, "键": k, "值": float(ps.get(k) or 0)} for k, lab in keys])
         pe = st.data_editor(pdf, disabled=["参数", "键"], hide_index=True, width="stretch", key="ps_ed")
         eff = float(pe.loc[pe["键"] == "e_gen", "值"].iloc[0]) / max(float(pe.loc[pe["键"] == "e_pump", "值"].iloc[0]), 1e-9)

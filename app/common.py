@@ -28,7 +28,7 @@ TYPE_COLOR = {"coal": "#5b5b5b", "gas_ccgt": "#e07b39", "gas_gt": "#f2b134", "hy
               "pv": "#ffd700", "tie": "#9b59b6", "storage": "#e74c3c", "storage_dis": "#e74c3c", "storage_ch": "#f1948a",
               "pumped": "#0e7c86", "pumped_gen": "#0e7c86", "pumped_pump": "#7fc8cf"}
 MODE_CN = {"da": "仅日前", "full": "全流程"}
-STATUS_CN = {"running": "运行中", "done": "完成", "failed": "失败", "stopped": "已停止"}
+STATUS_CN = {"running": "运行中", "done": "完成", "failed": "失败", "stopped": "已停止", "starting": "准备中", "cancelling": "取消等待中"}
 
 
 # ----------------------------------------------------------------------------- 统一视觉风格
@@ -141,7 +141,7 @@ def show_fig(fig, key=None):
 def sidebar_nav():
     with st.sidebar:
         st.markdown('<div class="smm-brand">⚡ IEEE39 现货市场出清仿真</div>', unsafe_allow_html=True)
-        st.caption("日前 SCUC/SCED · 实时 15 min 滚动 · 节点电价 · 偏差结算")
+        st.caption("日前 SCUC/SCED · 实时 15 min 滚动 · 仅电能量现货 · 不含调频和容量市场")
         for path, label, icon, helptext in PAGES:
             try:
                 st.page_link(path, label=label, icon=icon, help=helptext)
@@ -210,7 +210,8 @@ def period_labels(T: int = 96) -> list[str]:
 # ----------------------------------------------------------------------------- 场景选择
 def scenario_selector(key: str = "scenario", sidebar: bool = True, label: str = "当前场景") -> str:
     names = sc.list_scenarios()
-    cur = st.session_state.get("scenario", sc.DEFAULT)
+    recommended=next((n for n in ("水电窗口硬锚点_20261102","电能量完善版_20261102") if n in names),sc.DEFAULT)
+    cur = st.session_state.get("scenario", recommended)
     if cur not in names:
         cur = names[0]
     box = st.sidebar if sidebar else st
@@ -224,23 +225,38 @@ def scen_config(name: str):
 
 
 # ----------------------------------------------------------------------------- 运行管理
-def start_run(scenario: str, mode: str, bid_version: int | None, periods: int | None) -> Path:
-    d = sc.new_run_dir(scenario, mode)
-    meta = dict(scenario=scenario, mode=mode, bid_version=bid_version, periods=periods, status="running", stage="启动")
+def start_run(scenario: str, mode: str, bid_version: int | None, periods: int | None, bids=None, regulation=None) -> Path:
+    """Serialize UI launches and freeze inputs before spawning a worker."""
+    import fcntl
     from datetime import datetime
-    meta["started"] = datetime.now().isoformat(timespec="seconds")
-    cmd = [sys.executable, "-u", str(ROOT / "scripts" / "run_scenario.py"), "--scenario", scenario, "--mode", mode,
-           "--run-dir", str(d)]
-    if bid_version:
-        cmd += ["--bid-version", str(bid_version)]
-    if periods:
-        cmd += ["--periods", str(periods)]
-    log = open(d / "run.log", "w", encoding="utf-8")
-    p = subprocess.Popen(cmd, cwd=ROOT, stdout=log, stderr=subprocess.STDOUT, stdin=subprocess.DEVNULL,
-                         start_new_session=True)   # 独立会话：关闭网页/刷新不影响后台运行
-    meta["pid"] = p.pid
-    (d / "meta.json").write_text(json.dumps(meta, ensure_ascii=False, indent=2), encoding="utf-8")
-    return d
+    from smm.live_runner import atomic_json, freeze_inputs
+    requested=load_config(root=sc.scenario_path(scenario))
+    if requested.mode.get("regulation",{}).get("enabled",False) or (regulation or {}).get("enabled",False):
+        raise ValueError("当前仅支持纯电能量现货正常运行；调频场景仅作历史归档，不启动。")
+    sc.RUNS_DIR.mkdir(parents=True, exist_ok=True)
+    with open(sc.RUNS_DIR / ".launch.lock", "a") as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX)
+        if any(run_status(m) in ("running", "starting", "cancelling") for m in sc.list_runs()):
+            raise RuntimeError("已有运行或取消请求正在处理；请等待完成，避免重复求解。")
+        d = sc.new_run_dir(scenario, mode)
+        meta = dict(scenario=scenario, mode=mode, bid_version=bid_version, periods=periods,
+                    status="starting", stage="冻结输入", started=datetime.now().isoformat(timespec="seconds"),
+                    pid_namespace=os.readlink("/proc/self/ns/pid"))
+        atomic_json(d / "meta.json", meta)
+        try:
+            freeze_inputs(sc.scenario_path(scenario), d, bids=bids, regulation=regulation)
+            cmd = [sys.executable, "-u", str(ROOT / "scripts" / "run_scenario.py"), "--scenario", scenario,
+                   "--mode", mode, "--run-dir", str(d)]
+            if bid_version is not None: cmd += ["--bid-version", str(bid_version)]
+            if periods: cmd += ["--periods", str(periods)]
+            with open(d / "run.log", "w", encoding="utf-8") as log:
+                process = subprocess.Popen(cmd, cwd=ROOT, stdout=log, stderr=subprocess.STDOUT,
+                                           stdin=subprocess.DEVNULL, start_new_session=True)
+                (d/"worker.pid").write_text(str(process.pid),encoding="utf-8")
+        except Exception as exc:
+            atomic_json(d/"meta.json", {**meta,"status":"failed","error":str(exc)})
+            raise
+        return d
 
 
 def pid_alive(pid) -> bool:
@@ -259,34 +275,38 @@ def pid_alive(pid) -> bool:
 
 def run_status(m: dict) -> str:
     s = m.get("status", "running")
-    if s == "running" and m.get("pid") and not pid_alive(m["pid"]):
-        meta_p = Path(m["dir"]) / "meta.json"
-        cur = json.loads(meta_p.read_text(encoding="utf-8"))
-        s = cur.get("status", "running")
-        if s == "running":
-            s = "failed"
-            cur.update(status="failed", stage="进程意外退出")
-            meta_p.write_text(json.dumps(cur, ensure_ascii=False, indent=2), encoding="utf-8")
+    d=Path(m["dir"])
+    pid=m.get("pid")
+    if not pid and (d/"worker.pid").exists():
+        pid=int((d/"worker.pid").read_text())
+    if (s in ("running", "starting") and pid
+            and m.get("pid_namespace") == os.readlink("/proc/self/ns/pid") and not pid_alive(pid)):
+        from smm.live_runner import atomic_json
+        meta_p=d/"meta.json";cur=json.loads(meta_p.read_text(encoding="utf-8"))
+        s=cur.get("status","running")
+        if s in ("running","starting"):
+            s="failed";cur.update(status=s,stage="进程意外退出",error="后台进程退出，保留执行前缀；未完成结算")
+            atomic_json(meta_p,cur)
+    if s in ("running","starting") and (d/"cancel.request").exists(): return "cancelling"
     return s
 
 
 def stop_run(m: dict):
-    pid = m.get("pid")
-    if pid and pid_alive(pid):
-        try:
-            os.killpg(int(pid), signal.SIGTERM)
-        except OSError:
-            os.kill(int(pid), signal.SIGTERM)
-    meta_p = Path(m["dir"]) / "meta.json"
-    cur = json.loads(meta_p.read_text(encoding="utf-8"))
-    cur.update(status="stopped", stage="用户停止")
-    meta_p.write_text(json.dumps(cur, ensure_ascii=False, indent=2), encoding="utf-8")
+    """Cooperative stop: never kill an optimizer mid-write or settle a partial day."""
+    from smm.live_runner import atomic_json
+    d=Path(m["dir"])
+    (d/"cancel.request").write_text("cancel at next solve boundary", encoding="utf-8")
+    # Worker owns meta.json; do not race its completion write.
 
 
 def run_progress(m: dict, log: str) -> float:
     """粗略进度：日前约占全流程 60%，实时按日志中的“时段 t”推算。"""
     if m.get("status") == "done":
         return 1.0
+    from smm.live_runner import read_live
+    live = read_live(m["dir"])
+    if live.get("executed_periods"):
+        return min(0.6 + 0.4 * live["executed_periods"] / live["total_periods"], 0.99)
     T = m.get("periods") or 96
     if "[DA]" not in log:
         return 0.03
@@ -303,7 +323,7 @@ def run_label(m: dict) -> str:
     st_ = STATUS_CN.get(m.get("status", ""), m.get("status", ""))
     v = f"v{m['bid_version']}" if m.get("bid_version") else "最新报价"
     extra = f"，前 {m['periods']} 时段" if m.get("periods") else ""
-    return f"{m.get('scenario', '?')} / {tag}（{MODE_CN.get(m.get('mode'), m.get('mode'))}，{v}{extra}，{st_}）"
+    return f"{m.get('display_label',m.get('scenario', '?'))} / {tag}（{MODE_CN.get(m.get('mode'), m.get('mode'))}，{v}{extra}，{st_}）"
 
 
 def all_results() -> list[dict]:
@@ -339,7 +359,7 @@ def load_result(d: str, mtime: float) -> dict:  # mtime 只用于缓存失效
         if R[k] is None:
             R[k] = rd(d / f"{k}.csv")
     for k in ("rt_units", "rt_prices", "rt_lines", "rt_storage", "rt_system", "rt_pumped", "rt_hydro", "settlement_detail", "settlement_by_entity",
-              "settlement_by_type", "settlement_line_rent", "settlement_reconciliation"):
+              "settlement_by_type", "settlement_line_rent", "settlement_reconciliation", "rt_regulation", "rt_regulation_system", "da_regulation_indicative", "da_regulation_system_indicative"):
         R[k] = rd(d / f"{k}.csv")
     sp = d / "summary.json"
     R["summary"] = json.loads(sp.read_text(encoding="utf-8")) if sp.exists() else {}
@@ -372,8 +392,9 @@ def branches_with_rate(snapshot_root: str) -> pd.DataFrame:
         scale = base.get("line_scale") or {}
     except Exception:  # noqa: BLE001
         scale = {}
+        base = {}
     br["scale"] = br.branch_id.map(lambda b: float(scale.get(b, 1.0)))
-    br["rate_eff"] = br.rate_mw * br.scale
+    br["rate_eff"] = br.rate_mw * br.scale * float(base.get("line_capacity_multiplier", 1.0))
     return br
 
 

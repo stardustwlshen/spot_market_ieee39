@@ -49,6 +49,11 @@ def build_network(cfg: Config) -> Network:
         if bid not in set(br.branch_id):
             raise KeyError(f"line_scale 中的支路 {bid} 不存在")
         br.loc[br.branch_id == bid, "rate_mw"] = br.loc[br.branch_id == bid, "rate_orig_mw"] * float(s)
+    # Overall research-capacity multiplier, applied AFTER individual bottleneck factors.
+    global_scale = float(cfg.base.get("line_capacity_multiplier", 1.0))
+    if not np.isfinite(global_scale) or global_scale <= 0:
+        raise ValueError("line_capacity_multiplier 必须是有限正数")
+    br["rate_mw"] *= global_scale
     buses = bus.bus.astype(int).tolist()
     ptdf = compute_ptdf(buses, br, REF_BUS)
     total = bus.load_mw.sum()

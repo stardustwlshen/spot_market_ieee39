@@ -139,7 +139,7 @@ def list_runs(scenario: str | None = None) -> list[dict]:
 
 
 def new_run_dir(scenario: str, mode: str) -> Path:
-    ts = _dt.datetime.now().strftime("%Y%m%d-%H%M%S")
+    ts = _dt.datetime.now().strftime("%Y%m%d-%H%M%S-%f")
     d = RUNS_DIR / _check_name(scenario) / f"{ts}_{mode}"
     d.mkdir(parents=True, exist_ok=False)
     return d

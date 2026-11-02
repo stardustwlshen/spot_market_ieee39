@@ -3,11 +3,11 @@
 时序（参数见 config/modes.yaml 的 MKT.realtime；窗口与时序见该文件注明的甘V3.2 条款）：
   日前（DA）出清 → 对每个 15 min 时段 t：窗口 [t, t+8)（2 h，日末截断），首时段用实际负荷/风光（假设做法）；
     - 煤电、燃气 CCGT 启停锁定日前结果；燃气 GT 启停在窗口 MIP 内按需决策；
-    - 水电执行日前出清曲线（甘肃运营实施细则 第六十条，摘要来源）；
+    - 水电默认固定日前稳定区台数，窗口内出力可调；实际库容起步，窗口末库容硬等同钟点日前值；
     - 储能按 realtime.storage.mode：
         sced_anchor（默认）：沿用日前封存报价进入 SCED，初值 = 实际 SOC，锚点约束跟随日前 SOC：
-            anchor=hourly_eq（默认，B2 广东式）：窗口内各整点 E_RT = E_DA；
-            anchor=window_end_pct（可选，B1 甘肃附录5 第9项）：窗口末 (1±x)E_DA；
+            anchor=hourly_eq（默认，B2）：研究整点带罚软锚点，目标 E_RT = E_DA；
+            anchor=window_end_pct（可选，B1）：窗口末带罚软区间 (1±x)E_DA；
         fixed_da：执行日前出清充放电曲线，价格接受者（山西第九十五条等）；
     - 固定整数 → LP 求 LMP；只执行首时段，SOC/库容/机组状态滚入下一时段。
   MKT.intraday.enabled=true 时另做事件式日内滚动（川V4.0 8.1，仅对比用）。
@@ -39,6 +39,8 @@ class SysState:
     hydro_used: dict                         # h -> 当日已发电量 MWh
     pumped: dict = field(default_factory=dict)       # p -> {V, ng, np, xg, xp}（上库库容 万m³、发电/抽水台数与工况）
     hydro_hist: dict = field(default_factory=dict)   # h -> 全天出库流量数组（已执行时段，m³/s；梯级下游时滞用）
+    hydro_p: dict = field(default_factory=dict)      # j -> 上个实际执行时段站级聚合出力MW
+    hydro_online: dict = field(default_factory=dict) # j -> 上个实际执行时段在线台数
 
 
 def _pumped_init(cfg) -> dict:
@@ -57,7 +59,10 @@ def initial_state(cfg) -> SysState:
     st = {}
     for s in cfg.units["storage"]:
         st[s["id"]] = float(s["soc0"]) * float(s["ecap"])
-    return SysState(0, th, st, hy, {h: 0.0 for h in hy}, _pumped_init(cfg), {h: np.full(cfg.T, np.nan) for h in hy})
+    hp = {h["id"]: float(h["init_units_on"]) * float(h["init_p_unit"]) for h in cfg.units["hydro"]}
+    hn = {h["id"]: int(h["init_units_on"]) for h in cfg.units["hydro"]}
+    return SysState(0, th, st, hy, {h: 0.0 for h in hy}, _pumped_init(cfg),
+                    {h: np.full(cfg.T, np.nan) for h in hy}, hp, hn)
 
 
 def state_from_plan(cfg, plan: dict, t: int) -> SysState:
@@ -87,7 +92,9 @@ def state_from_plan(cfg, plan: dict, t: int) -> SysState:
         a = np.full(cfg.T, np.nan)
         a[:t] = np.asarray(plan["Qout"][h][:t]) if "Qout" in plan else np.nan
         hist[h] = a
-    return SysState(t, th, sto, hy, used, ps, hist)
+    hp = {j: float(plan["Ph"][j][t - 1]) for j in plan["Ph"]}
+    hn = {j: sum(int(a[t - 1]) for (unit, z), a in plan["delta"].items() if unit == j) for j in hp}
+    return SysState(t, th, sto, hy, used, ps, hist, hp, hn)
 
 
 def _sub_cfg(cfg, **solver):
@@ -108,14 +115,46 @@ def make_window_case(da_case: DACase, cfg, t0: int, t1: int, issue_t: int, first
     tie = {k: (b, np.asarray(s)[t0:t1]) for k, (b, s) in da_case.tie.items()}
     up, dn, info = reserve_requirement(cfg, load, sum(ren_fc.values()))
     e_day = {h["id"]: float(h["seasons"][cfg.base["season"]]["e_day"]) - state.hydro_used[h["id"]]
-             for h in cfg.units["hydro"]}
+             for h in cfg.units["hydro"] if h["seasons"][cfg.base["season"]].get("e_day") is not None}
+    expected_hydro = {h["id"] for h in cfg.units["hydro"]}
+    if set(state.hydro) != expected_hydro or any(not np.isfinite(float(v)) for v in state.hydro.values()):
+        raise ValueError("滚动水电状态hydro必须完整包含所有启用水电的有限实际库容，不能退回季节初值")
+    if set(state.hydro_p) != expected_hydro or set(state.hydro_online) != expected_hydro:
+        raise ValueError("滚动水电状态缺少实际hydro_p/hydro_online，不能退回日前出力")
     init = dict(thermal=copy.deepcopy(state.thermal), storage=dict(state.storage), hydro=dict(state.hydro),
+                hydro_p=dict(state.hydro_p), hydro_online=dict(state.hydro_online),
                 pumped=copy.deepcopy(state.pumped), hydro_hist={h: a for h, a in state.hydro_hist.items()})
     return DACase(cfg, net, prof, da_case.bids, load_bus, ren_fc, tie, up, dn, info,
                   T=t1 - t0, t0=t0, init=init, fixed=fixed, hydro_e_budget=e_day, terminal=terminal, stage=stage)
 
 
 # ----------------------------------------------------------------------------- 求解与快照
+def hydro_diagnostics(m) -> dict:
+    """Station-aggregate physical inputs for independent window water/ramp checks."""
+    md, case = m._md, m._case
+    targets = (case.terminal or {}).get("hydro_window_end", {})
+    out = {}
+    for h, d in md.hydro.items():
+        units = d["units"]
+        count = lambda j, t: sum(V(m.delta[j, z, t]) for z in range(len(md.hydro_units[j]["zones"])))
+        on = [sum(count(j, t) for j in units) for t in m.T]
+        up = [sum(md.hydro_units[j]["ramp"] * 60 * md.dt * count(j, t) for j in units) for t in m.T]
+        down = [sum(md.hydro_units[j]["ramp"] * 60 * md.dt *
+                    (md.hydro_units[j]["units0"] if t == 0 else count(j, t - 1)) for j in units) for t in m.T]
+        out[h] = dict(p_start_mw=sum(md.hydro_units[j]["p0"] for j in units), v_start_1e4m3=d["v0"],
+                      units_start=sum(md.hydro_units[j]["units0"] for j in units),
+                      ramp_mw_per_min_per_unit={j: md.hydro_units[j]["ramp"] for j in units},
+                      dt_h=md.dt, qin_m3s=[float(d["qin"]) for t in m.T],
+                      upstream_in_m3s=[float(V(m._upstream_out(h, t))) for t in m.T],
+                      units_on=on, ramp_up_limit_mw=up, ramp_down_limit_mw=down,
+                      v_end_target_1e4m3=float(targets[h]) if h in targets else None,
+                      terminal_kind="hard_da_window_end" if h in targets else None,
+                      window_start=case.t0, window_end_exclusive=case.t0 + md.T,
+                      remaining_energy_budget_mwh=d.get("e_day"),
+                      spill_m3s=[float(V(m.Qspill[h, t])) for t in m.T], water_rate=d["water_rate"])
+    return out
+
+
 def snapshot(m) -> dict:
     """窗口模型的物理量（按窗口内相对时段 0..T−1）。"""
     md, case = m._md, m._case
@@ -149,35 +188,53 @@ def snapshot(m) -> dict:
         line_slack=float(max(V(m.sl[l, t]) for l in m.L for t in rT)),
         load_bus={n: np.asarray(case.load_bus.get(n, np.zeros(T)), float) for n in md.buses},
         ren_fc={w: np.asarray(v, float) for w, v in case.ren_fc.items()},
+        # Diagnostics only: retain each soft anchor and its corresponding slacks.
+        # E is MWh; Vu is 1e4 m3. These records never change optimization or dispatch.
+        anchors=[dict(unit=m._anchors[i][0], period=m._anchors[i][1],
+                      kind=m._anchors[i][4], lower=V(m.A_lo[i]), upper=V(m.A_hi[i]),
+                      value=V(getattr(m, m._anchors[i][4])[m._anchors[i][0], m._anchors[i][1]]),
+                      slack_up=V(m.sA_up[i]), slack_dn=V(m.sA_dn[i])) for i in m.A],
     )
+    from .regulation import snapshot as regulation_snapshot
+    sn["regulation"] = regulation_snapshot(m)
+    sn["hydro_constraints"] = hydro_diagnostics(m)
     return sn
 
 
 def clear_window(case: DACase, log=lambda *a: None) -> dict:
-    """SCUC/MIP（仅剩余自由整数变量）→ 固定整数 → SCED(LP) → 对偶求价；有松弛时按定价罚因子重算价格。
+    """Energy MIP → fixed integers → optional regulation allocation → final energy SCED.
 
-    物理执行量取调度罚因子下的 LP 解（snapshot），价格取（必要时）定价罚因子重算后的对偶。
+    The allocation LP is not a repricing solve and its power/duals never execute.
+    With regulation, reservation/slack-budget bounds intentionally differ from the preplan.
+    No auxiliary repricing or anchor relaxation solve. Existing physical slack
+    penalties remain in the objective; clipped settlement prices are labelled
+    separately from the unmodified raw marginal prices.
     """
     cfg = case.cfg
     lim = cfg.mode["price_limits"]
     t0 = time.perf_counter()
     m = scuc.build_model(case)
+    from . import regulation
+    from .stage_diagnostics import capture
+    stages = {}
+    regulation.prepare_energy(m)
     info = scuc.solve_scuc(m)
+    stages["scuc_preplan"] = capture(m, "scuc_preplan", info)
     scuc.fix_integers(m)
+    allocation = regulation.clear_reservations(m)
+    info["regulation_allocation"] = allocation
+    if allocation is not None:
+        stages["agc_auxiliary"] = capture(m, "agc_auxiliary", allocation)
     sced = scuc.solve_sced(m)
+    stages["energy_sced"] = capture(m, "energy_sced", sced)
     sn = snapshot(m)
     slack = scuc.slack_summary(m)
-    repriced = False
-    n_relax = scuc.relax_anchors(m) if slack["anchor_slack_max_mwh"] > 1e-6 else 0   # 锚点防无解松弛不参与定价
-    if scuc.has_slack(m):
-        scuc.set_penalties(m, {k: float(v) for k, v in cfg.mode["pricing_penalties"].items()})
-        repriced = True
-    if repriced or n_relax:
-        scuc.solve_sced(m)
     pr = scuc.extract_prices(m)
     pr["lmp_clamped"] = np.clip(pr["lmp"], lim["clear_min"], lim["clear_max"])
-    return dict(model=m, snap=sn, prices=pr, slack=slack, repriced=repriced, anchor_relaxed=n_relax, mip=info, sced=sced,
-                time_s=time.perf_counter() - t0)
+    return dict(model=m, snap=sn, prices=pr, slack=slack, stage_diagnostics=stages, repriced=False, anchor_relaxed=0,
+                anchor_slack_present=bool(slack["anchor_slack_max_mwh"] > 1e-6),
+                pricing_source="standard_sced", settlement_price_rule="clip_raw_lmp_to_clear_limits",
+                mip=info, sced=sced, time_s=time.perf_counter() - t0)
 
 
 # ----------------------------------------------------------------------------- 日内滚动
@@ -260,7 +317,7 @@ def run_intraday_round(da_case, da_plan, cfg, state: SysState, tau: int, log=pri
     r = clear_window(case)
     r.update(tau=tau, issue_t=issue)
     log(f"[ID] 第 {tau//4:02d}:{(tau%4)*15:02d} 轮 窗口 {tau}–{T-1}  MIP {r['mip']['time_s']:.1f}s gap {r['mip']['gap']:.3%}"
-        f"  {'(松弛→定价重算)' if r['repriced'] else ''}")
+        f"  {'(存在松弛；标准SCED原始对偶定价)' if any(v > 1e-6 for v in r['slack'].values()) else ''}")
     return r
 
 
@@ -276,12 +333,18 @@ def run_rt_period(da_case, da_plan: dict, plan: dict, cfg, state: SysState, t: i
     types = {u["id"]: u["type"] for u in cfg.units["thermal"]}
     fixed = {"u": {(g, k - t): int(plan["u"][g][k]) for g in plan["u"] if types[g] in lock for k in win}}
     fix_power = {}
-    if rc.get("hydro", "fixed_da") == "fixed_da":          # 水电执行日前曲线（台数、出力）
+    hydro_mode = rc.get("hydro", "window_end_da")
+    if hydro_mode not in ("fixed_da", "window_end_da", "sced"):
+        raise ValueError(f"未知水电实时模式 {hydro_mode}")
+    if hydro_mode in ("fixed_da", "window_end_da"):
         fixed["delta"] = {(j, z, k - t): int(da_plan["delta"][(j, z)][k]) for (j, z) in da_plan["delta"] for k in win}
+    if hydro_mode == "fixed_da":
         fix_power["Ph"] = {(h, k - t): float(da_plan["Ph"][h][k]) for h in da_plan["Ph"] for k in win}
     sc = rc["storage"]
     mode = sc.get("mode", "sced_anchor")
     term = dict(anchor_penalty=float(sc.get("anchor_penalty", 1e5)))
+    if hydro_mode == "window_end_da":
+        term["hydro_window_end"] = {h: float(da_plan["Vh"][h][t1 - 1]) for h in da_plan["Vh"]}
     if mode == "fixed_da":                                 # 执行日前出清充放电曲线
         fixed["u_ch"] = {(s, k - t): int(da_plan["u_ch"][s][k]) for s in da_plan["u_ch"] for k in win}
         fixed["u_dis"] = {(s, k - t): int(da_plan["u_dis"][s][k]) for s in da_plan["u_dis"] for k in win}
@@ -305,8 +368,29 @@ def run_rt_period(da_case, da_plan: dict, plan: dict, cfg, state: SysState, t: i
     c2 = _sub_cfg(cfg, mip_rel_gap=float(rc.get("mip_rel_gap", 1e-4)), time_limit_s=float(rc.get("time_limit_s", 30)),
                   warm_start=False, tighten=False)
     case = make_window_case(da_case, c2, t, t1, t, bool(rc.get("first_period_actual", True)), state, fixed, term, "RT")
-    r = clear_window(case)
+    try:
+        r = clear_window(case)
+    except Exception as exc:
+        details = {h: dict(initial_V_1e4m3=state.hydro[h], initial_P_mw=state.hydro_p[h],
+                           initial_online=state.hydro_online[h],
+                           hard_target_V_1e4m3=term.get("hydro_window_end", {}).get(h)) for h in state.hydro}
+        raise RuntimeError(f"RT窗口[{t},{t1})出清失败，水电模式={hydro_mode}，实际初态/硬目标={details}；"
+                           f"原始异常 {type(exc).__name__}: {exc}") from exc
     r["t"] = t
+    targets = []
+    for h, diag in r["snap"]["hydro_constraints"].items():
+        power = np.asarray(r["snap"]["Ph"][h])
+        delta_p = np.diff(np.r_[diag["p_start_mw"], power])
+        violation = max(0., float(np.max(delta_p - diag["ramp_up_limit_mw"])),
+                        float(np.max(-delta_p - diag["ramp_down_limit_mw"])))
+        target = diag["v_end_target_1e4m3"]
+        actual_end = float(r["snap"]["Vh"][h][-1])
+        targets.append(dict(unit=h, window_start=t, window_end_exclusive=t1,
+                            target_V_1e4m3=target, actual_terminal_V_1e4m3=actual_end,
+                            terminal_error_1e4m3=None if target is None else actual_end-target,
+                            current_V_1e4m3=diag["v_start_1e4m3"], current_P_mw=diag["p_start_mw"],
+                            ramp_violation_max_mw=violation))
+    r["hydro_window_targets"] = targets  # forecast horizon terminal state, not executed state
     return r
 
 
@@ -345,7 +429,9 @@ def advance(state: SysState, snap: dict, cfg) -> SysState:
         if state.t < len(a):
             a[state.t] = float(snap["Qout"][h][0])
         hist[h] = a
-    return SysState(state.t + 1, th, sto, hy, used, ps, hist)
+    hp = {j: float(a[0]) for j, a in snap["Ph"].items()}
+    hn = {j: sum(int(a[0]) for (unit, z), a in snap["delta"].items() if unit == j) for j in hp}
+    return SysState(state.t + 1, th, sto, hy, used, ps, hist, hp, hn)
 
 
 @dataclass
@@ -357,7 +443,7 @@ class RollingResult:
     time_s: dict = field(default_factory=dict)
 
 
-def run_rolling(da_res, periods: int | None = None, log=print) -> RollingResult:
+def run_rolling(da_res, periods: int | None = None, log=print, *, progress_callback=None, should_cancel=None) -> RollingResult:
     """逐时段实时滚动；MKT.intraday.enabled 时在每个日内触发时刻先做一轮日内，实时开机沿用日内计划。"""
     case = da_res.case
     cfg = case.cfg
@@ -372,6 +458,9 @@ def run_rolling(da_res, periods: int | None = None, log=print) -> RollingResult:
     out.plans.append(plan)
     t_id = t_rt = 0.0
     for t in range(T):
+        if should_cancel and should_cancel():
+            from .live_runner import RunCancelled
+            raise RunCancelled(f"Cancelled after {len(out.rt)} executed periods")
         if use_id and t % step == 0:
             a = time.perf_counter()
             r = run_intraday_round(case, da_plan, cfg, state, t, log)
@@ -385,13 +474,20 @@ def run_rolling(da_res, periods: int | None = None, log=print) -> RollingResult:
         t_rt += time.perf_counter() - a
         out.states.append(state)
         out.rt.append(dict(t=t, snap=r["snap"], prices=r["prices"], slack=r["slack"], repriced=r["repriced"],
-                           anchor_relaxed=r["anchor_relaxed"], time_s=r["time_s"], mip_time=r["mip"]["time_s"],
+                           hydro_window_targets=r["hydro_window_targets"],
+                           anchor_relaxed=r["anchor_relaxed"], anchor_slack_present=r["anchor_slack_present"],
+                           pricing_source=r["pricing_source"], time_s=r["time_s"], mip_time=r["mip"]["time_s"],
+                           regulation_allocation=r["mip"].get("regulation_allocation", {}),
+                           stage_diagnostics=r.get("stage_diagnostics", {}),
                            plan_idx=len(out.plans) - 1))
         state = advance(state, r["snap"], cfg)
+        out.time_s = dict(intraday=t_id, realtime=t_rt)
+        if progress_callback:
+            progress_callback({"phase": "rt_window", "rr": out, "round": out.rt[-1], "completed": len(out.rt), "total": T})
         if t % 4 == 3:
             log(f"[RT] 已执行至 {(t+1)//4:02d}:00（时段 {t}），首时段 LMP {r['prices']['lmp_clamped'][:, 0].min():.1f}"
-                f"~{r['prices']['lmp_clamped'][:, 0].max():.1f}{'，含松弛' if r['repriced'] else ''}"
-                f"{'，锚点松弛' if r['anchor_relaxed'] else ''}")
+                f"~{r['prices']['lmp_clamped'][:, 0].max():.1f}{'，含物理松弛' if any(r['slack'][k] > 1e-6 for k in ('shed_mwh', 'surplus_mwh', 'line_slack_max', 'reserve_up_short_max', 'reserve_dn_short_max')) else ''}"
+                f"{'，锚点松弛' if r['slack']['anchor_slack_max_mwh'] > 1e-6 else ''}")
     out.states.append(state)
     out.time_s = dict(intraday=t_id, realtime=t_rt)
     return out
@@ -481,7 +577,8 @@ def rt_tables(da_res, rr: RollingResult) -> dict:
                               mode="发电" if xg else ("抽水" if xp else "停机"), V_start=st.pumped[p]["V"],
                               V_up=sn["Vu"][p][0], V_dn=vtot[p] - sn["Vu"][p][0]))
         for h in sn["Ph"]:
-            hrow.append(dict(period=t, station=h, P_mw=sn["Ph"][h][0], V_start=st.hydro[h], V_1e4m3=sn["Vh"][h][0],
+            hrow.append(dict(period=t, station=h, P_start_mw=st.hydro_p[h], units_start=st.hydro_online[h],
+                             P_mw=sn["Ph"][h][0], V_start=st.hydro[h], V_1e4m3=sn["Vh"][h][0],
                              Q_out=sn["Qout"][h][0] if "Qout" in sn else np.nan))
         for i, b in enumerate(net.buses):
             prow.append(dict(period=t, bus=b, lmp=pr["lmp_clamped"][i, 0], lmp_raw=pr["lmp"][i, 0],
@@ -493,10 +590,14 @@ def rt_tables(da_res, rr: RollingResult) -> dict:
                            shed_mw=sum(v[0] for v in sn["shed"].values()), surplus_mw=sn["surplus"][0],
                            curtail_mw=sum(sn["ren_fc"][w][0] - sn["Pw"][w][0] for w in sn["Pw"]),
                            energy_price=pr["energy"][0], repriced=r["repriced"], anchor_relaxed=r["anchor_relaxed"],
-                           solve_s=r["time_s"],
+                           anchor_slack_present=bool(r["slack"]["anchor_slack_max_mwh"] > 1e-6),
+                           pricing_source=r.get("pricing_source", "standard_sced"), solve_s=r["time_s"],
                            **{f"{k}_win": v for k, v in r["slack"].items()}))
     units = pd.DataFrame(urows)
     units["curtail_mw"] = np.where(units.type.isin(["wind", "pv"]), units.get("avail_mw", 0) - units.P_mw, 0.0)
     pcols = ["period", "unit", "bus", "P_gen", "P_pump", "n_gen", "n_pump", "mode", "V_start", "V_up", "V_dn"]
+    from .regulation_results import realtime_tables
+    regulation_detail, regulation_system = realtime_tables(rr)
     return dict(units=units, prices=pd.DataFrame(prow), lines=pd.DataFrame(lrow), storage=pd.DataFrame(srow),
-                system=pd.DataFrame(sysrow), pumped=pd.DataFrame(psrow, columns=pcols), hydro=pd.DataFrame(hrow))
+                system=pd.DataFrame(sysrow), pumped=pd.DataFrame(psrow, columns=pcols), hydro=pd.DataFrame(hrow),
+                regulation=regulation_detail, regulation_system=regulation_system)

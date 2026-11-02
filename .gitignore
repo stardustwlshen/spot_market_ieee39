@@ -5,3 +5,6 @@ __pycache__/
 outputs/
 runs/
 scenarios/
+
+# Local archived experiments are evidence, not source artifacts.
+experiments/

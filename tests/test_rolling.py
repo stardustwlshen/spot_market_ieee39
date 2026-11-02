@@ -41,13 +41,23 @@ def test_commitment_continuity(full_result):
     assert full_result["rr"].id_rounds == []              # 默认不设独立日内
 
 
-def test_gt_free_and_hydro_follows_da(full_result):
-    """GT 启停不锁定（变量在窗口 MIP 中自由）；水电执行日前曲线。"""
+def test_gt_free_and_hydro_window_end_policy(full_result):
+    """GT启停自由；新授权水电模式沿用DA区域台数、功率自由、窗口末库容严格匹配DA。"""
     from smm import rolling
     da = full_result["da"]
     cfg = da.case.cfg
     assert "gas_gt" not in cfg.mode["realtime"]["lock_types"]
-    assert full_result["checks"]["hydro_vs_da_err_mw"] < 1e-6
+    assert cfg.mode["realtime"]["hydro"] == "window_end_da"
+    check = full_result["checks"]
+    assert check["hydro_window_checks_available"]
+    assert check["hydro_window_constraints_satisfied"]
+    assert check["hydro_window_terminal_max_err_1e4m3"] < 1e-6
+    assert check["hydro_da_zone_count_mismatch"] == 0
+    da_plan = rolling._da_plan_arrays(da)
+    for row in check["hydro_window_records"]:
+        expected = float(da_plan["Vh"][row["station"]][row["window_end_exclusive"]-1])
+        assert abs(row["terminal_target_1e4m3"]-expected) < 1e-6
+        assert abs(row["terminal_actual_1e4m3"]-expected) < 1e-6
     # 直接检查一个窗口：锁定集合只含煤电/CCGT，GT 不在其中
     plan = rolling._da_plan_arrays(da)
     st = rolling.state_from_plan(cfg, plan, 0)
@@ -55,6 +65,11 @@ def test_gt_free_and_hydro_follows_da(full_result):
     types = {u["id"]: u["type"] for u in cfg.units["thermal"]}
     locked = {g for (g, k) in m._case.fixed["u"]}
     assert locked == {g for g, ty in types.items() if ty in ("coal", "gas_ccgt")}
+    assert all(not v.fixed for v in m.Ph.values())
+    assert all(v.fixed for v in m.delta.values())
+    assert hasattr(m,"c_hydro_window_end")
+    for (j,z,t),v in m.delta.items():
+        assert int(v.value) == int(plan["delta"][(j,z)][t])
 
 
 def _anchor_ok(res, x):
@@ -75,24 +90,43 @@ def _anchor_ok(res, x):
     return worst
 
 
-def test_storage_hourly_eq_default(full_result):
-    """模式 B2（默认，广东式）：窗口内整点 E_RT = E_DA，防无解松弛未触发。"""
+def test_storage_hourly_eq_soft_anchors_match_reported_slack(full_result):
+    """B2软锚点：逐锚点偏差必须等于对应slack，无slack时仍严格相等。"""
     da = full_result["da"]
     cfg = da.case.cfg
     sc = cfg.mode["realtime"]["storage"]
     assert sc["mode"] == "sced_anchor" and sc["anchor"] == "hourly_eq"
     E_da = da.tables["storage"].set_index(["unit", "period"]).E_mwh
+    Vu_da = da.tables["pumped"].set_index(["unit", "period"]).V_up
     n = 0
     for r in full_result["rr"].rt:
-        for k in range(len(r["snap"]["surplus"])):
-            t = r["t"] + k
-            if (t + 1) % 4 == 0:
-                for s in cfg.units["storage"]:
-                    assert r["snap"]["E"][s["id"]][k] == pytest.approx(float(E_da[(s["id"], t)]), abs=1e-5)
-                    n += 1
+        hour_ks = [k for k in range(len(r["snap"]["surplus"])) if (r["t"] + k + 1) % 4 == 0]
+        expected = ({("E", unit["id"], k) for unit in cfg.units["storage"] for k in hour_ks}
+                    | {("Vu", unit["id"], k) for unit in cfg.units.get("pumped", []) for k in hour_ks})
+        actual = [(a["kind"], a["unit"], a["period"]) for a in r["snap"]["anchors"]]
+        assert len(actual) == len(expected)
+        assert set(actual) == expected
+        per_kind = {"E": [], "Vu": []}
+        for a in r["snap"]["anchors"]:
+            t = r["t"] + a["period"]
+            assert (t + 1) % 4 == 0
+            assert a["slack_up"] == pytest.approx(max(a["value"] - a["upper"], 0), rel=0, abs=1e-5)
+            assert a["slack_dn"] == pytest.approx(max(a["lower"] - a["value"], 0), rel=0, abs=1e-5)
+            assert a["lower"] == pytest.approx(a["upper"], rel=0, abs=1e-5)
+            if a["kind"] == "E":
+                assert a["lower"] == pytest.approx(float(E_da[(a["unit"], t)]), rel=0, abs=1e-5)
+                assert a["value"] == pytest.approx(r["snap"]["E"][a["unit"]][a["period"]], rel=0, abs=1e-5)
+                n += 1
+            else:
+                assert a["lower"] == pytest.approx(float(Vu_da[(a["unit"], t)]), rel=0, abs=1e-5)
+                assert a["value"] == pytest.approx(r["snap"]["Vu"][a["unit"]][a["period"]], rel=0, abs=1e-5)
+            if a["slack_up"] + a["slack_dn"] <= 1e-6:
+                assert a["value"] == pytest.approx(a["lower"], rel=0, abs=1e-5)
+            per_kind[a["kind"]].append(max(a["lower"] - a["value"], a["value"] - a["upper"], 0))
+        assert r["slack"]["storage_anchor_slack_max_mwh"] == pytest.approx(max(per_kind["E"], default=0), rel=0, abs=1e-5)
+        assert r["slack"]["pumped_anchor_slack_max_1e4m3"] == pytest.approx(max(per_kind["Vu"], default=0), rel=0, abs=1e-5)
     assert n > 0
     assert full_result["checks"]["soc_equation_err_mwh"] < 1e-6
-    assert full_result["checks"]["anchor_slack_max_mwh"] < 1e-6
     assert full_result["checks"]["anchor_relaxed_periods"] == 0
 
 
