@@ -490,7 +490,7 @@ with tabs[8]:
         st.info("本场景 units.yaml 没有抽蓄电站（pumped）。")
     else:
         ps = pss[0]
-        st.caption("参数均为假设值（300 MW 级定速机组典型值），依据与条款见 README“抽水蓄能”。库容单位 万m³，转换系数 MWh/万m³。")
+        st.caption("参数均为假设值（300 MW 级定速机组典型值），依据与条款见 docs/开发记录.md“抽水蓄能”。库容单位 万m³，转换系数 MWh/万m³。")
         c = st.columns(4)
         p_en = c[0].checkbox("启用抽蓄 " + ps["id"], bool(ps.get("enabled", True)))
         bus_opts = list(range(1, 40))

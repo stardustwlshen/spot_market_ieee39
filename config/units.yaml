@@ -21,7 +21,7 @@ renewable:
   - {id: W2, type: wind, bus: 37, cap: 564, profile: wind_b}
   - {id: PV1, type: pv, bus: 33, cap: 652, profile: pv}
 
-hydro:   # 水电（库容型/径流式）。依据与约束对照见 README“水电建模与依据”
+hydro:   # 水电（库容型/径流式）。依据与约束对照见 docs/开发记录.md“水电建模与依据”
   - id: H1
     bus: 34
     regulation: reservoir                # reservoir 库容型（日及以上调节，报量报价，受日电量/期末库容约束：川V4.0 附件8 约束(16)(17)、7.4.10）
@@ -64,10 +64,10 @@ hydro:   # 水电（库容型/径流式）。依据与约束对照见 README“�
     e_day_min: null
     qout_max: null
 
-pumped:   # 抽水蓄能（全厂级建模；参数均为假设值，取国内 300 MW 级定速机组典型值）。依据见 README“抽水蓄能”
+pumped:   # 抽水蓄能（全厂级建模；参数均为假设值，取国内 300 MW 级定速机组典型值）。依据见 docs/开发记录.md“抽水蓄能”
   - id: PS1
     enabled: true
-    bus: 2                               # 选址理由见 README：W1 风电(30)经 T2-30 汇入的送出节点，L2-25 限额压缩→弃风集中；本节点无负荷、无其他资源，与储能(16/19/25)、水电(34/20)不重复
+    bus: 2                               # 选址理由见 docs/开发记录.md“抽水蓄能”：W1 风电(30)经 T2-30 汇入的送出节点，L2-25 限额压缩→弃风集中；本节点无负荷、无其他资源，与储能(16/19/25)、水电(34/20)不重复
     n_units: 2                           # 2×300 MW（假设值；可改 4 台，600 MW 约占峰荷 10%）
     unit_gen_max: 300                    # 单机发电额定 MW
     unit_gen_min: 150                    # 单机发电最小技术出力 MW（约 50%，假设值）

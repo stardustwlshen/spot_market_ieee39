@@ -1,9 +1,18 @@
+# Python 3.11+（开发与测试环境：Python 3.13.5）。版本为开发环境实测版本。
+# 求解与建模
 pyomo==6.10.1
 highspy==1.15.1
 numpy==2.4.6
 pandas==2.3.3
 scipy==1.18.1
-pandapower==3.5.6
-matplotlib==3.11.2
 PyYAML==6.0.3
+ruamel.yaml==0.19.1      # 网页应用读写 YAML（保留注释）
+matplotlib==3.11.2       # 命令行输出 PNG 图
+# 网页应用
+streamlit==1.66.1
+plotly==7.1.0
+networkx==3.7            # 网络拓扑图
+# 仅 scripts/export_case39.py 重新导出 case39 数据时需要
+pandapower==3.5.6
+# 测试
 pytest==9.2.0

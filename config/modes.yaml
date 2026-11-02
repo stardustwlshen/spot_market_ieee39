@@ -70,7 +70,7 @@ MKT:
       anchor_penalty: 1.0e5          # 假设值：锚点松弛罚 元/MWh，仅防无解；触发时放宽到实际值后重算价格，不进入电价
     mip_rel_gap: 1.0e-4              # 求解参数
     time_limit_s: 30
-  pumped:                            # 抽水蓄能：市场规则与电化学储能完全一致（rules: storage，不另设一套），依据见 README“抽水蓄能”
+  pumped:                            # 抽水蓄能：市场规则与电化学储能完全一致（rules: storage，不另设一套），依据见 docs/开发记录.md“抽水蓄能”
     rules: storage                   # 报价：发电曲线≙放电、抽水报价≙充电，段数 segments.storage_*，发电最低价>抽水最高价（storage_dis_gt_ch）
                                      # 定价：正常参与出清与定价（与储能相同，无“不可定价”固定处理）
                                      # 日前日末上库库容：报价申报 vup_end → 硬约束（≙ storage_end_soc 申报期末 SOC，川V4.0 7.7.4）；未申报由出清决定
