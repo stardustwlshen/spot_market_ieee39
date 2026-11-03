@@ -1,7 +1,9 @@
 """日前 SCUC（MILP）与 SCED（固定整数后的 LP）+ LMP（方案第 6、7 节）。
 
-目标：最小化 报价成本 + 启动费 + 空载费 + 弃水罚 + 松弛罚（负荷固定时等价于社会福利最大化）。
-所有成本项按 元 计，功率项乘 Δt。对偶除以 Δt 得 元/MWh。
+目标：最小化能量报价成本（含储能充电报价抵扣）、启动费、空载费，
+以及已建模的供需平衡、线路、备用和储能锚点软约束松弛罚。
+新能源弃电与水电弃水不附加惩罚；报价成本不等同于真实社会成本，不能据此直接声称社会福利最大化。
+目标以元计；按元/MWh报价的功率项乘 Δt，启动费按次计。能量平衡对偶除以 Δt 得元/MWh。
 """
 from __future__ import annotations
 
@@ -40,19 +42,26 @@ def _seg_lists(segs):
 
 def prepare(case: DACase) -> ModelData:
     cfg, bids = case.cfg, case.bids["units"]
+    from .input_validation import validate_physical_inputs
+    validate_physical_inputs(cfg, init=case.init)
     md = ModelData(T=case.T or cfg.T, dt=cfg.dt, buses=case.net.buses, lines=list(case.net.branches.branch_id))
     states_cfg = cfg.mode["startup_states"]  # 名称 -> 阈值 h（升序）
     for u in cfg.units["thermal"]:
         b = bids[u["id"]]
         L, c = _seg_lists(b["segments"])
-        su = b["startup_cost"]
+        from .bids import resolve_startup_bid
+        startup = resolve_startup_bid(cfg, b)
+        uniform = startup["mode"] == "uniform_per_unit"
+        su = b.get("startup_cost", {})
         states = sorted(states_cfg.items(), key=lambda kv: kv[1])
         uu = dict(u)
         if case.init and u["id"] in case.init.get("thermal", {}):
             uu["init"] = dict(case.init["thermal"][u["id"]])
         md.thermal[u["id"]] = dict(uu, L=L, c=c, noload_bid=b.get("noload_cost", u["noload"]),
-                                   states=[(k, int(round(h / cfg.dt)), su[k]) for k, h in states],
-                                   cold=su["cold"])
+                                   states=[] if uniform else [(k, int(np.ceil(float(h) / cfg.dt - 1e-12)), su[k]) for k, h in states],
+                                   startup_threshold_hours={k: float(h) for k, h in states},
+                                   cold=0. if uniform else su["cold"], startup_cost_mode=startup["mode"],
+                                   startup_cost_yuan=startup["cost_yuan"], startup_cost_source=startup["source"])
     for r in cfg.units["renewable"]:
         b = bids[r["id"]]
         L, c = _seg_lists(b["segments"])
@@ -147,12 +156,58 @@ def prepare(case: DACase) -> ModelData:
     return md
 
 
-def _sto_M(d, kind, dt):
+def _sto_M(d, kind, dt, initial=False):
     """储能 big-M 收紧：取 min(额定功率, 报价总量, 单时段可用能量折算功率)。"""
     E_rng = (d["soc_max"] - d["soc_min"]) * d["ecap"]
+    if initial:
+        # Actual initial stock can be outside a tighter declared SOC band.
+        # The first transition must use its actual headroom, not band width.
+        E_rng = max(0., ((d["soc0"] - d["soc_min"]) if kind == "dis"
+                        else (d["soc_max"] - d["soc0"])) * d["ecap"])
     if kind == "dis":
         return min(d["pmax"], sum(d["Ld"]), E_rng * d["eta_d"] / dt)
     return min(d["pmax"], sum(d["Lc"]), E_rng / d["eta_c"] / dt)
+
+
+def _attach_startup_state_constraints(m, md, dt):
+    """Exact disjoint outage intervals, independent of startup-bid ordering.
+
+    Shutdown at k and startup at t imply (t-k)*dt hours offline. State
+    thresholds are strict upper bounds: hot <8h, warm <72h, cold >=72h.
+    Excluding every more recent shutdown prevents an older cycle from making
+    a warm/cold state eligible when the latest outage is actually hot.
+    """
+    thresholds = {g: {name: K for name, K, _ in d["states"]} for g, d in md.thermal.items()}
+    def upper(m, g, state, t):
+        d = md.thermal[g]
+        K = thresholds[g][state]
+        hours = d.get("startup_threshold_hours", {}).get(state, K*dt)
+        initial = int(not d["init"]["online"] and d["init"]["hours"] + t*dt < hours)
+        recent = sum(m.w[g, tau] for tau in range(max(0, t-K+1), t))
+        return m.y[g, state, t] <= recent + initial
+    m.c_ystate = pyo.Constraint(m.GST, m.T, rule=upper)
+    m.c_ystate_lower = pyo.ConstraintList()
+    for g, d in md.thermal.items():
+        previous = 0
+        previous_hours = 0.
+        for state, upper_K, _ in d["states"]:
+            for t in m.T:
+                y = m.y[g, state, t]
+                if not d["init"]["online"] and d["init"]["hours"] + t*dt < previous_hours:
+                    m.c_ystate_lower.add(y == 0)
+                else:
+                    for tau in range(max(0, t-previous+1), t):
+                        m.c_ystate_lower.add(y <= 1-m.w[g, tau])
+            previous = upper_K
+            previous_hours = d.get("startup_threshold_hours", {}).get(state, upper_K*dt)
+        for t in m.T:
+            if not d["init"]["online"] and d["init"]["hours"] + t*dt < previous_hours:
+                m.c_ystate_lower.add(m.ycold[g, t] == 0)
+            else:
+                for tau in range(max(0, t-previous+1), t):
+                    m.c_ystate_lower.add(m.ycold[g, t] <= 1-m.w[g, tau])
+    m.c_ysum = pyo.Constraint(m.G, m.T, rule=lambda m, g, t:
+        sum(m.y[g, state, t] for state, _, _ in md.thermal[g]["states"]) + m.ycold[g, t] == m.v[g, t])
 
 
 def build_model(case: DACase, penalties: dict | None = None) -> pyo.ConcreteModel:
@@ -161,9 +216,18 @@ def build_model(case: DACase, penalties: dict | None = None) -> pyo.ConcreteMode
     from .bids import validate_bids, raise_on_errors
     raise_on_errors(validate_bids(case.cfg, case.bids, require_complete=True))
     cfg, net = case.cfg, case.net
+    from .config import validate_tracking_policy
+    validate_tracking_policy(cfg.mode)
     md = prepare(case)
-    pen = dict(cfg.mode["penalties"]) if penalties is None else penalties
+    pen = dict(cfg.mode["penalties"]) if penalties is None else dict(penalties)
+    from .input_validation import number
+    for key in ('balance', 'line', 'reserve'):
+        if key not in pen or number(pen[key], f'penalties.{key}') < 0:
+            raise ValueError(f'penalties.{key}须为有限非负数')
     rcfg = cfg.mode["reserve"]
+    down_enabled = rcfg.get("down_enabled", True)
+    if not isinstance(down_enabled, bool):
+        raise ValueError("reserve.down_enabled必须为布尔值")
     T, dt = md.T, md.dt
     m = pyo.ConcreteModel(f"{case.stage}_SCUC")
     t0 = int(case.t0)
@@ -239,6 +303,10 @@ def build_model(case: DACase, penalties: dict | None = None) -> pyo.ConcreteMode
     m.sp = pyo.Var(m.PS, m.T, domain=pyo.NonNegativeReals)     # 抽水启动台次
     m.rp_up = pyo.Var(m.PS, m.T, domain=pyo.NonNegativeReals)
     m.rp_dn = pyo.Var(m.PS, m.T, domain=pyo.NonNegativeReals)
+    if not down_enabled:
+        for name in ("r_dn", "rh_dn", "rs_dn", "rp_dn", "sR_dn"):
+            for v in getattr(m, name).values():
+                v.fix(0.)
 
     load_bus = {n: case.load_bus.get(n, np.zeros(T)) for n in md.buses}
     for n in md.buses:
@@ -262,43 +330,40 @@ def build_model(case: DACase, penalties: dict | None = None) -> pyo.ConcreteMode
     m.c_logic = pyo.Constraint(m.G, m.T, rule=lambda m, g, t: m.u[g, t] - u_prev(g, t) == m.v[g, t] - m.w[g, t])
 
     def min_up(m, g, t):
-        UT = int(round(md.thermal[g]["ut"] / dt))
+        UT = int(np.ceil(md.thermal[g]["ut"] / dt - 1e-10))
         return sum(m.v[g, tau] for tau in range(max(0, t - UT + 1), t + 1)) <= m.u[g, t]
 
     def min_dn(m, g, t):
-        DT = int(round(md.thermal[g]["dt"] / dt))
+        DT = int(np.ceil(md.thermal[g]["dt"] / dt - 1e-10))
         return sum(m.w[g, tau] for tau in range(max(0, t - DT + 1), t + 1)) <= 1 - m.u[g, t]
     step = int(cfg.base["solver"].get("commit_step_periods", 1))
     if step > 1:  # 可选工程简化：启停只在整 step 个时段边界变化（如 4 = 按小时决策）
-        m.c_cstep = pyo.Constraint(m.G, m.T, rule=lambda m, g, t: m.v[g, t] + m.w[g, t] == 0 if t % step else pyo.Constraint.Skip)
+        m.c_cstep = pyo.Constraint(m.G, m.T, rule=lambda m, g, t: m.v[g, t] + m.w[g, t] == 0 if (case.t0 + t) % step else pyo.Constraint.Skip)
     m.c_minup = pyo.Constraint(m.G, m.T, rule=min_up)
     m.c_mindn = pyo.Constraint(m.G, m.T, rule=min_dn)
-    # 初始状态未满最小开/停机时间的锁定
+    # Physical residual minimum times also remain constraints: later case.fixed
+    # may not overwrite the requirement by replacing a variable fix.
+    initial_minimum = {}
     for g, d in md.thermal.items():
         init = d["init"]
         if init["online"]:
-            rem = max(0, int(round((d["ut"] - init["hours"]) / dt)))
+            rem = max(0, int(np.ceil((d["ut"] - init["hours"]) / dt - 1e-10)))
             for t in range(min(rem, T)):
                 m.u[g, t].fix(1)
+                initial_minimum[g, t] = 1
         else:
-            rem = max(0, int(round((d["dt"] - init["hours"]) / dt)))
+            rem = max(0, int(np.ceil((d["dt"] - init["hours"]) / dt - 1e-10)))
             for t in range(min(rem, T)):
                 m.u[g, t].fix(0)
+                initial_minimum[g, t] = 0
 
-    # 分状态启动费：y_s ≤ Σ_{τ=1..K_s} w[t−τ] (+ 初始停机时间满足阈值时为 1)
-    def y_rule(m, g, s, t):
-        d = md.thermal[g]
-        K = dict((k, K) for k, K, _ in d["states"])[s]
-        init = d["init"]
-        const = 0
-        if not init["online"] and (init["hours"] / dt + t) < K:
-            const = 1
-        expr = sum(m.w[g, t - tau] for tau in range(1, K + 1) if t - tau >= 0)
-        if isinstance(expr, int) and expr == 0 and const == 0:
-            return m.y[g, s, t] == 0
-        return m.y[g, s, t] <= expr + const
-    m.c_ystate = pyo.Constraint(m.GST, m.T, rule=y_rule)
-    m.c_ysum = pyo.Constraint(m.G, m.T, rule=lambda m, g, t: sum(m.y[g, s, t] for (gg, s) in m.GST if gg == g) + m.ycold[g, t] == m.v[g, t])
+    m.c_initial_min_duration = pyo.Constraint(list(initial_minimum), rule=lambda m, g, t: m.u[g, t] == initial_minimum[g, t])
+
+    if cfg.mode.get("startup_cost_mode", "state_dependent") == "uniform_per_unit":
+        for variable in m.ycold.values():
+            variable.fix(0.)
+    else:
+        _attach_startup_state_constraints(m, md, dt)
 
     def ramp_up(m, g, t):
         d = md.thermal[g]
@@ -379,7 +444,7 @@ def build_model(case: DACase, penalties: dict | None = None) -> pyo.ConcreteMode
     m.c_vlim = pyo.Constraint(m.HS, m.T, rule=lambda m, h, t: pyo.inequality(md.hydro[h]["vmin"], m.V[h, t], md.hydro[h]["vmax"]))
     m.c_eco = pyo.Constraint(m.HS, m.T, rule=lambda m, h, t: qgen(h, t) + m.Qspill[h, t] >= md.hydro[h]["qeco"])   # 生态流量
     m.c_qout = pyo.Constraint(m.HS, m.T, rule=lambda m, h, t: qgen(h, t) + m.Qspill[h, t] <= float(md.hydro[h]["qout_max"])
-                              if md.hydro[h].get("qout_max") else pyo.Constraint.Skip)
+                              if md.hydro[h].get("qout_max") is not None else pyo.Constraint.Skip)
     term = case.terminal
     if term is None or term.get("hydro_vend", False):   # 日前 / 至日末的日内窗口：期末库容（水位）控制（川V4.0 附件8 约束(17)、7.4.11）
         m.c_vend = pyo.Constraint(m.HS, rule=lambda m, h: m.V[h, T - 1] >= md.hydro[h]["v_end"])
@@ -420,15 +485,22 @@ def build_model(case: DACase, penalties: dict | None = None) -> pyo.ConcreteMode
     m.c_pphi = pyo.Constraint(m.PS, m.T, rule=lambda m, p, t: m.Pp[p, t] <= md.pumped[p]["unit_pump"] * m.npump[p, t])
 
     def xprev(p, key, t):
-        return md.pumped[p]["init"][key] if t < 0 else getattr(m, key)[p, t]
+        if t >= 0:
+            return getattr(m, key)[p, t]
+        absolute = case.t0 + t
+        if t == -1:
+            return md.pumped[p]["init"][key]
+        if absolute < 0:
+            # Explicit research pre-day assumption: declared init mode held before day start.
+            return int(md.pumped[p].get("init_mode", "idle") == ("gen" if key == "xg" else "pump"))
+        history = (case.init or {}).get("pumped_hist", {}).get(p, {}).get(key, [])
+        if absolute >= len(history) or not np.isfinite(float(history[absolute])) or float(history[absolute]) not in (0., 1.):
+            raise ValueError(f"抽蓄 {p} 缺少已执行工况历史 {key}[{absolute}]")
+        return int(history[absolute])
 
     def gap_gp(m, p, t, k):
-        if t - k < -1:
-            return pyo.Constraint.Skip
         return xprev(p, "xg", t - k) + m.xp[p, t] <= 1
     def gap_pg(m, p, t, k):
-        if t - k < -1:
-            return pyo.Constraint.Skip
         return xprev(p, "xp", t - k) + m.xg[p, t] <= 1
     gaps = sorted({int(d.get("switch_gap", 1)) for d in md.pumped.values()} or {1})
     m.PGAP = pyo.Set(initialize=list(range(1, max(gaps) + 1)))
@@ -444,9 +516,24 @@ def build_model(case: DACase, penalties: dict | None = None) -> pyo.ConcreteMode
     if term is None and pstep > 1:   # 工程简化（假设）：抽发台数只在整 pstep 时段边界变化（4 = 小时内工况一致，类比广东 2026 细则储能“小时内充放电状态一致”）
         m.c_pstep_g = pyo.Constraint(m.PS, m.T, rule=lambda m, p, t: m.ngen[p, t] == m.ngen[p, t - 1] if t % pstep else pyo.Constraint.Skip)
         m.c_pstep_p = pyo.Constraint(m.PS, m.T, rule=lambda m, p, t: m.npump[p, t] == m.npump[p, t - 1] if t % pstep else pyo.Constraint.Skip)
-    if term is None:   # 日前：每台每日启动次数上限
-        m.c_psg_max = pyo.Constraint(m.PS, rule=lambda m, p: sum(m.sg[p, t] for t in m.T) <= md.pumped[p]["N"] * md.pumped[p]["max_gen_starts"])
-        m.c_psp_max = pyo.Constraint(m.PS, rule=lambda m, p: sum(m.sp[p, t] for t in m.T) <= md.pumped[p]["N"] * md.pumped[p]["max_pump_starts"])
+    # Aggregate N*per-unit daily limits; executed positive count changes, not
+    # potentially degenerate sg/sp, consume the remaining budget across windows.
+    used_starts = (case.init or {}).get("pumped_used", {})
+    remaining_starts = {}
+    for p, d in md.pumped.items():
+        if case.t0 > 0 and p not in used_starts:
+            raise ValueError(f"抽蓄 {p} 缺少当日已执行启动累计量")
+        used = used_starts.get(p, {"gen": 0., "pump": 0.})
+        remaining_starts[p] = {}
+        for kind, capkey in (("gen", "max_gen_starts"), ("pump", "max_pump_starts")):
+            value = used.get(kind)
+            cap = d["N"] * d[capkey]
+            if value is None or not np.isfinite(float(value)) or value < 0 or value > cap:
+                raise ValueError(f"抽蓄 {p} {kind} 已执行启动累计量非法或超过日上限")
+            remaining_starts[p][kind] = cap - float(value)
+    m._pumped_remaining_starts = remaining_starts
+    m.c_psg_max = pyo.Constraint(m.PS, rule=lambda m, p: sum(m.sg[p, t] for t in m.T) <= remaining_starts[p]["gen"])
+    m.c_psp_max = pyo.Constraint(m.PS, rule=lambda m, p: sum(m.sp[p, t] for t in m.T) <= remaining_starts[p]["pump"])
 
     def pres(m, p, t):
         d = md.pumped[p]
@@ -465,8 +552,8 @@ def build_model(case: DACase, penalties: dict | None = None) -> pyo.ConcreteMode
     m.c_sdsum = pyo.Constraint(m.S, m.T, rule=lambda m, s, t: m.Pd[s, t] == sum(m.pd[s, k, t] for k in range(len(md.storage[s]["Ld"]))))
     m.c_scsum = pyo.Constraint(m.S, m.T, rule=lambda m, s, t: m.Pc[s, t] == sum(m.pc[s, k, t] for k in range(len(md.storage[s]["Lc"]))))
     m.c_sexcl = pyo.Constraint(m.S, m.T, rule=lambda m, s, t: m.u_ch[s, t] + m.u_dis[s, t] <= 1)   # 充放互斥
-    m.c_sdmax = pyo.Constraint(m.S, m.T, rule=lambda m, s, t: m.Pd[s, t] <= _sto_M(md.storage[s], "dis", dt) * m.u_dis[s, t])
-    m.c_scmax = pyo.Constraint(m.S, m.T, rule=lambda m, s, t: m.Pc[s, t] <= _sto_M(md.storage[s], "ch", dt) * m.u_ch[s, t])
+    m.c_sdmax = pyo.Constraint(m.S, m.T, rule=lambda m, s, t: m.Pd[s, t] <= _sto_M(md.storage[s], "dis", dt, initial=t == 0) * m.u_dis[s, t])
+    m.c_scmax = pyo.Constraint(m.S, m.T, rule=lambda m, s, t: m.Pc[s, t] <= _sto_M(md.storage[s], "ch", dt, initial=t == 0) * m.u_ch[s, t])
 
     def soc(m, s, t):
         d = md.storage[s]
@@ -483,11 +570,38 @@ def build_model(case: DACase, penalties: dict | None = None) -> pyo.ConcreteMode
         S_end = [s for s in m.S if md.storage[s]["soc_end"] is not None]
         m.c_eend = pyo.Constraint(S_end, rule=lambda m, s: m.E[s, T - 1] == float(md.storage[s]["soc_end"]) * md.storage[s]["ecap"])
     # 锚点：储能 E（MWh）与抽蓄上库库容 Vu（万m3），规则相同（realtime.storage.anchor）
+    tracking = (term or {}).get("tracking_policy")
+    if tracking is not None:
+        if not isinstance(tracking, dict) or case.stage != "RT" or tracking.get("mode") != "soft_deliverable_energy":
+            raise ValueError("soft tracking policy requires RT soft_deliverable_energy")
+        tracking_c = tracking.get("penalty_yuan_per_discharge_mwh")
+        if isinstance(tracking_c, bool) or not isinstance(tracking_c, (int, float)) or not np.isfinite(tracking_c) or tracking_c <= 0:
+            raise ValueError("tracking penalty must be finite positive yuan/discharge MWh")
+    hydro_tracking = (term or {}).get("hydro_tracking", {})
+    if hydro_tracking:
+        if tracking is None or set(hydro_tracking) != set(md.hydro) or any(not np.isfinite(float(v)) for v in hydro_tracking.values()):
+            raise ValueError("hydro_tracking requires complete finite RT soft targets")
+        if "hydro_window_end" in term:
+            raise ValueError("cannot apply hard and soft hydro window tracking together")
     anchors = [] if term is None else (
         [(s, int(t), float(lo), float(hi), "E") for s, lst in term.get("storage_anchor", {}).items() for (t, lo, hi) in lst]
-        + [(p, int(t), float(lo), float(hi), "Vu") for p, lst in term.get("pumped_anchor", {}).items() for (t, lo, hi) in lst])
+        + [(p, int(t), float(lo), float(hi), "Vu") for p, lst in term.get("pumped_anchor", {}).items() for (t, lo, hi) in lst]
+        + [(h, T - 1, float(v), float(v), "V") for h, v in hydro_tracking.items()])
     m.A = pyo.Set(initialize=list(range(len(anchors))))
     m._anchors = anchors
+    m._anchor_cost_coefficients = {}
+    for i, (unit, _, _, _, kind) in enumerate(anchors):
+        if tracking is not None:
+            conversion = (float(md.storage[unit]["eta_d"]) if kind == "E" else
+                          float(md.pumped[unit]["e_gen"]) if kind == "Vu" else
+                          1. / (.36 * float(md.hydro[unit]["water_rate"])))
+            if not np.isfinite(conversion) or conversion <= 0:
+                raise ValueError("invalid tracking discharge-energy conversion")
+            coefficient = tracking_c * conversion
+        else:
+            Pa = float(term.get("anchor_penalty", 1e5))
+            coefficient = float(term.get("pumped_anchor_penalty", Pa)) if kind == "Vu" else Pa
+        m._anchor_cost_coefficients[i] = coefficient
     m.A_lo = pyo.Param(m.A, mutable=True, initialize={i: a[2] for i, a in enumerate(anchors)})
     m.A_hi = pyo.Param(m.A, mutable=True, initialize={i: a[3] for i, a in enumerate(anchors)})
     m.sA_up = pyo.Var(m.A, domain=pyo.NonNegativeReals)
@@ -567,22 +681,53 @@ def build_model(case: DACase, penalties: dict | None = None) -> pyo.ConcreteMode
         return m.rs_dn[s, t] <= d["pmax"] - m.Pc[s, t] + m.Pd[s, t]
     m.c_rsup = pyo.Constraint(m.S, m.T, rule=sto_res_up)
     m.c_rsdn = pyo.Constraint(m.S, m.T, rule=sto_res_dn)
-    if use_sto:  # SOC 可持续 T_dur（默认 1 h，假设值）
-        Tdur = float(rcfg.get("T_dur_h", 1.0))
-        m.c_rsup_soc = pyo.Constraint(m.S, m.T, rule=lambda m, s, t: m.E[s, t] - md.storage[s]["soc_min"] * md.storage[s]["ecap"] >= (m.Pd[s, t] + m.rs_up[s, t] - m.Pc[s, t]) * Tdur / md.storage[s]["eta_d"])
-        m.c_rsdn_soc = pyo.Constraint(m.S, m.T, rule=lambda m, s, t: md.storage[s]["soc_max"] * md.storage[s]["ecap"] - m.E[s, t] >= md.storage[s]["eta_c"] * (m.Pc[s, t] + m.rs_dn[s, t] - m.Pd[s, t]) * Tdur)
-    use_ps = use_sto   # 抽蓄备用参与方式同储能（reserve.storage_reserve）
-    m.c_rpup = pyo.Constraint(m.PS, m.T, rule=lambda m, p, t: (m.rp_up[p, t] <= md.pumped[p]["unit_gen_max"] * m.ngen[p, t] - m.Pg[p, t] + m.Pp[p, t])
+    if use_sto:
+        # Simplified incremental reserve energy only, using current period-start
+        # stock (actual initial state at t=0, otherwise E[t-1]). No extra qualification binaries or big-M. Baseline modes
+        # and stock dynamics are unchanged; this is NOT a full H-hour delivery
+        # guarantee for the baseline plus activation trajectory.
+        raw_duration = rcfg.get("T_dur_h")
+        if (isinstance(raw_duration, bool) or not isinstance(raw_duration, (int, float))
+                or not np.isfinite(raw_duration) or raw_duration <= 0):
+            raise ValueError("启用储能/抽蓄备用须显式设置有限正数reserve.T_dur_h（小时）")
+        Tdur = float(raw_duration)
+        def storage_available(s, t, upper=False):
+            d = md.storage[s]
+            bound = d["soc_max" if upper else "soc_min"] * d["ecap"]
+            stock = d["soc0"] * d["ecap"] if t == 0 else m.E[s, t-1]
+            available = bound - stock if upper else stock - bound
+            # Initial SOC can lie outside the declared operating band and recover
+            # within the first period. Do not make zero reserve infeasible there.
+            return max(0., available) if t == 0 else available
+        m.c_rsup_soc = pyo.Constraint(m.S, m.T, rule=lambda m, s, t:
+            Tdur * m.rs_up[s, t] / md.storage[s]["eta_d"] <= storage_available(s, t))
+        m.c_rsdn_soc = pyo.Constraint(m.S, m.T, rule=lambda m, s, t:
+            Tdur * m.rs_dn[s, t] * md.storage[s]["eta_c"] <= storage_available(s, t, upper=True))
+    use_ps = use_sto   # Common participation switch, but PS reserve is generation-only.
+    m.c_rpup = pyo.Constraint(m.PS, m.T, rule=lambda m, p, t: (m.rp_up[p, t] <= md.pumped[p]["unit_gen_max"] * m.ngen[p, t] - m.Pg[p, t])
                               if use_ps else m.rp_up[p, t] == 0)
     m.c_rpdn = pyo.Constraint(m.PS, m.T, rule=lambda m, p, t: (m.rp_dn[p, t] <= m.Pg[p, t] - md.pumped[p]["unit_gen_min"] * m.ngen[p, t])
                               if use_ps else m.rp_dn[p, t] == 0)
+    if use_ps:
+        # Online generation headroom above forces zero reserve in pump/idle.
+        # Effective reservoir bounds already account for both reservoirs.
+        def pumped_available(p, t, upper=False):
+            d = md.pumped[p]
+            stock = d["init"]["V"] if t == 0 else m.Vu[p, t-1]
+            available = d["v_hi"] - stock if upper else stock - d["v_lo"]
+            return max(0., available) if t == 0 else available
+        m.c_rpup_volume = pyo.Constraint(m.PS, m.T, rule=lambda m, p, t:
+            Tdur * m.rp_up[p, t] / md.pumped[p]["e_gen"] <= pumped_available(p, t))
+        m.c_rpdn_volume = pyo.Constraint(m.PS, m.T, rule=lambda m, p, t:
+            Tdur * m.rp_dn[p, t] / md.pumped[p]["e_gen"] <= pumped_available(p, t, upper=True))
     mu = float(rcfg.get("mu_RE", 0.0))
     hyd_ok = "hydro" in prov
     m.c_Rup = pyo.Constraint(m.T, rule=lambda m, t: sum(m.r_up[g, t] for g in G_res) + (sum(m.rh_up[j, t] for j in md.hydro_units) if hyd_ok else 0)
                              + sum(m.rs_up[s, t] for s in md.storage) + sum(m.rp_up[p, t] for p in md.pumped) + mu * sum(float(md.ren[w]["fc"][t]) - m.Pw[w, t] for w in md.ren)
                              + m.sR_up[t] >= float(case.R_up[t]))
-    m.c_Rdn = pyo.Constraint(m.T, rule=lambda m, t: sum(m.r_dn[g, t] for g in G_res) + (sum(m.rh_dn[j, t] for j in md.hydro_units) if hyd_ok else 0)
+    m.c_Rdn = pyo.Constraint(m.T, rule=lambda m, t: (sum(m.r_dn[g, t] for g in G_res) + (sum(m.rh_dn[j, t] for j in md.hydro_units) if hyd_ok else 0)
                              + sum(m.rs_dn[s, t] for s in md.storage) + sum(m.rp_dn[p, t] for p in md.pumped) + m.sR_dn[t] >= float(case.R_dn[t]))
+                             if down_enabled else pyo.Constraint.Skip)
 
     # ---------------- 调频：独立AGC资格，与能量/备用共享物理能力
     from . import regulation
@@ -606,14 +751,55 @@ def build_model(case: DACase, penalties: dict | None = None) -> pyo.ConcreteMode
 INT_VARS = ("u", "v", "w", "delta", "u_ch", "u_dis", "xg", "xp", "ngen", "npump")  # w 为连续变量，固定时一并取整；储能充放状态与启停一起固定
 
 
+@dataclass
+class SolverBudget:
+    """Shared solver-call elapsed budget, not an OS wall-clock deadline."""
+    total_s: float
+    reserve_lp_s: float = 10.
+    used_s: float = 0.
+    calls: list = field(default_factory=list)
+
+    def allowance(self, reserve_s=0.):
+        available = self.total_s - self.used_s - reserve_s
+        if not np.isfinite(available) or available <= 0:
+            raise RuntimeError("RT shared solver budget exhausted; no dispatch/price fallback permitted")
+        return available
+
+    def report(self):
+        return dict(total_solver_budget_s=self.total_s, solver_elapsed_s=self.used_s,
+                    remaining_solver_s=max(0., self.total_s-self.used_s), reserve_lp_s=self.reserve_lp_s,
+                    scope="solver_calls_only_not_build_export_or_OS_wall_clock", calls=list(self.calls))
+
+
+def _solve_with_budget(m, opt, *, tee=False, warmstart=False, phase="sced", reserve_lp=False):
+    budget = getattr(m, "_solver_budget", None)
+    if budget is None:
+        return opt.solve(m, tee=tee, warmstart=warmstart)
+    limit = budget.allowance(budget.reserve_lp_s if reserve_lp else 0.)
+    limit = min(limit, float(opt.highs_options.get("time_limit", limit)))
+    opt.highs_options["time_limit"] = limit
+    start = time.perf_counter()
+    success = False
+    try:
+        result = opt.solve(m, tee=tee, warmstart=warmstart)
+        success = True
+    finally:
+        elapsed = max(0., time.perf_counter()-start)
+        budget.used_s += elapsed
+        budget.calls.append(dict(phase=phase, time_limit_s=limit, elapsed_s=elapsed, returned=success))
+    if budget.used_s > budget.total_s:
+        raise RuntimeError("RT shared solver budget exhausted during solver call; results not executable")
+    return result
+
+
 def _solver(cfg, mip=True):
     opt = pyo.SolverFactory("appsi_highs")
     sc = cfg.base["solver"]
     opt.highs_options = {"threads": int(sc.get("threads", 4)), "output_flag": bool(sc.get("log", False)),
-                         "time_limit": float(sc.get("time_limit_s", 300)),
-                         "mip_rel_gap": float(sc.get("mip_rel_gap", 0.002))}
+                         "time_limit": float(sc.get("time_limit_s", 300))}
     opt.config.stream_solver = bool(sc.get("log", False))
     if mip:
+        opt.highs_options["mip_rel_gap"] = float(sc.get("mip_rel_gap", 0.01))
         opt.highs_options.update(sc.get("highs_extra") or {})   # presolve / mip_heuristic_effort 等
     return opt
 
@@ -646,7 +832,7 @@ def warm_start(m, log=lambda *a: None) -> dict:
     t0 = time.perf_counter()
     opt = _solver(cfg)
     opt.highs_options["solve_relaxation"] = True       # 只解 LP 松弛
-    opt.solve(m)
+    _solve_with_budget(m, opt, tee=bool(sc.get("log", False)), warmstart=False, phase="warm_relaxation", reserve_lp=True)
     ulp = {(g, t): pyo.value(m.u[g, t]) for g in m.G for t in m.T}
     lp_bound = pyo.value(m.obj)
     plan = _heuristic_commitment(m, ulp, float(sc.get("warm_start_theta", 0.2)))
@@ -657,7 +843,7 @@ def warm_start(m, log=lambda *a: None) -> dict:
     opt = _solver(cfg)
     opt.highs_options.update(time_limit=float(sc.get("warm_start_time_s", 30)), mip_rel_gap=0.01)
     try:
-        opt.solve(m)          # 罚松弛保证该子问题总可行
+        _solve_with_budget(m, opt, tee=bool(sc.get("log", False)), warmstart=False, phase="warm_commitment", reserve_lp=True)
         ok = True
     except RuntimeError:
         ok = False
@@ -680,9 +866,8 @@ def solve_scuc(m: pyo.ConcreteModel, log=lambda *a: None):
     if cfg.base["solver"].get("warm_start", False):
         ws = warm_start(m, log)
     opt = _solver(cfg)
-    if ws and ws["ok"]:
-        opt.config.warmstart = True
-    res = opt.solve(m)
+    res = _solve_with_budget(m, opt, tee=bool(cfg.base["solver"].get("log", False)),
+                             warmstart=bool(ws and ws["ok"]), phase="scuc", reserve_lp=True)
     el = time.perf_counter() - t0
     tc = str(res.solver.termination_condition)
     if "optimal" not in tc.lower() and not ("maxtime" in tc.lower() or "time" in tc.lower()):
@@ -711,15 +896,23 @@ def set_penalties(m, pen):
     m.obj = pyo.Objective(expr=_objective_expr(m), sense=pyo.minimize)
 
 
+def thermal_startup_cost(m):
+    """Yuan per startup event, never multiplied by timestep duration."""
+    md = m._md
+    return sum((md.thermal[g]["startup_cost_yuan"] * m.v[g, t]
+                if md.thermal[g]["startup_cost_mode"] == "uniform_per_unit" else
+                sum(cost * m.y[g, state, t] for state, _, cost in md.thermal[g]["states"])
+                + md.thermal[g]["cold"] * m.ycold[g, t]) for g in m.G for t in m.T)
+
+
 def _objective_expr(m):
     md, dt = m._md, m._md.dt
     th = sum(md.thermal[g]["c"][k] * m.p[g, k, t] * dt for (g, k) in m.GK for t in m.T)
     nl = sum(md.thermal[g]["noload_bid"] * m.u[g, t] * dt for g in m.G for t in m.T)
-    su = sum(dict((s, c) for s, _, c in md.thermal[g]["states"])[s] * m.y[g, s, t] for (g, s) in m.GST for t in m.T) \
-        + sum(md.thermal[g]["cold"] * m.ycold[g, t] for g in m.G for t in m.T)
+    su = thermal_startup_cost(m)
     rw = sum(md.ren[w]["c"][k] * m.pw[w, k, t] * dt for (w, k) in m.WK for t in m.T)
     hy = sum(md.hydro_units[j]["c"][k] * m.ph[j, k, t] * dt for (j, k) in m.JK for t in m.T)
-    sp = sum(md.hydro[h]["spill_penalty"] * m.Qspill[h, t] * dt for h in m.HS for t in m.T)
+    # Renewable/hydro energy bids determine dispatch; no additional curtailment/spill penalty.
     st = sum(md.storage[s]["cd"][k] * m.pd[s, k, t] * dt for (s, k) in m.SD for t in m.T) \
         - sum(md.storage[s]["cc"][k] * m.pc[s, k, t] * dt for (s, k) in m.SC for t in m.T)
     ps = sum(md.pumped[p]["cg"][k] * m.pg[p, k, t] * dt for (p, k) in m.PGK for t in m.T) \
@@ -732,11 +925,9 @@ def _objective_expr(m):
     term = m._case.terminal
     tp = 0
     if term is not None and len(m.A):
-        Pa = float(term.get("anchor_penalty", 1.0e5))
-        Pv = float(term.get("pumped_anchor_penalty", Pa))
-        tp = sum((Pv if m._anchors[i][4] == "Vu" else Pa) * (m.sA_up[i] + m.sA_dn[i]) for i in m.A)
+        tp = sum(m._anchor_cost_coefficients[i] * (m.sA_up[i] + m.sA_dn[i]) for i in m.A)
     from . import regulation
-    return th + nl + su + rw + hy + sp + st + ps + pn + tp + regulation.objective_term(m)
+    return th + nl + su + rw + hy + st + ps + pn + tp + regulation.objective_term(m)
 
 
 def solve_sced(m):
@@ -749,7 +940,8 @@ def solve_sced(m):
         m.dual = pyo.Suffix(direction=pyo.Suffix.IMPORT)
     opt = _solver(cfg, mip=False)
     t0 = time.perf_counter()
-    res = opt.solve(m)
+    res = _solve_with_budget(m, opt, tee=bool(cfg.base["solver"].get("log", False)), warmstart=False,
+                             phase=getattr(m, "_solver_budget_phase", "formal_sced"))
     el = time.perf_counter() - t0
     tc = str(res.solver.termination_condition)
     if "optimal" not in tc.lower():
@@ -778,6 +970,7 @@ def slack_summary(m) -> dict:
         reserve_dn_short_max=max(pyo.value(m.sR_dn[t]) for t in T),
         anchor_slack_max_mwh=max(anchor_values.values(), default=0.0),
         storage_anchor_slack_max_mwh=max((v for i, v in anchor_values.items() if m._anchors[i][4] == "E"), default=0.0),
+        hydro_anchor_slack_max_1e4m3=max((v for i, v in anchor_values.items() if m._anchors[i][4] == "V"), default=0.0),
         pumped_anchor_slack_max_1e4m3=max((v for i, v in anchor_values.items() if m._anchors[i][4] == "Vu"), default=0.0),
     )
 
@@ -821,6 +1014,8 @@ def extract_prices(m) -> dict:
     lmp_dec = energy[None, :] + cong
     from . import regulation
     r_up = np.array([m.dual[m.c_Rup[t]] for t in range(T)]) / dt
-    r_dn = np.array([m.dual[m.c_Rdn[t]] for t in range(T)]) / dt
+    down_enabled = bool(case.cfg.mode["reserve"].get("down_enabled", True))
+    r_dn = (np.array([m.dual[m.c_Rdn[t]] for t in range(T)]) / dt
+            if down_enabled else [None] * T)
     return dict(lmp=pi, lmp_decomp=lmp_dec, energy=energy, congestion=cong, mu_plus=mu_p, mu_minus=mu_m,
-                reserve_up_price=r_up, reserve_dn_price=r_dn, regulation=regulation.prices(m))
+                reserve_up_price=r_up, reserve_dn_price=r_dn, reserve_down_enabled=down_enabled, regulation=regulation.prices(m))

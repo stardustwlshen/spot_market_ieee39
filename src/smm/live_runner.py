@@ -51,13 +51,14 @@ def freeze_inputs(root, directory, bids=None, regulation=None):
         dest = bid_dir(cfg);dest.mkdir(parents=True, exist_ok=True)
         atomic_json(dest/f"bids_v{bids['version']}.json", bids)
         atomic_json(directory/'submitted_bids.json', bids)
+    capture_provenance(directory, snap, filename="frozen_input_provenance.json")
     return snap
 
 
 class ProgressWriter:
     def __init__(self, directory, total=96):
         self.directory=Path(directory);self.total=total;self.da=None
-        self.state={'phase':'preparing','executed_periods':0,'total_periods':total,'settled':False}
+        self.state={'phase':'preparing','executed_periods':0,'total_periods':total,'expected_periods':total,'settled':False, 'settlement_calculated':False,'settlement_scope':'not_applicable','completed_scope':None}
         self.write()
     def cancelled(self): return (self.directory/'cancel.request').exists()
     def check_cancel(self):
@@ -89,3 +90,50 @@ class ProgressWriter:
             self.state['stage_history']={str(r['t']):r['stage_diagnostics'] for r in rr.rt if r.get('stage_diagnostics')}
         self.write()
         self.check_cancel()  # completed-stage boundary, never interrupt a solver mid-call
+
+
+def completion_metadata(expected, executed, *, mode='full', calculated=True):
+    expected,executed=int(expected),int(executed)
+    complete=mode=='full' and executed==expected
+    return dict(completed_scope='da_only' if mode=='da' else ('full_day' if complete else 'debug_prefix'),
+                expected_periods=expected,executed_periods=executed,
+                settlement_scope='not_applicable' if mode=='da' or not calculated else ('full_day' if complete else 'illustrative_prefix'),
+                settlement_calculated=bool(calculated and mode=='full'),settled=bool(complete and calculated))
+
+
+def file_fingerprint(root, folders, *, suffix=None):
+    """Bounded non-hidden regular files only; never follow symlinks or include environments."""
+    import hashlib
+    root=Path(root).resolve();entries={}
+    for folder in folders:
+        base=root/folder
+        if not base.is_dir() or base.is_symlink():continue
+        for path in sorted(base.rglob('*')):
+            rel=path.relative_to(root)
+            if any(part.startswith('.') or part in ('__pycache__','node_modules','venv') for part in rel.parts):continue
+            if not path.is_file() or path.is_symlink() or any(p.is_symlink() for p in path.parents if p!=root and root in p.parents):continue
+            if suffix is not None and path.suffix!=suffix:continue
+            entries[rel.as_posix()]=hashlib.sha256(path.read_bytes()).hexdigest()
+    canonical=json.dumps(entries,sort_keys=True,separators=(',',':')).encode()
+    return dict(algorithm='sha256',files=entries,content_fingerprint=hashlib.sha256(canonical).hexdigest())
+
+
+def capture_provenance(directory, input_root, *, filename='run_provenance.json', source_root=None):
+    """Capture at invocation, not when results are later inspected; no secret/dotfile copies."""
+    import subprocess
+    if (Path(directory)/filename).exists():
+        raise FileExistsError("运行来源记录已存在，禁止用后来源码覆盖")
+    from datetime import datetime, timezone
+    source_root=Path(source_root) if source_root is not None else Path(__file__).resolve().parents[2]
+    def git(*args):
+        try:return subprocess.check_output(['git','-C',str(source_root),*args],stderr=subprocess.DEVNULL,text=True).strip()
+        except (OSError,subprocess.CalledProcessError):return None
+    head=git('rev-parse','HEAD');status=git('status','--porcelain','--untracked-files=normal')
+    evidence=dict(captured_at_utc=datetime.now(timezone.utc).isoformat(),
+                  git_head=head,git_dirty=None if status is None else bool(status),
+                  source_scope='src/app/scripts Python files only; excludes dotfiles, symlinks and environments',
+                  source=file_fingerprint(source_root,('src','app','scripts'),suffix='.py'),
+                  inputs=file_fingerprint(input_root,('config','data','bids')),
+                  interpretation='content observed at run invocation; not a copied or sandboxed source tree')
+    atomic_json(Path(directory)/filename,evidence)
+    return evidence

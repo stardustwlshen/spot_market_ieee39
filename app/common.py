@@ -12,6 +12,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 import streamlit as st
+from chinese_labels import display_frame, csv_bytes, column_label, localize_figure
 
 ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT / "src") not in sys.path:
@@ -20,7 +21,7 @@ if str(ROOT / "src") not in sys.path:
 from smm import scenario as sc  # noqa: E402
 from smm.config import load_config  # noqa: E402
 
-TYPE_CN = {"coal": "燃煤", "gas_ccgt": "燃气CCGT", "gas_gt": "燃气GT", "hydro": "水电", "wind": "风电", "pv": "光伏",
+TYPE_CN = {"coal": "燃煤", "gas_ccgt": "燃气联合循环", "gas_gt": "燃气轮机", "hydro": "水电", "wind": "风电", "pv": "光伏",
            "tie": "区外来电", "storage": "储能", "storage_dis": "储能放电", "storage_ch": "储能充电", "load": "负荷",
            "pumped": "抽水蓄能", "pumped_gen": "抽蓄发电", "pumped_pump": "抽蓄抽水",
            "slack": "平衡松弛"}
@@ -65,7 +66,10 @@ h2, h3 {font-weight: 600;}
 .smm-card {border: 1px solid #dde3ea; border-radius: 0.6rem; padding: 0.8rem 1rem; background: #fff; height: 100%;}
 .smm-card b {color: #1f5fa8;}
 .stTabs [data-baseweb="tab-list"] {gap: 0.2rem; flex-wrap: wrap;}
-.stTabs [data-baseweb="tab"] {padding: 0.4rem 0.8rem;}
+.stTabs [data-baseweb="tab"] {padding: 0.55rem 0.9rem; font-weight: 600;}
+.stTabs [aria-selected="true"] {color:#1f5fa8; background:rgba(31,95,168,.07); border-radius:8px 8px 0 0;}
+div[data-testid="stExpander"] {border-radius:10px;}
+div[data-testid="stMetricLabel"] {line-height:1.5;}
 /* 窄屏适配：列纵向堆叠、指标字号缩小、图表不溢出 */
 @media (max-width: 760px) {
   .block-container {padding-left: 0.8rem; padding-right: 0.8rem; padding-top: 1.2rem;}
@@ -130,12 +134,12 @@ def style_fig(fig, title: str | None = None, x: str | None = None, y: str | None
         if x.startswith("时刻"):                      # 96 个 15 min 时刻：只标约每 2 h 一个刻度，水平显示
             fig.update_xaxes(nticks=13, tickangle=0)
     if y is not None:
-        fig.update_yaxes(title_text=y)
+        fig.layout.yaxis.title.text = y  # Preserve explicitly labelled secondary-axis units.
     return fig
 
 
 def show_fig(fig, key=None):
-    st.plotly_chart(fig, width="stretch", key=key, config={"displaylogo": False, "responsive": True})
+    st.plotly_chart(localize_figure(fig), width="stretch", key=key, config={"displaylogo": False, "responsive": True})
 
 
 def sidebar_nav():
@@ -199,6 +203,8 @@ def num_cols(df: pd.DataFrame, fmt: str = "%.1f", overrides: dict | None = None)
 
 
 def show_df(df: pd.DataFrame, fmt: str = "%.1f", overrides: dict | None = None, height=None, **kw):
+    df = display_frame(df)
+    overrides = {column_label(k):v for k,v in (overrides or {}).items()}
     st.dataframe(df, hide_index=True, width="stretch", column_config=num_cols(df, fmt, overrides),
                  height=height or "auto", **kw)
 
@@ -359,7 +365,8 @@ def load_result(d: str, mtime: float) -> dict:  # mtime 只用于缓存失效
         if R[k] is None:
             R[k] = rd(d / f"{k}.csv")
     for k in ("rt_units", "rt_prices", "rt_lines", "rt_storage", "rt_system", "rt_pumped", "rt_hydro", "settlement_detail", "settlement_by_entity",
-              "settlement_by_type", "settlement_line_rent", "settlement_reconciliation", "rt_regulation", "rt_regulation_system", "da_regulation_indicative", "da_regulation_system_indicative"):
+              "settlement_by_type", "settlement_line_rent", "settlement_reconciliation", "rt_regulation", "rt_regulation_system", "da_regulation_indicative", "da_regulation_system_indicative",
+              "operating_profit_by_unit", "operating_profit_by_period", "operating_profit_by_type"):
         R[k] = rd(d / f"{k}.csv")
     sp = d / "summary.json"
     R["summary"] = json.loads(sp.read_text(encoding="utf-8")) if sp.exists() else {}
@@ -371,7 +378,8 @@ def load_result(d: str, mtime: float) -> dict:  # mtime 只用于缓存失效
     R["profiles"] = rd(prof)
     snap = d / "scenario_snapshot" / "data" / "case39"
     R["case_dir"] = str(snap if snap.exists() else ROOT / "data" / "case39")
-    R["snapshot_root"] = str(d / "scenario_snapshot") if (d / "scenario_snapshot").exists() else str(ROOT)
+    R["snapshot_root"] = str(d / "scenario_snapshot")
+    R["input_provenance_known"] = (d / "scenario_snapshot" / "config" / "base.yaml").exists()
     return R
 
 
@@ -385,14 +393,23 @@ def get_result(m: dict) -> dict:
 def branches_with_rate(snapshot_root: str) -> pd.DataFrame:
     """支路表 + 生效限额（rate_mw × line_scale）。"""
     root = Path(snapshot_root)
-    br = pd.read_csv(root / "data" / "case39" / "branches.csv")
+    branch_file = root / "data" / "case39" / "branches.csv"
+    if not branch_file.exists():
+        # Legacy topology is illustrative only; never borrow current operational limits.
+        br = pd.read_csv(ROOT / "data" / "case39" / "branches.csv")
+        br["rate_mw"] = np.nan
+        br["scale"] = np.nan
+        br["rate_eff"] = np.nan
+        return br
+    br = pd.read_csv(branch_file)
     try:
         import yaml
         base = yaml.safe_load((root / "config" / "base.yaml").read_text(encoding="utf-8"))
         scale = base.get("line_scale") or {}
     except Exception:  # noqa: BLE001
-        scale = {}
-        base = {}
+        br["scale"] = np.nan
+        br["rate_eff"] = np.nan
+        return br
     br["scale"] = br.branch_id.map(lambda b: float(scale.get(b, 1.0)))
     br["rate_eff"] = br.rate_mw * br.scale * float(base.get("line_capacity_multiplier", 1.0))
     return br
@@ -400,18 +417,23 @@ def branches_with_rate(snapshot_root: str) -> pd.DataFrame:
 
 def line_loading(R: dict, stage: str) -> pd.DataFrame | None:
     """返回 period, line, flow_mw, rate_eff, loading, mu。"""
-    br = branches_with_rate(R["snapshot_root"])[["branch_id", "rate_eff"]].rename(columns={"branch_id": "line"})
-    if stage == "da":
-        df = R.get("da_line_flows")
-        if df is None:
-            return None
-        df = df.merge(br, on="line", how="left")
-    else:
-        df = R.get("rt_lines")
-        if df is None:
-            return None
-        df = df.merge(br, on="line", how="left")
+    df = R.get("da_line_flows" if stage == "da" else "rt_lines")
+    if df is None:
+        return None
     df = df.copy()
+    if "rate_mw" in df:
+        df["rate_eff"] = pd.to_numeric(df.rate_mw, errors="coerce")
+    else:
+        # Same run's persisted DA ratings may also label RT flows.
+        da = R.get("da_line_flows")
+        rates = pd.Series(dtype=float)
+        if da is not None and "rate_mw" in da:
+            unique = da.groupby("line").rate_mw.nunique()
+            rates = da[da.line.isin(unique[unique == 1].index)].groupby("line").rate_mw.first()
+        df["rate_eff"] = df.line.map(rates)
+        frozen = branches_with_rate(R["snapshot_root"]).set_index("branch_id").rate_eff
+        df["rate_eff"] = df.rate_eff.fillna(df.line.map(frozen))
+    df["rate_eff"] = df.rate_eff.where(df.rate_eff > 0)
     df["loading"] = df.flow_mw.abs() / df.rate_eff
     df["mu"] = df.mu_plus.abs() + df.mu_minus.abs()
     df["congested"] = (df.loading >= 0.999) | (df.mu > 1e-6)
@@ -458,7 +480,10 @@ def fmt_money(x) -> str:
 
 
 def df_download(df: pd.DataFrame, name: str, label: str = "下载 CSV", key=None):
-    st.download_button(label, df.to_csv(index=False).encode("utf-8-sig"), file_name=name, mime="text/csv", key=key)
+    readable = str(Path(name).with_name(Path(name).stem + "_中文.csv"))
+    st.download_button("下载中文表格" if label == "下载 CSV" else label + "（中文）", csv_bytes(df), file_name=readable, mime="text/csv", key=key)
+    with st.expander("原始字段兼容下载（技术用途）"):
+        st.download_button("下载原字段表格", csv_bytes(df, chinese=False), file_name=name, mime="text/csv", key=None if key is None else key+":raw")
 
 
 @st.cache_data(show_spinner=False)

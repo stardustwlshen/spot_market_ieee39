@@ -1,0 +1,97 @@
+# Explicit opt-in synthetic study worksheet; not observed plant data.
+version: synthetic-cost-study-v1
+source_kind: research_assumption_not_observed_plant_data
+source: Synthetic research assumptions; EIA references support heat-rate formula/type
+  distinctions only, not these unit-specific values
+currency_energy_units: CNY/MWh; fuel CNY/GJ_HHV; heat rate GJ_HHV/MWh
+thermal:
+  C1:
+    fuel_price: 30
+    heat_rate: 9
+    variable_om: 10
+  C2:
+    fuel_price: 30
+    heat_rate: 9.5
+    variable_om: 12
+  C3:
+    fuel_price: 30
+    heat_rate: 10
+    variable_om: 15
+  CCGT:
+    fuel_price: 60
+    heat_rate: 6.5
+    variable_om: 15
+  GT:
+    fuel_price: 60
+    heat_rate: 10
+    variable_om: 20
+thermal_offer_markup_factors:
+- 1
+- 1.02
+- 1.05
+- 1.09
+- 1.14
+renewable_vom:
+  W1: 8
+  W2: 11
+  PV1: 5
+renewable_strategy_increments:
+- 0
+- 10
+- 20
+- 30
+- 40
+hydro:
+  H1:
+    variable_om: 6
+    water_opportunity:
+      wet: 110
+      dry: 180
+hydro_opportunity_increments:
+- 0
+- 15
+- 35
+- 60
+- 90
+storage:
+  ES1:
+    replacement_energy: 250
+    degradation: 25
+    reservation: 410
+  ES2:
+    replacement_energy: 250
+    degradation: 35
+    reservation: 425
+  ES3:
+    replacement_energy: 250
+    degradation: 45
+    reservation: 440
+storage_sell_increments:
+- 0
+- 15
+- 30
+storage_buy_decrements:
+- 0
+- 15
+- 30
+pumped:
+  PS1:
+    replacement_energy: 250
+    variable_om: 10
+    reservation: 390
+pumped_sell_increments:
+- 0
+- 20
+- 45
+accounting_warning: Offer opportunity costs only; do not add again to objective or
+  settlement costs
+formula_references:
+- https://www.eia.gov/todayinenergy/detail.php?id=7590
+- https://www.eia.gov/todayinenergy/detail.php?id=52158
+- https://learn.pjm.com/-/media/DotCom/committees-groups/subcommittees/cds/20110620/20110620-item-03b-cds-educational-paper-for-no-load.ashx
+no_load_convention: Historical PJM educational reference for zero-output cost intercept
+  only, not current market parameters; internal thermal base prices carry Pmin energy,
+  fixed noload unchanged
+
+fixed_cost_link: Actual cost anchors are loaded only from fixed_costs.yaml; thermal fuel/heat-rate/VOM records explain initial scalar calibration, not runtime cost overrides.
+thermal_strategy_scope: Offer prices equal fixed scalar cost times declared markup factors; actual marginal cost remains constant, not a blockwise heat-rate integral.

@@ -53,15 +53,45 @@ def ar1(T, phi, rng, xi=None):
     return e  # 单位方差
 
 
+
+def validate_profiles(cfg, frame):
+    if len(frame) != cfg.T:
+        raise ValueError(f"profiles需{cfg.T}行")
+    caps = {r['id']:float(r['cap']) for r in cfg.units['renewable']}
+    for name in ['load']+list(caps):
+        for stage in ('actual','da','id','rt'):
+            col=f'{name}_{stage}'
+            if col not in frame:raise ValueError(f'profiles缺少{col}')
+            values=frame[col].to_numpy(dtype=float)
+            if not np.isfinite(values).all() or (values<0).any():raise ValueError(f'profiles {col}必须为有限非负数')
+            if name in caps and (values>caps[name]+1e-9).any():raise ValueError(f'profiles {col}超出装机容量')
+    return frame
+
+
 def generate_profiles(cfg: Config, seed: int | None = None) -> pd.DataFrame:
     """返回 96 行：各对象的 actual / da / id / rt 四列（MW）及 tie 计划。"""
     T = cfg.T
     rng = np.random.default_rng(cfg.base["seed"] if seed is None else seed)
     # 可选覆盖（base.yaml 的 forecast 段，网页应用“风光预测误差”用）：sigma.{wind,pv,load}.{da,id,rt}、phi.{wind,pv,load}
     fo = cfg.base.get("forecast") or {}
+    if not isinstance(fo, dict) or set(fo)-{'sigma','phi'}:
+        raise ValueError('forecast仅支持sigma/phi配置')
+    for key in ('sigma','phi'):
+        value=fo.get(key) or {}
+        if not isinstance(value,dict) or set(value)-set(PHI):raise ValueError(f'forecast.{key}类型/资源键非法')
+    for kind, value in (fo.get('sigma') or {}).items():
+        if not isinstance(value,dict) or set(value)-{'da','id','rt'}:raise ValueError(f'forecast.sigma.{kind}阶段键非法')
     SIG = {k: {**v, **((fo.get("sigma") or {}).get(k) or {})} for k, v in SIGMA.items()}
     PH = {**PHI, **(fo.get("phi") or {})}
-    peak = cfg.base["load_scale"] * 6254.23
+    from .input_validation import number
+    for kind, phi in PH.items():
+        if abs(number(phi, f'forecast.phi.{kind}')) >= 1:
+            raise ValueError(f'forecast.phi.{kind}须满足abs(phi)<1')
+    for kind, stages in SIG.items():
+        for stage, sigma in stages.items():
+            if number(sigma, f'forecast.sigma.{kind}.{stage}') < 0:
+                raise ValueError(f'forecast.sigma.{kind}.{stage}须非负')
+    peak = number(cfg.base["load_scale"], 'load_scale', positive=True) * 6254.23
     out = pd.DataFrame({"period": np.arange(1, T + 1)})
     out["time"] = [f"{(t*15)//60:02d}:{(t*15)%60:02d}" for t in range(T)]
 
@@ -97,15 +127,16 @@ def generate_profiles(cfg: Config, seed: int | None = None) -> pd.DataFrame:
             make(spec["id"], cap * shp, cap, "pv", daylight=(shp > 0).astype(float) * np.sqrt(shp / shp.max()), clip_cap=cap)
     for tie in cfg.units.get("tie", []):
         out[f"{tie['id']}_sched"] = np.round(tie["pmax"] * interp96(TIE_SHAPE, T), 3)
-    return out
+    return validate_profiles(cfg, out)
 
 
 def apply_profile_overrides(cfg: Config, df: pd.DataFrame, overrides: pd.DataFrame | None = None) -> pd.DataFrame:
-    """用 cfg.root/data/profile_overrides.csv（96 行，列为 {对象}_actual / {对象}_da 的子集）覆盖生成的曲线。
+    """用 cfg.root/data/profile_overrides.csv（96 行，列为 {对象}_{actual,da,id,rt} 的子集）覆盖生成的曲线。
 
     覆盖实际值而未覆盖预测时，各阶段预测保持原误差（负荷按实际值比例缩放误差，风光保持绝对误差并截断到 [0, 装机]）；
-    覆盖日前预测只改日前列。网页应用的“负荷 96 点编辑 / 上传 CSV”即写这个文件。
+    显式预测列（da/id/rt）优先于推导值，仅改变对应列。所有提供列须有限、非负，风光不超过装机。网页应用的“负荷 96 点编辑 / 上传 CSV”即写这个文件。
     """
+    validate_profiles(cfg, df)
     if overrides is None:
         p = cfg.root / "data" / "profile_overrides.csv"
         if not p.exists():
@@ -116,6 +147,31 @@ def apply_profile_overrides(cfg: Config, df: pd.DataFrame, overrides: pd.DataFra
     out = df.copy()
     caps = {r["id"]: r["cap"] for r in cfg.units["renewable"]}
     names = ["load"] + list(caps)
+    allowed={'period','time'}|{f'{n}_{stage}' for n in names for stage in ('actual','da','id','rt')}
+    unknown=set(overrides.columns)-allowed
+    if unknown:raise ValueError(f'profile_overrides未知列: {sorted(unknown)}')
+    if not overrides.columns.is_unique:raise ValueError('profile_overrides列名重复')
+    if 'period' in overrides:
+        values=pd.to_numeric(overrides['period'],errors='coerce').to_numpy()
+        if not np.array_equal(values,np.arange(1,len(df)+1)):
+            raise ValueError('profile_overrides period须按1..T严格顺序且无重复/缺失')
+    if 'time' in overrides and not np.array_equal(overrides['time'].astype(str).to_numpy(),df['time'].astype(str).to_numpy()):
+        raise ValueError('profile_overrides time与时段顺序不一致')
+    # Full-stage boundary scenarios must not silently ignore ID/RT input columns.
+    # No override file retains the exact original generation path.
+    for n in names:
+        for stage in ("actual", "da", "id", "rt"):
+            col = f"{n}_{stage}"
+            if col not in overrides:
+                continue
+            try:
+                values = overrides[col].to_numpy(dtype=float)
+            except (TypeError, ValueError) as exc:
+                raise ValueError(f"profile_overrides {col} 必须为有限数值") from exc
+            if not np.isfinite(values).all() or (values < 0).any():
+                raise ValueError(f"profile_overrides {col} 必须为有限非负数值")
+            if n in caps and (values > float(caps[n]) + 1e-9).any():
+                raise ValueError(f"profile_overrides {col} 超出装机容量 {caps[n]} MW")
     for n in names:
         a_col = f"{n}_actual"
         if a_col in overrides and overrides[a_col].notna().all():
@@ -130,10 +186,11 @@ def apply_profile_overrides(cfg: Config, df: pd.DataFrame, overrides: pd.DataFra
                     f = np.clip(f, 0, caps[n])
                 out[f"{n}_{st}"] = np.round(f, 3)
             out[a_col] = a_new
-        d_col = f"{n}_da"
-        if d_col in overrides and overrides[d_col].notna().all():
-            out[d_col] = overrides[d_col].to_numpy(float)
-    return out
+        for stage in ("da", "id", "rt"):
+            col = f"{n}_{stage}"
+            if col in overrides:
+                out[col] = overrides[col].to_numpy(float)
+    return validate_profiles(cfg, out)
 
 
 def save_profiles(cfg: Config, df: pd.DataFrame) -> str:

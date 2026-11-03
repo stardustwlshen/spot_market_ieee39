@@ -1,8 +1,8 @@
-"""日前出清：能量SCUC → 固定整数 →（启用时独立调频分配）→ 正式能量SCED及同源量价。"""
+"""日前出清：SCUC→固定整数SCED；启用时另用克隆辅助LP算价，正式数量不变。"""
 from __future__ import annotations
 
 import time
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 
 import numpy as np
 import pandas as pd
@@ -24,7 +24,8 @@ class DAResult:
     tables: dict = field(default_factory=dict)
     costs: dict = field(default_factory=dict)
     model: object = None             # physical SCED dispatch; never the auxiliary pricing solve
-    pricing_model: object = None     # compatibility field; standard pricing never uses an auxiliary model
+    pricing_model: object = None     # separate auxiliary LP; its quantities never execute
+    dispatch_prices: dict = field(default_factory=dict)
     scuc_snapshot: dict = field(default_factory=dict)  # incumbent values before integer fixing
     stage_comparison: dict = field(default_factory=dict)
     stage_diagnostics: dict = field(default_factory=dict)
@@ -60,12 +61,16 @@ def _stage_comparison(incumbent, dispatch, info, sced) -> dict:
 
 def run_da(case: DACase, verbose: bool = True, *, stage_callback=None) -> DAResult:
     from .stage_diagnostics import capture
+    from .bids import effective_bids
+    case = replace(case, bids=effective_bids(case.cfg, case.bids))
     stages = {}
     def record_stage(name, model, info):
         stages[name] = capture(model, name, info)
         if stage_callback:
             stage_callback({"phase": "da_stage", "stage": name, "stage_diagnostics": stages})
     cfg = case.cfg
+    if cfg.mode.get("auxiliary_pricing", {}).get("enabled", False) and cfg.mode.get("regulation", {}).get("enabled", False):
+        raise ValueError("auxiliary pricing currently requires regulation disabled")
     log = print if verbose else (lambda *a, **k: None)
     t0 = time.perf_counter()
     m = scuc.build_model(case)
@@ -95,29 +100,39 @@ def run_da(case: DACase, verbose: bool = True, *, stage_callback=None) -> DAResu
                           "All SCUC integers are inherited; new reservation bounds intentionally differ. Only final SCED quantities/prices execute and settle.")
     else:
         comparison["objective_comparison_applicable"] = True
-    # Standard pricing only: the unchanged fixed-integer SCED supplies both
-    # physical dispatch and raw dual prices, including any physical slack costs.
-    # Do not replace penalties or relax anchors for a second pricing solve.
     pricing = None
     pricing_model = None
-    tables = {}
-    prices = scuc.extract_prices(m)
+    dispatch_prices = scuc.extract_prices(m)
     lim = cfg.mode["price_limits"]
-    prices = R.clamp_prices(prices, lim["clear_min"], lim["clear_max"])
-    tables.update(_tables(m, prices, cfg))
+    dispatch_prices = R.clamp_prices(dispatch_prices, lim["clear_min"], lim["clear_max"])
+    prices = dispatch_prices
+    source = "standard_sced"
+    if cfg.mode.get("auxiliary_pricing", {}).get("enabled", False):
+        from .auxiliary_pricing import run_auxiliary_pricing, numeric_diagnostics
+        aux = run_auxiliary_pricing(m)
+        aux["auxiliary_prices"].update(selected_for_settlement=True, settlement_applied=True,
+                                       settlement_applied_meaning="selected_clipped_price_rule_not_payment_execution")
+        pricing_model, pricing = aux["model"], numeric_diagnostics(aux)
+        prices = R.clamp_prices(aux["auxiliary_prices"]["raw"], lim["clear_min"], lim["clear_max"])
+        source = "bounded_auxiliary_pricing"
+        stages["energy_sced"]["summary"]["prices_are_market_prices"] = False
+        record_stage("auxiliary_pricing", pricing_model, aux["solve_info"])
+        stages["auxiliary_pricing"]["summary"].update(status="辅助算价（数量不执行；价格用于结算）", prices_are_market_prices=True,
+                                                    objective_kind="auxiliary_pricing_not_dispatch_cost", quantities_execute=False)
+    tables = _tables(m, prices, cfg, dispatch_prices=dispatch_prices, pricing_source=source)
     tables["lines"]["flow_source"] = "standard_sced"
-    tables["lines"]["dual_source"] = "standard_sced"
+    tables["lines"]["dual_source"] = source
     costs = R.cost_breakdown(m)
     return DAResult(case, info, sced, pricing, slack, prices, tables, costs, m,
-                    pricing_model=pricing_model, scuc_snapshot=incumbent, stage_comparison=comparison, stage_diagnostics=stages)
+                    pricing_model=pricing_model, dispatch_prices=dispatch_prices, scuc_snapshot=incumbent, stage_comparison=comparison, stage_diagnostics=stages)
 
 
-def _tables(m, prices, cfg):
+def _tables(m, prices, cfg, *, dispatch_prices=None, pricing_source="standard_sced"):
     lim = cfg.mode["price_limits"]
     if "lmp_clamped" not in prices:
         prices = R.clamp_prices(prices, lim["clear_min"], lim["clear_max"])
-    return dict(units=R.unit_results(m, prices), prices=R.price_tables(m, prices, lim["clear_min"], lim["clear_max"]),
-                lines=R.line_results(m, prices), storage=R.storage_results(m), hydro=R.hydro_results(m), pumped=R.pumped_results(m),
+    return dict(units=R.unit_results(m, prices), prices=R.price_tables(m, prices, lim["clear_min"], lim["clear_max"], dispatch_prices=dispatch_prices, pricing_source=pricing_source),
+                lines=R.line_results(m, prices, dual_source=pricing_source), storage=R.storage_results(m), hydro=R.hydro_results(m), pumped=R.pumped_results(m),
                 system=R.system_results(m, prices))
 
 
@@ -150,7 +165,7 @@ def summarize(res: DAResult) -> dict:
         slack=res.slack, storage_simultaneous=res.scuc_info.get("storage_simultaneous"),
         pricing_rerun=res.pricing_info is not None,
         dispatch_source="fixed_integer_sced",
-        pricing_source="standard_sced",
+        pricing_source="bounded_auxiliary_pricing" if res.pricing_model is not None else "standard_sced",
         settlement_price_rule="clip_raw_lmp_to_clear_limits",
         stage_comparison=res.stage_comparison,
         pricing_info=res.pricing_info,

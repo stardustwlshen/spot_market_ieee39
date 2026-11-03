@@ -16,6 +16,14 @@ def da_result():
     from smm.network import build_network
 
     cfg = load_config()
+    cfg.mode["startup_cost_mode"] = "state_dependent"  # historical detailed-startup regression
+    # Explicit historical regression fixture: retain its exact prior safety/price
+    # policy rather than accidentally testing new defaults under old assertions.
+    # Current default integration is tested independently in test_auxiliary_pipeline.
+    cfg.mode['auxiliary_pricing']['enabled'] = False
+    cfg.mode['realtime'].pop('tracking_policy', None)
+    cfg.mode['reserve']['storage_reserve'] = False
+    cfg.mode['reserve']['down_enabled'] = True
     # Preserve the original energy-only regression contract when new markets default on.
     if "regulation" in cfg.mode:
         cfg.mode["regulation"]["enabled"] = False

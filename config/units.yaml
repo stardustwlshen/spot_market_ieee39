@@ -38,7 +38,6 @@ hydro:   # 水电（库容型/径流式）。依据与约束对照见 docs/开�
     seasons:
       wet: {qin: 560, v0: 18000, vmin: 8000, vmax: 20000, v_end: 18000, qeco: 80, e_day: 12000}
       dry: {qin: 220, v0: 15000, vmin: 8000, vmax: 24000, v_end: 15000, qeco: 60, e_day: 5000}
-    spill_penalty: 50                    # 元 / (m3/s · 15min)，弃水惩罚（假设值；川V4.0 附件8 目标函数弃水惩罚项 M_H）
     e_day_min: null                      # 可选：日发电量下限 MWh（川V4.0 附件8 约束(16) Q_min；null = 不设）
     qout_max: null                       # 可选：出库流量上限 m3/s（川V4.0 附件2(三) 出库流量限制；null = 不设）
   - id: H2                               # 可选（默认关闭，仅对比用）：H1 下游小型径流式电站，演示梯级耦合（川V4.0 7.4.9、附件8 约束(17) 上游出库滞时项）
@@ -60,7 +59,6 @@ hydro:   # 水电（库容型/径流式）。依据与约束对照见 docs/开�
     seasons:
       wet: {qin: 30, v0: 100, vmin: 100, vmax: 100, v_end: 100, qeco: 80, e_day: 2400}
       dry: {qin: 10, v0: 100, vmin: 100, vmax: 100, v_end: 100, qeco: 60, e_day: 2400}
-    spill_penalty: 200                   # 假设值：径流站弃水即弃电，罚高于库容站
     e_day_min: null
     qout_max: null
 

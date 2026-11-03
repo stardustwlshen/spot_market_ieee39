@@ -36,7 +36,8 @@ def prepare(cfg: Config, bid_version: int | None = None, verbose=True):
         for i in issues:
             print("   ", i)
     raise_on_errors(issues)
-    return build_da_case(cfg, net, prof, bids)
+    from .bids import effective_bids
+    return build_da_case(cfg, net, prof, effective_bids(cfg, bids))
 
 
 def out_dir(cfg: Config, bids_version: int, tag: str = "") -> Path:

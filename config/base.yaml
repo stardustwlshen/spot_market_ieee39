@@ -21,8 +21,8 @@ line_scale:
 
 solver:
   name: highs
-  mip_rel_gap: 0.002
-  time_limit_s: 600       # 加入抽蓄（PS1）后日前 MIP 更难：300 s 时 gap 约 3–5%，900 s 约 1.2%（bus 2 实测，2026-11-01）；取 600 s，未达 0.2% 时按时限内最优可行解出清（工程近似）
+  mip_rel_gap: 0.01
+  time_limit_s: 600       # 加入抽蓄（PS1）后日前 MIP 更难：300 s 时 gap 约 3–5%，900 s 约 1.2%（bus 2 实测，2026-11-01）；取 600 s，未达 1% 时按时限内最优可行解出清（工程近似）
   threads: 4
   storage_binary: true    # 储能充放状态 0-1 变量 u_ch+u_dis≤1（始终开启；false 仅用于对比试验）
   highs_extra: {}         # 透传 HiGHS MIP 参数，如 presolve、mip_heuristic_effort

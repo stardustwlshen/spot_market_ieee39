@@ -42,7 +42,9 @@ def reserve_requirement(cfg: Config, load_total: np.ndarray, ren_total: np.ndarr
     n1 = float(cfg.base.get("n1_loss_mw") or 0.0) if extra_n1 is None else extra_n1
     r_ctg = max(n1, max_unit) if r["include_ctg"] else 0.0
     up = r["rho_L"] * load_total + r["rho_RE"] * ren_total + r_ctg
-    dn = r["rho_L_dn"] * load_total + r["rho_RE_dn"] * ren_total
+    # An explicitly upward-only research scenario procures no downward reserve.
+    dn = (r["rho_L_dn"] * load_total + r["rho_RE_dn"] * ren_total
+          if bool(r.get("down_enabled", True)) else np.zeros_like(load_total, dtype=float))
     return up, dn, dict(max_unit=max_unit, n1_loss=n1, R_ctg=r_ctg, **r)
 
 

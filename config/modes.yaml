@@ -7,6 +7,7 @@
 #   基本规则 = 《电力现货市场基本规则（试行）》发改能源规〔2023〕1217号
 # 未查到原文数值、由本项目设定的均标“假设值”。所有参数可在此修改。
 MKT:
+  startup_cost_mode: uniform_per_unit  # 每台机组单一启动费；不同机组保持差异；旧缺键配置沿用分状态模式
   name: 自有统一现货市场规则（参考川、甘）
   pricing: LMP                       # 节点边际电价（甘V3.2 发电侧节点电价；川为系统电价，本项目统一用 LMP）
   price_limits:                      # 元/MWh
@@ -35,7 +36,7 @@ MKT:
       pv: {require_capacity_coverage: true}    # 可用预测量仍另行限制实际出力
   coal_first_segment: pmin           # 两省一致：煤电首段为 0~最小技术出力
   storage_dis_gt_ch: error           # 川V4.0：放电最低价须高于充电最高价（不满足即报错）
-  startup_states: {hot: 8, warm: 72} # 川V4.0 三态（<8h 热、8–72h 温、>72h 冷）；甘V3.2 另分极热态 1h，此处不分
+  startup_states: {hot: 8, warm: 72} # 研究三态：停机<8h热、[8,72)h温、>=72h冷；甘V3.2 另分极热态 1h，此处不分
   demand_bid: false                  # 第一阶段负荷固定（两省用户侧报量不报价/暂不定价）
   tie_mode: fixed                    # 区外来电按联络线计划固定（川V4.0 7.5.2 / 甘V3.2 联络线终计划作边界）
   reserve:                           # R⁺ = ρ_L·D̂ + ρ_RE·P̂_RE + R_ctg；R⁻ = ρ⁻_L·D̂ + ρ⁻_RE·P̂_RE（基本规则第四十六条要求设正负备用）
@@ -45,12 +46,19 @@ MKT:
     rho_RE_dn: 0.0                   # 假设值
     include_ctg: true                # 甘V3.2：正备用 ≥ max(单一交流元件故障最大功率缺额, 最大单机)
     mu_RE: 0.0                       # 风光计入正备用的置信因子（甘V3.2 有该项但未给数值，取 0，假设值）
-    storage_reserve: false           # 储能与抽蓄（规则同储能）是否提供备用；默认不计（假设）
+    storage_reserve: true            # 当前研究：电池与发电工况抽蓄提供上备用
+    down_enabled: false               # 当前只采购上备用；下备用需求、供给及缺额固定0
+    T_dur_h: 0.25                      # 当前段初库存的增量备用能量折算15min（0.25h），不保证基准加备用全程持续，不是响应速度认证
     providers: [coal, gas_ccgt, gas_gt, hydro]
-  # 线路5000为用户指定的研究参数，不宣称广东现行出清规则；其余罚项未改。
-  penalties: {balance: 1.0e+6, line: 5000, reserve: 1.0e+5}
-  # 历史兼容参数，标准 SCUC→SCED 流程不读取、不触发额外重定价。
-  pricing_penalties: {balance: 1.0e+4, line: 500, reserve: 500}
+  # 线路10000为用户指定的研究参数，不宣称广东现行出清规则；其余罚项未改。
+  penalties: {balance: 1.0e+6, line: 10000, reserve: 1.0e+5}
+  # 用户指定辅助算价研究基准，单位元/MWh；与正式调度 penalties 分开。
+  # 独立辅助算价；正式量/状态仍来自调度SCED，辅助量不执行。
+  auxiliary_pricing:
+    enabled: true
+    penalties_yuan_per_mwh: {balance: 10000, line: 1000, reserve: 2500}
+    dispatch_band: {relative_to_dispatch: 0.03, minimum_mw: 1.0}
+    rt_tracking_policy: remove
   # ---- 滚动方式（甘肃模式）：不设独立日内市场；煤电/CCGT 启停在日前确定（甘V3.2 第十八条），
   #      实时每 15 min 滚动出清未来 2 h（甘V3.2 第六十三条），只执行首时段。
   storage_end_soc:                   # 储能期末 SOC
@@ -66,6 +74,7 @@ MKT:
     mip_rel_gap: 0.005               # 假设值（求解参数）
     time_limit_s: 60
   realtime:
+    tracking_policy: {mode: soft_deliverable_energy, penalty_yuan_per_discharge_mwh: 1000}
     interval_min: 15                 # 川V4.0 9.1、甘V3.2 第六十三条：15 分钟
     lookahead_h: 2                   # 甘V3.2 第六十三条：滚动出清未来 15 min–2 h（川V4.0 写“未来 M 小时”，M 查不到）
     boundary_lead_min: 30            # 甘V3.2 第六十三条时序：T−30 读取边界（状态、超短期预测），T−30~T−15 求解，T−15 下发
@@ -73,7 +82,7 @@ MKT:
     first_period_actual: true        # 假设做法：首时段负荷/风光用实际值（T−30 超短期预测残差由 AGC 承担，不建模）
     lock_types: [coal, gas_ccgt]     # 启停沿用日前（甘V3.2 第十八条：煤电启停日前确定）
     free_types: [gas_gt]             # 燃气 GT 启停在每个 2 h 窗口 MIP 内按需决策（假设做法，参考基本规则第五十四条“快速启停资源”）
-    hydro: window_end_da             # 固定DA稳定区台数；实际V/P起步，2h窗口内Ph可调，窗口末V硬等同钟点DA值
+    hydro: window_end_da             # 固定DA稳定区台数；实际V/P起步，2h窗口内Ph可调，窗口末V带罚软跟踪同钟点DA值
                                      # fixed_da保留为固定DA出力对照；不改变电池/抽蓄策略，不新增日电量等式
                                      # 甘肃2026 V3.2第64(四)/73允许经安全校核的自调度申报结合最新能力参与实时优化
     storage:
@@ -81,10 +90,10 @@ MKT:
       anchor: hourly_eq              # 研究默认（模式 B2）：各整点以 E_RT = E_DA 为带罚软锚点目标；广东对应条款未核实
                                      # 可选 window_end_pct（模式 B1）：甘V3.2 运营细则附录5 第9项，窗口末 (1−x)E_DA ≤ E_RT ≤ (1+x)E_DA（同时满足 SOC 上下限）
       x: 0.05                        # 假设值：仅 window_end_pct 使用；甘肃细则未给出 x
-      anchor_penalty: 1.0e5          # 研究假设值：储能锚点松弛罚，单位元/MWh，保留在同一 SCUC/SCED 目标中并可影响其对偶价格
-                                     # 抽蓄沿用此数值，单位元/万m³；可因代价权衡松弛，不另放宽锚点或重算价格
-    mip_rel_gap: 1.0e-4              # 求解参数
-    time_limit_s: 30
+      anchor_penalty: 1.0e5          # 仅旧配置兼容；新tracking_policy以可放电等价MWh统一计罚
+                                     # 新辅助RT模型移除跟踪目标，不移除物理SOC/库容约束
+    mip_rel_gap: 0.01              # 求解参数
+    time_limit_s: 180
   pumped:                            # 抽水蓄能：市场规则与电化学储能完全一致（rules: storage，不另设一套），依据见 docs/开发记录.md“抽水蓄能”
     rules: storage                   # 报价：发电曲线≙放电、抽水报价≙充电，段数 segments.storage_*，发电最低价>抽水最高价（storage_dis_gt_ch）
                                      # 定价：正常参与出清与定价（与储能相同，无“不可定价”固定处理）

@@ -73,7 +73,7 @@ def test_capture_all_resource_families_and_null_noneligible_values():
             var = pyo.Var(initialize=value); var.construct(); variables[index] = var
         setattr(m,name,variables)
     diagnostic=capture(m,'energy_sced')
-    assert {row['variable'] for row in diagnostic['integer_values']} == set(scuc.INT_VARS)
+    assert {row['variable'] for row in diagnostic['integer_values']} == {name for name in scuc.INT_VARS if len(getattr(m,name))}
     rows={r['unit']:r for r in diagnostic['units']}
     assert set(rows)=={'G','W','H','S','PS'}
     assert all(r['period']==12 for r in rows.values())

@@ -9,7 +9,7 @@ import streamlit as st
 from common import (DA_COLOR, PALETTE, RT_COLOR, TYPE_CN, all_results, df_download, empty_state, get_result, line_loading,
                     load_weighted, page_setup, period_labels, result_label, show_df, show_fig, style_fig)
 
-page_setup("场景对比", "任选两次运行结果（A / B），对比指标、电价、出力结构与结算")
+page_setup("场景对比", "任选两次运行结果（方案甲 / 方案乙），对比指标、电价、出力结构与结算")
 res = all_results()
 if len(res) < 2:
     empty_state("至少需要两个完成的结果才能对比。", "请到 **边界条件** 页复制/修改场景，再到 **运行** 页各运行一次。")
@@ -17,10 +17,10 @@ if len(res) < 2:
 keys = [m["dir"] for m in res]
 lab = {m["dir"]: result_label(m) for m in res}
 c1, c2 = st.columns(2)
-a = c1.selectbox("结果 A", keys, index=0, format_func=lab.get)
-b = c2.selectbox("结果 B", keys, index=1, format_func=lab.get)
+a = c1.selectbox("方案甲", keys, index=0, format_func=lab.get)
+b = c2.selectbox("方案乙", keys, index=1, format_func=lab.get)
 if a == b:
-    st.warning("A 与 B 选择了同一个结果，差值全为 0。", icon="⚠️")
+    st.warning("方案甲与方案乙 选择了同一个结果，差值全为 0。", icon="⚠️")
 with st.spinner("读取结果…"):
     RA, RB = get_result(next(m for m in res if m["dir"] == a)), get_result(next(m for m in res if m["dir"] == b))
 lbl = period_labels(96)
@@ -31,7 +31,7 @@ def metrics(R):
     bus = pd.read_csv(Path(R["case_dir"]) / "buses.csv")
     lw = load_weighted(R["da_nodal_prices"], bus)
     ll = line_loading(R, "da")
-    m = {"日前总报价成本 万元": DS.get("objective", np.nan) / 1e4, "启动费 万元": DS.get("startup_cost", np.nan) / 1e4,
+    m = {"日前调度目标（含罚） 万元": DS.get("objective", np.nan) / 1e4, "启动费 万元": DS.get("startup_cost", np.nan) / 1e4,
          "日前负荷加权均价": DS.get("lmp_load_weighted_avg", lw.mean()), "日前节点电价最高": DS.get("lmp_max"),
          "日前节点电价最低": DS.get("lmp_min"), "日前弃电 MWh": DS.get("curtailment_mwh"),
          "日前阻塞时段数": int(ll.groupby("period").congested.any().sum()) if ll is not None else np.nan}
@@ -57,7 +57,7 @@ show_df(df, "%.2f")
 df_download(df, "compare_metrics.csv")
 
 fig = go.Figure()
-for R, n, dash in ((RA, "A", "solid"), (RB, "B", "dash")):
+for R, n, dash in ((RA, "方案甲", "solid"), (RB, "方案乙", "dash")):
     bus = pd.read_csv(Path(R["case_dir"]) / "buses.csv")
     lw = load_weighted(R["da_nodal_prices"], bus)
     fig.add_scatter(x=[lbl[t] for t in lw.index], y=lw, name=f"{n} 日前", line=dict(dash=dash, color=DA_COLOR))
@@ -65,13 +65,13 @@ for R, n, dash in ((RA, "A", "solid"), (RB, "B", "dash")):
         lr = load_weighted(R["rt_prices"])
         fig.add_scatter(x=[lbl[t] for t in lr.index], y=lr, name=f"{n} 实时", line=dict(dash=dash, color=RT_COLOR))
 st.subheader("电价")
-show_fig(style_fig(fig, "系统负荷加权均价（A 实线 / B 虚线；蓝 = 日前，红 = 实时）", "时刻（15 min）", "电价（元/MWh）", 380))
+show_fig(style_fig(fig, "系统负荷加权均价（方案甲实线 / 方案乙虚线；蓝 = 日前，红 = 实时）", "时刻（每15分钟）", "电价（元/MWh）", 380))
 
 pa = RA["da_nodal_prices"].groupby("bus").lmp.mean()
 pb = RB["da_nodal_prices"].groupby("bus").lmp.mean()
 fig = go.Figure()
-fig.add_bar(x=pa.index.astype(str), y=pa, name="A", marker_color=PALETTE[0])
-fig.add_bar(x=pb.index.astype(str), y=pb, name="B", marker_color=PALETTE[3])
+fig.add_bar(x=pa.index.astype(str), y=pa, name="方案甲", marker_color=PALETTE[0])
+fig.add_bar(x=pb.index.astype(str), y=pb, name="方案乙", marker_color=PALETTE[3])
 fig.update_layout(barmode="group", hovermode="x unified")
 fig.update_xaxes(type="category")
 show_fig(style_fig(fig, "日前节点全天平均电价", "节点", "电价（元/MWh）", 360))
@@ -83,14 +83,18 @@ e = pd.DataFrame({"A": ea, "B": eb}).fillna(0)
 e["B−A"] = e.B - e.A
 e.index = [TYPE_CN.get(i, i) for i in e.index]
 fig = go.Figure()
-fig.add_bar(x=e.index, y=e.A, name="A", marker_color=PALETTE[0])
-fig.add_bar(x=e.index, y=e.B, name="B", marker_color=PALETTE[3])
+fig.add_bar(x=e.index, y=e.A, name="方案甲", marker_color=PALETTE[0])
+fig.add_bar(x=e.index, y=e.B, name="方案乙", marker_color=PALETTE[3])
 fig.update_layout(barmode="group", hovermode="x unified")
 show_fig(style_fig(fig, "日前分类型电量", "资源类型", "电量（MWh）", 340))
 with st.expander("分类型电量表（MWh）"):
     show_df(e.reset_index(names="类型"), "%.1f")
 
-if RA["full"] and RB["full"]:
+same_rt_periods = (RA["full"] and RB["full"] and
+                   set(RA["rt_prices"].period) == set(RB["rt_prices"].period))
+if RA["full"] and RB["full"] and not same_rt_periods:
+    st.warning("两次运行的已执行时段范围不同（可能包含调试前缀）；上表总量不具同范围可比性，不计算结算总额差。")
+if same_rt_periods:
     st.subheader("结算")
     ta = RA["settlement_by_type"].set_index("type")[["total", "dev_pnl"]]
     tb = RB["settlement_by_type"].set_index("type")[["total", "dev_pnl"]]
@@ -103,13 +107,13 @@ if RA["full"] and RB["full"]:
     st.caption("按资源类型，发电为正（收入），负荷为负（支付）；单位 万元")
     show_df(t.reset_index(names="类型"), "%.2f")
     df_download(t.reset_index(names="类型"), "compare_settlement_by_type.csv", key="dl_cs")
-    st.markdown("**储能：日前 vs 实时 末时段电量（MWh）**")
+    st.markdown("**储能：日前与实时 末时段电量（MWh）**")
     rows = []
-    for R, n in ((RA, "A"), (RB, "B")):
+    for R, n in ((RA, "方案甲"), (RB, "方案乙")):
         for un, g in R["rt_storage"].groupby("unit"):
             d = R["da_storage"][R["da_storage"].unit == un]
             T = int(g.period.max())
             rows.append({"结果": n, "储能": un, "日前电量@末时段": float(d[d.period == T].E_mwh.iloc[0]), "实时电量@末时段": float(g[g.period == T].E_mwh.iloc[0])})
     show_df(pd.DataFrame(rows), "%.2f")
 else:
-    st.caption("A、B 均为全流程结果时显示结算对比。")
+    st.caption("两个方案均为全流程且执行范围一致时显示结算对比。")

@@ -46,7 +46,9 @@ def test_launch_freezes_inputs_and_blocks_duplicate(tmp_path, monkeypatch):
     scenario.ensure_default()
     monkeypatch.setattr(scenario,'RUNS_DIR',tmp_path/'runs')
     captured=[]
+    real_spawn=common.subprocess.Popen
     def fake_spawn(*args,**kwargs):
+        if args and args[0][0]=="git":return real_spawn(*args,**kwargs)
         captured.append(args);return SimpleNamespace(pid=os.getpid())
     monkeypatch.setattr(common.subprocess,'Popen',fake_spawn)
     cfg=common.scen_config(scenario.DEFAULT)
@@ -95,7 +97,7 @@ def test_streamlit_simulation_updates_draft_without_touching_v2(tmp_path, monkey
     root=Path(__file__).resolve().parents[1]
     at=AppTest.from_file(str(root/'app/主页.py'),default_timeout=30).run()
     at.switch_page('pages/2_运行.py').run()
-    selected=next(x for x in at.multiselect if x.label=='需要模拟的主体ID')
+    selected=next(x for x in at.multiselect if x.label=='需要模拟的主体编号')
     selected.set_value(['C1']).run()
     next(x for x in at.button if x.label=='生成、验证并采用模拟报价').click().run()
     assert not at.exception

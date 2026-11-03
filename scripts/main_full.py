@@ -3,7 +3,7 @@
 用法：
   python scripts/main_full.py                       # 统一规则 MKT、丰水期、最新版本报价、全天 96 时段
   python scripts/main_full.py --storage-mode fixed_da          # 储能执行日前曲线（模式 A）
-  python scripts/main_full.py --anchor window_end_pct          # 甘肃式窗口末 ±x（模式 B1；默认为 B2 广东式整点 SOC 相等）
+  python scripts/main_full.py --anchor window_end_pct          # 甘肃式窗口末 ±x（模式 B1；默认为 B2 研究整点 SOC 软跟踪）
   python scripts/main_full.py --intraday --id-interval-h 2     # 打开独立日内滚动（对比用）
   python scripts/main_full.py --periods 24 --no-plots   # 只滚动前 6 h（调试）
 """

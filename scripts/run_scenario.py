@@ -17,7 +17,7 @@ from datetime import datetime
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
-from smm.live_runner import ProgressWriter, RunCancelled, atomic_json, freeze_inputs
+from smm.live_runner import ProgressWriter, RunCancelled, atomic_json, freeze_inputs, completion_metadata, capture_provenance
 from smm.config import load_config  # noqa: E402
 from smm.scenario import new_run_dir, scenario_path  # noqa: E402
 
@@ -58,6 +58,18 @@ try:
     from smm.pipeline import prepare, print_summary, write_outputs
 
     cfg = load_config(root=root)
+    provenance = capture_provenance(d, root)
+    planned = cfg.T if a.periods is None else min(cfg.T, a.periods)
+    progress.total = planned
+    progress.state.update(total_periods=planned, expected_periods=cfg.T,
+                          requested_periods=a.periods, settlement_scope="not_applicable",
+                          completed_scope=None, settlement_calculated=False)
+    progress.write()
+    put(expected_periods=cfg.T, requested_periods=a.periods, executed_periods=0,
+        completed_scope=None, settlement_scope="not_applicable",
+        git_head=provenance["git_head"],git_dirty=provenance["git_dirty"],
+        source_fingerprint=provenance["source"]["content_fingerprint"],
+        input_fingerprint=provenance["inputs"]["content_fingerprint"])
     if cfg.mode.get("regulation",{}).get("enabled",False):
         raise ValueError("当前运行入口仅支持纯电能量现货；调频配置仅作历史实验归档")
     print(f"开始 {datetime.now():%Y-%m-%d %H:%M:%S}（本机时区） 场景 {a.scenario} 模式 {a.mode}", flush=True)
@@ -84,17 +96,23 @@ try:
         s = write_full_outputs(res, d, make_plots=a.plots)
         sp = s["spread"]
         print(f"负荷加权均价 日前 {sp['da_lw_avg']:.2f} 实时 {sp['rt_lw_avg']:.2f} 价差均值 {sp['lw_spread_mean']:+.2f}", flush=True)
-    progress.state.update(phase="done", settled=a.mode == "full" and a.periods in (None, cfg.T),
-                          completed_scope="full_day" if a.periods in (None,cfg.T) else "debug_prefix")
+    executed = len(res["rr"].rt) if a.mode == "full" else 0
+    scope = completion_metadata(cfg.T, executed, mode=a.mode)
+    progress.state.update(phase="done", **scope)
     progress.write()
-    put(status="done", stage="完成", finished=datetime.now().isoformat(timespec="seconds"), elapsed_s=round(time.time() - t0, 1))
+    atomic_json(d/"output_scope.json",scope)
+    if a.mode == "da":
+        s.update(scope)
+        atomic_json(d/"da"/"summary.json",s)
+    put(status="done", stage="完成" if scope["completed_scope"] != "debug_prefix" else "调试前缀完成（非全天）",
+        **scope, finished=datetime.now().isoformat(timespec="seconds"), elapsed_s=round(time.time() - t0, 1))
     print(f"结束 {datetime.now():%Y-%m-%d %H:%M:%S}，用时 {time.time() - t0:.0f}s，输出 {d}", flush=True)
 except RunCancelled as e:
     progress.state.update(phase="stopped", settled=False, error=str(e)); progress.write()
-    put(status="stopped", stage="用户取消（已执行前缀保留，未结算）", error=str(e), elapsed_s=round(time.time()-t0,1))
+    put(executed_periods=progress.state["executed_periods"],settled=False,settlement_calculated=False,settlement_scope="not_applicable",status="stopped", stage="用户取消（已执行前缀保留，未结算）", error=str(e), elapsed_s=round(time.time()-t0,1))
 except Exception as e:  # noqa: BLE001
     traceback.print_exc()
     progress.state.update(phase="failed", settled=False, error=str(e)); progress.write()
-    put(status="failed", stage="失败", error=f"{type(e).__name__}: {e}", finished=datetime.now().isoformat(timespec="seconds"),
+    put(executed_periods=progress.state["executed_periods"],settled=False,settlement_calculated=False,settlement_scope="not_applicable",status="failed", stage="失败", error=f"{type(e).__name__}: {e}", finished=datetime.now().isoformat(timespec="seconds"),
         elapsed_s=round(time.time() - t0, 1))
     sys.exit(1)

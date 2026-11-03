@@ -50,6 +50,10 @@ def unit_results(m, prices) -> pd.DataFrame:
             rows.append(dict(period=t, unit=tid, type="tie", bus=b, P_mw=float(sch[t]), on=1, startup=0, r_up=0.0,
                              r_dn=0.0, avail_mw=float(sch[t])))
     df = pd.DataFrame(rows)
+    reserve_rows=reserve_snapshot(m)["resources"]
+    eligibility={(x["unit"],x["relative_period"]):x["reserve_eligible"] for x in reserve_rows}
+    df["reserve_formulation"]="incremental_current_stock"
+    df["reserve_eligible"]=[bool(eligibility.get((r.unit,r.period),False)) for r in df.itertuples()]
     df["time"] = df.period.map(dict(enumerate(_times(T))))
     df["lmp"] = [lmp[bidx[b], t] for b, t in zip(df.bus, df.period)]
     df["energy_mwh"] = df.P_mw * dt
@@ -58,13 +62,14 @@ def unit_results(m, prices) -> pd.DataFrame:
         pass
     df["curtail_mw"] = np.where(df.type.isin(["wind", "pv"]), df.avail_mw - df.P_mw, 0.0)
     return df[["period", "time", "unit", "type", "bus", "P_mw", "on", "startup", "r_up", "r_dn", "avail_mw",
-               "curtail_mw", "lmp", "energy_mwh", "revenue_yuan"]]
+               "curtail_mw", "lmp", "energy_mwh", "revenue_yuan", "reserve_eligible", "reserve_formulation"]]
 
 
-def price_tables(m, prices, clear_min, clear_max):
+def price_tables(m, prices, clear_min, clear_max, *, dispatch_prices=None, pricing_source="standard_sced"):
     md = m._md
     T = md.T
     cols = _times(T)
+    dispatch_prices = prices if dispatch_prices is None else dispatch_prices
     lmp = pd.DataFrame(prices["lmp"], index=md.buses, columns=range(T))
     lmp.index.name = "bus"
     long = []
@@ -72,11 +77,17 @@ def price_tables(m, prices, clear_min, clear_max):
         for t in range(T):
             long.append(dict(period=t, time=cols[t], bus=b, lmp_raw=prices["lmp"][i, t], lmp=prices["lmp_clamped"][i, t],
                              energy=prices["energy"][t], congestion=prices["congestion"][i, t],
-                             lmp_decomp=prices["lmp_decomp"][i, t]))
+                             lmp_decomp=prices["lmp_decomp"][i, t],
+                             dispatch_raw_lmp=dispatch_prices["lmp"][i,t],
+                             dispatch_energy=dispatch_prices["energy"][t],
+                             dispatch_congestion=dispatch_prices["congestion"][i,t],
+                             pricing_source=pricing_source, raw_price_source=pricing_source,
+                             settlement_price_source=pricing_source+"_clipped_to_market_limits",
+                             physical_quantity_source="standard_sced"))
     return pd.DataFrame(long)
 
 
-def line_results(m, prices) -> pd.DataFrame:
+def line_results(m, prices, *, dual_source="standard_sced") -> pd.DataFrame:
     md, case = m._md, m._case
     rate = dict(zip(case.net.branches.branch_id, case.net.branches.rate_mw))
     rows = []
@@ -84,9 +95,12 @@ def line_results(m, prices) -> pd.DataFrame:
         for t in range(md.T):
             f = V(m.flow[l, t])
             rows.append(dict(period=t, line=l, flow_mw=f, rate_mw=rate[l], loading=abs(f) / rate[l],
-                             mu_plus=prices["mu_plus"][i, t], mu_minus=prices["mu_minus"][i, t], slack_mw=V(m.sl[l, t])))
+                             mu_plus=prices["mu_plus"][i, t], mu_minus=prices["mu_minus"][i, t], slack_mw=V(m.sl[l, t]),
+                             flow_source="standard_sced",dual_source=dual_source))
     df = pd.DataFrame(rows)
-    df["congested"] = (df.mu_plus.abs() + df.mu_minus.abs() > 1e-6) | (df.loading >= 1 - 1e-6)
+    df["dispatch_at_capacity"] = df.loading >= 1 - 1e-6
+    df["pricing_dual_active"] = df.mu_plus.abs() + df.mu_minus.abs() > 1e-6
+    df["congested"] = df.pricing_dual_active | df.dispatch_at_capacity  # legacy union; distinct sources above
     return df
 
 
@@ -97,7 +111,7 @@ def storage_results(m) -> pd.DataFrame:
         for t in range(md.T):
             rows.append(dict(period=t, unit=s, bus=d["bus"], P_dis=V(m.Pd[s, t]), P_ch=V(m.Pc[s, t]),
                              u_ch=int(round(V(m.u_ch[s, t]))), u_dis=int(round(V(m.u_dis[s, t]))), E_mwh=V(m.E[s, t]),
-                             soc=V(m.E[s, t]) / d["ecap"]))
+                             soc=V(m.E[s, t]) / d["ecap"],reserve_formulation="incremental_current_stock"))
     return pd.DataFrame(rows)
 
 
@@ -112,21 +126,28 @@ def pumped_results(m) -> pd.DataFrame:
             rows.append(dict(period=t, unit=p, bus=d["bus"], P_gen=V(m.Pg[p, t]), P_pump=V(m.Pp[p, t]),
                              n_gen=int(round(V(m.ngen[p, t]))), n_pump=int(round(V(m.npump[p, t]))),
                              mode="发电" if xg else ("抽水" if xp else "停机"), V_up=Vu, V_dn=float(d["v_total"]) - Vu,
-                             E_equiv_mwh=(Vu - d["v_lo"]) * d["e_gen"]))
-    return pd.DataFrame(rows, columns=["period", "unit", "bus", "P_gen", "P_pump", "n_gen", "n_pump", "mode", "V_up", "V_dn", "E_equiv_mwh"])
+                             E_equiv_mwh=(Vu - d["v_lo"]) * d["e_gen"],reserve_formulation="incremental_current_stock"))
+    return pd.DataFrame(rows, columns=["period", "unit", "bus", "P_gen", "P_pump", "n_gen", "n_pump", "mode", "V_up", "V_dn", "E_equiv_mwh", "reserve_formulation"])
 
 
 def hydro_results(m) -> pd.DataFrame:
     md = m._md
     rows = []
     for h, d in md.hydro.items():
+        limit = d.get("qout_max")
+        limit = None if limit is None else float(limit)
         for t in range(md.T):
+            qout = float(d["water_rate"] * sum(V(m.Ph[j,t]) for j in d["units"]) + V(m.Qspill[h,t]))
             rows.append(dict(period=t, station=h, P_mw=sum(V(m.Ph[j, t]) for j in d["units"]),
                              units_on=sum(round(V(m.delta[j, z, t])) for j in d["units"] for z in range(len(d["zones"]))),
                              V_1e4m3=V(m.V[h, t]), Q_spill=V(m.Qspill[h, t]),
                              Q_gen=d["water_rate"] * sum(V(m.Ph[j, t]) for j in d["units"]),
                              Q_in=float(d["qin"]) + float(V(m._upstream_out(h, t))) if hasattr(m, "_upstream_out") else float(d["qin"]),
-                             regulation=d.get("regulation", "reservoir")))
+                             regulation=d.get("regulation", "reservoir"),
+                             qout_m3s=qout, qout_max_m3s=limit,
+                             qout_max_source=d.get("qout_max_source"),
+                             qout_limit_active=limit is not None,
+                             qout_limit_margin_m3s=None if limit is None else limit-qout))
     return pd.DataFrame(rows)
 
 
@@ -142,6 +163,9 @@ def system_results(m, prices) -> pd.DataFrame:
                          energy_price=prices["energy"][t], reserve_up_price=prices["reserve_up_price"][t],
                          reserve_dn_price=prices["reserve_dn_price"][t]))
     df = pd.DataFrame(rows)
+    reserve_system=pd.DataFrame(reserve_snapshot(m)["system"])
+    extra=["reserve_down_enabled","R_up_supply","R_dn_supply","R_up_re_credit_mw","R_up_balance_mw","R_dn_balance_mw"]
+    for name in extra:df[name]=reserve_system[name].to_numpy()
     df.insert(1, "time", _times(T))
     return df
 
@@ -152,11 +176,12 @@ def cost_breakdown(m) -> dict:
     out = {}
     out["thermal_energy"] = sum(md.thermal[g]["c"][k] * V(m.p[g, k, t]) * dt for (g, k) in m.GK for t in m.T)
     out["thermal_noload"] = sum(md.thermal[g]["noload_bid"] * V(m.u[g, t]) * dt for g in m.G for t in m.T)
-    out["thermal_startup"] = sum(dict((s, c) for s, _, c in md.thermal[g]["states"])[s] * V(m.y[g, s, t]) for (g, s) in m.GST for t in m.T) \
-        + sum(md.thermal[g]["cold"] * V(m.ycold[g, t]) for g in m.G for t in m.T)
+    from .scuc import thermal_startup_cost
+    out["thermal_startup"] = V(thermal_startup_cost(m))
     out["renewable"] = sum(md.ren[w]["c"][k] * V(m.pw[w, k, t]) * dt for (w, k) in m.WK for t in m.T)
     out["hydro"] = sum(md.hydro_units[j]["c"][k] * V(m.ph[j, k, t]) * dt for (j, k) in m.JK for t in m.T)
-    out["hydro_spill_penalty"] = sum(md.hydro[h]["spill_penalty"] * V(m.Qspill[h, t]) * dt for h in m.HS for t in m.T)
+    # Retained numeric output key for old report readers; no spill penalty is charged.
+    out["hydro_spill_penalty"] = 0.0
     out["storage_net"] = sum(md.storage[s]["cd"][k] * V(m.pd[s, k, t]) * dt for (s, k) in m.SD for t in m.T) \
         - sum(md.storage[s]["cc"][k] * V(m.pc[s, k, t]) * dt for (s, k) in m.SC for t in m.T)
     out["pumped_net"] = sum(md.pumped[p]["cg"][k] * V(m.pg[p, k, t]) * dt for (p, k) in m.PGK for t in m.T) \
@@ -172,6 +197,9 @@ def cost_breakdown(m) -> dict:
     else:
         out["regulation_performance_adjusted_score_cost"] = 0.0
         out["regulation_shortage_penalty"] = 0.0
+    tracking = tracking_results(m)
+    for kind, label in (("E", "storage"), ("Vu", "pumped"), ("V", "hydro")):
+        out[f"{label}_tracking_penalty_yuan"] = float(tracking.loc[tracking.kind == kind, "penalty_yuan"].sum())
     out["objective_incl_penalties"] = V(m.obj)
     return out
 
@@ -197,3 +225,107 @@ def pumped_summary(pdf: pd.DataFrame, prices: pd.DataFrame, dt: float) -> dict:
                       avg_gen_price=float(rg / eg) if eg > 1e-6 else None, avg_pump_price=float(rp / ep) if ep > 1e-6 else None,
                       V_up_start=float(g.V_up.iloc[0]), V_up_end=float(g.V_up.iloc[-1]))
     return out
+
+
+def reserve_snapshot(m) -> dict:
+    """Detached full-window reserve evidence; no activation or extra payment.
+
+    Battery activation may cross zero/idle; inverter response is idealized. Both
+    current start-of-period stock bounds the incremental reserve energy for H.
+    This is NOT a baseline-plus-activation delivery guarantee.
+    Pumped reserve is generation-only. Reported margins are independently auditable.
+    """
+    md, case = m._md, m._case
+    cfg=case.cfg; rc=cfg.mode['reserve']; enabled=bool(rc.get('storage_reserve',False)); down_enabled=bool(rc.get('down_enabled',True))
+    H=float(rc['T_dur_h']) if enabled else None; providers=set(rc['providers']); rows=[]; systems=[]
+    def row(uid,typ,t,up,dn,power,eligible,pmin,pmax,mode):
+        return dict(period=case.t0+int(t),relative_period=int(t),unit=uid,type=typ,
+                    reserve_formulation='incremental_current_stock',reserve_eligible=bool(eligible),reserve_qualified=None,reserve_down_enabled=down_enabled,r_up=float(up),r_dn=float(dn),P_mw=float(power),
+                    pmin_mw=float(pmin),pmax_mw=float(pmax),mode=mode,T_dur_h=H,
+                    reserve_power_up_margin_mw=float(pmax-power-up) if eligible else None,
+                    reserve_power_down_margin_mw=float(power-pmin-dn) if eligible else None,
+                    reserve_duration_up_margin_mwh=None,reserve_duration_down_margin_mwh=None,
+                    reserve_duration_up_margin_1e4m3=None,reserve_duration_down_margin_1e4m3=None)
+    for t in m.T:
+        for uid,d in md.thermal.items():
+            on=int(round(V(m.u[uid,t])))
+            rows.append(row(uid,d['type'],t,V(m.r_up[uid,t]),V(m.r_dn[uid,t]),V(m.P[uid,t]),
+                            d['type'] in providers and on>0,d['pmin']*on,d['pmax']*on,'online' if on else 'offline'))
+        for uid,d in md.hydro.items():
+            low=sum(d['zones'][z][0]*V(m.delta[j,z,t]) for j in d['units'] for z in range(len(d['zones'])))
+            high=sum(d['zones'][z][1]*V(m.delta[j,z,t]) for j in d['units'] for z in range(len(d['zones'])))
+            rows.append(row(uid,'hydro',t,sum(V(m.rh_up[j,t]) for j in d['units']),sum(V(m.rh_dn[j,t]) for j in d['units']),
+                            sum(V(m.Ph[j,t]) for j in d['units']),'hydro' in providers and high>0,low,high,'online' if high>0 else 'offline'))
+        for uid,d in md.storage.items():
+            pc,pd=V(m.Pc[uid,t]),V(m.Pd[uid,t]);up,dn=V(m.rs_up[uid,t]),V(m.rs_dn[uid,t]);p=pd-pc
+            e0=d['soc0']*d['ecap'] if t==0 else V(m.E[uid,t-1]);e1=V(m.E[uid,t])
+            emin,emax=d['soc_min']*d['ecap'],d['soc_max']*d['ecap']
+            r=row(uid,'storage',t,up,dn,p,enabled,-d['pmax'],d['pmax'],
+                  'discharging' if V(m.u_dis[uid,t])>.5 else ('charging' if V(m.u_ch[uid,t])>.5 else 'idle'))
+            r.update(P_ch_mw=float(pc),P_dis_mw=float(pd),E_start_mwh=float(e0),E_end_mwh=float(e1),
+                     E_min_mwh=float(emin),E_max_mwh=float(emax),eta_c=float(d['eta_c']),eta_d=float(d['eta_d']))
+            # Compatibility field: derived eligibility, not a decision variable.
+            r['reserve_qualified']=int(enabled)
+            if enabled:
+                r['reserve_duration_up_margin_mwh']=float(max(0.,e0-emin)-H*up/d['eta_d'])
+                r['reserve_duration_down_margin_mwh']=float(max(0.,emax-e0)-H*dn*d['eta_c']) if down_enabled else None
+                r['full_activation_up_margin_mwh']=float(min(e0,e1)-emin-H*(p+up)/d['eta_d'])
+                r['full_activation_upper_margin_mwh']=float(emax-max(e0,e1)+H*d['eta_c']*(p-dn if down_enabled else p+up))
+            r['reserve_duration_lower_margin_mwh']=r['reserve_duration_up_margin_mwh']
+            r['reserve_duration_upper_margin_mwh']=r['reserve_duration_down_margin_mwh']
+            rows.append(r)
+        for uid,d in md.pumped.items():
+            pg,pp=V(m.Pg[uid,t]),V(m.Pp[uid,t]);up,dn=V(m.rp_up[uid,t]),V(m.rp_dn[uid,t]);ng=int(round(V(m.ngen[uid,t])))
+            xg=int(round(V(m.xg[uid,t])));xp=int(round(V(m.xp[uid,t])));eligible=enabled and bool(xg) and ng>0
+            v0=d['init']['V'] if t==0 else V(m.Vu[uid,t-1]);v1=V(m.Vu[uid,t])
+            r=row(uid,'pumped',t,up,dn,pg-pp,eligible,d['unit_gen_min']*ng,d['unit_gen_max']*ng,
+                  'generating' if xg else ('pumping' if xp else 'idle'))
+            r.update(P_gen_mw=float(pg),P_pump_mw=float(pp),n_gen=ng,x_gen=xg,x_pump=xp,total_units=d['N'],unit_gen_max_mw=d['unit_gen_max'],unit_gen_min_mw=d['unit_gen_min'],
+                     V_start_1e4m3=float(v0),V_end_1e4m3=float(v1),V_min_1e4m3=float(d['v_lo']),V_max_1e4m3=float(d['v_hi']),e_gen_mwh_per_1e4m3=float(d['e_gen']))
+            r['reserve_qualified']=int(eligible)
+            if eligible:
+                r['reserve_duration_up_margin_1e4m3']=float(max(0.,v0-d['v_lo'])-H*up/d['e_gen'])
+                r['reserve_duration_down_margin_1e4m3']=float(max(0.,d['v_hi']-v0)-H*dn/d['e_gen']) if down_enabled else None
+                r['full_activation_up_margin_1e4m3']=float(min(v0,v1)-d['v_lo']-H*(pg+up)/d['e_gen'])
+                r['full_activation_upper_margin_1e4m3']=float(d['v_hi']-max(v0,v1)+H*(pg-dn if down_enabled else pg+up)/d['e_gen'])
+            r['reserve_duration_lower_margin_1e4m3']=r['reserve_duration_up_margin_1e4m3']
+            r['reserve_duration_upper_margin_1e4m3']=r['reserve_duration_down_margin_1e4m3']
+            rows.append(r)
+        current=[r for r in rows if r['relative_period']==int(t)]
+        re_credit=float(rc.get('mu_RE',0.))*sum(float(d['fc'][t])-V(m.Pw[w,t]) for w,d in md.ren.items())
+        up=sum(r['r_up'] for r in current if r['reserve_eligible'])+re_credit
+        dn=sum(r['r_dn'] for r in current if r['reserve_eligible'])
+        systems.append(dict(period=case.t0+int(t),relative_period=int(t),reserve_down_enabled=down_enabled,load_mw=float(sum(v[t] for v in case.load_bus.values())),renewable_available_mw=float(sum(d['fc'][t] for d in md.ren.values())),renewable_dispatch_mw=float(sum(V(m.Pw[w,t]) for w in md.ren)),R_up_req=float(case.R_up[t]),R_dn_req=float(case.R_dn[t]),
+                            R_up_supply=float(up),R_dn_supply=float(dn),R_up_re_credit_mw=re_credit,
+                            R_up_short=float(V(m.sR_up[t])),R_dn_short=float(V(m.sR_dn[t])),
+                            R_up_balance_mw=float(up+V(m.sR_up[t])-case.R_up[t]),R_dn_balance_mw=float(dn+V(m.sR_dn[t])-case.R_dn[t])))
+    return dict(storage_reserve_enabled=enabled,down_enabled=down_enabled,T_dur_h=H,window_start=case.t0,periods=md.T,resources=rows,system=systems,
+                resource_catalog=sorted({r['unit'] for r in rows}),providers=sorted(providers),contingency_mw=case.reserve_info.get('R_ctg'),
+                formulation='incremental_current_stock',qualification_semantics='derived_eligibility_not_decision_variable',
+                scope='capacity_constraint_only_no_reserve_payment;incremental_reserve_energy_from_current_start_stock;not_full_baseline_plus_activation_delivery_guarantee',
+                battery_response_assumption='ideal_inverter_activation_can_cross_zero_and_idle;not_certified_response',
+                reserve_requirement_parameters={k:rc[k] for k in ('rho_L','rho_RE','rho_L_dn','rho_RE_dn','include_ctg','mu_RE')})
+
+
+def tracking_results(m) -> pd.DataFrame:
+    """Forecast-window tracking penalties, not executed energy or settlement charges."""
+    columns = ['unit','kind','stock_unit','period','relative_period','target_lower','target_upper',
+               'actual','deviation_up','deviation_down','slack_up','slack_down',
+               'penalty_yuan_per_stock_unit','penalty_yuan','constraints_active']
+    rows=[]
+    coeff=getattr(m,'_anchor_cost_coefficients',{})
+    term=m._case.terminal or {}
+    for i,(unit,t,lo,hi,kind) in enumerate(getattr(m,'_anchors',[])):
+        actual=float(V(getattr(m,kind)[unit,t]))
+        lo=float(V(m.A_lo[i]));hi=float(V(m.A_hi[i]))
+        up=float(V(m.sA_up[i]));down=float(V(m.sA_dn[i]))
+        active=bool(m.c_anc_lo[i].active and m.c_anc_hi[i].active)
+        c=coeff.get(i)
+        if c is None:
+            c=term.get('pumped_anchor_penalty',term.get('anchor_penalty',1e5)) if kind=='Vu' else term.get('anchor_penalty',1e5)
+        rows.append(dict(unit=unit,kind=kind,stock_unit='MWh' if kind=='E' else '1e4m3',
+            period=int(m._case.t0+t),relative_period=int(t),target_lower=lo,target_upper=hi,
+            actual=actual,deviation_up=max(0.,actual-hi),deviation_down=max(0.,lo-actual),
+            slack_up=up,slack_down=down,penalty_yuan_per_stock_unit=float(c) if active else 0.,
+            penalty_yuan=float(c)*(up+down) if active else 0.,constraints_active=active))
+    return pd.DataFrame(rows,columns=columns)

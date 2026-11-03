@@ -22,8 +22,8 @@ def _setup_font():
 
 _setup_font()
 TYPE_ORDER = ["tie", "coal", "hydro", "wind", "pv", "gas_ccgt", "gas_gt", "storage"]
-TYPE_LABEL = {"tie": "区外来电", "coal": "燃煤", "hydro": "水电", "wind": "风电", "pv": "光伏", "gas_ccgt": "燃气CCGT",
-              "gas_gt": "燃气GT", "storage": "储能(放电)", "storage_ch": "储能(充电)"}
+TYPE_LABEL = {"tie": "区外来电", "coal": "燃煤", "hydro": "水电", "wind": "风电", "pv": "光伏", "gas_ccgt": "燃气联合循环",
+              "gas_gt": "燃气轮机", "storage": "储能(放电)", "storage_ch": "储能(充电)"}
 TYPE_COLOR = {"tie": "#7f7f7f", "coal": "#4d4d4d", "hydro": "#1f77b4", "wind": "#2ca02c", "pv": "#ffbf00",
               "gas_ccgt": "#d62728", "gas_gt": "#ff7f0e", "storage": "#9467bd"}
 
@@ -36,7 +36,7 @@ def _xt(ax, T=96):
     ax.set_xlim(0, max(1, T - 1))
 
 
-def lmp_heatmap(prices: pd.DataFrame, path: Path, title="日前节点电价 LMP（元/MWh）"):
+def lmp_heatmap(prices: pd.DataFrame, path: Path, title="日前节点电价（元/MWh）"):
     piv = prices.pivot(index="bus", columns="period", values="lmp")
     fig, ax = plt.subplots(figsize=(13, 8))
     im = ax.imshow(piv.values, aspect="auto", cmap="RdYlBu_r", interpolation="nearest")
@@ -97,7 +97,7 @@ def generation_stack(units: pd.DataFrame, system: pd.DataFrame, path: Path, titl
     plt.close(fig)
 
 
-def storage_soc(storage: pd.DataFrame, path: Path, prices: pd.DataFrame | None = None, title="储能充放电与 SOC"):
+def storage_soc(storage: pd.DataFrame, path: Path, prices: pd.DataFrame | None = None, title="储能充放电与荷电状态"):
     units = storage.unit.unique()
     fig, axes = plt.subplots(len(units), 1, figsize=(12, 2.8 * len(units)), sharex=True)
     axes = np.atleast_1d(axes)
@@ -107,9 +107,9 @@ def storage_soc(storage: pd.DataFrame, path: Path, prices: pd.DataFrame | None =
         ax.bar(d.period, -d.P_ch, color="#c5b0d5", label="充电 MW")
         ax.set_ylabel("MW")
         ax2 = ax.twinx()
-        ax2.plot(d.period, d.soc * 100, "k-", lw=1.5, label="SOC %")
+        ax2.plot(d.period, d.soc * 100, "k-", lw=1.5, label="荷电状态 %")
         ax2.set_ylim(0, 100)
-        ax2.set_ylabel("SOC %")
+        ax2.set_ylabel("荷电状态 %")
         if prices is not None:
             bus = d.bus.iloc[0]
             lp = prices[prices.bus == bus].sort_values("period")
@@ -153,7 +153,7 @@ def rebid_compare(base_prices, new_prices, base_units, new_units, unit_ids, path
         c = new_prices[new_prices.bus == b].sort_values("period")
         l, = ax.plot(a.period, a.lmp, lw=1.2, label=f"母线{b} 改前")
         ax.plot(c.period, c.lmp, lw=1.2, ls="--", color=l.get_color(), label=f"母线{b} 改后")
-    ax.set_ylabel("LMP 元/MWh")
+    ax.set_ylabel("节点电价 元/MWh")
     ax.legend(ncol=4, fontsize=8)
     ax.grid(alpha=0.3)
     ax.set_title(title)
@@ -190,12 +190,12 @@ def forecast_plot(profiles: pd.DataFrame, path: Path, title="日前/日内/实�
 
 
 # ----------------------------------------------------------------------------- 全流程（日前→日内→实时→结算）
-SETTLE_LABEL = {"coal": "燃煤", "gas_ccgt": "燃气CCGT", "gas_gt": "燃气GT", "hydro": "水电", "wind": "风电", "pv": "光伏",
+SETTLE_LABEL = {"coal": "燃煤", "gas_ccgt": "燃气联合循环", "gas_gt": "燃气轮机", "hydro": "水电", "wind": "风电", "pv": "光伏",
                 "storage_dis": "储能放电", "storage_ch": "储能充电", "load": "负荷", "tie": "区外来电", "slack": "平衡松弛"}
 
 
 def da_vs_rt_lmp(da_prices: np.ndarray, rt_prices: np.ndarray, load_da: np.ndarray, load_rt: np.ndarray, buses, path: Path):
-    """上：负荷加权平均 LMP（日前 vs 实时）；中：日前与实时价差最大的 4 个节点；下：RT−DA 价差热力图。"""
+    """上：负荷加权平均 LMP（日前与实时）；中：日前与实时价差最大的 4 个节点；下：RT−DA 价差热力图。"""
     T = rt_prices.shape[1]
     da = da_prices[:, :T]
     wda = (da * load_da[:, :T]).sum(0) / np.maximum(load_da[:, :T].sum(0), 1e-9)
@@ -205,7 +205,7 @@ def da_vs_rt_lmp(da_prices: np.ndarray, rt_prices: np.ndarray, load_da: np.ndarr
     ax.plot(range(T), wda, "-", color="#1f77b4", lw=2, label="日前（负荷加权）")
     ax.plot(range(T), wrt, "-", color="#d62728", lw=1.5, label="实时（负荷加权）")
     ax.set_ylabel("元/MWh"); ax.legend(loc="upper left"); ax.grid(alpha=.3)
-    ax.set_title("日前 vs 实时节点电价")
+    ax.set_title("日前与实时节点电价")
     ax = axes[1]
     spread = np.abs(rt_prices - da).max(1)
     top = np.argsort(-spread)[:4]
@@ -220,7 +220,7 @@ def da_vs_rt_lmp(da_prices: np.ndarray, rt_prices: np.ndarray, load_da: np.ndarr
     vm = max(1.0, np.percentile(np.abs(d), 99))
     im = ax.imshow(d, aspect="auto", cmap="RdBu_r", vmin=-vm, vmax=vm, interpolation="nearest")
     ax.set_yticks(range(0, len(buses), 2)); ax.set_yticklabels([buses[i] for i in range(0, len(buses), 2)], fontsize=7)
-    ax.set_ylabel("母线"); ax.set_title("实时 − 日前 LMP（元/MWh）")
+    ax.set_ylabel("母线"); ax.set_title("实时减日前节点电价（元/MWh）")
     fig.colorbar(im, ax=ax, fraction=0.025)
     for a in axes:
         _xt(a, T)
@@ -248,7 +248,7 @@ def rolling_plans(id_plans: pd.DataFrame, id_sto: pd.DataFrame, rt_units: pd.Dat
                                 label=f"锚点带 日前±{x:.0%}（窗口末时段约束）")
             d = rt_sto[rt_sto.unit == s]
             ax.plot(d.period, d.E_mwh, "-", color="k", lw=2, label="实时执行")
-            ax.set_ylabel("MWh"); ax.set_title(f"{s} 电量 SOC：{'各轮日内计划 / ' if rounds else ''}日前 / 实时执行")
+            ax.set_ylabel("MWh"); ax.set_title(f"{s} 电量：{'各轮日内计划 / ' if rounds else ''}日前 / 实时执行")
         else:
             for k, tau in enumerate(rounds):
                 d = id_plans[(id_plans.tau == tau) & (id_plans.unit == name)]
@@ -263,7 +263,7 @@ def rolling_plans(id_plans: pd.DataFrame, id_sto: pd.DataFrame, rt_units: pd.Dat
         ax.axvspan(T - 0.5, 95, color="#eeeeee", zorder=0) if T < 96 else None
     if rounds:
         sm = plt.cm.ScalarMappable(cmap=cmap, norm=plt.Normalize(0, max(rounds) / 4))
-        fig.colorbar(sm, ax=axes, fraction=0.015, label="日内轮次触发时刻 (h)")
+        fig.colorbar(sm, ax=axes, fraction=0.015, label="日内轮次触发时刻（小时）")
     fig.savefig(path, dpi=130, bbox_inches="tight"); plt.close(fig)
 
 
@@ -274,9 +274,9 @@ def settlement_bars(by_type: pd.DataFrame, by_entity: pd.DataFrame, path: Path):
     fig, axes = plt.subplots(2, 1, figsize=(13, 10))
     ax = axes[0]
     x = np.arange(len(bt)); w = 0.27
-    ax.bar(x - w, bt.da_amount / 1e4, w, label="日前结算（Q_DA×π_DA）", color="#1f77b4")
-    ax.bar(x, bt.rt_amount / 1e4, w, label="实时偏差结算（ΔQ×π_RT）", color="#ff7f0e")
-    ax.bar(x + w, bt.dev_pnl / 1e4, w, label="偏差损益 ΔQ×(π_RT−π_DA)", color="#2ca02c")
+    ax.bar(x - w, bt.da_amount / 1e4, w, label="日前结算（日前电量×日前价格）", color="#1f77b4")
+    ax.bar(x, bt.rt_amount / 1e4, w, label="实时偏差结算（偏差电量×实时价格）", color="#ff7f0e")
+    ax.bar(x + w, bt.dev_pnl / 1e4, w, label="偏差损益（偏差电量×实时日前价差）", color="#2ca02c")
     ax.set_xticks(x); ax.set_xticklabels(bt.label)
     ax.axhline(0, color="k", lw=.8); ax.set_ylabel("万元（+收入 / −支出）"); ax.legend(); ax.grid(axis="y", alpha=.3)
     ax.set_title("按类型的两级结算")

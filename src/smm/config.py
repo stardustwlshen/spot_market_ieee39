@@ -5,6 +5,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 import yaml
+import math
+from numbers import Real
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -43,7 +45,13 @@ def load_config(rule_set: str | None = None, season: str | None = None, override
     units = yaml.safe_load((root / "config" / "units.yaml").read_text(encoding="utf-8"))
     units = filter_enabled(units)
     modes = yaml.safe_load((root / "config" / "modes.yaml").read_text(encoding="utf-8"))
-    return Config(base=base, units=units, mode=modes[base["rule_set"]], root=root)
+    mode = modes[base["rule_set"]]
+    validate_auxiliary_pricing(mode)
+    validate_tracking_policy(mode)
+    cfg = Config(base=base, units=units, mode=mode, root=root)
+    from .input_validation import validate_physical_inputs
+    validate_physical_inputs(cfg)
+    return cfg
 
 
 def filter_enabled(units: dict) -> dict:
@@ -58,3 +66,48 @@ def filter_enabled(units: dict) -> dict:
         units[g] = [u for u in lst if u.get("enabled", True)]
     units["_disabled"] = dis
     return units
+
+
+def validate_auxiliary_pricing(mode: dict) -> None:
+    """Validate explicitly configured future pricing inputs; never enable a solve.
+
+    Old snapshots without this block remain readable. Historical
+    ``pricing_penalties`` is not an alias and cannot activate this policy.
+    """
+    if "auxiliary_pricing" not in mode:
+        return
+    spec = mode["auxiliary_pricing"]
+    if not isinstance(spec, dict):
+        raise ValueError("auxiliary_pricing 必须为配置对象")
+    if not isinstance(spec.get("enabled"), bool):
+        raise ValueError("辅助算价enabled须为布尔值")
+    penalties = spec.get("penalties_yuan_per_mwh")
+    if not isinstance(penalties, dict) or set(penalties) != {"balance", "line", "reserve"}:
+        raise ValueError("辅助算价须分别配置 balance/line/reserve，单位元/MWh")
+    for key, value in penalties.items():
+        if isinstance(value, bool) or not isinstance(value, Real) or not math.isfinite(value) or value < 0:
+            raise ValueError(f"辅助算价 {key} 须为有限非负数，单位元/MWh")
+    band = spec.get("dispatch_band")
+    if not isinstance(band, dict) or set(band) != {"relative_to_dispatch", "minimum_mw"}:
+        raise ValueError("辅助算价出力带须配置 relative_to_dispatch 与 minimum_mw")
+    for key, value in band.items():
+        if isinstance(value, bool) or not isinstance(value, Real) or not math.isfinite(value) or value < 0:
+            raise ValueError(f"辅助算价出力带 {key} 须为有限非负数")
+
+    if spec.get("rt_tracking_policy", "preserve") not in ("preserve", "remove"):
+        raise ValueError("辅助RT跟踪策略须为preserve或remove")
+    anchor = spec.get("anchor_penalty_yuan_per_discharge_mwh")
+    if anchor is not None and (isinstance(anchor, bool) or not isinstance(anchor, Real) or not math.isfinite(anchor) or anchor < 0):
+        raise ValueError("辅助锚点罚须为有限非负数，单位元/可放电等价MWh")
+
+
+def validate_tracking_policy(mode: dict) -> None:
+    """Explicit optional RT tracking migration; absent means historical policy."""
+    spec = mode.get("realtime", {}).get("tracking_policy")
+    if spec is None:
+        return
+    if not isinstance(spec, dict) or spec.get("mode") != "soft_deliverable_energy":
+        raise ValueError("RT tracking_policy.mode须为soft_deliverable_energy")
+    value = spec.get("penalty_yuan_per_discharge_mwh")
+    if isinstance(value, bool) or not isinstance(value, Real) or not math.isfinite(value) or value <= 0:
+        raise ValueError("RT跟踪罚须为有限正数，单位元/可放电等价MWh")

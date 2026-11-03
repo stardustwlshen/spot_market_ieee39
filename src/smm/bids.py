@@ -39,6 +39,39 @@ def _thermal_default(u, lim):
                 startup_cost=dict(u["startup"]), noload_cost=float(u["noload"]))
 
 
+def resolve_startup_bid(cfg, bid):
+    """Per-unit fee; historical state bids migrate from their own hot value only."""
+    mode = cfg.mode.get("startup_cost_mode", "state_dependent")
+    if mode not in ("uniform_per_unit", "state_dependent"):
+        raise ValueError("startup_cost_mode must be uniform_per_unit or state_dependent")
+    if mode == "state_dependent":
+        return dict(mode=mode, cost_yuan=None, source="state_dependent")
+    if "startup_cost_yuan" in bid:
+        value = bid["startup_cost_yuan"]
+        source = ("legacy_hot_migration" if bid.get("startup_cost_source") == "legacy_hot_migration"
+                  and value == bid.get("startup_cost", {}).get("hot") else "explicit_scalar")
+    else:
+        value = bid.get("startup_cost", {}).get("hot")
+        source = "legacy_hot_migration"
+    if not _finite_number(value) or value < 0:
+        raise ValueError("startup_cost_yuan (or legacy hot migration) must be finite nonnegative yuan/start")
+    return dict(mode=mode, cost_yuan=float(value), source=source)
+
+
+def effective_bids(cfg, bids):
+    """Detached effective input for exports; never rewrite archived bid versions."""
+    raise_on_errors(validate_bids(cfg, bids, require_complete=True))
+    out = copy.deepcopy(bids)
+    for unit in cfg.units["thermal"]:
+        bid = out["units"][unit["id"]]
+        effective = resolve_startup_bid(cfg, bid)
+        if effective["mode"] == "uniform_per_unit":
+            bid["startup_cost_yuan"] = effective["cost_yuan"]
+            bid["startup_cost_source"] = effective["source"]
+        bid["startup_cost_mode"] = effective["mode"]
+    return out
+
+
 def default_bids(cfg: Config, version: int = 1) -> dict:
     lim = cfg.mode["price_limits"]
     states = set(cfg.mode["startup_states"]) | {"cold"}
@@ -46,6 +79,8 @@ def default_bids(cfg: Config, version: int = 1) -> dict:
     for u in cfg.units["thermal"]:
         b = _thermal_default(u, lim)
         b["startup_cost"] = {k: v for k, v in b["startup_cost"].items() if k in states}
+        if cfg.mode.get("startup_cost_mode", "state_dependent") == "uniform_per_unit":
+            b["startup_cost_yuan"] = float(b["startup_cost"]["hot"])
         units[u["id"]] = b
     for r in cfg.units["renewable"]:
         units[r["id"]] = dict(mode="price_quantity", segments=_segments(np.linspace(0, r["cap"], 6), [0, 20, 40, 60, 80]),
@@ -83,8 +118,24 @@ def pumped_default(p) -> dict:
                 vup_end=p.get("vup_end_bid", p["vup0"]))
 
 
+def _archive_default_fill_provenance(bids: dict) -> None:
+    """Move a prior operation's active warning to historical provenance only.
+
+    Call on a detached loaded/saved copy. This never changes any resource bid.
+    _filled_default describes this load's missing resources, not their ancestry.
+    """
+    previous = bids.pop("_filled_default", [])
+    if previous:
+        history = list(bids.get("_default_fill_history", []))
+        for uid in previous:
+            if uid not in history:
+                history.append(uid)
+        bids["_default_fill_history"] = history
+
+
 def fill_missing_bids(cfg: Config, bids: dict) -> dict:
     """报价文件中缺少的资源（如新增的抽蓄 PS1、启用的 H2）用缺省报价补齐；已停用资源的报价忽略。"""
+    _archive_default_fill_provenance(bids)
     disabled = set(cfg.units.get("_disabled", []))
     dflt = None
     filled = []
@@ -112,6 +163,7 @@ def save_bids(cfg: Config, bids: dict, note: str | None = None, new_version: boo
     d = bid_dir(cfg)
     d.mkdir(parents=True, exist_ok=True)
     bids = copy.deepcopy(bids)
+    _archive_default_fill_provenance(bids)
     if new_version:
         existing = [int(p.stem.split("_v")[-1]) for p in d.glob("bids_v*.json")]
         bids["version"] = max(existing, default=0) + 1
@@ -142,7 +194,9 @@ def bids_to_csv(bids: dict, path: Path) -> None:
     for uid, b in bids["units"].items():
         for kind in ("segments", "dis_segments", "ch_segments", "gen_segments", "pump_segments"):
             for k, s in enumerate(b.get(kind) or [], start=1):
-                rows.append(dict(unit_id=uid, mode=b.get("mode"), curve=kind, seg=k, **s))
+                rows.append(dict(unit_id=uid, mode=b.get("mode"), curve=kind, seg=k,
+                                 startup_cost_mode=b.get("startup_cost_mode"), startup_cost_yuan=b.get("startup_cost_yuan"),
+                                 startup_cost_source=b.get("startup_cost_source"), **s))
     pd.DataFrame(rows).to_csv(path, index=False)
 
 
@@ -255,6 +309,8 @@ def _numeric_structure_issues(uid, b, cfg, cap):
     for field in ("soc_min", "soc_max", "soc_end", "vup_end", "noload_cost"):
         if (field in b and field in ("soc_min", "soc_max", "noload_cost") and not _finite_number(b[field])) or (b.get(field) is not None and not _finite_number(b[field])):
             error(field, "须为有限数值")
+    if "startup_cost_yuan" in b and (not _finite_number(b["startup_cost_yuan"]) or b["startup_cost_yuan"] < 0):
+        error("startup_cost_yuan", "须为非负有限数值，单位元/次")
     su = b.get("startup_cost", {})
     if not isinstance(su, dict):
         error("startup_cost", "须为分状态数值对象")
@@ -435,15 +491,30 @@ def validate_bids(cfg: Config, bids: dict, *, require_complete: bool = False) ->
         _check_curve(uid, b.get("segments"), mt["cap"], t2 if t2 == "hydro_planned" else typ, cfg, issues)
         if typ in THERMAL_TYPES:
             su = b.get("startup_cost", {})
-            for k, v in su.items():
-                cap_v = mt["startup"].get(k)
-                if cap_v is not None and v > cap_v + 1e-6:
-                    issues.append(Issue(uid, "error", "启动费上限", f"{k} 启动费 {v} 超过核定/上限 {cap_v}"))
             need = set(cfg.mode["startup_states"]) | {"cold"}
+            # Inactive legacy dictionaries remain structural input: reject typos
+            # without requiring all states for an explicit uniform scalar bid.
             if set(su) - need:
                 issues.append(Issue(uid, "error", "启动费状态", f"未知启动状态 {sorted(set(su) - need)}"))
-            if not need.issubset(su):
-                issues.append(Issue(uid, "error", "启动费状态", f"需申报 {sorted(need)}"))
+            try:
+                startup = resolve_startup_bid(cfg, b)
+            except ValueError as exc:
+                issues.append(Issue(uid, "error", "启动费", str(exc)))
+                continue
+            if startup["mode"] == "uniform_per_unit":
+                cap_v = mt["startup"].get("hot")
+                if not _finite_number(cap_v) or cap_v < 0:
+                    issues.append(Issue(uid, "error", "启动费上限", "统一启动费技术hot上限须为非负有限数值"))
+                elif startup["cost_yuan"] > cap_v + 1e-6:
+                    issues.append(Issue(uid, "error", "启动费上限", f"统一启动费 {startup['cost_yuan']} 超过上限 {cap_v}"))
+            else:
+                su = b.get("startup_cost", {})
+                for k, v in su.items():
+                    cap_v = mt["startup"].get(k)
+                    if cap_v is not None and v > cap_v + 1e-6:
+                        issues.append(Issue(uid, "error", "启动费上限", f"{k} 启动费 {v} 超过核定/上限 {cap_v}"))
+                if not need.issubset(su):
+                    issues.append(Issue(uid, "error", "启动费状态", f"需申报 {sorted(need)}"))
     return issues
 
 

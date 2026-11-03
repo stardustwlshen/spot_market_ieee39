@@ -18,6 +18,7 @@ def mocked_flow(monkeypatch):
     def solve(case, da_plan, plan, cfg, state, t):
         calls.append(t)
         return dict(snap={'future':[t,t+1]}, prices={'lmp_clamped':np.array([[100.]])},
+                    dispatch_prices={'lmp_clamped':np.array([[100.]])},pricing_info=None,repriced_meaning='disabled',
                     slack={}, repriced=False, anchor_relaxed=0, anchor_slack_present=False,
                     pricing_source='standard_sced', time_s=.01, mip={'time_s':.01}, hydro_window_targets=[])
     monkeypatch.setattr(rolling, '_da_plan_arrays', lambda _: {})

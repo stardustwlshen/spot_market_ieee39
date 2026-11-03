@@ -7,7 +7,7 @@ import streamlit as st
 from common import (MODE_CN, STATUS_CN, TYPE_CN, all_results, bus_resources, empty_state, get_result, metric_grid, page_setup,
                     result_label, run_status, sc, scenario_selector, wan, ROOT)
 
-page_setup("IEEE39 现货市场出清仿真", "日前 SCUC/SCED 出清 → 实时 15 min 滚动出清 → 日前/实时两部制偏差结算 · 统一规则 MKT（参考四川、甘肃）")
+page_setup("IEEE39 现货市场出清仿真", "日前启停计划与能量调度 → 实时 15分钟 滚动出清 → 日前/实时两部制偏差结算 · 统一现货规则（参考四川、甘肃）")
 name = scenario_selector()
 
 # ----------------------------------------------------------------------------- 项目说明
@@ -15,12 +15,12 @@ c1, c2 = st.columns([1.15, 1])
 with c1:
     st.subheader("项目说明")
     st.markdown("""
-以 **IEEE 39 节点系统** 为算例，模拟含 **燃煤、燃气（CCGT/GT）、水电、风电、光伏、区外来电、储能** 的省级现货市场：
+以 **IEEE 39 节点系统** 为算例，模拟含 **燃煤、燃气（联合循环／轮机）、水电、风电、光伏、区外来电、储能** 的省级现货市场：
 
-- **日前市场**：发电侧报量报价（新能源报量报价、燃气报价），HiGHS 求解 SCUC（MILP，储能充放电 0/1 变量）→ 固定启停后 SCED（LP）求 **节点电价 LMP**（能量分量 + 阻塞分量）。
-- **实时市场**：每 15 min 滚动出清未来 2 h、只执行第 1 个时段；负荷与风光用超短期预测；储能默认 **B2 整点电量等值** 跟踪日前计划。
-- **结算**：日前电量 × 日前价 + (实际 − 日前) × 实时价；校核资金盈余 = 阻塞租金。
-- 规则参数标“假设值”的不是规则原文数值；完整方案见项目 Page。
+- **日前市场**：发电侧报量报价（新能源报量报价、燃气报价），先进行启停优化，再固定整数决策完成正式能量调度；启用辅助定价时，电价来自独立辅助模型，**物理出力仍来自正式调度**。
+- **实时市场**：每 15分钟 滚动出清未来 2小时、只执行第 1 个时段；负荷与风光用超短期预测；水电、储能和抽蓄按运行快照保存的 **软跟踪或硬目标规则** 衔接日前计划，结果页明确区分目标偏差与物理违规。
+- **结算**：日前电量 × 日前价 + (实际 − 日前) × 实时价；分别核对结算资金、阻塞分量、辅助定价口径与市场限价调整；不能将不同口径直接视为相等。
+- 规则参数标“假设值”的不是规则原文数值；详情见场景说明与结果诊断。
 """)
 with c2:
     st.subheader("出清流程")
@@ -30,13 +30,15 @@ digraph G {
   node [shape=box, style="rounded,filled", fontname="Noto Sans CJK SC", fontsize=11, color="#9fb3c8", fillcolor="#eef3f9", width=2.6];
   edge [color="#6b7280", arrowsize=0.7, fontname="Noto Sans CJK SC", fontsize=9];
   in  [label="边界条件\\n负荷/风光预测 · 报价 · 机组/储能/水电 · 线路限额", fillcolor="#fff7e6", color="#e9a03b"];
-  da1 [label="日前 SCUC（MILP）\\n启停 · 储能 0/1 · 备用 · DC-PTDF 潮流"];
-  da2 [label="日前 SCED（LP）\\n固定启停 → 对偶 → 节点电价 LMP"];
-  rt  [label="实时滚动 SCED（96 次）\\n15 min 步长 · 2 h 窗口 · 只执行首时段"];
+  da1 [label="日前 启停优化（混合整数模型）\\n启停 · 储能 0/1 · 备用 · 直流潮流"];
+  da2 [label="日前 能量调度（线性模型）\\n固定整数决策 → 正式物理出力"];
+  price [label="独立辅助定价（若启用）\\n原始节点价 → 市场限价 → 结算价"];
+  rt  [label="实时滚动调度（96 个时段）\\n15分钟 步长 · 2小时 窗口 · 只执行首时段"];
   st  [label="两部制偏差结算\\n日前电费 + 实时偏差电费 · 资金平衡校核", fillcolor="#e8f6f3", color="#2a9d8f"];
-  out [label="网页结果\\n电价热力图 · 出力 · 储能 SOC · 线路 · 拓扑 · 结算", fillcolor="#f3eefa", color="#6a4c93"];
+  out [label="网页结果\\n电价热力图 · 出力 · 储能荷电状态 · 线路 · 拓扑 · 结算", fillcolor="#f3eefa", color="#6a4c93"];
   in -> da1 -> da2 -> rt -> st -> out;
-  da2 -> st [style=dashed, label=" 日前价/电量"];
+  da2 -> price -> st [style=dashed, label=" 定价口径"];
+  da2 -> st [style=dashed, label=" 日前电量"];
 }
 """, width="stretch")
 
@@ -80,7 +82,7 @@ else:
 st.subheader("使用步骤")
 steps = [("🧩 边界条件", "选择或新建场景，修改负荷、风光预测误差、报价、机组/储能/水电参数、线路限额、限价与备用、实时储能模式。", "pages/1_边界条件.py"),
          ("▶️ 运行", "一键运行“仅日前”或“全流程”，后台执行，可随意切换页面，进度与日志实时刷新。", "pages/2_运行.py"),
-         ("📊 结果", "指标卡、LMP 热力图与节点曲线、出力堆叠、储能 SOC、线路负载、拓扑着色、结算表（可下载 CSV）。", "pages/3_结果.py"),
+         ("📊 结果", "指标卡、节点电价热力图与节点曲线、出力堆叠、储能荷电状态、线路负载、拓扑着色、结算表（可下载中文表格）。", "pages/3_结果.py"),
          ("⚖️ 场景对比", "任选两次运行结果，对比指标、均价曲线、节点电价、出力结构与结算。", "pages/4_场景对比.py")]
 cols = st.columns(4)
 for c, (t, d, p) in zip(cols, steps):

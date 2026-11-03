@@ -70,14 +70,24 @@ def test_hydro_worker_failure_or_cancel_allows_new_run(tmp_path, monkeypatch, te
     at=AppTest.from_file(str(root/'app/主页.py'),default_timeout=30).run()
     at.session_state['watch_run']=str(out);at.switch_page('pages/2_运行.py').run()
     assert not at.exception,[e.value for e in at.exception]
-    if termination=='infeasible':assert any('水电' in e.value and '失败' in e.value for e in at.error)
+    if termination=='infeasible':
+        assert any('水电' in e.value and '失败' in e.value for e in at.error)
+        assert any('不能视为完整日结果' in e.value for e in at.error)
+        assert not any('RuntimeError' in e.value for e in at.error)
+        diagnostics=next(e for e in at.expander if e.label=='技术详情（原始诊断，供排查）')
+        assert diagnostics.proto.expanded is False
+        assert any(meta['error'] in c.value for c in diagnostics.code)
     assert not any('完成，可到' in e.value for e in at.success)
     assert next(b for b in at.button if b.label=='▶ 开始运行').disabled is False
     # Failed record cannot block a fresh explicit launch; a repeated active launch
     # remains prohibited. Process spawning is stubbed here, not the failed solve.
     import os
     from types import SimpleNamespace
-    monkeypatch.setattr(common.subprocess,'Popen',lambda *a,**k:SimpleNamespace(pid=os.getpid()))
+    real_spawn=common.subprocess.Popen
+    def fake_spawn(*a,**k):
+        if a and isinstance(a[0],list) and a[0] and a[0][0]=='git':return real_spawn(*a,**k)
+        return SimpleNamespace(pid=os.getpid())
+    monkeypatch.setattr(common.subprocess,'Popen',fake_spawn)
     retry=common.start_run(scenario.DEFAULT,'full',2,4)
     assert retry != out and (retry/'scenario_snapshot').exists()
     with pytest.raises(RuntimeError,match='已有运行'):

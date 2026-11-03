@@ -46,6 +46,8 @@ def build_network(cfg: Config) -> Network:
     bus = pd.read_csv(d / "buses.csv")
     br["rate_orig_mw"] = br.rate_mw
     for bid, s in (cfg.base.get("line_scale") or {}).items():
+        if isinstance(s, bool) or not isinstance(s, (int, float)) or not np.isfinite(s) or s <= 0:
+            raise ValueError(f"line_scale {bid} 必须是有限正数")
         if bid not in set(br.branch_id):
             raise KeyError(f"line_scale 中的支路 {bid} 不存在")
         br.loc[br.branch_id == bid, "rate_mw"] = br.loc[br.branch_id == bid, "rate_orig_mw"] * float(s)
