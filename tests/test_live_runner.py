@@ -43,6 +43,7 @@ def test_launch_freezes_inputs_and_blocks_duplicate(tmp_path, monkeypatch):
     sys.path.insert(0,str(Path(__file__).resolve().parents[1]/'app'))
     import common
     from smm import scenario
+    monkeypatch.setattr(scenario,'SCEN_DIR',tmp_path/'scenarios')
     scenario.ensure_default()
     monkeypatch.setattr(scenario,'RUNS_DIR',tmp_path/'runs')
     captured=[]
@@ -69,6 +70,7 @@ def test_streamlit_displays_partial_without_settlement(tmp_path,monkeypatch):
     from pathlib import Path
     from streamlit.testing.v1 import AppTest
     from smm import scenario
+    monkeypatch.setattr(scenario,'SCEN_DIR',tmp_path/'scenarios')
     monkeypatch.setattr(scenario,'RUNS_DIR',tmp_path/'runs')
     d=scenario.RUNS_DIR/'fixture'/'partial';d.mkdir(parents=True)
     atomic_json(d/'meta.json',{'scenario':'fixture','mode':'full','status':'running','pid':os.getpid(),
@@ -79,30 +81,41 @@ def test_streamlit_displays_partial_without_settlement(tmp_path,monkeypatch):
                   'system':[{'period':0,'load_mw':20.}]},
       'lookahead':[{'period':1,'power_mw':21.,'status':'前瞻计划（未执行）'}]})
     root=Path(__file__).resolve().parents[1]
-    at=AppTest.from_file(str(root/'app/主页.py'),default_timeout=30).run()
-    at.switch_page('pages/2_运行.py').run()
+    at=AppTest.from_file(str(root/'app/pages/2_运行.py'),default_timeout=60).run()
     assert not at.exception
     assert any('实时已执行：1 / 96' in x.value for x in at.subheader)
     assert any('不包含完整日最终结算' in x.value for x in at.caption)
     assert next(x for x in at.button if x.label=='▶ 开始运行').disabled
     assert len(at.dataframe)>=3
-    assert len(at.get("vega_lite_chart"))==2
+    assert len(at.get("vega_lite_chart"))>=2  # System charts plus selected-unit diagnostics.
 
 
-def test_streamlit_simulation_updates_draft_without_touching_v2(tmp_path, monkeypatch):
+def test_streamlit_simulation_updates_only_selected_draft_without_touching_v2(tmp_path, monkeypatch):
+    import copy
     from pathlib import Path
     from streamlit.testing.v1 import AppTest
     from smm import scenario
-    monkeypatch.setattr(scenario,'RUNS_DIR',tmp_path/'runs')
-    root=Path(__file__).resolve().parents[1]
-    at=AppTest.from_file(str(root/'app/主页.py'),default_timeout=30).run()
-    at.switch_page('pages/2_运行.py').run()
-    selected=next(x for x in at.multiselect if x.label=='需要模拟的主体编号')
-    selected.set_value(['C1']).run()
-    next(x for x in at.button if x.label=='生成、验证并采用模拟报价').click().run()
+    from smm.bids import load_bids
+    monkeypatch.setattr(scenario, 'SCEN_DIR', tmp_path / 'scenarios')
+    monkeypatch.setattr(scenario, 'RUNS_DIR', tmp_path / 'runs')
+    scenario.ensure_default()
+    root = Path(__file__).resolve().parents[1]
+    cfg = load_config(root=scenario.scenario_path('默认'))
+    saved = load_bids(cfg)
+    before = {p: p.read_bytes() for p in cfg.root.rglob('*') if p.is_file()}
+    at = AppTest.from_file(str(root / 'app/pages/2_运行.py'), default_timeout=60).run()
+    key = next(x for x in at.number_input if x.label == '空载报价（元/h）').key.removeprefix('quote_edit:').removesuffix(':C1:noload')
+    next(x for x in at.radio if x.label == '生成方式').set_value('随机策略').run()
+    initial = copy.deepcopy(at.session_state[key])
+    next(x for x in at.button if x.label == '生成报价预览').click().run()
+    assert at.session_state[key] == initial
+    next(x for x in at.button if x.label == '采用预览报价').click().run()
     assert not at.exception
-    assert any('algorithm' in x.value for x in at.json)
-    assert any('price_shift_yuan_per_mwh' in x.value for x in at.json)
+    changed = at.session_state[key]
+    assert changed['units']['C1'] != initial['units']['C1']
+    assert all(changed['units'][uid] == bid for uid, bid in initial['units'].items() if uid != 'C1')
+    assert all(p.read_bytes() == data for p, data in before.items())
+    assert not scenario.RUNS_DIR.exists()
 
 
 def test_invalid_regulation_rejected_before_snapshot_or_launch(tmp_path):
@@ -121,8 +134,7 @@ def test_current_ui_is_energy_only_and_historical_regulation_cannot_start(tmp_pa
     import common
     monkeypatch.setattr(scenario,'SCEN_DIR',tmp_path/'scenarios')
     monkeypatch.setattr(scenario,'RUNS_DIR',tmp_path/'runs')
-    at=AppTest.from_file(str(root/'app/主页.py'),default_timeout=30).run()
-    at.switch_page('pages/2_运行.py').run()
+    at=AppTest.from_file(str(root/'app/pages/2_运行.py'),default_timeout=60).run()
     assert not at.exception
     assert not any('调频' in x.label for x in at.number_input)
     assert not any('调频' in x.label for x in at.checkbox)

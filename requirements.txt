@@ -12,6 +12,7 @@ matplotlib==3.11.2       # 命令行输出 PNG 图
 streamlit==1.66.1
 plotly==7.1.0
 networkx==3.7            # 网络拓扑图
+psutil==7.2.2            # 跨平台只读进程身份检查，禁止使用 Windows os.kill(pid, 0)
 # 仅 scripts/export_case39.py 重新导出 case39 数据时需要
 pandapower==3.5.6
 # 测试

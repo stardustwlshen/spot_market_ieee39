@@ -1,4 +1,6 @@
-"""Regression coverage for recoverable invalid bids and version-isolated run drafts."""
+"""Retained scene drafts and explicit single-unit quotation previews."""
+import copy
+import shutil
 import sys
 from pathlib import Path
 
@@ -6,6 +8,7 @@ import pytest
 from streamlit.testing.v1 import AppTest
 
 ROOT = Path(__file__).resolve().parents[1]
+PAGE = ROOT / 'app/pages/2_运行.py'
 
 
 @pytest.fixture
@@ -15,6 +18,8 @@ def scenario(tmp_path, monkeypatch):
     monkeypatch.setattr(sc, 'SCEN_DIR', tmp_path / 'scenarios')
     monkeypatch.setattr(sc, 'RUNS_DIR', tmp_path / 'runs')
     sc.ensure_default()
+    for name in ('fixed_costs.yaml', 'bid_cost_basis.yaml'):
+        shutil.copy2(ROOT / 'config' / name, sc.scenario_path('默认') / 'config' / name)
     return sc
 
 
@@ -22,215 +27,275 @@ def item(elements, label):
     return next(x for x in elements if x.label == label)
 
 
-def test_equipment_change_keeps_bid_repair_page_accessible(scenario):
-    from smm.config import load_config
-    from smm.bids import bid_dir
-    cfg = load_config(root=scenario.scenario_path('默认'))
-    before = {p.name: p.read_bytes() for p in bid_dir(cfg).glob('*.json')}
-    units = scenario.read_yaml('默认', 'units')
-    units['thermal'][0]['pmax'] -= 1
-    scenario.write_yaml('默认', 'units', units)
-    at = AppTest.from_file(str(ROOT / 'app/pages/1_边界条件.py'), default_timeout=30).run()
+def open_app():
+    at = AppTest.from_file(str(PAGE), default_timeout=60).run()
     assert not at.exception
-    assert item(at.button, '提交为新版本').disabled
-    assert item(at.button, '保存机组/储能/水电参数')
-    assert any('违规' in x.value for x in at.error)
-    assert {p.name: p.read_bytes() for p in bid_dir(cfg).glob('*.json')} == before
+    return at
 
 
-def test_latest_resolves_version_without_destroying_previous_draft(scenario):
-    from smm.config import load_config
-    from smm.bids import load_bids, save_bids
-    cfg = load_config(root=scenario.scenario_path('默认'))
-    at = AppTest.from_file(str(ROOT / 'app/pages/2_运行.py'), default_timeout=30).run()
-    assert not at.exception
-    old = load_bids(cfg)['version']
-    key = f'bid_draft:默认:{old}'
-    original = at.session_state[key]
-    original['note'] = 'unsaved draft must survive'
-    save_bids(cfg, load_bids(cfg), note='new saved version')
-    new = load_bids(cfg)['version']
-    at.run()
-    assert not at.exception
-    assert item(at.selectbox, '报价版本').value == '最新'
-    assert at.session_state[f'bid_draft:默认:{new}']['version'] == new
-    assert at.session_state[key]['note'] == 'unsaved draft must survive'
-    item(at.selectbox, '报价版本').select(old).run()
-    assert not at.exception
-    assert at.session_state[key]['note'] == 'unsaved draft must survive'
+def key_for(at):
+    # The editor uses the scene's one current working draft.
+    return item(at.number_input, '空载报价（元/h）').key.removeprefix('quote_edit:').removesuffix(':C1:noload')
 
 
-@pytest.mark.parametrize('cap', [None, 0.0, 1200.0])
-def test_hydro_total_outflow_cap_roundtrip_and_source(scenario, cap):
-    units = scenario.read_yaml('默认', 'units')
-    units['hydro'][0]['qout_max'] = None
-    units['hydro'][0]['qout_max_source'] = ''
-    scenario.write_yaml('默认', 'units', units)
-    page = str(ROOT / 'app/pages/1_边界条件.py')
-    at = AppTest.from_file(page, default_timeout=30).run()
-    assert not at.exception
-    label = '总出库流量上限（m³/s；留空=未建模）'
-    assert item(at.number_input, label).value is None
-    before = (scenario.scenario_path('默认') / 'config/units.yaml').read_bytes()
-    item(at.number_input, label).set_value(cap).run()
-    source = '合成研究假设：仅供测试，非真实工程资料'
-    item(at.text_input, '总出库上限来源 / 研究假设说明').set_value(source).run()
-    assert not at.exception
-    assert (scenario.scenario_path('默认') / 'config/units.yaml').read_bytes() == before
-    assert any('发电过机流量 + 弃水流量' in x.value for x in at.caption)
-    item(at.button, '保存机组/储能/水电参数').click().run()
-    assert not at.exception
-    saved = scenario.read_yaml('默认', 'units')['hydro'][0]
-    assert saved['qout_max'] == cap
-    assert saved['qout_max_source'] == source
-    at = AppTest.from_file(page, default_timeout=30).run()
-    assert not at.exception
-    assert item(at.number_input, label).value == cap
-    assert item(at.text_input, '总出库上限来源 / 研究假设说明').value == source
-    item(at.number_input, label).set_value(None).run()
-    item(at.button, '保存机组/储能/水电参数').click().run()
-    assert not at.exception
-    assert scenario.read_yaml('默认', 'units')['hydro'][0]['qout_max'] is None
+def files(root):
+    return {p: p.read_bytes() for p in root.rglob('*')
+            if p.is_file() and p.name not in {'current_quote.json', 'current_quote.lock'}}
 
 
 @pytest.mark.parametrize('uniform', [False, True])
-def test_startup_editor_modes_preserve_unit_heterogeneity_and_archives(scenario, uniform):
-    import json
-    from smm.bids import bid_dir, load_bids
+def test_startup_modes_unit_edit_isolation_and_saved_archives(scenario, uniform):
+    from smm.bids import load_bids
     from smm.config import load_config
     modes = scenario.read_yaml('默认', 'modes')
     modes['MKT']['startup_cost_mode'] = 'uniform_per_unit' if uniform else 'state_dependent'
     scenario.write_yaml('默认', 'modes', modes)
     cfg = load_config(root=scenario.scenario_path('默认'))
-    directory = bid_dir(cfg)
-    before = {p.name: p.read_bytes() for p in directory.glob('*.json')}
     original = load_bids(cfg)
-    at = AppTest.from_file(str(ROOT / 'app/pages/1_边界条件.py'), default_timeout=30).run()
-    assert not at.exception
-    table = next(x.value for x in at.dataframe if 'pmin' in x.value.columns)
+    before = files(scenario.scenario_path('默认'))
+    at = open_app()
+    assert not any(widget.label == '报价来源' for widget in at.selectbox)
     scalar_label = '单次启动报价（元/次）'
-    if uniform:
-        assert '单次启动费上限（元/次）' in table
-        assert not {'启动费_冷', '启动费_温', '启动费_热'} & set(table)
-        assert table['单次启动费上限（元/次）'].nunique() > 1
-        first = item(at.number_input, scalar_label).value
-        item(at.number_input, scalar_label).set_value(first - 1).run()
-        item(at.selectbox, '选择报价主体').select('CCGT').run()
-        assert item(at.number_input, scalar_label).value == original['units']['CCGT'].get('startup_cost_yuan', original['units']['CCGT']['startup_cost']['hot'])
-        item(at.selectbox, '选择报价主体').select('C1').run()
-        assert item(at.number_input, scalar_label).value == first - 1
-        assert {p.name: p.read_bytes() for p in directory.glob('*.json')} == before
-        item(at.button, '提交为新版本').click().run()
-        assert not at.exception
-        new = load_bids(cfg)
-        assert new['units']['C1']['startup_cost_yuan'] == first - 1
-        assert new['units']['C1']['startup_cost'] == original['units']['C1']['startup_cost']
-        assert new['units']['CCGT'] == original['units']['CCGT']
-        assert all((directory / p).read_bytes() == content for p, content in before.items())
-    else:
-        assert {'启动费_冷', '启动费_温', '启动费_热'} <= set(table)
-        assert not any(x.label == scalar_label for x in at.number_input)
-        assert {p.name: p.read_bytes() for p in directory.glob('*.json')} == before
+    label = scalar_label if uniform else '空载报价（元/h）'
+    assert any(x.label == scalar_label for x in at.number_input) == uniform
+    first = item(at.number_input, label).value
+    item(at.number_input, label).set_value(first - 1).run()
+    item(at.selectbox, '模拟机组').select('CCGT').run()
+    expected = (original['units']['CCGT'].get('startup_cost_yuan', original['units']['CCGT']['startup_cost']['hot'])
+                if uniform else original['units']['CCGT']['noload_cost'])
+    assert item(at.number_input, label).value == expected
+    item(at.selectbox, '模拟机组').select('C1').run()
+    assert item(at.number_input, label).value == first - 1
+    assert files(scenario.scenario_path('默认')) == before
+    current = at.session_state[key_for(at)]
+    assert current['units']['C1']['startup_cost_yuan' if uniform else 'noload_cost'] == first - 1
+    assert current['units']['C1']['startup_cost'] == original['units']['C1']['startup_cost']
+    assert current['units']['CCGT'] == original['units']['CCGT']
+    assert not any(button.label == '另存报价版本' for button in at.button)
+    assert load_bids(cfg) == original
+    assert files(scenario.scenario_path('默认')) == before
 
 
-def test_research_bid_preview_requires_acceptance_and_preserves_manual_units(scenario):
-    import copy
-    import shutil
-    shutil.copy2(ROOT / 'config/bid_cost_basis.yaml', scenario.scenario_path('默认') / 'config/bid_cost_basis.yaml')
-    shutil.copy2(ROOT / 'config/fixed_costs.yaml', scenario.scenario_path('默认') / 'config/fixed_costs.yaml')
-    at = AppTest.from_file(str(ROOT / 'app/pages/1_边界条件.py'), default_timeout=30).run()
-    assert not at.exception
-    key = f"draft_默认_{item(at.selectbox, '基于报价版本').value}"
+def test_cost_preview_requires_acceptance_and_preserves_other_units_and_all_inputs(scenario):
+    at = open_app()
+    key = key_for(at)
     initial = copy.deepcopy(at.session_state[key])
-    bid_files = {p: p.read_bytes() for p in scenario.scenario_path('默认').rglob('bids_v*.json')}
-    item(at.multiselect, '生成报价的主体').set_value(['C1']).run()
-    item(at.button, '生成报价预览（不采用、不保存）').click().run()
+    before = files(scenario.scenario_path('默认'))
+    item(at.button, '生成报价预览').click().run()
     assert not at.exception
     assert at.session_state[key] == initial
     assert at.session_state[key + ':preview']['candidate']['_cost_basis']
-    item(at.button, '采用此预览为草稿（仍未保存）').click().run()
+    item(at.button, '采用预览报价').click().run()
     assert not at.exception
-    assert at.session_state[key]['units']['C1'] != initial['units']['C1']
-    assert at.session_state[key]['units']['CCGT'] == initial['units']['CCGT']
+    current = at.session_state[key]
+    assert current['units']['C1'] != initial['units']['C1']
+    assert {u: b for u, b in current['units'].items() if u != 'C1'} == {u: b for u, b in initial['units'].items() if u != 'C1'}
     assert not at.session_state.get(key + ':manual', [])
-    assert all(p.read_bytes() == data for p, data in bid_files.items())
-    current = item(at.number_input, '空载费 元/h').value
-    item(at.number_input, '空载费 元/h').set_value(current + 1).run()
+    assert files(scenario.scenario_path('默认')) == before
+    amount = item(at.number_input, '空载报价（元/h）').value
+    item(at.number_input, '空载报价（元/h）').set_value(amount + 1).run()
     assert 'C1' in at.session_state[key + ':manual']
-    item(at.button, '生成报价预览（不采用、不保存）').click().run()
+    manual = copy.deepcopy(at.session_state[key])
+    item(at.button, '生成报价预览').click().run()
     assert not at.exception
-    assert any('受保护' in x.value for x in at.error)
+    assert any('模拟报价未生成' in x.value for x in at.error)
     assert key + ':preview' not in at.session_state
-    assert all(p.read_bytes() == data for p, data in bid_files.items())
+    assert at.session_state[key] == manual
+    assert files(scenario.scenario_path('默认')) == before
 
 
-def test_research_preview_missing_local_worksheet_fails_without_fallback(scenario):
+def test_missing_cost_worksheet_fails_without_fallback_or_mutation(scenario):
     path = scenario.scenario_path('默认') / 'config/bid_cost_basis.yaml'
     path.unlink(missing_ok=True)
-    at = AppTest.from_file(str(ROOT / 'app/pages/1_边界条件.py'), default_timeout=30).run()
-    item(at.multiselect, '生成报价的主体').set_value(['C1']).run()
-    item(at.button, '生成报价预览（不采用、不保存）').click().run()
+    at = open_app()
+    key = key_for(at)
+    initial = copy.deepcopy(at.session_state[key])
+    item(at.button, '生成报价预览').click().run()
     assert not at.exception
-    assert any('未生成预览' in x.value and '不回退' in x.value for x in at.error)
-
-
-def test_strategy_preview_cannot_overwrite_newer_manual_edits(scenario):
-    at = AppTest.from_file(str(ROOT / 'app/pages/1_边界条件.py'), default_timeout=30).run()
-    item(at.radio, '报价生成依据').set_value('seed策略平移（非成本依据）').run()
-    item(at.multiselect, '生成报价的主体').set_value(['C1']).run()
-    item(at.button, '生成报价预览（不采用、不保存）').click().run()
-    assert not at.exception
-    assert not item(at.button, '采用此预览为草稿（仍未保存）').disabled
-    item(at.number_input, '空载费 元/h').set_value(item(at.number_input, '空载费 元/h').value + 1).run()
-    assert not at.exception
-    assert item(at.button, '采用此预览为草稿（仍未保存）').disabled
-    assert any('预览已过期' in x.value for x in at.warning)
-
-
-def test_fixed_operating_cost_edit_does_not_rewrite_bids_or_offer_basis(scenario):
-    import shutil
-    import yaml
-    root = scenario.scenario_path('默认')
-    shutil.copy2(ROOT / 'config/fixed_costs.yaml', root / 'config/fixed_costs.yaml')
-    shutil.copy2(ROOT / 'config/bid_cost_basis.yaml', root / 'config/bid_cost_basis.yaml')
-    before = {p: p.read_bytes() for p in root.rglob('bids_v*.json')}
-    basis = (root / 'config/bid_cost_basis.yaml').read_bytes()
-    at = AppTest.from_file(str(ROOT / 'app/pages/1_边界条件.py'), default_timeout=30).run()
-    assert not at.exception
-    item(at.multiselect, '生成报价的主体').set_value(['C1']).run()
-    item(at.button, '生成报价预览（不采用、不保存）').click().run()
-    assert not item(at.button, '采用此预览为草稿（仍未保存）').disabled
-    item(at.number_input, '固定边际成本参数（元/MWh发电）').set_value(281.0).run()
-    item(at.button, '仅保存该主体运行成本（不改报价）').click().run()
-    assert not at.exception
-    assert item(at.button, '采用此预览为草稿（仍未保存）').disabled
-    profile = yaml.safe_load((root / 'config/fixed_costs.yaml').read_text())
-    assert profile['units']['C1']['scalar_marginal_cost_yuan_per_mwh'] == 281
-    assert profile['units']['C2']['scalar_marginal_cost_yuan_per_mwh'] == 297
-    assert not {'sha256', 'available', 'input_file'} & set(profile)
-    assert all(p.read_bytes() == data for p, data in before.items())
-    assert (root / 'config/bid_cost_basis.yaml').read_bytes() == basis
-    fixed_bytes = (root / 'config/fixed_costs.yaml').read_bytes()
-    item(at.radio, '报价生成依据').set_value('seed策略平移（非成本依据）').run()
-    item(at.multiselect, '生成报价的主体').set_value(['C1']).run()
-    item(at.button, '生成报价预览（不采用、不保存）').click().run()
-    assert not at.exception
-    item(at.button, '采用此预览为草稿（仍未保存）').click().run()
-    assert not at.exception
-    assert (root / 'config/fixed_costs.yaml').read_bytes() == fixed_bytes
-    assert all(p.read_bytes() == data for p, data in before.items())
-
-
-def test_missing_fixed_costs_are_unknown_and_incomplete_save_is_blocked(scenario):
-    root = scenario.scenario_path('默认')
-    path = root / 'config/fixed_costs.yaml'
-    path.unlink(missing_ok=True)
-    at = AppTest.from_file(str(ROOT / 'app/pages/1_边界条件.py'), default_timeout=30).run()
-    assert not at.exception
-    assert item(at.number_input, '固定边际成本参数（元/MWh发电）').value is None
-    assert any('成本及利润为未知，不是0' in x.value for x in at.info)
-    item(at.text_area, '运行成本来源 / 假设说明').set_value('显式研究参数，非真实电厂').run()
-    item(at.button, '仅保存该主体运行成本（不改报价）').click().run()
-    assert not at.exception
-    assert any('运行成本未保存' in x.value for x in at.error)
+    assert any('模拟报价未生成' in x.value for x in at.error)
+    assert at.session_state[key] == initial
+    assert key + ':preview' not in at.session_state
     assert not path.exists()
+
+
+@pytest.mark.parametrize('change', ['manual', 'seed', 'fixed_cost', 'physical'])
+def test_preview_cannot_overwrite_newer_quote_or_parameter_changes(scenario, change):
+    at = open_app()
+    item(at.radio, '生成方式').set_value('随机策略').run()
+    item(at.button, '生成报价预览').click().run()
+    assert not at.exception
+    assert not item(at.button, '采用预览报价').disabled
+    if change == 'manual':
+        item(at.number_input, '空载报价（元/h）').set_value(item(at.number_input, '空载报价（元/h）').value + 1).run()
+    elif change == 'seed':
+        item(at.number_input, '报价随机种子').set_value(item(at.number_input, '报价随机种子').value + 1).run()
+    elif change == 'fixed_cost':
+        path = scenario.scenario_path('默认') / 'config/fixed_costs.yaml'
+        path.write_text(path.read_text() + '\n# external cost archive revision\n')
+        at.run()
+    else:
+        units = scenario.read_yaml('默认', 'units')
+        units['thermal'][0]['ramp'] += 1
+        scenario.write_yaml('默认', 'units', units)
+        at.run()
+    assert not at.exception
+    assert item(at.button, '采用预览报价').disabled
+    assert any('报价或参数已变化' in x.value for x in at.warning)
+
+
+def test_missing_fixed_cost_is_unknown_not_zero_and_no_cost_editor(scenario):
+    path = scenario.scenario_path('默认') / 'config/fixed_costs.yaml'
+    path.unlink(missing_ok=True)
+    at = open_app()
+    unknown = [x.value for x in at.dataframe if '数值' in x.value.columns
+               and x.value['数值'].astype(str).str.contains('未知').any()]
+    assert unknown
+    assert any('主体核算成本' in frame['参数'].tolist() for frame in unknown)
+    assert not any('固定边际成本' in x.label for x in at.number_input)
+    assert not path.exists()
+
+
+@pytest.mark.parametrize('cap', [None, 0.0, 1200.0])
+def test_hydro_outflow_limit_and_source_are_read_only_lossless(scenario, cap):
+    units = scenario.read_yaml('默认', 'units')
+    hydro = units['hydro'][0]
+    hydro['qout_max'] = cap
+    hydro['qout_max_source'] = '合成研究假设：仅供测试，非真实工程资料'
+    scenario.write_yaml('默认', 'units', units)
+    before = files(scenario.scenario_path('默认'))
+    at = open_app()
+    item(at.selectbox, '模拟机组').select(hydro['id']).run()
+    assert not at.exception
+    rows = [row for table in at.dataframe if {'参数', '数值'} <= set(table.value)
+            for row in table.value.to_dict('records')]
+    values = {row['参数']: row['数值'] for row in rows}
+    assert values['出库流量上限（m³/s）'] == ('未设置（null）' if cap is None else str(cap))
+    assert values['出库流量上限来源'] == hydro['qout_max_source']
+    assert not any('出库' in widget.label for widget in at.number_input)
+    assert files(scenario.scenario_path('默认')) == before
+
+
+def test_manual_replacement_requires_explicit_opt_in_and_acceptance(scenario):
+    at = open_app()
+    key = key_for(at)
+    amount = item(at.number_input, '空载报价（元/h）').value + 1
+    item(at.number_input, '空载报价（元/h）').set_value(amount).run()
+    manual = copy.deepcopy(at.session_state[key])
+    item(at.checkbox, '允许模拟报价替换该机组手工修改').check().run()
+    item(at.button, '生成报价预览').click().run()
+    assert not at.exception
+    assert at.session_state[key] == manual
+    assert not item(at.button, '采用预览报价').disabled
+    item(at.button, '采用预览报价').click().run()
+    assert not at.exception
+    assert at.session_state[key]['units']['C1'] != manual['units']['C1']
+    assert all(at.session_state[key]['units'][uid] == bid for uid, bid in manual['units'].items() if uid != 'C1')
+
+
+@pytest.mark.parametrize('source', ['saved_file', 'legacy_session'])
+@pytest.mark.parametrize('uid,field,label,invalid,valid', [
+    ('C1', 'noload_cost', '空载报价（元/h）', -1.0, 6000.0),
+    ('ES1', 'soc_end', '期末 SOC（0–1，日前硬约束）', 1.1, 0.5),
+])
+def test_out_of_range_existing_scalar_remains_visible_and_repairable(
+        scenario, source, uid, field, label, invalid, valid):
+    import json
+    from smm.config import load_config
+    from smm.bids import bid_dir
+    cfg = load_config(root=scenario.scenario_path('默认'))
+    path = max(bid_dir(cfg).glob('bids_v*.json'), key=lambda p: int(p.stem.split('_v')[-1]))
+    raw = json.loads(path.read_text())
+    raw['units'][uid][field] = invalid
+    at = AppTest.from_file(str(PAGE), default_timeout=60)
+    if source == 'saved_file':
+        path.write_text(json.dumps(raw, ensure_ascii=False))
+    else:
+        # Pre-existing former input-page drafts must be recoverable without
+        # new widget constraints throwing or silently normalizing their data.
+        legacy_key = f"draft_默认_{raw['version']}"
+        from smm.bids import fill_missing_bids
+        # Former pages stored the already-loaded complete bid, not raw archive JSON.
+        at.session_state[legacy_key] = fill_missing_bids(cfg, copy.deepcopy(raw))
+        at.session_state['quote_source:默认'] = legacy_key
+    at.session_state['quote_unit:默认'] = uid
+    before = files(scenario.scenario_path('默认'))
+    at.run()
+    assert not at.exception
+    assert item(at.number_input, label).value == invalid
+    assert item(at.button, '▶ 开始运行').disabled
+    assert not any(button.label == '另存报价版本' for button in at.button)
+    assert any('报价存在违规' in x.value for x in at.error)
+    assert files(scenario.scenario_path('默认')) == before
+    item(at.number_input, label).set_value(valid).run()
+    assert not at.exception
+    assert item(at.number_input, label).value == valid
+    assert not item(at.button, '▶ 开始运行').disabled
+    assert not any(button.label == '另存报价版本' for button in at.button)
+    assert files(scenario.scenario_path('默认')) == before
+    if source == 'legacy_session':
+        assert at.session_state[legacy_key]['units'][uid][field] == invalid
+
+
+def test_missing_saved_resources_are_named_without_rewriting_file(scenario):
+    import json
+    from smm.config import load_config
+    from smm.bids import bid_dir
+    cfg = load_config(root=scenario.scenario_path('默认'))
+    path = bid_dir(cfg) / 'bids_v2.json'
+    raw = json.loads(path.read_text())
+    del raw['units']['C2']
+    assert 'PS1' not in raw['units']  # This historical version predates PS1.
+    path.write_text(json.dumps(raw, ensure_ascii=False))
+    before = files(scenario.scenario_path('默认'))
+    at = open_app()
+    notice = next(x.value for x in at.warning if '原报价未包含以下主体' in x.value)
+    assert 'C2' in notice and 'PS1' in notice
+    assert '原报价文件未改写' in notice
+    assert not item(at.button, '▶ 开始运行').disabled
+    assert not any(button.label == '另存报价版本' for button in at.button)
+    assert files(scenario.scenario_path('默认')) == before
+
+
+@pytest.mark.parametrize('terminal_status', ['done', 'failed', 'stopped'])
+def test_timer_fragment_requests_full_refresh_and_unlocks_quote_controls(scenario, terminal_status):
+    import ast
+    from types import SimpleNamespace
+    from smm.live_runner import atomic_json
+    from common import run_status
+    directory = scenario.RUNS_DIR / '默认' / 'fixture'
+    directory.mkdir(parents=True)
+    meta = {'scenario': '默认', 'mode': 'full', 'status': 'running',
+            'started': '2026-11-03T00:00:00', 'periods': 96, 'stage': 'RT', 'bid_version': 2}
+    atomic_json(directory / 'meta.json', meta)
+    at = open_app()
+    for label in ('▶ 开始运行', '生成报价预览'):
+        assert item(at.button, label).disabled
+    assert item(at.number_input, '空载报价（元/h）').disabled
+    assert item(at.selectbox, '模拟机组').disabled
+
+    # Execute the actual monitor body as a timer fragment, retaining the old
+    # page-level active=True. A plain AppTest.run alone would hide this bug.
+    node = next(n for n in ast.parse(PAGE.read_text()).body
+                if isinstance(n, ast.FunctionDef) and n.name == 'monitor')
+    node.decorator_list = []
+    refreshes = []
+    class AppRefresh(Exception):
+        pass
+    def request_refresh(*, scope):
+        refreshes.append(scope)
+        raise AppRefresh()
+    env = {'sc': scenario, 'run_status': run_status, 'active': True,
+           'st': SimpleNamespace(rerun=request_refresh)}
+    exec(compile(ast.Module(body=[node], type_ignores=[]), str(PAGE), 'exec'), env)
+    meta['status'] = terminal_status
+    atomic_json(directory / 'meta.json', meta)
+    with pytest.raises(AppRefresh):
+        env['monitor']()
+    assert refreshes == ['app']
+    # Deliver only the app-level refresh explicitly requested by that timer.
+    at.run()
+    assert not at.exception
+    for label in ('▶ 开始运行', '生成报价预览'):
+        assert not item(at.button, label).disabled
+    assert not item(at.number_input, '空载报价（元/h）').disabled
+    assert not item(at.selectbox, '模拟机组').disabled

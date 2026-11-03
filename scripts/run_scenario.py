@@ -20,6 +20,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 from smm.live_runner import ProgressWriter, RunCancelled, atomic_json, freeze_inputs, completion_metadata, capture_provenance
 from smm.config import load_config  # noqa: E402
 from smm.scenario import new_run_dir, scenario_path  # noqa: E402
+from smm.process_control import file_lock, process_identity
 
 ap = argparse.ArgumentParser()
 ap.add_argument("--scenario", required=True)
@@ -35,20 +36,22 @@ d = Path(a.run_dir) if a.run_dir else new_run_dir(a.scenario, a.mode)
 d.mkdir(parents=True, exist_ok=True)
 meta_p = d / "meta.json"
 meta = dict(scenario=a.scenario, mode=a.mode, bid_version=a.bid_version, periods=a.periods,
-            started=datetime.now().isoformat(timespec="seconds"), status="running", stage="准备", pid=os.getpid(), pid_namespace=os.readlink("/proc/self/ns/pid"))
+            started=datetime.now().isoformat(timespec="seconds"), status="running", stage="准备", pid=os.getpid())
 if meta_p.exists():
     meta = {**json.loads(meta_p.read_text(encoding="utf-8")), **{k: v for k, v in meta.items() if k != "started"}}
 
 
 def put(**kw):
     meta.update(kw)
-    atomic_json(meta_p, meta)
+    with file_lock(d / ".meta.lock", blocking=True):
+        atomic_json(meta_p, meta)
 
 
-put()
 t0 = time.time()
-progress = ProgressWriter(d, total=a.periods or 96)
+progress = None
 try:
+    put(process_identity=process_identity())
+    progress = ProgressWriter(d, total=a.periods or 96)
     # 场景快照（便于复现）
     snap = d / "scenario_snapshot"
     if not snap.exists():
@@ -112,7 +115,8 @@ except RunCancelled as e:
     put(executed_periods=progress.state["executed_periods"],settled=False,settlement_calculated=False,settlement_scope="not_applicable",status="stopped", stage="用户取消（已执行前缀保留，未结算）", error=str(e), elapsed_s=round(time.time()-t0,1))
 except Exception as e:  # noqa: BLE001
     traceback.print_exc()
-    progress.state.update(phase="failed", settled=False, error=str(e)); progress.write()
-    put(executed_periods=progress.state["executed_periods"],settled=False,settlement_calculated=False,settlement_scope="not_applicable",status="failed", stage="失败", error=f"{type(e).__name__}: {e}", finished=datetime.now().isoformat(timespec="seconds"),
+    if progress is not None:
+        progress.state.update(phase="failed", settled=False, error=str(e)); progress.write()
+    put(executed_periods=progress.state["executed_periods"] if progress is not None else 0,settled=False,settlement_calculated=False,settlement_scope="not_applicable",status="failed", stage="失败", error=f"{type(e).__name__}: {e}", finished=datetime.now().isoformat(timespec="seconds"),
         elapsed_s=round(time.time() - t0, 1))
     sys.exit(1)

@@ -42,11 +42,10 @@ DIFF_SCALE = "RdBu_r"                               # 差值（以 0 为中心�
 TYPE_SYMBOL = {"coal": "square", "gas_ccgt": "diamond", "gas_gt": "diamond-open", "hydro": "hexagon", "wind": "triangle-up",
                "pv": "star", "tie": "pentagon", "storage": "cross",
                "pumped": "hourglass"}
-PAGES = [("主页.py", "主页", "🏠", "项目说明与流程"),
-         ("pages/1_边界条件.py", "边界条件", "🧩", "场景、负荷/新能源预测、报价、参数"),
-         ("pages/2_运行.py", "运行", "▶️", "后台运行日前 / 全流程"),
-         ("pages/3_结果.py", "结果", "📊", "电价、出力、储能、线路、结算"),
-         ("pages/4_场景对比.py", "场景对比", "⚖️", "两次运行结果对比")]
+PAGES = [("pages/2_运行.py", "报价模拟", "▶️", "选择机组、改报价、运行市场"),
+         ("pages/3_结果.py", "结果", "📊", "完整电价、出力、约束与结算"),
+         ("pages/4_场景对比.py", "场景对比", "⚖️", "对比两次报价模拟结果")]
+
 
 _CSS = """
 <style>
@@ -145,7 +144,7 @@ def show_fig(fig, key=None):
 def sidebar_nav():
     with st.sidebar:
         st.markdown('<div class="smm-brand">⚡ IEEE39 现货市场出清仿真</div>', unsafe_allow_html=True)
-        st.caption("日前 SCUC/SCED · 实时 15 min 滚动 · 仅电能量现货 · 不含调频和容量市场")
+        st.caption("单机改价 · 全市场模拟")
         for path, label, icon, helptext in PAGES:
             try:
                 st.page_link(path, label=label, icon=icon, help=helptext)
@@ -232,68 +231,112 @@ def scen_config(name: str):
 
 # ----------------------------------------------------------------------------- 运行管理
 def start_run(scenario: str, mode: str, bid_version: int | None, periods: int | None, bids=None, regulation=None) -> Path:
-    """Serialize UI launches and freeze inputs before spawning a worker."""
-    import fcntl
+    """Serialize launches; never report a spawned worker as an unstarted run."""
     from datetime import datetime
+    import traceback
     from smm.live_runner import atomic_json, freeze_inputs
-    requested=load_config(root=sc.scenario_path(scenario))
-    if requested.mode.get("regulation",{}).get("enabled",False) or (regulation or {}).get("enabled",False):
+    from smm.process_control import LaunchError, file_lock, process_identity
+    requested = load_config(root=sc.scenario_path(scenario))
+    if requested.mode.get("regulation", {}).get("enabled", False) or (regulation or {}).get("enabled", False):
         raise ValueError("当前仅支持纯电能量现货正常运行；调频场景仅作历史归档，不启动。")
-    sc.RUNS_DIR.mkdir(parents=True, exist_ok=True)
-    with open(sc.RUNS_DIR / ".launch.lock", "a") as lock:
-        fcntl.flock(lock, fcntl.LOCK_EX)
-        if any(run_status(m) in ("running", "starting", "cancelling") for m in sc.list_runs()):
-            raise RuntimeError("已有运行或取消请求正在处理；请等待完成，避免重复求解。")
-        d = sc.new_run_dir(scenario, mode)
-        meta = dict(scenario=scenario, mode=mode, bid_version=bid_version, periods=periods,
-                    status="starting", stage="冻结输入", started=datetime.now().isoformat(timespec="seconds"),
-                    pid_namespace=os.readlink("/proc/self/ns/pid"))
-        atomic_json(d / "meta.json", meta)
-        try:
+    d = None
+    meta = {}
+    spawned = False
+    stage = "检查启动环境"
+    try:
+        launcher = process_identity()
+        sc.RUNS_DIR.mkdir(parents=True, exist_ok=True)
+        stage = "取得启动锁"
+        with file_lock(sc.RUNS_DIR / ".launch.lock"):
+            stage = "检查已有运行"
+            if any(run_status(m) in ("running", "starting", "cancelling") for m in sc.list_runs()):
+                raise RuntimeError("已有运行或取消请求正在处理，或历史进程身份尚无法确认；请核对运行记录，避免重复求解。")
+            stage = "建立运行记录"
+            d = sc.new_run_dir(scenario, mode)
+            meta = dict(scenario=scenario, mode=mode, bid_version=bid_version, periods=periods,
+                        status="starting", stage="冻结输入", started=datetime.now().isoformat(timespec="seconds"),
+                        launcher_identity=launcher)
+            atomic_json(d / "meta.json", meta)
+            stage = "冻结并校验输入"
             freeze_inputs(sc.scenario_path(scenario), d, bids=bids, regulation=regulation)
             cmd = [sys.executable, "-u", str(ROOT / "scripts" / "run_scenario.py"), "--scenario", scenario,
                    "--mode", mode, "--run-dir", str(d)]
             if bid_version is not None: cmd += ["--bid-version", str(bid_version)]
             if periods: cmd += ["--periods", str(periods)]
+            stage = "创建后台进程"
             with open(d / "run.log", "w", encoding="utf-8") as log:
+                options = {"start_new_session": True} if os.name != "nt" else {}
+                worker_env = {**os.environ, "PYTHONIOENCODING": "utf-8", "PYTHONUTF8": "1"}
                 process = subprocess.Popen(cmd, cwd=ROOT, stdout=log, stderr=subprocess.STDOUT,
-                                           stdin=subprocess.DEVNULL, start_new_session=True)
-                (d/"worker.pid").write_text(str(process.pid),encoding="utf-8")
-        except Exception as exc:
-            atomic_json(d/"meta.json", {**meta,"status":"failed","error":str(exc)})
-            raise
+                                           stdin=subprocess.DEVNULL, env=worker_env, **options)
+                spawned = True
+                stage = "记录已启动进程"
+                # The child writes its own identity to meta.json. Never overwrite
+                # that file here: it may already contain a newer/terminal state.
+                try:
+                    identity = process_identity(process.pid)
+                except Exception:
+                    identity = None  # A very short-lived worker may already exit.
+                if identity is not None:
+                    atomic_json(d / "worker.json", identity)
+                (d / "worker.pid").write_text(str(process.pid), encoding="utf-8")
+                # If the child exited before an identity could be captured, its
+                # Popen handle still proves that this exact child has ended.
+                poll = getattr(process, "poll", None)
+                exit_code = poll() if identity is None and poll is not None else None
+                if exit_code is not None:
+                    with file_lock(d / ".meta.lock", blocking=True):
+                        current = json.loads((d / "meta.json").read_text(encoding="utf-8"))
+                        if current.get("status") in ("starting", "running"):
+                            current.update(status="failed", stage="后台进程启动后退出", exit_code=exit_code,
+                                           error=f"后台进程已退出（返回码 {exit_code}），请查看 run.log；未完成结算。")
+                            atomic_json(d / "meta.json", current)
         return d
-
-
-def pid_alive(pid) -> bool:
-    if not pid:
-        return False
-    try:
-        os.kill(int(pid), 0)
-    except OSError:
-        return False
-    try:   # 已结束但未回收的僵尸进程
-        stat = Path(f"/proc/{int(pid)}/stat").read_text()
-        return stat.split()[2] != "Z"
-    except OSError:
-        return True
+    except Exception as exc:
+        detail = traceback.format_exc()
+        if d is not None:
+            try:
+                (d / "launch_error.log").write_text(detail, encoding="utf-8")
+                if not spawned:
+                    atomic_json(d / "meta.json", {**meta, "status": "failed", "stage": stage,
+                                "error": f"{type(exc).__name__}: {exc}"})
+                else:
+                    atomic_json(d / "launch_warning.json", {"stage": stage, "error": str(exc)})
+            except OSError:
+                pass  # Preserve the original failure, including disk/permission errors.
+        raise LaunchError(stage, exc, directory=d, process_started=spawned) from exc
 
 
 def run_status(m: dict) -> str:
+    from smm.live_runner import atomic_json
+    from smm.process_control import file_lock, process_state
     s = m.get("status", "running")
-    d=Path(m["dir"])
-    pid=m.get("pid")
-    if not pid and (d/"worker.pid").exists():
-        pid=int((d/"worker.pid").read_text())
-    if (s in ("running", "starting") and pid
-            and m.get("pid_namespace") == os.readlink("/proc/self/ns/pid") and not pid_alive(pid)):
-        from smm.live_runner import atomic_json
-        meta_p=d/"meta.json";cur=json.loads(meta_p.read_text(encoding="utf-8"))
-        s=cur.get("status","running")
-        if s in ("running","starting"):
-            s="failed";cur.update(status=s,stage="进程意外退出",error="后台进程退出，保留执行前缀；未完成结算")
-            atomic_json(meta_p,cur)
-    if s in ("running","starting") and (d/"cancel.request").exists(): return "cancelling"
+    if s not in ("running", "starting", "cancelling"):
+        return s
+    d = Path(m["dir"])
+    identity = m.get("process_identity")
+    if identity is None:
+        try:
+            identity = json.loads((d / "worker.json").read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            pass
+    # Bare legacy PIDs, foreign namespaces, incomplete launches and access denied
+    # are unknown. Keep their reservation instead of risking a second solve.
+    if process_state(identity) == "dead":
+        try:
+            with file_lock(d / ".meta.lock"):
+                meta_p = d / "meta.json"
+                cur = json.loads(meta_p.read_text(encoding="utf-8"))
+                s = cur.get("status", "running")
+                latest_identity = cur.get("process_identity", identity)
+                if s in ("running", "starting", "cancelling") and process_state(latest_identity) == "dead":
+                    cur.update(status="failed", stage="进程意外退出", error="后台进程退出，保留执行前缀；未完成结算")
+                    atomic_json(meta_p, cur)
+                    s = "failed"
+        except (OSError, ValueError, RuntimeError):
+            pass  # Cannot safely update now; preserve the reservation and retry later.
+    if s in ("running", "starting") and (d / "cancel.request").exists():
+        return "cancelling"
     return s
 
 

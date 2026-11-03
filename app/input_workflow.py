@@ -48,6 +48,29 @@ def business_error(summary, exc, hint=None):
         st.code(str(exc), language=None)
 
 
+def launch_error(exc):
+    """Explain the actual launch phase without guessing an input/solver cause."""
+    from smm.process_control import LaunchError
+    import traceback
+    started = isinstance(exc, LaunchError) and exc.process_started
+    cause = exc.cause if isinstance(exc, LaunchError) else exc
+    if started:
+        summary = "后台进程已创建，但启动记录未完整确认。请查看下方运行状态与日志，暂勿重复启动。"
+    elif isinstance(cause, (PermissionError, FileNotFoundError)):
+        summary = "启动前的文件或目录操作失败，请核对下方路径及访问权限。"
+    elif isinstance(cause, (ImportError, ModuleNotFoundError)) or "依赖" in str(cause):
+        summary = "启动环境不完整，请核对当前 Python 环境和项目依赖。"
+    elif isinstance(cause, (ValueError, TypeError, KeyError)):
+        summary = "启动前输入校验未通过，请按技术详情修正对应内容。"
+    else:
+        summary = "启动请求未完成，请按下方具体原因处理后再试。"
+    st.error(summary)
+    with st.expander("技术详情（启动阶段与原始诊断）", expanded=True):
+        st.code("".join(traceback.format_exception(type(exc), exc, exc.__traceback__)), language=None)
+        if isinstance(exc, LaunchError) and exc.directory is not None:
+            st.caption(f"本次运行记录：{exc.directory}；启动诊断：launch_error.log；后台日志：run.log。")
+
+
 def _finite(value):
     return isinstance(value, (int, float)) and not isinstance(value, bool) and math.isfinite(value)
 

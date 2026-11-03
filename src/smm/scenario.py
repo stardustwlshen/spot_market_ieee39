@@ -2,6 +2,7 @@
 
 目录布局与仓库根目录一致，因此 load_config(root=场景目录) 后现有流程无需改动：
   scenarios/<名称>/config/{base,units,modes}.yaml
+  scenarios/<名称>/config/{fixed_costs,bid_cost_basis}.yaml （可选成本档案）
   scenarios/<名称>/data/case39/{buses,branches}.csv
   scenarios/<名称>/data/profile_overrides.csv      （可选：负荷/风光 96 点覆盖）
   scenarios/<名称>/bids/<日期>/MKT/bids_v*.json
@@ -42,9 +43,16 @@ def list_scenarios() -> list[str]:
 
 
 def _copy_tree(src_root: Path, dst: Path):
-    (dst / "config").mkdir(parents=True, exist_ok=True)
+    # Claim a new destination atomically, including concurrent create requests.
+    # Never merge into or overwrite an existing scene.
+    dst.mkdir(parents=True, exist_ok=False)
+    (dst / "config").mkdir()
     for f in ("base.yaml", "units.yaml", "modes.yaml"):
         shutil.copy2(src_root / "config" / f, dst / "config" / f)
+    for f in ("fixed_costs.yaml", "bid_cost_basis.yaml"):
+        source = src_root / "config" / f
+        if source.exists():
+            shutil.copy2(source, dst / "config" / f)
     shutil.copytree(src_root / "data" / "case39", dst / "data" / "case39", dirs_exist_ok=True)
     ov = src_root / "data" / "profile_overrides.csv"
     if ov.exists():
