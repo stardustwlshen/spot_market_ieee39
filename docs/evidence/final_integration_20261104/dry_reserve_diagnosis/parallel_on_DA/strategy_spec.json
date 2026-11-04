@@ -1,0 +1,96 @@
+{
+  "source_archive": "/workspace/scratch/42c5fe32dad0/ieee39-final-evidence/pv2152_dry_lowre_highload_full96",
+  "source_code": "/workspace/scratch/42c5fe32dad0/ieee39-dry-reserve-diagnosis",
+  "source_code_commit": "c1f829a",
+  "baseline_core_commit": "50223f4",
+  "scope": "DA only; no extra reserve, no physical/economic/market changes; no previous solution supplied",
+  "runtime_solver": {
+    "name": "highs",
+    "mip_rel_gap": 0.01,
+    "time_limit_s": 600,
+    "threads": 4,
+    "storage_binary": true,
+    "highs_extra": {
+      "parallel": "on"
+    },
+    "tighten": false,
+    "warm_start": false,
+    "commit_step_periods": 1,
+    "log": true
+  },
+  "strategy_changes": {
+    "parallel": "on"
+  },
+  "reporting_changes": {
+    "log": true
+  },
+  "input_hashes": {
+    "bids/2026-07-15/MKT/bids_v1.csv": "14ef8631bc77c9da61808066dab38325f11f4f6b83289bc992ec3c812b0fb606",
+    "bids/2026-07-15/MKT/bids_v1.json": "fd80396e9b9daf0feed18e9fe5b7728f3edd8d2ef0396571bce5e38463aab3b7",
+    "bids/2026-07-15/MKT/bids_v2.csv": "56a602765e905694593259152b309e693947e2a1565178a0fef4ff23d8a01483",
+    "bids/2026-07-15/MKT/bids_v2.json": "f03aee406a5433d9f6687efc0e6022ca4a29c164f4182254f7251271a7c6971a",
+    "bids/2026-07-15/MKT/bids_v3.csv": "5a6797ece2bb19475353738a1d79a6bca7d64d84e2a1413ec2f6fd11b50d27ef",
+    "bids/2026-07-15/MKT/bids_v3.json": "0229d12cc29759130f5fc698fefee16edb023dfdd7a20397ad086d5916365cce",
+    "config/base.yaml": "73c96a329f056679bf482681df5819fbc4c561bf206e583c0f8e95b187677d6b",
+    "config/bid_cost_basis.yaml": "ffd49fd90cc133c6d60aba1f0ae48cef9430853090d1f5485b0b7c5c6093ea1b",
+    "config/fixed_costs.yaml": "e982db8e7888a309986a5b1824a7954ff29616a85e57fbde4a0df6c78d2fa332",
+    "config/modes.yaml": "936fc91a91d4ecfb3d2d8d0084f597513ab852435c497fe0075da39973a55ffc",
+    "config/units.yaml": "977e6503af68003acf3017be99da1a8adeef27803c799ca2bdf8a3e30ddd89b3",
+    "data/case39/branches.csv": "3770230cf8a851cdfc694a049d524fade7e5703d4a313357e74b1afc9302a471",
+    "data/case39/buses.csv": "cf865656bcf1417fe3c470c0529f96ec2be18601f7ef0a6b4a6d084a105e6b60",
+    "data/profile_overrides.csv": "97c030bb275dc53ced4c42ad2103a1c942ac5b056222acadc04bc9b09e931251",
+    "data/profiles/profiles_2026-07-15_wet.csv": "81ea52965267884c79798beb942ea4b8539d42c3e1b061ca850befee7cdf4538"
+  },
+  "source_input_hashes": {
+    "bids/2026-07-15/MKT/bids_v1.csv": "14ef8631bc77c9da61808066dab38325f11f4f6b83289bc992ec3c812b0fb606",
+    "bids/2026-07-15/MKT/bids_v1.json": "fd80396e9b9daf0feed18e9fe5b7728f3edd8d2ef0396571bce5e38463aab3b7",
+    "bids/2026-07-15/MKT/bids_v2.csv": "56a602765e905694593259152b309e693947e2a1565178a0fef4ff23d8a01483",
+    "bids/2026-07-15/MKT/bids_v2.json": "f03aee406a5433d9f6687efc0e6022ca4a29c164f4182254f7251271a7c6971a",
+    "bids/2026-07-15/MKT/bids_v3.csv": "5a6797ece2bb19475353738a1d79a6bca7d64d84e2a1413ec2f6fd11b50d27ef",
+    "bids/2026-07-15/MKT/bids_v3.json": "0229d12cc29759130f5fc698fefee16edb023dfdd7a20397ad086d5916365cce",
+    "config/base.yaml": "73c96a329f056679bf482681df5819fbc4c561bf206e583c0f8e95b187677d6b",
+    "config/bid_cost_basis.yaml": "ffd49fd90cc133c6d60aba1f0ae48cef9430853090d1f5485b0b7c5c6093ea1b",
+    "config/fixed_costs.yaml": "e982db8e7888a309986a5b1824a7954ff29616a85e57fbde4a0df6c78d2fa332",
+    "config/modes.yaml": "936fc91a91d4ecfb3d2d8d0084f597513ab852435c497fe0075da39973a55ffc",
+    "config/units.yaml": "977e6503af68003acf3017be99da1a8adeef27803c799ca2bdf8a3e30ddd89b3",
+    "data/case39/branches.csv": "3770230cf8a851cdfc694a049d524fade7e5703d4a313357e74b1afc9302a471",
+    "data/case39/buses.csv": "cf865656bcf1417fe3c470c0529f96ec2be18601f7ef0a6b4a6d084a105e6b60",
+    "data/profile_overrides.csv": "97c030bb275dc53ced4c42ad2103a1c942ac5b056222acadc04bc9b09e931251",
+    "data/profiles/profiles_2026-07-15_wet.csv": "81ea52965267884c79798beb942ea4b8539d42c3e1b061ca850befee7cdf4538"
+  },
+  "profiles_source_sha256": "3025be5d64a2f81be92f801061b5dbe2ec6c19f7f9d0728e3664533614df59c7",
+  "resolved_bids_source_sha256": "ba466b1b1ba30cf3af82e7dc9b363bcccee7ef5b14b21f5b3a122a7c2bdb3261",
+  "exact_original_profile_csv_reproduced": true,
+  "model_counts": {
+    "variables": 27840,
+    "unfixed_integer_variables": 2112,
+    "constraints": 33080
+  },
+  "original_model_sha256": "4d55b470ccebf4955a10d82be1371bbbf424ea47112687274032b9cb204fd163",
+  "candidate_model_sha256": "4d55b470ccebf4955a10d82be1371bbbf424ea47112687274032b9cb204fd163",
+  "identical_model_lp_bytes": true,
+  "highs_version": "1.15.1",
+  "option_verification": {
+    "parallel": {
+      "default": "choose",
+      "requested": "on",
+      "readback": "on"
+    },
+    "threads": {
+      "default": 0,
+      "requested": 4,
+      "readback": 4
+    },
+    "mip_rel_gap": {
+      "default": 0.0001,
+      "requested": 0.01,
+      "readback": 0.01
+    },
+    "time_limit": {
+      "default": "inf",
+      "requested": 600.0,
+      "readback": 600.0
+    }
+  },
+  "coordination_note": "Prepared only; no solver was started at this stage."
+}

@@ -1,0 +1,5 @@
+run,rt_periods,da_termination,da_gap,rt_max_gap,da_shed_mwh,rt_shed_mwh,rt_line_overload_max_mw,rt_up_reserve_short_max_mw,rt_up_reserve_short_integral_mwh,rt_wind_curtail_mwh,rt_pv_curtail_mwh,actual_wind_pv_fraction,storage_anchor_max_mwh,pumped_anchor_max_1e4m3,archive_checks_passed,all_market_rules_no_slack,source_unchanged
+pv2152_baseline_full96,96,optimal,0.0099214765025751,0.0096946127975815,0.0,0.0,0.0,0.0,0.0,602.6961249999999,499.47497500000003,0.34717865342757454,0.0,0.0,True,True,True
+final_c1f829a_dry_nominal_full96,96,optimal,0.0010502429604219,0.0087060468471998,0.0,0.0,0.0,0.0,0.0,520.6356000000001,412.191725,0.3490938745984385,0.0,0.0,True,True,True
+pv2152_dry_lowre_highload_full96,96,maxTimeLimit,0.0197937150380379,0.0099846018913427,0.0,0.0,0.0,237.2283,1105.803975,0.0,0.0,0.2615591621328148,0.0,0.0,True,False,True
+pv2152_wet_highre_lowload_full96,96,optimal,0.0084351488085244,0.0099884045419921,0.0,0.0,0.0,0.0,0.0,3565.488875,4087.254075,0.3833584323899289,0.0,0.0,True,True,True

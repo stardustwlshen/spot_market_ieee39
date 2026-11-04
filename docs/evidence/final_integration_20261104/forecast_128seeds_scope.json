@@ -1,0 +1,13 @@
+{
+  "seed_count": 128,
+  "start_seed": 20260715,
+  "last_seed": 20260842,
+  "base_root": "/workspace/scratch/42c5fe32dad0/ieee39-model-acceptance",
+  "scope": "Generated synthetic inputs only; no overrides, bids or market clearing used.",
+  "limits": [
+    "Not a real-data forecasting benchmark.",
+    "Population sigma is not an enforced daily nRMSE.",
+    "V2 stages share a nested error path; perfect cross-stage correlation holds before clipping.",
+    "Both models construct joint offline scenarios conditional on simulated truth."
+  ]
+}

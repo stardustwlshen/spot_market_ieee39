@@ -154,6 +154,7 @@ def test_rolling_uses_one_unchanged_sced_even_with_slack(monkeypatch, anchor):
     if anchor:
         original = load_config()
         storage = copy.deepcopy(original.units['storage'][0])
+        storage['bus'] = 2  # The synthetic network has buses 1/2, not IEEE39 bus19.
         c.cfg.units['storage'] = [storage]
         c.bids['units'][storage['id']] = default_bids(original)['units'][storage['id']]
         c.terminal = {'storage_anchor': {storage['id']: [(0, 10000., 10000.)]},

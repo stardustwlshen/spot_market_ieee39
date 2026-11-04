@@ -22,11 +22,14 @@ REVENUE_COLUMNS=('da_cash_revenue_yuan','rt_deviation_cash_revenue_yuan','cash_r
 def load_profile(root):
     path=Path(root)/'config'/'fixed_costs.yaml'
     if not path.exists():
-        return dict(available=False,missing_reason='explicit fixed_costs.yaml absent; no bid/worksheet fallback',units={},sha256=None)
-    content=path.read_bytes();profile=yaml.safe_load(content)
-    if not isinstance(profile,dict) or not isinstance(profile.get('units'),dict):
-        raise ValueError('fixed_costs.yaml must contain explicit units mapping')
-    return dict(profile,available=True,sha256=hashlib.sha256(content).hexdigest(),input_file='config/fixed_costs.yaml')
+        profile=dict(available=False,missing_reason='explicit fixed_costs.yaml absent; no bid/worksheet fallback',units={},sha256=None)
+    else:
+        content=path.read_bytes();profile=yaml.safe_load(content)
+        if not isinstance(profile,dict) or not isinstance(profile.get('units'),dict):
+            raise ValueError('fixed_costs.yaml must contain explicit units mapping')
+        profile=dict(profile,available=True,sha256=hashlib.sha256(content).hexdigest(),input_file='config/fixed_costs.yaml')
+    from .research_cost_setup import merge_fixed_profile
+    return merge_fixed_profile(root,profile)
 
 
 def _parameters(profile,unit,typ):
@@ -124,6 +127,7 @@ def analyze(res):
                 raise ValueError(f'non-finite actual power/state/inventory for {uid} period {t}')
             revenue=float(cash.total.sum())
             row=dict(unit=uid,type=typ,period=t,energy_generated_or_discharged_mwh=p*dt,
+                cost_source_kind=profile.get('unit_sources',{}).get(uid,{}).get('source_kind',profile.get('source_kind','explicit_assumption_status_not_supplied')),
                 da_cash_revenue_yuan=float(cash.da_amount.sum()),rt_deviation_cash_revenue_yuan=float(cash.rt_amount.sum()),
                 cash_revenue_yuan=revenue,charging_settlement_yuan=float(cash.loc[cash.entity==charge,'total'].sum()) if typ in ('storage','pumped') else 0.,
                 cost_available=params is not None,cost_missing_reason=reason,
@@ -142,6 +146,8 @@ def analyze(res):
     for (uid,typ),group in period.groupby(['unit','type'],sort=False):
         valid=bool(group.cost_available.all());g=group.sort_values('period')
         row=dict(unit=uid,type=typ,cost_available=valid,cost_missing_reason='; '.join(sorted(set(group.cost_missing_reason)-{''})))
+        kinds=set(group.cost_source_kind)
+        row['cost_source_kind']=next(iter(kinds)) if len(kinds)==1 else 'mixed_explicit_and_synthetic_costs'
         row.update({key:float(group[key].sum()) for key in (*REVENUE_COLUMNS,'energy_generated_or_discharged_mwh','startup_count','pump_startup_count')})
         row.update({key:float(group[key].sum()) if valid else None for key in COST_COLUMNS})
         start,end=g.iloc[0].inventory_start,g.iloc[-1].inventory_end
@@ -151,6 +157,7 @@ def analyze(res):
     for typ,g in by_unit.groupby('type',sort=False):
         valid=bool(g.cost_available.all())
         types.append(dict(type=typ,unit_count=len(g),cost_available=valid,
+            cost_source_kind=g.cost_source_kind.iloc[0] if g.cost_source_kind.nunique()==1 else 'mixed_explicit_and_synthetic_costs',
             **{key:float(g[key].sum()) for key in REVENUE_COLUMNS},
             **{key:float(g[key].sum()) if valid else None for key in COST_COLUMNS}))
     complete=bool(len(by_unit) and by_unit.cost_available.all())
@@ -161,9 +168,8 @@ def analyze(res):
         simulated_operating_profit_yuan=float(by_unit.simulated_operating_profit_yuan.sum()) if complete else None,
         revenue_scope='DA + RT deviation signed net energy settlement; charging already included',
         exclusions='CAPEX,financing,tax,capacity,AGC,compensation,operator penalties,water opportunity cost,inventory valuation',
-        scope='executed prefix only; ending inventories separately disclosed, not a full-day claim')
+        scope='actual executed RT periods only; see completed_scope for full-day status; ending inventories separately disclosed')
     by_type=pd.DataFrame(types)
     for frame in (period,by_unit,by_type):
         frame['cost_profile_sha256']=profile['sha256']
-        frame['cost_source_kind']=profile.get('source_kind','explicit_assumption_status_not_supplied')
     return dict(profile=profile,summary=summary,by_period=period,by_unit=by_unit,by_type=by_type)

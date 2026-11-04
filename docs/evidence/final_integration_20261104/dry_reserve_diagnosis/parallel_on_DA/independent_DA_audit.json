@@ -1,0 +1,25 @@
+{
+  "scope": "DA-only archive numerical and hash checks; no RT96 or contingency certificate",
+  "checks": {
+    "full96_DA_periods": true,
+    "balance_within_0p001_MW": true,
+    "no_line_overload_over_0p001_MW": true,
+    "no_DA_shed_surplus_reserve_shortage": true,
+    "same_original_profiles_csv_bytes": true,
+    "same_model_LP_sha256": true,
+    "frozen_input_hashes_match": true,
+    "all_manifest_file_hashes_match": true,
+    "requested_gap_1percent_met": true,
+    "SCED_integer_mismatch_zero": true
+  },
+  "all_checks_passed": true,
+  "metrics": {
+    "max_balance_residual_mw": 0.00020000000040454324,
+    "max_line_overload_mw": 0.0,
+    "scuc_gap": 0.006482497563548196,
+    "scuc_time_s": 228.70110342999942,
+    "objective": 7805892.5564852655,
+    "best_bound": 7755290.877006531
+  },
+  "native_log_confirmation": "Thread count 4 (of 9 threads). Using 7 max workers. Parallel search on; row violation0, bound violation0, integer violation5.59863266858e-12."
+}

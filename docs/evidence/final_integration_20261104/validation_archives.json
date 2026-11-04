@@ -1,0 +1,27 @@
+[
+  {
+    "file": "IEEE39_baseline_outputs_20261104.tar.gz",
+    "bytes": 19512348,
+    "sha256": "3c5a7059aafd07b6910cecd33216d080126da64a2109b310475d8a132d8c4a22"
+  },
+  {
+    "file": "IEEE39_boundary_outputs_20261104.tar.gz",
+    "bytes": 19210370,
+    "sha256": "1736db977fc55ed631bfbd78ce84541fe9354c49ea291c763f7867e94bb37d86"
+  },
+  {
+    "file": "IEEE39_reserve_counterfactuals_20261104.tar.gz",
+    "bytes": 12545750,
+    "sha256": "b0437af0a83e2c605afffbb9ba50742ac8633650665792ccce492a53715f6070"
+  },
+  {
+    "file": "IEEE39_parallel_strategy_outputs_20261104.tar.gz",
+    "bytes": 7373130,
+    "sha256": "2ea79eebcfc7fa0289f2476b973bbea2732e58d707782a1a86840b1d7d5b9023"
+  },
+  {
+    "file": "IEEE39_dynamic_reserve_outputs_20261104.tar.gz",
+    "bytes": 20030831,
+    "sha256": "d57be2db2dcd278bfb1bf18a5300646fabd16f91e57134e281007c5897993b9a"
+  }
+]

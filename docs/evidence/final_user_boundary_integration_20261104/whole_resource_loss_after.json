@@ -1,0 +1,26 @@
+{
+  "cases": [
+    {
+      "table": "rt_units",
+      "deleted_unit": "PV1",
+      "missing_rows": 96,
+      "accepted_incomplete": false,
+      "error": "日前与实时出力的主体全集不一致；实时缺少：PV1"
+    },
+    {
+      "table": "da_unit_awards",
+      "deleted_unit": "PV1",
+      "missing_rows": 96,
+      "accepted_incomplete": false,
+      "error": "日前机组出力缺少本次冻结启用主体：PV1"
+    },
+    {
+      "table": "rt_storage",
+      "deleted_unit": "ES1",
+      "missing_rows": 96,
+      "accepted_incomplete": false,
+      "error": "rt_storage.csv 主体全集与本次保存的日前出力不一致"
+    }
+  ],
+  "archive_files_unchanged": 131
+}

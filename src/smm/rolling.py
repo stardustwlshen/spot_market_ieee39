@@ -6,7 +6,8 @@
     - 水电默认固定日前稳定区台数，窗口内出力可调；实际库容起步，窗口末库容沿同钟点日前值；显式新研究tracking_policy采用带罚软跟踪，旧配置保留硬等式；
     - 储能按 realtime.storage.mode：
         sced_anchor（默认）：沿用日前封存报价进入 SCED，初值 = 实际 SOC，锚点约束跟随日前 SOC：
-            anchor=hourly_eq（默认，B2）：研究整点带罚软锚点，目标 E_RT = E_DA；
+            anchor=two_hour_eq（默认）：北京时间02/04/…/24点末状态硬等于日前；
+            anchor=hourly_eq（历史B2）：整点带罚软锚点；
             anchor=window_end_pct（可选，B1）：窗口末带罚软区间 (1±x)E_DA；
         fixed_da：执行日前出清充放电曲线，价格接受者（山西第九十五条等）；
     - 固定整数 → LP 求 LMP；只执行首时段，SOC/库容/机组状态滚入下一时段。
@@ -25,6 +26,7 @@ import pyomo.environ as pyo
 from . import scuc
 from .case import DACase, reserve_requirement
 from .forecast import forecast_view
+from .storage_anchors import anchor_periods, exact_target, validate_anchor_config, policy_metadata, validate_actual_state
 
 V = pyo.value
 
@@ -117,13 +119,17 @@ def make_window_case(da_case: DACase, cfg, t0: int, t1: int, issue_t: int, first
                      fixed: dict, terminal: dict, stage: str) -> DACase:
     """构造 [t0, t1) 的滚动窗口算例：预测取 issue_t 时刻的滚动预测，初值取实际状态。"""
     net, prof = da_case.net, da_case.profiles
+    # Recheck mutable source arrays before forecast clipping can hide corruption.
+    from .forecast import validate_profiles
+    validate_profiles(cfg, prof)
     per = range(t0, t1)
     load = forecast_view(prof, "load", issue_t, per, first_actual)
-    load_bus = {b: net.load_share[b] * load for b in net.buses if net.load_share[b] > 0}
+    from .fixed_load import nodal_demand, tie_mode
+    load_bus, fixed_load = nodal_demand(cfg, net, prof, load, periods=per, issue_t=issue_t, first_actual=first_actual)
     ren_fc = {r["id"]: np.minimum(forecast_view(prof, r["id"], issue_t, per, first_actual), r["cap"])
               for r in cfg.units["renewable"]}
     tie = {k: (b, np.asarray(s)[t0:t1]) for k, (b, s) in da_case.tie.items()}
-    up, dn, info = reserve_requirement(cfg, load, sum(ren_fc.values()))
+    up, dn, info = reserve_requirement(cfg, sum(load_bus.values()) if tie_mode(cfg) == "fixed_load" else load, sum(ren_fc.values()))
     e_day = {h["id"]: float(h["seasons"][cfg.base["season"]]["e_day"]) - state.hydro_used[h["id"]]
              for h in cfg.units["hydro"] if h["seasons"][cfg.base["season"]].get("e_day") is not None}
     expected_hydro = {h["id"] for h in cfg.units["hydro"]}
@@ -136,7 +142,7 @@ def make_window_case(da_case: DACase, cfg, t0: int, t1: int, issue_t: int, first
                 pumped=copy.deepcopy(state.pumped), pumped_used=copy.deepcopy(state.pumped_used),
                 pumped_hist=copy.deepcopy(state.pumped_hist), hydro_hist={h: a for h, a in state.hydro_hist.items()})
     return DACase(cfg, net, prof, da_case.bids, load_bus, ren_fc, tie, up, dn, info,
-                  T=t1 - t0, t0=t0, init=init, fixed=fixed, hydro_e_budget=e_day, terminal=terminal, stage=stage)
+                  T=t1 - t0, t0=t0, init=init, fixed=fixed, hydro_e_budget=e_day, terminal=terminal, stage=stage, fixed_load=fixed_load)
 
 
 # ----------------------------------------------------------------------------- 求解与快照
@@ -207,12 +213,16 @@ def snapshot(m) -> dict:
         inj={n: a(lambda t, n=n: m.inj[n, t]) for n in md.buses},
         flow={l: a(lambda t, l=l: m.flow[l, t]) for l in md.lines},
         line_slack=float(max(V(m.sl[l, t]) for l in m.L for t in rT)),
+        line_slack_by_line={l: a(lambda t, l=l: m.sl[l, t]) for l in md.lines},
         load_bus={n: np.asarray(case.load_bus.get(n, np.zeros(T)), float) for n in md.buses},
+        fixed_load_bus={n: sum((np.asarray(v, float) for b, v in case.fixed_load.values() if b == n), np.zeros(T)) for n in md.buses},
         ren_fc={w: np.asarray(v, float) for w, v in case.ren_fc.items()},
-        # Diagnostics only: retain each soft anchor and its corresponding slacks.
+        # Diagnostics only: retain each hard/soft anchor and its corresponding slacks.
         # E is MWh; Vu is 1e4 m3. These records never change optimization or dispatch.
         anchors=[dict(unit=m._anchors[i][0], period=m._anchors[i][1],
-                      kind=m._anchors[i][4], lower=V(m.A_lo[i]), upper=V(m.A_hi[i]),
+                      kind=m._anchors[i][4], hard=i in getattr(m, "_hard_anchor_indices", ()),
+                      state_end_hour=(case.t0 + m._anchors[i][1] + 1) * md.dt,
+                      lower=V(m.A_lo[i]), upper=V(m.A_hi[i]),
                       value=V(getattr(m, m._anchors[i][4])[m._anchors[i][0], m._anchors[i][1]]),
                       slack_up=V(m.sA_up[i]), slack_dn=V(m.sA_dn[i])) for i in m.A],
     )
@@ -222,6 +232,8 @@ def snapshot(m) -> dict:
     from .results import reserve_snapshot, tracking_results
     sn["reserve"] = reserve_snapshot(m)
     sn["tracking"] = tracking_results(m).to_dict("records")
+    from .asset_reachability import diagnostics as reachability_diagnostics
+    sn["asset_reachability"] = reachability_diagnostics(m)
     return sn
 
 
@@ -300,19 +312,24 @@ def storage_anchors(cfg, E_da: dict, t: int, t1: int) -> dict:
     """实时窗口 [t, t1) 的储能 SOC 锚点：{s: [(窗口内相对时段, lo, hi)]}（MWh）。"""
     sc = cfg.mode["realtime"]["storage"]
     kind = sc.get("anchor", "hourly_eq")
-    x = float(sc.get("x", 0.05))
+    x = float(sc.get("x", 0.05)) if kind == "window_end_pct" else 0.
+    ks = anchor_periods(cfg, t, t1)
     out = {}
     for d in cfg.units["storage"]:
         s = d["id"]
         emin, emax = d["soc_min"] * d["ecap"], d["soc_max"] * d["ecap"]
         if kind == "window_end_pct":
             ks, xx = [t1 - 1], x
-        elif kind == "hourly_eq":
-            ks, xx = [k for k in range(t, t1) if (k + 1) % 4 == 0], 0.0
+        elif kind in ("hourly_eq", "two_hour_eq"):
+            xx = 0.0
         else:
             raise ValueError(f"未知锚点方式 {kind}")
         lst = []
         for k in ks:
+            if kind == "two_hour_eq":
+                e = exact_target(E_da, s, k, emin, emax)
+                lst.append((k - t, e, e))
+                continue
             e = float(E_da[s][k])
             lo, hi = max(emin, (1 - xx) * e), min(emax, (1 + xx) * e)   # 在满足 SOC 上下限的前提下浮动
             lst.append((k - t, lo, max(lo, hi)))
@@ -324,22 +341,27 @@ def pumped_anchors(cfg, Vu_da: dict, t: int, t1: int) -> dict:
     """实时窗口 [t, t1) 的抽蓄上库库容锚点（万m³），规则与储能 SOC 锚点相同（realtime.storage.anchor / x）。"""
     sc = cfg.mode["realtime"]["storage"]
     kind = sc.get("anchor", "hourly_eq")
-    x = float(sc.get("x", 0.05))
+    x = float(sc.get("x", 0.05)) if kind == "window_end_pct" else 0.
+    ks = anchor_periods(cfg, t, t1)
     out = {}
     for d in cfg.units.get("pumped", []):
         p = d["id"]
-        if p not in Vu_da:
+        if p not in Vu_da and kind != "two_hour_eq":
             continue
         vlo = max(float(d["vup_min"]), float(d["v_total"]) - float(d["vdn_max"]))
         vhi = min(float(d["vup_max"]), float(d["v_total"]) - float(d["vdn_min"]))
         if kind == "window_end_pct":
             ks, xx = [t1 - 1], x
-        elif kind == "hourly_eq":
-            ks, xx = [k for k in range(t, t1) if (k + 1) % 4 == 0], 0.0
+        elif kind in ("hourly_eq", "two_hour_eq"):
+            xx = 0.0
         else:
             raise ValueError(f"未知锚点方式 {kind}")
         lst = []
         for k in ks:
+            if kind == "two_hour_eq":
+                v = exact_target(Vu_da, p, k, vlo, vhi)
+                lst.append((k - t, v, v))
+                continue
             v = float(Vu_da[p][k])
             lo, hi = max(vlo, (1 - xx) * v), min(vhi, (1 + xx) * v)
             lst.append((k - t, lo, max(lo, hi)))
@@ -361,6 +383,8 @@ def run_intraday_round(da_case, da_plan, cfg, state: SysState, tau: int, log=pri
     sc = cfg.mode["realtime"]["storage"]
     term = dict(hydro_vend=True, storage_anchor=storage_anchors(cfg, da_plan["E"], tau, T),
                 anchor_penalty=float(sc.get("anchor_penalty", 1e5)))
+    if sc.get("anchor") == "two_hour_eq":
+        term["storage_anchor_hard"] = True
     if da_plan.get("Vu"):
         term["pumped_anchor"] = pumped_anchors(cfg, da_plan["Vu"], tau, T)
     c2 = _sub_cfg(cfg, mip_rel_gap=ic.get("mip_rel_gap", 0.005), time_limit_s=ic.get("time_limit_s", 60),
@@ -378,6 +402,11 @@ def run_rt_period(da_case, da_plan: dict, plan: dict, cfg, state: SysState, t: i
     """时段 t 的实时 SCED：窗口 [t, t+H)（日末截断），首时段实际值。
     da_plan = 日前出清（全天），plan = 参考计划（无日内时即日前；开日内时为最近一轮日内计划）。"""
     rc = cfg.mode["realtime"]
+    validate_anchor_config(cfg)
+    if rc["storage"].get("mode", "sced_anchor") == "sced_anchor":
+        validate_actual_state(cfg, da_plan, state, t)
+    if state.t != t or not 0 <= t < cfg.T:
+        raise ValueError("实时窗口起点必须等于实际状态时标，且位于当前运行日内")
     T = cfg.T
     H = int(round(rc["lookahead_h"] * 60 / rc["interval_min"]))
     t1 = min(T, t + H)
@@ -396,6 +425,13 @@ def run_rt_period(da_case, da_plan: dict, plan: dict, cfg, state: SysState, t: i
     sc = rc["storage"]
     mode = sc.get("mode", "sced_anchor")
     term = dict(anchor_penalty=float(sc.get("anchor_penalty", 1e5)))
+    if mode == "sced_anchor" and sc.get("anchor") == "two_hour_eq":
+        term["storage_anchor_hard"] = True
+        term["storage_anchor_policy"] = policy_metadata(cfg)
+        if t1 < T:
+            term["asset_reachability"] = dict(start_period=t1,end_period_exclusive=T,
+                storage_targets=storage_anchors(cfg,da_plan["E"],t1,T),
+                pumped_targets=pumped_anchors(cfg,da_plan.get("Vu",{}),t1,T))
     tracking = rc.get("tracking_policy")
     if tracking is not None and tracking.get("mode") != "legacy":
         if tracking.get("mode") != "soft_deliverable_energy" or hydro_mode != "window_end_da" or mode != "sced_anchor":
@@ -412,7 +448,7 @@ def run_rt_period(da_case, da_plan: dict, plan: dict, cfg, state: SysState, t: i
         term["storage_anchor"] = storage_anchors(cfg, da_plan["E"], t, t1)
     else:
         raise ValueError(f"未知储能实时模式 {mode}")
-    if da_plan.get("Pg"):
+    if da_plan.get("Pg") or (sc.get("anchor") == "two_hour_eq" and cfg.units.get("pumped")):
         # 抽蓄实时规则同储能（realtime.storage）：fixed_da = 执行日前抽发曲线（工况、台数、功率）；
         # sced_anchor = 抽/发 0-1 工况与台数在窗口 MIP 内决策，上库库容按储能同一锚点规则（B2 hourly_eq / B1 window_end_pct）。
         if mode == "fixed_da":
@@ -432,7 +468,12 @@ def run_rt_period(da_case, da_plan: dict, plan: dict, cfg, state: SysState, t: i
         details = {h: dict(initial_V_1e4m3=state.hydro[h], initial_P_mw=state.hydro_p[h],
                            initial_online=state.hydro_online[h],
                            hard_target_V_1e4m3=term.get("hydro_window_end", {}).get(h)) for h in state.hydro}
-        raise RuntimeError(f"RT窗口[{t},{t1})出清失败，水电模式={hydro_mode}，实际初态/硬目标={details}；"
+        anchor_details = dict(policy=sc.get("anchor"), hard=bool(term.get("storage_anchor_hard")),
+                              actual_storage_MWh=state.storage, actual_pumped=state.pumped,
+                              actual_pumped_starts_used=state.pumped_used,
+                              remaining_day_asset_certificate="asset_reachability" in term,
+                              storage_targets=term.get("storage_anchor"), pumped_targets=term.get("pumped_anchor"))
+        raise RuntimeError(f"RT窗口[{t},{t1})出清失败，储能/抽蓄锚点={anchor_details}；硬锚点不自动放松；水电模式={hydro_mode}，实际初态/硬目标={details}；"
                            f"原始异常 {type(exc).__name__}: {exc}") from exc
     r["t"] = t
     targets = []
@@ -551,6 +592,7 @@ def run_rolling(da_res, periods: int | None = None, log=print, *, progress_callb
                            hydro_window_targets=r["hydro_window_targets"],
                            anchor_relaxed=r["anchor_relaxed"], anchor_slack_present=r["anchor_slack_present"],
                            pricing_source=r["pricing_source"], time_s=r["time_s"], mip_time=r["mip"]["time_s"],
+                           mip=dict(r["mip"]), sced=dict(r["sced"]),
                            regulation_allocation=r["mip"].get("regulation_allocation", {}),
                            stage_diagnostics=r.get("stage_diagnostics", {}),
                            plan_idx=len(out.plans) - 1))
@@ -596,7 +638,8 @@ def intraday_tables(da_res, rr: RollingResult) -> dict:
                                  u_dis=int(sn["u_dis"][s][t]), u_ch=int(sn["u_ch"][s][t]), E_mwh=sn["E"][s][t]))
             lmp = r["prices"]["lmp_clamped"][:, t]
             for i, b in enumerate(net.buses):
-                prow.append(dict(round=lab, tau=tau, period=tau + t, bus=b, lmp=lmp[i]))
+                prow.append(dict(round=lab, tau=tau, period=tau + t, bus=b, lmp=lmp[i],
+                                 load_mw=sn["load_bus"][b][t], fixed_load_mw=sn.get("fixed_load_bus", {}).get(b, np.zeros(T))[t]))
     plans = pd.DataFrame(rows)
     prices = pd.DataFrame(prow)
     sto = pd.DataFrame(srow)
@@ -618,6 +661,14 @@ def rt_tables(da_res, rr: RollingResult) -> dict:
     cfg = da_res.case.cfg
     net = da_res.case.net
     dt = cfg.dt
+    # Each stored window contributes only its executed first period. Fail closed
+    # before zip truncation or an overlapping/reordered window can look complete.
+    if [r["t"] for r in rr.rt] != list(range(len(rr.rt))):
+        raise ValueError("RT output requires unique contiguous executed periods starting at zero")
+    if len(rr.states) < len(rr.rt) or any(st.t != r["t"] for r, st in zip(rr.rt, rr.states)):
+        raise ValueError("RT output requires the matching actual initial state for every executed period")
+    specs = {u["id"]: u for family in ("thermal", "renewable", "hydro", "storage", "pumped") for u in cfg.units.get(family, [])}
+    rates = dict(zip(net.branches.branch_id, net.branches.rate_mw))
     types = {u["id"]: u["type"] for u in cfg.units["thermal"]}
     types.update({r["id"]: r["type"] for r in cfg.units["renewable"]})
     buses_of = {u["id"]: u["bus"] for u in cfg.units["thermal"]}
@@ -631,33 +682,44 @@ def rt_tables(da_res, rr: RollingResult) -> dict:
     for r, st in zip(rr.rt, rr.states):
         t, sn, pr = r["t"], r["snap"], r["prices"]
         for g in sn["P"]:
-            urows.append(dict(period=t, unit=g, type=types[g], bus=buses_of[g], P_mw=sn["P"][g][0], on=int(sn["u"][g][0])))
+            urows.append(dict(period=t, unit=g, type=types[g], bus=buses_of[g], P_mw=sn["P"][g][0], on=int(sn["u"][g][0]),
+                              startup=int(sn["u"][g][0] > 0 and not st.thermal[g]["online"]),
+                              avail_mw=specs[g]["pmax"] * int(sn["u"][g][0])))
         for w in sn["Pw"]:
             urows.append(dict(period=t, unit=w, type=types[w], bus=buses_of[w], P_mw=sn["Pw"][w][0], on=1,
-                              avail_mw=sn["ren_fc"][w][0]))
+                              avail_mw=sn["ren_fc"][w][0], startup=0))
         for h in sn["Ph"]:
             urows.append(dict(period=t, unit=h, type="hydro", bus=buses_of[h], P_mw=sn["Ph"][h][0],
-                              on=sum(int(a[0]) for (j, z), a in sn["delta"].items() if j == h)))
+                              on=sum(int(a[0]) for (j, z), a in sn["delta"].items() if j == h), startup=0,
+                              avail_mw=specs[h]["unit_pmax"] * sn["hydro_constraints"][h]["units_on"][0]))
         for s in sn["Pd"]:
-            urows.append(dict(period=t, unit=s, type="storage", bus=buses_of[s], P_mw=sn["Pd"][s][0] - sn["Pc"][s][0], on=1))
-            srow.append(dict(period=t, unit=s, P_dis=sn["Pd"][s][0], P_ch=sn["Pc"][s][0], u_dis=int(sn["u_dis"][s][0]),
+            urows.append(dict(period=t, unit=s, type="storage", bus=buses_of[s], P_mw=sn["Pd"][s][0] - sn["Pc"][s][0], on=1, startup=0, avail_mw=specs[s]["pmax"]))
+            srow.append(dict(period=t, unit=s, bus=buses_of[s], soc=sn["E"][s][0]/specs[s]["ecap"], P_dis=sn["Pd"][s][0], P_ch=sn["Pc"][s][0], u_dis=int(sn["u_dis"][s][0]),
                              u_ch=int(sn["u_ch"][s][0]), E_start=st.storage[s], E_mwh=sn["E"][s][0]))
         for p in sn.get("Pg", {}):
             xg, xp = int(sn["xg"][p][0]), int(sn["xp"][p][0])
             urows.append(dict(period=t, unit=p, type="pumped", bus=buses_of[p], P_mw=sn["Pg"][p][0] - sn["Pp"][p][0],
-                              on=int(sn["ngen"][p][0] + sn["npump"][p][0])))
+                              on=int(sn["ngen"][p][0] + sn["npump"][p][0]),
+                              startup=max(int(sn["ngen"][p][0])-st.pumped[p]["ng"],0)+max(int(sn["npump"][p][0])-st.pumped[p]["np"],0),
+                              avail_mw=specs[p]["unit_gen_max"] * specs[p]["n_units"]))
             psrow.append(dict(period=t, unit=p, bus=buses_of[p], P_gen=sn["Pg"][p][0], P_pump=sn["Pp"][p][0],
                               n_gen=int(sn["ngen"][p][0]), n_pump=int(sn["npump"][p][0]),
                               mode="发电" if xg else ("抽水" if xp else "停机"), V_start=st.pumped[p]["V"],
-                              V_up=sn["Vu"][p][0], V_dn=vtot[p] - sn["Vu"][p][0]))
+                              V_up=sn["Vu"][p][0], V_dn=vtot[p] - sn["Vu"][p][0],
+                              E_equiv_mwh=(sn["Vu"][p][0]-max(specs[p]["vup_min"],vtot[p]-specs[p]["vdn_max"])) * specs[p]["e_gen"]))
         for h in sn["Ph"]:
             hd = sn["hydro_constraints"][h]
-            hrow.append(dict(period=t, station=h, P_start_mw=st.hydro_p[h], units_start=st.hydro_online[h],
+            hrow.append(dict(period=t, station=h, bus=buses_of[h], units_on=hd["units_on"][0],
+                             Q_gen=hd["water_rate"] * sn["Ph"][h][0], Q_spill=hd["spill_m3s"][0],
+                             Q_in=hd["qin_m3s"][0]+hd["upstream_in_m3s"][0], regulation=specs[h].get("regulation", "reservoir"), P_start_mw=st.hydro_p[h], units_start=st.hydro_online[h],
                              P_mw=sn["Ph"][h][0], V_start=st.hydro[h], V_1e4m3=sn["Vh"][h][0],
                              Q_out=sn["Qout"][h][0] if "Qout" in sn else np.nan,
                              qout_m3s=hd["qout_m3s"][0], qout_max_m3s=hd["qout_max_m3s"],
                              qout_max_source=hd["qout_max_source"], qout_limit_active=hd["qout_limit_active"],
                              qout_limit_margin_m3s=hd["qout_limit_margin_m3s"][0]))
+        for tid, (bus, schedule) in da_res.case.tie.items():
+            urows.append(dict(period=t, unit=tid, type="tie", bus=bus, P_mw=float(schedule[t]),
+                              on=1, startup=0, avail_mw=float(schedule[t])))
         dp = r.get("dispatch_prices", pr)
         source = r.get("pricing_source", "standard_sced")
         for i, b in enumerate(net.buses):
@@ -665,10 +727,11 @@ def rt_tables(da_res, rr: RollingResult) -> dict:
                              physical_quantity_source="standard_sced", flow_source="standard_sced", dual_source=source,
                              dispatch_raw_lmp=dp["lmp"][i,0], dispatch_energy=dp["energy"][0], dispatch_congestion=dp["congestion"][i,0], lmp=pr["lmp_clamped"][i, 0], lmp_raw=pr["lmp"][i, 0],
                              energy=pr["energy"][0], congestion=pr["congestion"][i, 0],
-                             load_mw=sn["load_bus"][b][0], shed_mw=sn["shed"][b][0], inj_mw=sn["inj"][b][0]))
+                             load_mw=sn["load_bus"][b][0], fixed_load_mw=sn.get("fixed_load_bus", {}).get(b, [0.])[0], shed_mw=sn["shed"][b][0], served_load_mw=sn["load_bus"][b][0]-sn["shed"][b][0], inj_mw=sn["inj"][b][0]))
         for li, l in enumerate(net.branches.branch_id):
-            lrow.append(dict(period=t, line=l, flow_source="standard_sced", dual_source=source, flow_mw=sn["flow"][l][0], mu_plus=pr["mu_plus"][li, 0], mu_minus=pr["mu_minus"][li, 0]))
-        sysrow.append(dict(period=t, load_mw=sum(v[0] for v in sn["load_bus"].values()),
+            lrow.append(dict(period=t, line=l, flow_source="standard_sced", dual_source=source, flow_mw=sn["flow"][l][0], rate_mw=rates[l], loading=abs(sn["flow"][l][0])/rates[l],
+                              slack_mw=sn.get("line_slack_by_line", {}).get(l, [np.nan])[0], mu_plus=pr["mu_plus"][li, 0], mu_minus=pr["mu_minus"][li, 0]))
+        sysrow.append(dict(period=t, fixed_load_mw=sum(v[0] for v in sn.get("fixed_load_bus", {}).values()), load_mw=sum(v[0] for v in sn["load_bus"].values()),
                            shed_mw=sum(v[0] for v in sn["shed"].values()), surplus_mw=sn["surplus"][0],
                            curtail_mw=sum(sn["ren_fc"][w][0] - sn["Pw"][w][0] for w in sn["Pw"]),
                            energy_price=pr["energy"][0], reserve_up_price=pr["reserve_up_price"][0], reserve_dn_price=pr["reserve_dn_price"][0], repriced=r["repriced"], anchor_relaxed=r["anchor_relaxed"],
@@ -677,7 +740,7 @@ def rt_tables(da_res, rr: RollingResult) -> dict:
                            **{f"{k}_win": v for k, v in r["slack"].items()}))
     units = pd.DataFrame(urows)
     units["curtail_mw"] = np.where(units.type.isin(["wind", "pv"]), units.get("avail_mw", 0) - units.P_mw, 0.0)
-    pcols = ["period", "unit", "bus", "P_gen", "P_pump", "n_gen", "n_pump", "mode", "V_start", "V_up", "V_dn"]
+    pcols = ["period", "unit", "bus", "P_gen", "P_pump", "n_gen", "n_pump", "mode", "V_start", "V_up", "V_dn", "E_equiv_mwh"]
     # Join only executed index 0, never overlapping future windows.
     reserve_rows=[];reserve_system=[]
     for r in rr.rt:
@@ -688,18 +751,32 @@ def rt_tables(da_res, rr: RollingResult) -> dict:
     if len(reserve_detail):
         units=units.merge(reserve_detail.reindex(columns=["period","unit","r_up","r_dn","reserve_eligible","reserve_qualified","reserve_formulation"]),on=["period","unit"],how="left",validate="one_to_one")
         # Renewables have no offered reserve variables; their confidence credit is system-only.
-        no_offer=units.type.isin(["wind","pv"])
+        no_offer=units.type.isin(["wind","pv","tie"])
         units.loc[no_offer,["r_up","r_dn"]]=0.;units.loc[no_offer,"reserve_eligible"]=False
     system=pd.DataFrame(sysrow)
     if len(reserve_sys): system=system.merge(reserve_sys.drop(columns=["relative_period","load_mw"]),on="period",how="left",validate="one_to_one")
-    storage=pd.DataFrame(srow);pumped=pd.DataFrame(psrow,columns=pcols)
+    storage=pd.DataFrame(srow, columns=["period", "unit", "bus", "soc", "P_dis", "P_ch", "u_dis", "u_ch", "E_start", "E_mwh"]);pumped=pd.DataFrame(psrow,columns=pcols)
     diagnostics=["period","unit","r_up","r_dn","reserve_eligible","reserve_qualified","reserve_formulation","T_dur_h","reserve_power_up_margin_mw","reserve_power_down_margin_mw",
                  "reserve_duration_up_margin_mwh","reserve_duration_down_margin_mwh","reserve_duration_up_margin_1e4m3","reserve_duration_down_margin_1e4m3", "reserve_duration_lower_margin_mwh","reserve_duration_upper_margin_mwh", "reserve_duration_lower_margin_1e4m3","reserve_duration_upper_margin_1e4m3", "reserve_down_enabled"]
     if len(reserve_detail):
         if len(storage):storage=storage.merge(reserve_detail.reindex(columns=diagnostics),on=["period","unit"],how="left",validate="one_to_one")
         if len(pumped):pumped=pumped.merge(reserve_detail.reindex(columns=diagnostics),on=["period","unit"],how="left",validate="one_to_one")
+    prices = pd.DataFrame(prow)
+    units = units.merge(prices[["period", "bus", "lmp"]], on=["period", "bus"], how="left", validate="many_to_one")
+    units["energy_mwh"] = units.P_mw * dt
+    # This is an at-RT-price valuation, not DA-plus-deviation cash settlement.
+    units["rt_price_valuation_yuan"] = units.energy_mwh * units.lmp
+    from .results import _times
+    times = dict(enumerate(_times(cfg.T, dt)))
+    for frame in (units, prices, storage, pumped, system):
+        frame["time"] = frame.period.map(times)
+    lines = pd.DataFrame(lrow)
+    lines["dispatch_at_capacity"] = lines.loading >= 1 - 1e-6
+    lines["pricing_dual_active"] = lines.mu_plus.abs() + lines.mu_minus.abs() > 1e-6
+    lines["congested"] = lines.dispatch_at_capacity | lines.pricing_dual_active
+    hydro = pd.DataFrame(hrow, columns=["period", "station", "bus", "units_on", "Q_gen", "Q_spill", "Q_in", "regulation", "P_start_mw", "units_start", "P_mw", "V_start", "V_1e4m3", "Q_out", "qout_m3s", "qout_max_m3s", "qout_max_source", "qout_limit_active", "qout_limit_margin_m3s"])
     from .regulation_results import realtime_tables
     regulation_detail, regulation_system = realtime_tables(rr)
-    return dict(units=units, prices=pd.DataFrame(prow), lines=pd.DataFrame(lrow), storage=storage,
-                system=system, pumped=pumped, hydro=pd.DataFrame(hrow), reserve=reserve_detail, reserve_system=reserve_sys,
+    return dict(units=units, prices=prices, lines=lines, storage=storage,
+                system=system, pumped=pumped, hydro=hydro, reserve=reserve_detail, reserve_system=reserve_sys,
                 regulation=regulation_detail, regulation_system=regulation_system)

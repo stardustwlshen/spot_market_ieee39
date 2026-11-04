@@ -31,6 +31,7 @@ class DACase:
     hydro_e_budget: dict | None = None   # 水电剩余日电量上限 MWh；None = 季节 e_day
     terminal: dict | None = None         # None = 日前（申报期末 SOC 硬约束、V≥v_end）；实时：{storage_anchor:{s:[(t,lo,hi)]}, anchor_penalty, fix_power:{Ph/Pd/Pc:{idx:val}}, hydro_vend, hydro_window_end:{h:同钟点DA库容硬等值}}
     stage: str = "DA"
+    fixed_load: dict = field(default_factory=dict)  # source@bus -> (bus, fixed demand MW); not a bid/DR resource
 
 
 def reserve_requirement(cfg: Config, load_total: np.ndarray, ren_total: np.ndarray, extra_n1: float | None = None):
@@ -50,12 +51,18 @@ def reserve_requirement(cfg: Config, load_total: np.ndarray, ren_total: np.ndarr
 
 def build_da_case(cfg: Config, net: Network, profiles: pd.DataFrame, bids: dict) -> DACase:
     # Public Python case-building entrypoint must enforce the same rules as file/UI input.
+    from .input_validation import validate_physical_inputs, validate_network_inputs
+    from .forecast import validate_profiles
+    validate_physical_inputs(cfg)
     from .bids import validate_bids, raise_on_errors, fill_missing_bids
     raise_on_errors(validate_bids(cfg, bids))
+    validate_network_inputs(cfg, net)
+    validate_profiles(cfg, profiles)
     bids = fill_missing_bids(cfg, copy.deepcopy(bids))
     raise_on_errors(validate_bids(cfg, bids))
     load_da = profiles["load_da"].to_numpy()
-    load_bus = {b: net.load_share[b] * load_da for b in net.buses if net.load_share[b] > 0}
+    from .fixed_load import nodal_demand, tie_mode
+    load_bus, fixed_load = nodal_demand(cfg, net, profiles, load_da)
     ren_fc = {}
     for r in cfg.units["renewable"]:
         fc = profiles[f"{r['id']}_da"].to_numpy().copy()
@@ -63,7 +70,7 @@ def build_da_case(cfg: Config, net: Network, profiles: pd.DataFrame, bids: dict)
         if av:  # 报价中给出的 96 点申报预测优先
             fc = np.asarray(av, float).copy()
         ren_fc[r["id"]] = fc
-    tie = {t["id"]: (t["bus"], profiles[f"{t['id']}_sched"].to_numpy()) for t in cfg.units.get("tie", [])}
+    tie = {t["id"]: (t["bus"], profiles[f"{t['id']}_sched"].to_numpy()) for t in cfg.units.get("tie", [])} if tie_mode(cfg) == "supply" else {}
     ren_total = sum(ren_fc.values())
-    up, dn, info = reserve_requirement(cfg, load_da, ren_total)
-    return DACase(cfg, net, profiles, bids, load_bus, ren_fc, tie, up, dn, info)
+    up, dn, info = reserve_requirement(cfg, sum(load_bus.values()) if tie_mode(cfg) == "fixed_load" else load_da, ren_total)
+    return DACase(cfg, net, profiles, bids, load_bus, ren_fc, tie, up, dn, info, fixed_load=fixed_load)

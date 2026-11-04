@@ -81,7 +81,7 @@ def test_cost_preview_requires_acceptance_and_preserves_other_units_and_all_inpu
     key = key_for(at)
     initial = copy.deepcopy(at.session_state[key])
     before = files(scenario.scenario_path('默认'))
-    item(at.button, '生成报价预览').click().run()
+    item(at.button, '按成本生成预览').click().run()
     assert not at.exception
     assert at.session_state[key] == initial
     assert at.session_state[key + ':preview']['candidate']['_cost_basis']
@@ -96,7 +96,7 @@ def test_cost_preview_requires_acceptance_and_preserves_other_units_and_all_inpu
     item(at.number_input, '空载报价（元/h）').set_value(amount + 1).run()
     assert 'C1' in at.session_state[key + ':manual']
     manual = copy.deepcopy(at.session_state[key])
-    item(at.button, '生成报价预览').click().run()
+    item(at.button, '按成本生成预览').click().run()
     assert not at.exception
     assert any('模拟报价未生成' in x.value for x in at.error)
     assert key + ':preview' not in at.session_state
@@ -110,7 +110,7 @@ def test_missing_cost_worksheet_fails_without_fallback_or_mutation(scenario):
     at = open_app()
     key = key_for(at)
     initial = copy.deepcopy(at.session_state[key])
-    item(at.button, '生成报价预览').click().run()
+    item(at.button, '按成本生成预览').click().run()
     assert not at.exception
     assert any('模拟报价未生成' in x.value for x in at.error)
     assert at.session_state[key] == initial
@@ -118,11 +118,54 @@ def test_missing_cost_worksheet_fails_without_fallback_or_mutation(scenario):
     assert not path.exists()
 
 
+def test_old_scene_requires_explicit_cost_adoption_and_quote_preview_acceptance(scenario):
+    root = scenario.scenario_path('默认')
+    for name in ('fixed_costs.yaml', 'bid_cost_basis.yaml'):
+        (root / 'config' / name).unlink()
+    before = files(root)
+    at = open_app()
+    key = key_for(at)
+    initial = copy.deepcopy(at.session_state[key])
+    assert not item(at.button, '使用研究默认成本').disabled
+    assert files(root) == before
+    assert any('永久另存' in x.value and '非实测' in x.value for x in at.info)
+    item(at.button, '使用研究默认成本').click().run()
+    assert not at.exception
+    assert at.session_state[key] == initial
+    assert all(path.read_bytes() == content for path, content in before.items())
+    assert not any(button.label == '使用研究默认成本' for button in at.button)
+    item(at.button, '按成本生成预览').click().run()
+    assert not at.exception
+    assert not at.error
+    assert at.session_state[key] == initial
+    assert at.session_state[key + ':preview']['candidate']['_cost_basis']
+    item(at.button, '采用预览报价').click().run()
+    assert not at.exception
+    assert at.session_state[key]['units']['C1']['segments'][1]['price'] == 280
+
+
+def test_cost_import_source_change_requires_new_confirmation(scenario, tmp_path, monkeypatch):
+    from smm import config
+    source = tmp_path / 'source'
+    shutil.copytree(ROOT / 'config', source / 'config')
+    monkeypatch.setattr(config, 'ROOT', source)
+    missing = scenario.scenario_path('默认') / 'config/bid_cost_basis.yaml'
+    missing.unlink()
+    at = open_app()
+    label = '按机组参数生成模拟成本'
+    old_key = item(at.button, label).key
+    path = scenario.scenario_path('默认') / 'config/fixed_costs.yaml'
+    path.write_bytes(path.read_bytes() + b'\n# newer research revision\n')
+    at.run()
+    assert not at.exception
+    assert item(at.button, label).key != old_key
+    assert not missing.exists()
+
+
 @pytest.mark.parametrize('change', ['manual', 'seed', 'fixed_cost', 'physical'])
 def test_preview_cannot_overwrite_newer_quote_or_parameter_changes(scenario, change):
     at = open_app()
-    item(at.radio, '生成方式').set_value('随机策略').run()
-    item(at.button, '生成报价预览').click().run()
+    item(at.button, '生成随机报价预览').click().run()
     assert not at.exception
     assert not item(at.button, '采用预览报价').disabled
     if change == 'manual':
@@ -160,6 +203,9 @@ def test_hydro_outflow_limit_and_source_are_read_only_lossless(scenario, cap):
     units = scenario.read_yaml('默认', 'units')
     hydro = units['hydro'][0]
     hydro['qout_max'] = cap
+    if cap == 0.:
+        for season in hydro['seasons'].values():
+            season['qeco'] = 0.  # Keep the display fixture physically consistent.
     hydro['qout_max_source'] = '合成研究假设：仅供测试，非真实工程资料'
     scenario.write_yaml('默认', 'units', units)
     before = files(scenario.scenario_path('默认'))
@@ -182,7 +228,7 @@ def test_manual_replacement_requires_explicit_opt_in_and_acceptance(scenario):
     item(at.number_input, '空载报价（元/h）').set_value(amount).run()
     manual = copy.deepcopy(at.session_state[key])
     item(at.checkbox, '允许模拟报价替换该机组手工修改').check().run()
-    item(at.button, '生成报价预览').click().run()
+    item(at.button, '按成本生成预览').click().run()
     assert not at.exception
     assert at.session_state[key] == manual
     assert not item(at.button, '采用预览报价').disabled
@@ -239,12 +285,14 @@ def test_out_of_range_existing_scalar_remains_visible_and_repairable(
 def test_missing_saved_resources_are_named_without_rewriting_file(scenario):
     import json
     from smm.config import load_config
-    from smm.bids import bid_dir
+    from smm.bids import bid_dir, load_bids
     cfg = load_config(root=scenario.scenario_path('默认'))
-    path = bid_dir(cfg) / 'bids_v2.json'
+    # Corrupt the version the ordinary UI actually loads; defaults may add a version.
+    version = load_bids(cfg)['version']
+    path = bid_dir(cfg) / f'bids_v{version}.json'
     raw = json.loads(path.read_text())
     del raw['units']['C2']
-    assert 'PS1' not in raw['units']  # This historical version predates PS1.
+    raw['units'].pop('PS1', None)
     path.write_text(json.dumps(raw, ensure_ascii=False))
     before = files(scenario.scenario_path('默认'))
     at = open_app()
@@ -268,7 +316,7 @@ def test_timer_fragment_requests_full_refresh_and_unlocks_quote_controls(scenari
             'started': '2026-11-03T00:00:00', 'periods': 96, 'stage': 'RT', 'bid_version': 2}
     atomic_json(directory / 'meta.json', meta)
     at = open_app()
-    for label in ('▶ 开始运行', '生成报价预览'):
+    for label in ('▶ 开始运行', '按成本生成预览'):
         assert item(at.button, label).disabled
     assert item(at.number_input, '空载报价（元/h）').disabled
     assert item(at.selectbox, '模拟机组').disabled
@@ -285,7 +333,7 @@ def test_timer_fragment_requests_full_refresh_and_unlocks_quote_controls(scenari
         refreshes.append(scope)
         raise AppRefresh()
     env = {'sc': scenario, 'run_status': run_status, 'active': True,
-           'st': SimpleNamespace(rerun=request_refresh)}
+           'st': SimpleNamespace(rerun=request_refresh, session_state={})}
     exec(compile(ast.Module(body=[node], type_ignores=[]), str(PAGE), 'exec'), env)
     meta['status'] = terminal_status
     atomic_json(directory / 'meta.json', meta)
@@ -295,7 +343,7 @@ def test_timer_fragment_requests_full_refresh_and_unlocks_quote_controls(scenari
     # Deliver only the app-level refresh explicitly requested by that timer.
     at.run()
     assert not at.exception
-    for label in ('▶ 开始运行', '生成报价预览'):
+    for label in ('▶ 开始运行', '按成本生成预览'):
         assert not item(at.button, label).disabled
     assert not item(at.number_input, '空载报价（元/h）').disabled
     assert not item(at.selectbox, '模拟机组').disabled

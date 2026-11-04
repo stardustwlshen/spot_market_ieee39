@@ -136,13 +136,16 @@ def _archive_default_fill_provenance(bids: dict) -> None:
 def fill_missing_bids(cfg: Config, bids: dict) -> dict:
     """报价文件中缺少的资源（如新增的抽蓄 PS1、启用的 H2）用缺省报价补齐；已停用资源的报价忽略。"""
     _archive_default_fill_provenance(bids)
-    disabled = set(cfg.units.get("_disabled", []))
+    # A disabled duplicate must never shadow an active resource with the same
+    # id and replace its submitted bid with a generated default.
+    active = _unit_meta(cfg)
+    disabled = set(cfg.units.get("_disabled", [])) - set(active)
     dflt = None
     filled = []
     for uid in list(bids["units"]):
         if uid in disabled:
             bids["units"].pop(uid)
-    for uid in _unit_meta(cfg):
+    for uid in active:
         if uid not in bids["units"]:
             dflt = dflt or default_bids(cfg)
             bids["units"][uid] = copy.deepcopy(dflt["units"][uid])
@@ -202,7 +205,8 @@ def bids_to_csv(bids: dict, path: Path) -> None:
 
 def bids_from_csv(base: dict, path: Path) -> dict:
     """用 CSV 中的分段覆盖 base 报价（批量编辑用），返回新报价（版本号由 save_bids 递增）。"""
-    df = pd.read_csv(path)
+    from .input_validation import read_input_csv
+    df = read_input_csv(path)
     out = copy.deepcopy(base)
     for (uid, curve), g in df.groupby(["unit_id", "curve"]):
         g = g.sort_values("seg")

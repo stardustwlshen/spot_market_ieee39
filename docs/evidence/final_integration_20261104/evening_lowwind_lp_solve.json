@@ -1,0 +1,6 @@
+{
+  "termination": "optimal",
+  "zero_slack_lp_relaxation": true,
+  "proves_strict_integer_infeasible": false,
+  "scope": "LP_necessary_condition_only;all_integer_variables_relaxed;not_executable_dispatch"
+}

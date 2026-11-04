@@ -20,7 +20,7 @@ def mocked_flow(monkeypatch):
         return dict(snap={'future':[t,t+1]}, prices={'lmp_clamped':np.array([[100.]])},
                     dispatch_prices={'lmp_clamped':np.array([[100.]])},pricing_info=None,repriced_meaning='disabled',
                     slack={}, repriced=False, anchor_relaxed=0, anchor_slack_present=False,
-                    pricing_source='standard_sced', time_s=.01, mip={'time_s':.01}, hydro_window_targets=[])
+                    pricing_source='standard_sced', time_s=.01, mip={'time_s':.01}, sced={'time_s':.005,'termination':'optimal'}, hydro_window_targets=[])
     monkeypatch.setattr(rolling, '_da_plan_arrays', lambda _: {})
     monkeypatch.setattr(rolling, '_abs_plan', lambda *a: {})
     monkeypatch.setattr(rolling, 'initial_state', lambda _: 0)
@@ -54,6 +54,7 @@ def test_events_deliver_executed_prefix_before_next_solve_and_settlement(mocked_
     assert phases == ['da_start','da_done','rt_window','rt_window','rt_window']
     assert prefix == [(0,), (0,1), (0,1,2)]
     assert len(result['rr'].rt)==3
+    assert all(r['sced']=={'time_s':.005,'termination':'optimal'} for r in result['rr'].rt)
     settle.assert_called_once_with(da,result['rr'])
 
 

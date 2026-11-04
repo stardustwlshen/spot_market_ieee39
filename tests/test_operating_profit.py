@@ -79,6 +79,18 @@ def test_profile_hash_and_parameters_independent_of_bid_worksheet(tmp_path):
     with pytest.raises(ValueError):validate_profile(profile)
 
 
+def test_each_unit_retains_its_own_cost_source_kind(tmp_path):
+    res, profile = sample(tmp_path)
+    profile['source_kind'] = 'mixed_explicit_and_synthetic_costs'
+    profile['unit_sources'] = {'G': {'source_kind': 'observed'},
+                               'W': {'source_kind': 'research_assumption_not_observed_plant_data'}}
+    (tmp_path / 'config/fixed_costs.yaml').write_text(yaml.safe_dump(profile))
+    result = analyze(res)
+    assert set(result['by_period'].query("unit == 'G'").cost_source_kind) == {'observed'}
+    assert result['by_unit'].set_index('unit').loc['W', 'cost_source_kind'] == 'research_assumption_not_observed_plant_data'
+    assert result['by_type'].set_index('type').loc['gas_gt', 'cost_source_kind'] == 'observed'
+
+
 def test_already_online_no_start_operator_penalties_and_water_opportunity_excluded(tmp_path):
     res,_=sample(tmp_path);res['rr'].states[0].thermal['G']['online']=True
     res['da'].costs={'line_penalty':1e12,'anchor_penalty':1e12,'hydro_water_opportunity':1e12}
@@ -128,3 +140,12 @@ def test_nonfinite_formal_quantities_cannot_become_zero_cost(tmp_path,corruption
     else:sn['E']['B'][0]=float('nan')
     with pytest.raises(ValueError,match='non-finite actual'):
         analyze(res)
+
+
+def test_profit_scope_does_not_mislabel_a_full_day_as_a_prefix(tmp_path):
+    res,_=sample(tmp_path)
+    scope=analyze(res)['summary']['scope']
+    assert 'actual executed RT periods only' in scope
+    assert 'see completed_scope for full-day status' in scope
+    assert 'ending inventories separately disclosed' in scope
+    assert 'not a full-day claim' not in scope

@@ -1,0 +1,63 @@
+[
+  {
+    "case": "missing_period",
+    "full": true,
+    "validate": "accepted",
+    "exceptions": [],
+    "errors": [],
+    "metrics": [
+      {
+        "label": "实时执行范围",
+        "value": "96 / 96 段",
+        "delta": ""
+      }
+    ],
+    "warnings": []
+  },
+  {
+    "case": "missing_bus",
+    "full": true,
+    "validate": "accepted",
+    "exceptions": [
+      "16"
+    ],
+    "errors": [],
+    "metrics": [
+      {
+        "label": "实时执行范围",
+        "value": "96 / 96 段",
+        "delta": ""
+      }
+    ],
+    "warnings": []
+  },
+  {
+    "case": "float_period",
+    "full": true,
+    "validate": "accepted",
+    "exceptions": [
+      "list indices must be integers or slices, not float"
+    ],
+    "errors": [],
+    "metrics": [
+      {
+        "label": "实时执行范围",
+        "value": "96 / 96 段",
+        "delta": ""
+      }
+    ],
+    "warnings": []
+  },
+  {
+    "case": "missing_rt_prices",
+    "full": false,
+    "validate": "accepted",
+    "exceptions": [],
+    "errors": [],
+    "metrics": [],
+    "warnings": [
+      "历史结果缺少冻结输入：仅使用已保存的限额与参数，缺失项记为未知；缺少冻结网络时不显示历史拓扑；缺少负荷权重时加权价格保留未知，不使用当前基准补齐。",
+      "冻结输入未记录有效时段长度，电量显示未记录；仍可查看保存的功率。未借用当前场景的时长。"
+    ]
+  }
+]

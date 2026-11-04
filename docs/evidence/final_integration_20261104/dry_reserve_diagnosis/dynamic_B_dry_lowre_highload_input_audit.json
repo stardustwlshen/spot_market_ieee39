@@ -1,0 +1,9 @@
+{
+  "snapshot_all_files_byte_identical": true,
+  "resolved_bids_byte_identical": true,
+  "profiles_max_numeric_roundtrip_difference": 5.684341886080802e-14,
+  "profiles_nonnumeric_identical": true,
+  "DA_increment_max_error_mw": 1.1368683772161603e-13,
+  "RT_requirement_max_difference_mw": 0.0,
+  "archive_checks_passed": true
+}

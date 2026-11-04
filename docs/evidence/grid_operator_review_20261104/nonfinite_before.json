@@ -1,0 +1,48 @@
+[
+  {
+    "field": "lmp",
+    "damage": "string",
+    "validation": "accepted",
+    "exceptions": [
+      "could not convert string to float: 'broken'"
+    ],
+    "errors": []
+  },
+  {
+    "field": "lmp",
+    "damage": "nan",
+    "validation": "accepted",
+    "exceptions": [],
+    "errors": []
+  },
+  {
+    "field": "lmp",
+    "damage": "inf",
+    "validation": "accepted",
+    "exceptions": [],
+    "errors": []
+  },
+  {
+    "field": "P_mw",
+    "damage": "string",
+    "validation": "accepted",
+    "exceptions": [
+      "'>=' not supported between instances of 'str' and 'int'"
+    ],
+    "errors": []
+  },
+  {
+    "field": "P_mw",
+    "damage": "nan",
+    "validation": "accepted",
+    "exceptions": [],
+    "errors": []
+  },
+  {
+    "field": "P_mw",
+    "damage": "inf",
+    "validation": "accepted",
+    "exceptions": [],
+    "errors": []
+  }
+]

@@ -123,8 +123,9 @@ def test_non_price_mode_requires_explicit_single_unit_conversion(scenario, uid, 
             draft['units'][uid]['self_schedule'] = [0.0] * 96
     at, key, initial, before = setup_app(scenario, mutate, uid)
     assert exact(at.session_state[key]) == exact(initial)
-    assert item(at.button, '生成报价预览').disabled
-    assert item(at.radio, '生成方式').disabled
+    assert item(at.button, '按成本生成预览').disabled
+    assert item(at.radio, '随机报价依据').disabled
+    assert item(at.button, '生成随机报价预览').disabled
     assert any('未自动改变运行模式' in w.value for w in at.warning)
     # Streamlit data editors expose their disabled flag on the protobuf.
     editors = [e for e in at.dataframe if getattr(e.proto, 'editing_mode', 0)]
@@ -139,10 +140,10 @@ def test_non_price_mode_requires_explicit_single_unit_conversion(scenario, uid, 
     expected = copy.deepcopy(initial['units'])
     expected[uid]['mode'] = 'price_quantity'
     assert exact(changed['units']) == exact(expected)
-    assert not item(at.button, '生成报价预览').disabled
+    assert not item(at.button, '按成本生成预览').disabled
     # Migrated changes are protected; replacement requires an explicit opt-in.
     item(at.checkbox, '允许模拟报价替换该机组手工修改').check().run()
-    item(at.button, '生成报价预览').click().run()
+    item(at.button, '按成本生成预览').click().run()
     assert not at.exception
     assert key + ':preview' in at.session_state
     assert not item(at.button, '采用预览报价').disabled
@@ -161,7 +162,7 @@ def test_explicit_mode_conversion_fills_only_missing_selected_unit_curves(scenar
         unit['ch_segments'] = []
     at, key, initial, before = setup_app(scenario, mutate, 'ES1')
     assert exact(at.session_state[key]) == exact(initial)
-    assert item(at.button, '生成报价预览').disabled
+    assert item(at.button, '按成本生成预览').disabled
     item(at.button, '切换该机组为报量报价').click().run()
     assert not at.exception
     cfg = load_config(root=scenario.scenario_path('默认'))
@@ -172,7 +173,7 @@ def test_explicit_mode_conversion_fills_only_missing_selected_unit_curves(scenar
         expected['ES1'][curve] = defaults[curve]
     assert exact(at.session_state[key]['units']) == exact(expected)
     item(at.checkbox, '允许模拟报价替换该机组手工修改').check().run()
-    item(at.button, '生成报价预览').click().run()
+    item(at.button, '按成本生成预览').click().run()
     assert not at.exception
     assert key + ':preview' in at.session_state
     assert files(scenario.scenario_path('默认')) == before

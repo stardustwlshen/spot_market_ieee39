@@ -1,6 +1,8 @@
 """日前出清：SCUC→固定整数SCED；启用时另用克隆辅助LP算价，正式数量不变。"""
 from __future__ import annotations
 
+from .fixed_load import allocation_evidence
+
 import time
 from dataclasses import dataclass, field, replace
 
@@ -149,6 +151,7 @@ def summarize(res: DAResult) -> dict:
     return dict(
         rule_set=res.case.cfg.rule_set, date=res.case.cfg.base["date"], season=res.case.cfg.base["season"],
         bid_version=res.case.bids.get("version"),
+        fixed_load_conversion=allocation_evidence(res.case),
         objective=res.sced_info["objective"], bid_cost_total=res.costs["bid_cost_total"],
         startup_cost=res.costs["thermal_startup"],
         regulation_performance_adjusted_score_cost=res.costs.get("regulation_performance_adjusted_score_cost",0.),
@@ -162,6 +165,9 @@ def summarize(res: DAResult) -> dict:
         congested_lines=cong_summary.reset_index().to_dict("records"),
         curtailment_mwh=float(curtail), lmp_decomp_max_err=dec_err,
         scuc_time_s=res.scuc_info["time_s"], scuc_gap=res.scuc_info["gap"], sced_time_s=res.sced_info["time_s"],
+        scuc_termination=res.scuc_info.get("termination"), scuc_best_bound=res.scuc_info.get("best_bound"),
+        requested_mip_gap=res.case.cfg.base["solver"]["mip_rel_gap"],
+        requested_gap_met=bool(np.isfinite(res.scuc_info["gap"]) and res.scuc_info["gap"] <= res.case.cfg.base["solver"]["mip_rel_gap"]+1e-9),
         slack=res.slack, storage_simultaneous=res.scuc_info.get("storage_simultaneous"),
         pricing_rerun=res.pricing_info is not None,
         dispatch_source="fixed_integer_sced",

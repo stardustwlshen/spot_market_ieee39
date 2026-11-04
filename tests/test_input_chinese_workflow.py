@@ -47,8 +47,9 @@ def test_cost_offer_comparison_preserves_unknown_and_internal_input(scene):
 def test_preview_business_tables_are_chinese_and_do_not_run(scene):
     at = AppTest.from_file(str(PAGE), default_timeout=60).run()
     assert not at.exception
-    assert item(at.radio, '生成方式').options == ['按成本生成', '随机策略']
-    item(at.button, '生成报价预览').click().run()
+    assert not any(widget.label == '生成方式' for widget in at.radio)
+    assert item(at.radio, '随机报价依据').options == ['当前报价', '成本报价']
+    item(at.button, '按成本生成预览').click().run()
     assert not at.exception
     preview = next(x.value for x in at.dataframe if '预览报价（元/MWh）' in x.value)
     assert set(preview['曲线']) == {'发电报价'}
@@ -88,4 +89,4 @@ def test_changed_capacity_blocks_run_and_keeps_repair_available(scene):
     assert any('报价存在违规' in x.value for x in at.error)
     assert item(at.button, '▶ 开始运行').disabled
     assert not any(button.label == '另存报价版本' for button in at.button)
-    assert not item(at.button, '生成报价预览').disabled
+    assert not item(at.button, '按成本生成预览').disabled

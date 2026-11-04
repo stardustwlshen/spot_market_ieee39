@@ -23,6 +23,12 @@ def read_live(directory):
 
 def freeze_inputs(root, directory, bids=None, regulation=None):
     """Snapshot before launching: later scenario edits cannot change an active run."""
+    from .unit_edit_transaction import scene_input_lock
+    with scene_input_lock(root):
+        return _freeze_inputs_unlocked(root, directory, bids, regulation)
+
+
+def _freeze_inputs_unlocked(root, directory, bids=None, regulation=None):
     root, directory = Path(root), Path(directory)
     from .config import load_config
     from .regulation import validate_config

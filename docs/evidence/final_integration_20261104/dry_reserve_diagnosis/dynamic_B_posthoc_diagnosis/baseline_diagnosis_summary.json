@@ -1,0 +1,9 @@
+{
+  "executed_shortage_periods": 4,
+  "executed_shortage_max_mw": 73.6996232891969,
+  "shortage_mw_h": 59.90819872212052,
+  "shortage_due_to_fixed_modes_lower_mw_h": 30.373974409587277,
+  "shortage_with_all_power_headroom_saturated_count": 1,
+  "identity": "current-mode upper bound = online thermal capacity + locked hydro-zone ceiling + 400MW batteries + online PS generation capacity - actual net load - PS pumping. Storage headroom identity permits charge cessation; energy restrictions can lower it. All current shortage periods have zero renewable curtailment and zero shed/surplus.",
+  "warning": "This is an upper bound conditional on original online/mode choices, not proof that full MIP or day-ahead schedule cannot improve."
+}

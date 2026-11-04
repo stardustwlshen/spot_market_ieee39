@@ -311,7 +311,9 @@ def checks(da_res, rr, rt_tab) -> dict:
     out["min_updown_violations"] = viol
     # 实时功率平衡
     sysd = rt_tab["system"]
-    gen = rt_tab["units"].groupby("period").P_mw.sum()
+    # TIE is now included in rt_units; add the independently saved fixed plan once.
+    units = rt_tab["units"]
+    gen = units[units.type != "tie"].groupby("period").P_mw.sum()
     tie = sum(np.asarray(s)[: len(sysd)] for _, (b, s) in da_res.case.tie.items())
     bal = gen.to_numpy() + tie + sysd.shed_mw.to_numpy() - sysd.surplus_mw.to_numpy() - sysd.load_mw.to_numpy()
     out["rt_balance_err_mw"] = float(np.abs(bal).max())
@@ -319,6 +321,8 @@ def checks(da_res, rr, rt_tab) -> dict:
     out["rt_injection_sum_err_mw"] = float(np.abs(inj).max())
     out.update(execution_safety_checks(da_res, rt_tab))
     out.update(hydro_window_checks(da_res, rr))
+    from .storage_anchors import hard_anchor_checks
+    out.update(hard_anchor_checks(cfg, rolling.snapshot(da_res.model), rr.rt))
     tol = out["safety_tolerance_mw"]
     # Deliberately separate checked physical constraints from anchors/forecast-window
     # reserve shortages. Neither a monetary reconciliation nor balance proves safety.
@@ -396,11 +400,15 @@ def summarize_full(res) -> dict:
                       pumped_anchor_slack_periods=res["checks"]["pumped_anchor_slack_periods"],
                       hydro_anchor_slack_max_1e4m3=res["checks"]["hydro_anchor_slack_max_1e4m3"],
                       hydro_anchor_slack_periods=res["checks"]["hydro_anchor_slack_periods"],
+                      storage_anchor_policy=rolling.policy_metadata(cfg),
                       tracking_policy=cfg.mode["realtime"].get("tracking_policy"),
                       repriced_periods=int(rt["system"].repriced.sum()),
                       shed_mwh=float(rt["system"].shed_mw.sum() * cfg.dt), surplus_mwh=float(rt["system"].surplus_mw.sum() * cfg.dt),
                       curtail_mwh=float(rt["system"].curtail_mw.sum() * cfg.dt)),
         da=dict(objective=da.sced_info["objective"], scuc_objective=da.scuc_info["objective"], gap=da.scuc_info["gap"],
+                termination=da.scuc_info.get("termination"), best_bound=da.scuc_info.get("best_bound"),
+                requested_mip_gap=cfg.base["solver"]["mip_rel_gap"],
+                requested_gap_met=bool(np.isfinite(da.scuc_info["gap"]) and da.scuc_info["gap"] <= cfg.base["solver"]["mip_rel_gap"]+1e-9),
                 curtail_mwh=float(da.tables["units"].curtail_mw.sum() * cfg.dt)),
         spread=dict(da_lw_avg=float((wda * load_da.sum(0)).sum() / load_da.sum()),
                     rt_lw_avg=float((wrt * load_rt.sum(0)).sum() / load_rt.sum()),
@@ -557,6 +565,15 @@ def write_full_outputs(res, d: Path, make_plots=True) -> dict:
         final_executed_state=actual_state_evidence(res["rr"].states[-1]) if len(res["rr"].states)==len(res["rr"].rt)+1 else None)
     (d/"rolling_actual_states.json").write_text(json.dumps(state_evidence,ensure_ascii=False,allow_nan=False),encoding="utf-8")
     write_pricing_evidence(da, res["rr"].rt, d)
+    solver_rows = [dict(stage="DA", window_start=0, **da.scuc_info)] + [
+        dict(stage="RT", window_start=r["t"], **r["mip"]) for r in res["rr"].rt]
+    for row in solver_rows:
+        target = (da.case.cfg.base["solver"]["mip_rel_gap"] if row["stage"] == "DA" else da.case.cfg.mode["realtime"].get("mip_rel_gap", .01))
+        row["requested_mip_gap"] = target
+        gap = row.get("gap")
+        row["requested_gap_met"] = bool(gap is not None and np.isfinite(gap) and gap <= target+1e-9)
+    pd.DataFrame(solver_rows).drop(columns=["warm_start", "regulation_allocation"], errors="ignore").to_csv(d/"solver_windows.csv",index=False)
+
     stage_data = {"da": getattr(da, "stage_diagnostics", {}), "rt_windows": [{"t": r["t"], "stages": r.get("stage_diagnostics", {})} for r in res["rr"].rt]}
     (d / "stage_diagnostics.json").write_text(json.dumps(stage_data, ensure_ascii=False, default=float), encoding="utf-8")
     cfg = da.case.cfg
@@ -585,11 +602,9 @@ def write_full_outputs(res, d: Path, make_plots=True) -> dict:
     (d / "hydro_window_evidence.json").write_text(json.dumps(evidence,ensure_ascii=False,
         default=lambda x:x.tolist() if hasattr(x,"tolist") else float(x)),encoding="utf-8")
     f = dict(index=False, float_format="%.4f")
-    da.tables["units"].to_csv(d / "da_unit_awards.csv", **f)
-    da.tables["prices"].to_csv(d / "da_nodal_prices.csv", **f)
-    da.tables["storage"].to_csv(d / "da_storage.csv", **f)
-    da.tables["hydro"].to_csv(d / "da_hydro.csv", **f)
-    da.tables["pumped"].to_csv(d / "da_pumped.csv", **f)
+    from .output_catalog import write_da_tables, write_catalog, write_profile_evidence
+    write_da_tables(da, d)
+    write_profile_evidence(da.case, d)
     idt["summary"].to_csv(d / "id_rounds_summary.csv", **f)
     idt["plans"].to_csv(d / "id_plans.csv", **f)
     idt["prices"].to_csv(d / "id_prices_indicative.csv", **f)
@@ -648,7 +663,13 @@ def write_full_outputs(res, d: Path, make_plots=True) -> dict:
         s["regulation"]["stage_counts"] = dict(energy_scuc=1+len(res["rr"].rt)+len(res["rr"].id_rounds), regulation_allocation_lp=1+len(res["rr"].rt)+len(res["rr"].id_rounds), final_energy_sced=1+len(res["rr"].rt)+len(res["rr"].id_rounds))
         s["regulation"]["physical_check_scope"] = "DA_and_all_RT_lookahead_windows_AGC_mode_headroom_response_baseline_ramp_SOC_budget;not_seconds_AGC_or_network_activation_certificate"
     (d / "summary.json").write_text(json.dumps(s, ensure_ascii=False, indent=2, default=float), encoding="utf-8")
+    plot_files = []
     if make_plots:
+        plot_files += plots.dispatch_plots(da.tables, d)
+        plot_files += plots.dispatch_plots(rt, d, stage="rt")
+        plots.forecast_plot(da.case.profiles, d / "forecast_vs_actual.png")
+        if any(c.endswith("_actual") and c[:-7]+"_da" in da.case.profiles for c in da.case.profiles):
+            plot_files.append("forecast_vs_actual.png")
         net = da.case.net
         T = s["periods"]
         load_da = np.array([[da.case.load_bus.get(b, np.zeros(96))[t] for t in range(T)] for b in net.buses])
@@ -658,4 +679,6 @@ def write_full_outputs(res, d: Path, make_plots=True) -> dict:
                             d / "rolling_plans.png", x=cfg.mode["realtime"]["storage"]["x"]
                             if cfg.mode["realtime"]["storage"]["mode"] == "sced_anchor" and cfg.mode["realtime"]["storage"]["anchor"] == "window_end_pct" else None)
         plots.settlement_bars(st["by_type"], st["by_entity"], d / "settlement_bars.png")
+        plot_files += ["lmp_da_vs_rt.png", "rolling_plans.png", "settlement_bars.png"]
+    write_catalog(d, scope, full=True, plot_files=plot_files)
     return s

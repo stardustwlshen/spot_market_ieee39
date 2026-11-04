@@ -1,0 +1,66 @@
+{
+  "scuc": {
+    "time_s": 228.70110342999942,
+    "termination": "optimal",
+    "objective": 7805892.5564852655,
+    "warm_start": null,
+    "best_bound": 7755290.877006531,
+    "gap": 0.006482497563548196,
+    "storage_simultaneous": 0,
+    "regulation_allocation": null
+  },
+  "sced": {
+    "time_s": 2.9228463289982756,
+    "termination": "optimal",
+    "objective": 7805892.556484979
+  },
+  "slack": {
+    "shed_mwh": 0.0,
+    "surplus_mwh": 0.0,
+    "line_slack_max": 0.0,
+    "reserve_up_short_max": 0.0,
+    "reserve_dn_short_max": 0.0,
+    "anchor_slack_max_mwh": 0.0,
+    "storage_anchor_slack_max_mwh": 0.0,
+    "hydro_anchor_slack_max_1e4m3": 0.0,
+    "pumped_anchor_slack_max_1e4m3": 0.0
+  },
+  "stage_comparison": {
+    "integer_mismatch": 0,
+    "objective_tolerance": 0.07805892556485265,
+    "objective_nonincrease": true,
+    "scuc_objective": 7805892.5564852655,
+    "sced_objective": 7805892.556484979,
+    "sced_minus_scuc_objective": -2.868473529815674e-07,
+    "scuc_gap": 0.006482497563548196,
+    "physical_max_delta_mw": 95.00000000000034,
+    "physical_delta_by_variable_mw": {
+      "P": 95.00000000000023,
+      "Pw": 0.0,
+      "Ph": 33.20000000000002,
+      "Pd": 14.281328050866415,
+      "Pc": 66.66700000000004,
+      "Pg": 1.7075050998824963,
+      "Pp": 2.8649083105847243e-12,
+      "flow": 95.00000000000034
+    },
+    "dispatch_source": "fixed_integer_sced",
+    "interpretation": "SCED reoptimizes continuous variables with SCUC integers fixed; degeneracy and a near-optimal incumbent do not imply identical dispatch.",
+    "objective_comparison_applicable": true
+  },
+  "model_counts_before_integer_fixing": {
+    "variables": 27840,
+    "unfixed_integer_variables": 2112,
+    "constraints": 33080
+  },
+  "model_counts_after_sced": {
+    "variables": 27840,
+    "unfixed_integer_variables": 0,
+    "constraints": 33080
+  },
+  "coordination_note": "The final test suite (1434 passed, no failures or skips) and reserve counterfactuals completed before this trial. No other project solver, test suite or compression ran during this trial. No previous solution was supplied.",
+  "elapsed_s": 239.30787764600063,
+  "input_hashes_unchanged": true,
+  "requested_gap_met": true,
+  "physical_feasibility_scope": "DA model only; no RT resimulation; preserved original physical/economic constraints"
+}

@@ -3,7 +3,7 @@
 用法：
   python scripts/main_full.py                       # 统一规则 MKT、丰水期、最新版本报价、全天 96 时段
   python scripts/main_full.py --storage-mode fixed_da          # 储能执行日前曲线（模式 A）
-  python scripts/main_full.py --anchor window_end_pct          # 甘肃式窗口末 ±x（模式 B1；默认为 B2 研究整点 SOC 软跟踪）
+  python scripts/main_full.py --anchor window_end_pct          # 甘肃式窗口末 ±x（模式 B1；默认每2小时硬一致）
   python scripts/main_full.py --intraday --id-interval-h 2     # 打开独立日内滚动（对比用）
   python scripts/main_full.py --periods 24 --no-plots   # 只滚动前 6 h（调试）
 """
@@ -25,7 +25,7 @@ ap.add_argument("--periods", type=int, default=None, help="只滚动前 N 个时
 ap.add_argument("--id-interval-h", type=float, default=None, help="日内滚动周期（h），默认见 modes.yaml")
 ap.add_argument("--rt-lookahead-h", type=float, default=None, help="实时前瞻窗口（h），默认 2")
 ap.add_argument("--storage-mode", choices=["sced_anchor", "fixed_da"], default=None, help="储能实时模式，默认 sced_anchor")
-ap.add_argument("--anchor", choices=["window_end_pct", "hourly_eq"], default=None, help="SOC 锚点：hourly_eq 广东整点相等（默认）/ window_end_pct 甘肃窗口末±x")
+ap.add_argument("--anchor", choices=["two_hour_eq", "window_end_pct", "hourly_eq"], default=None, help="SOC/抽蓄锚点：two_hour_eq 每2小时硬一致（默认）；hourly_eq/window_end_pct为历史软目标")
 ap.add_argument("--anchor-x", type=float, default=None, help="甘肃锚点浮动比例 x（假设值 0.05）")
 ap.add_argument("--intraday", action="store_true", help="打开独立日内滚动（默认关闭）")
 ap.add_argument("--no-plots", action="store_true")

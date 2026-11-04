@@ -1,0 +1,36 @@
+"""One predeclared DA-only B-envelope run plus original-strategy RT96. No retries."""
+from pathlib import Path
+import argparse,copy,hashlib,json,pickle,shutil,sys,time,traceback
+import numpy as np,pandas as pd,pyomo.environ as pyo
+ap=argparse.ArgumentParser();ap.add_argument('--source-run',type=Path,required=True);ap.add_argument('--proposal',type=Path,required=True);ap.add_argument('--code-root',type=Path,required=True);ap.add_argument('--out',type=Path,required=True);a=ap.parse_args();sys.path.insert(0,str(a.code_root/'src'))
+from smm.config import load_config
+from smm.network import build_network
+from smm.case import build_da_case
+from smm import full,rolling,results as R
+from smm.live_runner import atomic_json,capture_provenance,ProgressWriter
+from smm.pipeline import write_outputs
+O=a.out;O.mkdir(parents=True,exist_ok=False);shutil.copytree(a.source_run/'scenario_snapshot',O/'scenario_snapshot');shutil.copytree(a.proposal,O/'frozen_dynamic_proposal')
+spec=json.loads((a.proposal/'proposal_spec_before_sampling.json').read_text());stats=json.loads((a.proposal/'dynamic_reserve_statistics.json').read_text());audit=json.loads((a.proposal/'information_boundary_audit.json').read_text());assert audit['passed'] and Path(spec['source']).resolve()==a.source_run.resolve()
+for name,h in stats['hashes'].items():assert hashlib.sha256((a.proposal/name).read_bytes()).hexdigest()==h
+for f in ['profiles.csv','resolved_bids.json']:shutil.copy2(a.source_run/f,O/f)
+cfg=load_config(root=O/'scenario_snapshot');original_solver=copy.deepcopy(cfg.base['solver']);assert original_solver['mip_rel_gap']==.01 and original_solver['time_limit_s']==600 and original_solver['threads']==4 and original_solver['highs_extra']=={} and not original_solver['warm_start'];assert cfg.mode['realtime']['mip_rel_gap']==.01 and cfg.mode['realtime']['time_limit_s']==180 and cfg.mode['realtime']['storage']['anchor']=='two_hour_eq';cfg.base['solver']['highs_extra']={'parallel':'on'};cfg.base['solver']['log']=True;runtime_DA_solver=copy.deepcopy(cfg.base['solver'])
+c=build_da_case(cfg,build_network(cfg),pd.read_csv(O/'profiles.csv'),json.loads((O/'resolved_bids.json').read_text()));curves=pd.read_csv(a.proposal/'dynamic_reserve_buffers.csv');old=c.R_up.copy();b=curves.B_extra_up_mw.to_numpy();assert np.max(abs(old-curves.baseline_R_up_mw))<1e-8;assert len(b)==96 and np.isfinite(b).all() and np.min(b)>=0;c.R_up=old+b;c.reserve_info['diagnostic_DA_buffer_vector_mw']=b.tolist()
+atomic_json(O/'counterfactual_spec.json',dict(source=str(a.source_run),proposal=str(a.proposal),kind='predeclared_B_forward_capacity_envelope',DA_only_buffer_mw=b.tolist(),original_R_up=old.tolist(),modified_DA_R_up=c.R_up.tolist(),DA_solver_runtime=runtime_DA_solver,RT_base_solver_runtime=original_solver,realtime=cfg.mode['realtime'],frozen_configuration_note='Frozen input snapshot unchanged; explicit DA-only runtime reserve RHS and parallel=on overrides are recorded here. RT resets original solver options.',model_physics_quotes_network_anchors_unchanged=True,no_additional_resources=True,RT_requirement_unchanged=True,source_classification='unverified regular candidate; evaluated without relabelling',expected_original_reserve_audit='DA unchanged_requirement_up flags must remain; separate audit checks original requirement plus declared vector.'))
+capture_provenance(O,O/'scenario_snapshot',source_root=a.code_root);progress=ProgressWriter(O,total=96);start=time.perf_counter();atomic_json(O/'counterfactual_status.json',{'status':'running_DA','executed_periods':0})
+def event(e):
+ progress(e)
+ if e['phase']=='da_done':
+  da=e['da'];write_outputs(da,O/'da',make_plots=False)
+  atomic_json(O/'all_DA_formal_variables.json',[{'variable':v.name,'value':float(pyo.value(v)),'fixed':bool(v.fixed),'is_integer':bool(v.is_integer())} for v in da.model.component_data_objects(pyo.Var)])
+  ck=dict(case=c,formal_snapshot=rolling.snapshot(da.model),formal_prices=da.dispatch_prices,final_prices=da.prices,tables=da.tables,scuc_info=da.scuc_info,sced_info=da.sced_info,stage_diagnostics=da.stage_diagnostics)
+  cp=O/'DA_formal_checkpoint.pkl';cp.write_bytes(pickle.dumps(ck));cp.with_suffix('.pkl.sha256').write_text(hashlib.sha256(cp.read_bytes()).hexdigest())
+  # This happens before rolling.run_rolling; DA search option must not leak to RT.
+  cfg.base['solver']=copy.deepcopy(original_solver)
+  atomic_json(O/'counterfactual_status.json',{'status':'running_RT','executed_periods':0,'DA_scuc':da.scuc_info,'DA_slack':da.slack,'RT_base_solver':cfg.base['solver']});print('DA_COMPLETED',json.dumps({'scuc':da.scuc_info,'slack':da.slack}),flush=True)
+try:
+ result=full.run_full(cfg,c,periods=96,progress_callback=event);s=full.write_full_outputs(result,O,make_plots=False);rs=json.loads((O/'reserve_window_evidence.json').read_text());first=pd.DataFrame([r for w in rs['rt_windows'] for r in w['system'] if r['relative_period']==0]);first[first.R_up_short>1e-5].to_csv(O/'executed_reserve_shortage_periods.csv',index=False)
+ actualDA=pd.read_csv(O/'da_reserve_system.csv');rt=pd.read_csv(O/'rt_reserve_system.csv');baseline_rt=pd.read_csv(a.source_run/'rt_reserve_system.csv');err=float(abs(actualDA.R_up_req-old-b).max());rterr=float(abs(rt.R_up_req-baseline_rt.R_up_req).max());assert err<1e-8 and rterr<1e-8
+ atomic_json(O/'declared_reserve_increment_audit.json',{'DA_baseline_plus_B_max_error_mw':err,'RT_requirement_max_difference_mw':rterr,'passed':True,'original_reserve_audit_passed':s['reserve']['passed'],'original_reserve_audit_violation_count':len(s['reserve']['violations']),'original_violations_preserved':True})
+ sol=pd.read_csv(O/'solver_windows.csv');compact={'executed_periods':s['executed_periods'],'DA':s['da'],'DA_scuc_time_s':result['da'].scuc_info['time_s'],'RT_max_gap':float(sol[sol.stage=='RT'].gap.max()),'executed_reserve_short_periods':int((first.R_up_short>1e-5).sum()),'executed_reserve_short_max_mw':float(first.R_up_short.max()),'executed_reserve_short_integral_mw_h':float(first.R_up_short.sum()*.25),'RT_shed_mwh':s['realtime']['shed_mwh'],'RT_surplus_mwh':s['realtime']['surplus_mwh'],'RT_curtailment_mwh':s['realtime']['curtail_mwh'],'RT_line_overload_max_mw':s['checks']['rt_line_overload_max_mw'],'hard_anchors_satisfied':s['checks']['storage_pumped_hard_anchors_satisfied'],'cash_operating_cost_yuan':s['operating_profit']['cash_operating_cost_yuan'],'cash_revenue_yuan':s['operating_profit']['cash_revenue_yuan'],'cash_operating_profit_yuan':s['operating_profit']['simulated_operating_profit_yuan'],'full_activation_risk_resource_periods':s['reserve']['full_activation_risk_resource_periods'],'phase_times':result['time_s']};atomic_json(O/'compact_result.json',compact);atomic_json(O/'counterfactual_status.json',{'status':'completed','elapsed_s':time.perf_counter()-start,'executed_periods':96});print('COMPLETE',json.dumps(compact),flush=True)
+except Exception as e:
+ atomic_json(O/'counterfactual_status.json',{'status':'failed','elapsed_s':time.perf_counter()-start,'error_type':type(e).__name__,'error':str(e),'executed_periods':progress.state.get('executed_periods',0)});traceback.print_exc();raise

@@ -1,0 +1,41 @@
+{
+  "scope": "Diagnostic only: adding unconditional resource errors to evaluation DA can leave physical availability bounds; no extra clipping, no buffer changes, not a conditional or physically reachable scenario guarantee.",
+  "resource_period_samples_per_unit": 393216,
+  "resources": {
+    "W1": {
+      "below_zero_resource_period_samples": 518,
+      "above_nameplate_resource_period_samples": 17785,
+      "above_scenario_availability_resource_period_samples": 17785,
+      "minimum_implied_mw": -201.5025822086991,
+      "maximum_implied_mw": 1483.1744252837475
+    },
+    "W2": {
+      "below_zero_resource_period_samples": 7472,
+      "above_nameplate_resource_period_samples": 1981,
+      "above_scenario_availability_resource_period_samples": 1981,
+      "minimum_implied_mw": -204.08939016035276,
+      "maximum_implied_mw": 690.1182824137754
+    },
+    "PV1": {
+      "below_zero_resource_period_samples": 15025,
+      "above_nameplate_resource_period_samples": 15,
+      "above_scenario_availability_resource_period_samples": 15,
+      "minimum_implied_mw": -108.12524156107361,
+      "maximum_implied_mw": 676.1432520365784
+    },
+    "PV2": {
+      "below_zero_resource_period_samples": 2258,
+      "above_nameplate_resource_period_samples": 11507,
+      "above_scenario_availability_resource_period_samples": 11507,
+      "minimum_implied_mw": -66.73050256210351,
+      "maximum_implied_mw": 992.6637591560957
+    },
+    "PV3": {
+      "below_zero_resource_period_samples": 6514,
+      "above_nameplate_resource_period_samples": 0,
+      "above_scenario_availability_resource_period_samples": 0,
+      "minimum_implied_mw": -81.7757705461847,
+      "maximum_implied_mw": 740.6253024919833
+    }
+  }
+}

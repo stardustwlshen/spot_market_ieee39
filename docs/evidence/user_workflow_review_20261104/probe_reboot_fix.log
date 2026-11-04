@@ -1,0 +1,105 @@
+2026-11-03 21:26:06.600 WARNING streamlit.runtime.caching.cache_data_api: No runtime found, using MemoryCacheStorageManager
+2026-11-03 21:26:06.601 WARNING streamlit.runtime.caching.cache_data_api: No runtime found, using MemoryCacheStorageManager
+2026-11-03 21:26:06.601 WARNING streamlit.runtime.caching.cache_data_api: No runtime found, using MemoryCacheStorageManager
+2026-11-03 21:26:06.601 WARNING streamlit.runtime.caching.cache_data_api: No runtime found, using MemoryCacheStorageManager
+2026-11-03 21:26:06.679 WARNING streamlit.runtime.scriptrunner_utils.script_run_context: Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-11-03 21:26:13.368 The widget with key "_sel_scenario" was created with a default value but also had its value set via the Session State API.
+Stack (most recent call last):
+  File "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/threading.py", line 1032, in _bootstrap
+    self._bootstrap_inner()
+  File "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/threading.py", line 1075, in _bootstrap_inner
+    self.run()
+  File "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/threading.py", line 1012, in run
+    self._target(*self._args, **self._kwargs)
+  File "/workspace/scratch/42c5fe32dad0/ieee39-cloud/repo/.venv/lib/python3.12/site-packages/streamlit/testing/v1/local_script_runner.py", line 144, in _run_script_thread
+    super()._run_script_thread()
+  File "/workspace/scratch/42c5fe32dad0/ieee39-cloud/repo/.venv/lib/python3.12/site-packages/streamlit/runtime/scriptrunner/script_runner.py", line 436, in _run_script_thread
+    self._run_script(request.rerun_data)
+  File "/workspace/scratch/42c5fe32dad0/ieee39-cloud/repo/.venv/lib/python3.12/site-packages/streamlit/runtime/scriptrunner/script_runner.py", line 949, in _run_script
+    ) = exec_func_with_error_handling(code_to_exec, ctx)
+  File "/workspace/scratch/42c5fe32dad0/ieee39-cloud/repo/.venv/lib/python3.12/site-packages/streamlit/runtime/scriptrunner/exec_code.py", line 136, in exec_func_with_error_handling
+    result = func()
+  File "/workspace/scratch/42c5fe32dad0/ieee39-cloud/repo/.venv/lib/python3.12/site-packages/streamlit/runtime/scriptrunner/script_runner.py", line 924, in code_to_exec
+    exec(code, module.__dict__)  # noqa: S102
+  File "/workspace/scratch/42c5fe32dad0/ieee39-reboot-recovery/app/pages/2_运行.py", line 18, in <module>
+    name = scenario_selector()
+  File "/workspace/scratch/42c5fe32dad0/ieee39-reboot-recovery/app/common.py", line 230, in scenario_selector
+    name = box.selectbox(label, names, index=names.index(cur), key=f"_sel_{key}")
+  File "/workspace/scratch/42c5fe32dad0/ieee39-cloud/repo/.venv/lib/python3.12/site-packages/streamlit/runtime/metrics_util.py", line 725, in wrapped_func
+    result = non_optional_func(*args, **kwargs)
+  File "/workspace/scratch/42c5fe32dad0/ieee39-cloud/repo/.venv/lib/python3.12/site-packages/streamlit/elements/widgets/selectbox.py", line 635, in selectbox
+    return self._selectbox(
+  File "/workspace/scratch/42c5fe32dad0/ieee39-cloud/repo/.venv/lib/python3.12/site-packages/streamlit/elements/widgets/selectbox.py", line 684, in _selectbox
+    check_widget_policies(
+  File "/workspace/scratch/42c5fe32dad0/ieee39-cloud/repo/.venv/lib/python3.12/site-packages/streamlit/elements/lib/policies.py", line 146, in check_widget_policies
+    check_session_state_rules(
+  File "/workspace/scratch/42c5fe32dad0/ieee39-cloud/repo/.venv/lib/python3.12/site-packages/streamlit/elements/lib/policies.py", line 90, in check_session_state_rules
+    _LOGGER.warning(
+{
+  "root": "/workspace/scratch/42c5fe32dad0/ieee39-reboot-recovery",
+  "base_commit": "db5af5a7d90c350e6b1cb98d3f4879cde58ead0b",
+  "workspace": "/tmp/ieee39-recovery-review-1i3cf10q",
+  "first_only": {
+    "status": "failed",
+    "start_remains_disabled": true,
+    "cancel_file_preserved": true
+  },
+  "all_recovered": {
+    "start_enabled": true,
+    "non_meta_files_unchanged": true,
+    "statuses": [
+      "failed",
+      "failed"
+    ],
+    "settled": [
+      false,
+      false
+    ]
+  },
+  "new_scene_after_recovery": {
+    "scene": "恢复后新场景",
+    "start_enabled": true
+  },
+  "blocked": {
+    "legacy": {
+      "reason": "legacy_machine_identity",
+      "start_disabled": true,
+      "recovery_button_present": false,
+      "warnings": [
+        "旧记录缺少稳定机器身份；仅凭主机名、PID或启动时间不能安全解锁。"
+      ],
+      "info": [
+        "已有后台运行，或历史进程身份尚待核实。暂禁用改价和启动，避免重复求解。",
+        "可按机组类型、容量和效率自动生成模拟成本，无需逐项填写。采用合成研究假设（非实测），将永久另存到当前场景；仅替换可确认的原研究默认值，真实或自定义成本、报价及原始档案不改。",
+        "该节点未配置机组或区外来电。",
+        "若为升级前或其他机器的旧记录，请在原运行机器核对并正常停止后台服务。不要删除运行目录、改写PID或状态来绕过保护。无法取得原机器证据时，请保留原项目，由管理员确认所有原服务已停止后，另建不继承旧runs记录的独立项目副本；原项目与历史全部保留。本应用不能据此认定旧运行已死亡。"
+      ]
+    },
+    "foreign": {
+      "reason": "foreign_machine",
+      "start_disabled": true,
+      "recovery_button_present": false,
+      "warnings": [
+        "记录来自其他机器或系统身份已变化；不能在本机确认原进程已退出。"
+      ],
+      "info": [
+        "已有后台运行，或历史进程身份尚待核实。暂禁用改价和启动，避免重复求解。",
+        "可按机组类型、容量和效率自动生成模拟成本，无需逐项填写。采用合成研究假设（非实测），将永久另存到当前场景；仅替换可确认的原研究默认值，真实或自定义成本、报价及原始档案不改。",
+        "该节点未配置机组或区外来电。",
+        "若为升级前或其他机器的旧记录，请在原运行机器核对并正常停止后台服务。不要删除运行目录、改写PID或状态来绕过保护。无法取得原机器证据时，请保留原项目，由管理员确认所有原服务已停止后，另建不继承旧runs记录的独立项目副本；原项目与历史全部保留。本应用不能据此认定旧运行已死亡。"
+      ]
+    },
+    "alive": {
+      "reason": "alive",
+      "start_disabled": true,
+      "recovery_button_present": false,
+      "warnings": [],
+      "info": [
+        "已有后台运行，或历史进程身份尚待核实。暂禁用改价和启动，避免重复求解。",
+        "可按机组类型、容量和效率自动生成模拟成本，无需逐项填写。采用合成研究假设（非实测），将永久另存到当前场景；仅替换可确认的原研究默认值，真实或自定义成本、报价及原始档案不改。",
+        "该节点未配置机组或区外来电。"
+      ]
+    }
+  },
+  "market_solves_started": 0
+}

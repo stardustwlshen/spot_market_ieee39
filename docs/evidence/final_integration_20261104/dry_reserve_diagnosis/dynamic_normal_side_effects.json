@@ -1,0 +1,11 @@
+{
+  "DA_reported_objective_delta_yuan": 230820.342813564,
+  "DA_true_optimum_increase_lower_bound_yuan": 207509.39865973732,
+  "DA_true_optimum_increase_upper_bound_yuan": 233736.61969856545,
+  "DA_curtailment_delta_mwh": 110.6278972159821,
+  "RT_curtailment_delta_mwh": -345.61989580997783,
+  "cash_operating_cost_delta_yuan": -136314.95738667995,
+  "cash_revenue_delta_yuan": -537719.5594554804,
+  "cash_operating_profit_delta_yuan": -401404.6020688014,
+  "caveat": "Observed runtime/plans compare a baseline default-search run with B parallel=on. One-day outcomes do not prove general performance or cross-scenario policy merit."
+}

@@ -202,7 +202,7 @@ def quotation_backup(state, name):
         archive.writestr('当前报价.json', _json(state[key]))
         archive.writestr('基础报价.json', _json(info['baseline']))
         index = ['报价备份：所有 JSON 均保留完整原值，未合并不同草稿。',
-                 '在有历史编辑提示的工作台展开“保留的旧编辑”，上传其中一个报价 JSON，可核对后仅恢复所选机组。',
+                 '在工作台展开“从文件恢复报价（仅所选机组）”，上传其中一个报价 JSON，可核对后仅恢复所选机组。',
                  f'当前基础：{info["basis_label"]}', '']
         for number, (old_key, draft) in enumerate(info.get('history', {}).items(), 1):
             filename = f'旧编辑/报价{number}.json'

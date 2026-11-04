@@ -8,8 +8,9 @@ import pyomo.environ as pyo
 V = pyo.value
 
 
-def _times(T):
-    return [f"{(t*15)//60:02d}:{(t*15)%60:02d}" for t in range(T)]
+def _times(T, dt=.25):
+    minutes = int(round(dt * 60))
+    return [f"{(t*minutes)//60:02d}:{(t*minutes)%60:02d}" for t in range(T)]
 
 
 def unit_results(m, prices) -> pd.DataFrame:
@@ -54,12 +55,10 @@ def unit_results(m, prices) -> pd.DataFrame:
     eligibility={(x["unit"],x["relative_period"]):x["reserve_eligible"] for x in reserve_rows}
     df["reserve_formulation"]="incremental_current_stock"
     df["reserve_eligible"]=[bool(eligibility.get((r.unit,r.period),False)) for r in df.itertuples()]
-    df["time"] = df.period.map(dict(enumerate(_times(T))))
+    df["time"] = df.period.map(dict(enumerate(_times(T, dt))))
     df["lmp"] = [lmp[bidx[b], t] for b, t in zip(df.bus, df.period)]
     df["energy_mwh"] = df.P_mw * dt
     df["revenue_yuan"] = df.energy_mwh * df.lmp
-    if "ren_fc" in dir(case):
-        pass
     df["curtail_mw"] = np.where(df.type.isin(["wind", "pv"]), df.avail_mw - df.P_mw, 0.0)
     return df[["period", "time", "unit", "type", "bus", "P_mw", "on", "startup", "r_up", "r_dn", "avail_mw",
                "curtail_mw", "lmp", "energy_mwh", "revenue_yuan", "reserve_eligible", "reserve_formulation"]]
@@ -68,14 +67,18 @@ def unit_results(m, prices) -> pd.DataFrame:
 def price_tables(m, prices, clear_min, clear_max, *, dispatch_prices=None, pricing_source="standard_sced"):
     md = m._md
     T = md.T
-    cols = _times(T)
+    cols = _times(T, getattr(md, "dt", .25))
     dispatch_prices = prices if dispatch_prices is None else dispatch_prices
     lmp = pd.DataFrame(prices["lmp"], index=md.buses, columns=range(T))
     lmp.index.name = "bus"
     long = []
     for i, b in enumerate(md.buses):
         for t in range(T):
-            long.append(dict(period=t, time=cols[t], bus=b, lmp_raw=prices["lmp"][i, t], lmp=prices["lmp_clamped"][i, t],
+            long.append(dict(period=t, time=cols[t], bus=b,
+                             load_mw=float(m._case.load_bus.get(b, np.zeros(T))[t]),
+                             fixed_load_mw=float(sum(v[t] for bus, v in m._case.fixed_load.values() if bus == b)),
+                             shed_mw=V(m.shed[b, t]), inj_mw=V(m.inj[b, t]) if hasattr(m, "inj") else np.nan,
+                             served_load_mw=float(m._case.load_bus.get(b, np.zeros(T))[t])-V(m.shed[b,t]), lmp_raw=prices["lmp"][i, t], lmp=prices["lmp_clamped"][i, t],
                              energy=prices["energy"][t], congestion=prices["congestion"][i, t],
                              lmp_decomp=prices["lmp_decomp"][i, t],
                              dispatch_raw_lmp=dispatch_prices["lmp"][i,t],
@@ -110,9 +113,10 @@ def storage_results(m) -> pd.DataFrame:
     for s, d in md.storage.items():
         for t in range(md.T):
             rows.append(dict(period=t, unit=s, bus=d["bus"], P_dis=V(m.Pd[s, t]), P_ch=V(m.Pc[s, t]),
-                             u_ch=int(round(V(m.u_ch[s, t]))), u_dis=int(round(V(m.u_dis[s, t]))), E_mwh=V(m.E[s, t]),
+                             u_ch=int(round(V(m.u_ch[s, t]))), u_dis=int(round(V(m.u_dis[s, t]))),
+                             E_start=float(d["soc0"] * d["ecap"]) if t == 0 else V(m.E[s,t-1]), E_mwh=V(m.E[s, t]),
                              soc=V(m.E[s, t]) / d["ecap"],reserve_formulation="incremental_current_stock"))
-    return pd.DataFrame(rows)
+    return pd.DataFrame(rows, columns=["period", "unit", "bus", "P_dis", "P_ch", "u_ch", "u_dis", "E_start", "E_mwh", "soc", "reserve_formulation"])
 
 
 def pumped_results(m) -> pd.DataFrame:
@@ -125,9 +129,9 @@ def pumped_results(m) -> pd.DataFrame:
             Vu = V(m.Vu[p, t])
             rows.append(dict(period=t, unit=p, bus=d["bus"], P_gen=V(m.Pg[p, t]), P_pump=V(m.Pp[p, t]),
                              n_gen=int(round(V(m.ngen[p, t]))), n_pump=int(round(V(m.npump[p, t]))),
-                             mode="发电" if xg else ("抽水" if xp else "停机"), V_up=Vu, V_dn=float(d["v_total"]) - Vu,
+                             mode="发电" if xg else ("抽水" if xp else "停机"), V_start=float(d["init"]["V"]) if t == 0 else V(m.Vu[p,t-1]), V_up=Vu, V_dn=float(d["v_total"]) - Vu,
                              E_equiv_mwh=(Vu - d["v_lo"]) * d["e_gen"],reserve_formulation="incremental_current_stock"))
-    return pd.DataFrame(rows, columns=["period", "unit", "bus", "P_gen", "P_pump", "n_gen", "n_pump", "mode", "V_up", "V_dn", "E_equiv_mwh", "reserve_formulation"])
+    return pd.DataFrame(rows, columns=["period", "unit", "bus", "P_gen", "P_pump", "n_gen", "n_pump", "mode", "V_start", "V_up", "V_dn", "E_equiv_mwh", "reserve_formulation"])
 
 
 def hydro_results(m) -> pd.DataFrame:
@@ -140,7 +144,7 @@ def hydro_results(m) -> pd.DataFrame:
             qout = float(d["water_rate"] * sum(V(m.Ph[j,t]) for j in d["units"]) + V(m.Qspill[h,t]))
             rows.append(dict(period=t, station=h, P_mw=sum(V(m.Ph[j, t]) for j in d["units"]),
                              units_on=sum(round(V(m.delta[j, z, t])) for j in d["units"] for z in range(len(d["zones"]))),
-                             V_1e4m3=V(m.V[h, t]), Q_spill=V(m.Qspill[h, t]),
+                             V_start=float(d.get("v0", np.nan)) if t == 0 else V(m.V[h,t-1]), V_1e4m3=V(m.V[h, t]), Q_spill=V(m.Qspill[h, t]),
                              Q_gen=d["water_rate"] * sum(V(m.Ph[j, t]) for j in d["units"]),
                              Q_in=float(d["qin"]) + float(V(m._upstream_out(h, t))) if hasattr(m, "_upstream_out") else float(d["qin"]),
                              regulation=d.get("regulation", "reservoir"),
@@ -148,7 +152,7 @@ def hydro_results(m) -> pd.DataFrame:
                              qout_max_source=d.get("qout_max_source"),
                              qout_limit_active=limit is not None,
                              qout_limit_margin_m3s=None if limit is None else limit-qout))
-    return pd.DataFrame(rows)
+    return pd.DataFrame(rows, columns=["period", "station", "P_mw", "units_on", "V_start", "V_1e4m3", "Q_spill", "Q_gen", "Q_in", "regulation", "qout_m3s", "qout_max_m3s", "qout_max_source", "qout_limit_active", "qout_limit_margin_m3s"])
 
 
 def system_results(m, prices) -> pd.DataFrame:
@@ -160,13 +164,15 @@ def system_results(m, prices) -> pd.DataFrame:
                          R_up_req=float(case.R_up[t]), R_dn_req=float(case.R_dn[t]),
                          R_up_short=V(m.sR_up[t]), R_dn_short=V(m.sR_dn[t]),
                          shed_mw=sum(V(m.shed[n, t]) for n in m.N), surplus_mw=V(m.surplus[t]),
+                         fixed_load_mw=float(sum(v[t] for _,v in case.fixed_load.values())),
+                         curtail_mw=sum(float(d["fc"][t])-V(m.Pw[w,t]) for w,d in md.ren.items()),
                          energy_price=prices["energy"][t], reserve_up_price=prices["reserve_up_price"][t],
                          reserve_dn_price=prices["reserve_dn_price"][t]))
     df = pd.DataFrame(rows)
     reserve_system=pd.DataFrame(reserve_snapshot(m)["system"])
     extra=["reserve_down_enabled","R_up_supply","R_dn_supply","R_up_re_credit_mw","R_up_balance_mw","R_dn_balance_mw"]
     for name in extra:df[name]=reserve_system[name].to_numpy()
-    df.insert(1, "time", _times(T))
+    df.insert(1, "time", _times(T, md.dt))
     return df
 
 
@@ -223,7 +229,7 @@ def pumped_summary(pdf: pd.DataFrame, prices: pd.DataFrame, dt: float) -> dict:
                       gen_hours=float((g.P_gen > 1e-3).sum() * dt), pump_hours=float((g.P_pump > 1e-3).sum() * dt),
                       gen_revenue=float(rg), pump_cost=float(rp), net_revenue=float(rg - rp),
                       avg_gen_price=float(rg / eg) if eg > 1e-6 else None, avg_pump_price=float(rp / ep) if ep > 1e-6 else None,
-                      V_up_start=float(g.V_up.iloc[0]), V_up_end=float(g.V_up.iloc[-1]))
+                      V_up_start=float(g.V_start.iloc[0]) if "V_start" in g else None, V_up_end=float(g.V_up.iloc[-1]))
     return out
 
 
@@ -311,7 +317,7 @@ def tracking_results(m) -> pd.DataFrame:
     """Forecast-window tracking penalties, not executed energy or settlement charges."""
     columns = ['unit','kind','stock_unit','period','relative_period','target_lower','target_upper',
                'actual','deviation_up','deviation_down','slack_up','slack_down',
-               'penalty_yuan_per_stock_unit','penalty_yuan','constraints_active']
+               'penalty_yuan_per_stock_unit','penalty_yuan','constraints_active','constraint_kind','state_end_hour']
     rows=[]
     coeff=getattr(m,'_anchor_cost_coefficients',{})
     term=m._case.terminal or {}
@@ -327,5 +333,7 @@ def tracking_results(m) -> pd.DataFrame:
             period=int(m._case.t0+t),relative_period=int(t),target_lower=lo,target_upper=hi,
             actual=actual,deviation_up=max(0.,actual-hi),deviation_down=max(0.,lo-actual),
             slack_up=up,slack_down=down,penalty_yuan_per_stock_unit=float(c) if active else 0.,
-            penalty_yuan=float(c)*(up+down) if active else 0.,constraints_active=active))
+            penalty_yuan=float(c)*(up+down) if active else 0.,constraints_active=active,
+            constraint_kind="hard_equality" if i in getattr(m,"_hard_anchor_indices",()) else "soft_target",
+            state_end_hour=(m._case.t0+t+1)*m._md.dt if hasattr(m,"_md") else None))
     return pd.DataFrame(rows,columns=columns)

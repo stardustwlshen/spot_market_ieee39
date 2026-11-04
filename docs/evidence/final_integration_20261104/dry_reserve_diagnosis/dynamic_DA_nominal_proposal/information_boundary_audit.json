@@ -1,0 +1,47 @@
+{
+  "passed": true,
+  "source_columns_read_by_preparation": [
+    "period",
+    "time",
+    "load_da",
+    "W1_da",
+    "W2_da",
+    "PV1_da",
+    "PV2_da",
+    "PV3_da",
+    "TIE_sched"
+  ],
+  "non_DA_evaluation_columns_poisoned": [
+    "PV3_actual",
+    "PV3_id",
+    "PV2_rt",
+    "W2_rt",
+    "load_id",
+    "PV2_actual",
+    "PV1_id",
+    "W2_id",
+    "PV2_id",
+    "PV3_rt",
+    "W1_actual",
+    "PV1_actual",
+    "W2_actual",
+    "load_rt",
+    "W1_id",
+    "load_actual",
+    "W1_rt",
+    "PV1_rt"
+  ],
+  "poisoned_actual_ID_RT_columns_leave_selected_input_exactly_equal": true,
+  "A_reconstruction_max_error_mw": 5.684341886080802e-14,
+  "B_reconstruction_max_error_mw": 6.821210263296962e-13,
+  "DA_load_plus50MW_at_period4_changes_B_max_mw": 24.41772373165668,
+  "B_dominates_A": true,
+  "block_end_B_equals_A_max_error_mw": 1.7053025658242404e-13,
+  "synthetic_error_shape": [
+    4096,
+    96
+  ],
+  "evaluation_seed_absent": true,
+  "source_generation_never_calls_apply_profile_overrides": true,
+  "scope": "Selected-column noninterference and exact buffer reconstruction. Poisoning is confined to an in-memory audit fixture; source files unchanged. No claim of real-world probability calibration."
+}

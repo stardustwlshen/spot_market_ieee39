@@ -1,0 +1,22 @@
+{
+  "status": "completed",
+  "executed_periods": 96,
+  "full_day": true,
+  "da_scuc_info": {
+    "time_s": 5.763904487999753,
+    "termination": "optimal",
+    "objective": 1223818.2631064588,
+    "warm_start": null,
+    "best_bound": 1213495.173942566,
+    "gap": 0.008435148808524445,
+    "storage_simultaneous": 0,
+    "regulation_allocation": null
+  },
+  "da_sced_info": {
+    "time_s": 3.668339695999748,
+    "termination": "optimal",
+    "objective": 1223818.2631062076
+  },
+  "source_unchanged": true,
+  "elapsed_s": 277.2780055229996
+}

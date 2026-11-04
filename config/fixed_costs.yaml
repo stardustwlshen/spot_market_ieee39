@@ -11,6 +11,8 @@ units:
   W1: {type: wind, scalar_marginal_cost_yuan_per_mwh: 8}
   W2: {type: wind, scalar_marginal_cost_yuan_per_mwh: 11}
   PV1: {type: pv, scalar_marginal_cost_yuan_per_mwh: 5}
+  PV2: {type: pv, scalar_marginal_cost_yuan_per_mwh: 5}
+  PV3: {type: pv, scalar_marginal_cost_yuan_per_mwh: 5}
   H1: {type: hydro, scalar_marginal_cost_yuan_per_mwh: 6}
   ES1: {type: storage, discharge_degradation_yuan_per_mwh: 25}
   ES2: {type: storage, discharge_degradation_yuan_per_mwh: 35}

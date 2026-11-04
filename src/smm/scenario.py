@@ -42,14 +42,29 @@ def list_scenarios() -> list[str]:
                   key=lambda n: (n != DEFAULT, n))
 
 
-def _copy_tree(src_root: Path, dst: Path):
+def _copy_tree(src_root: Path, dst: Path, *, copy_current_quote: bool = True):
+    from .unit_edit_transaction import scene_input_lock
+    with scene_input_lock(src_root):
+        return _copy_tree_unlocked(src_root, dst, copy_current_quote=copy_current_quote)
+
+
+def _copy_tree_unlocked(src_root: Path, dst: Path, *, copy_current_quote: bool = True):
     # Claim a new destination atomically, including concurrent create requests.
     # Never merge into or overwrite an existing scene.
     dst.mkdir(parents=True, exist_ok=False)
+    try:
+        _copy_tree_contents(src_root, dst, copy_current_quote=copy_current_quote)
+    except BaseException:
+        # Only remove the directory claimed by this call, never a competitor's.
+        shutil.rmtree(dst)
+        raise
+
+
+def _copy_tree_contents(src_root: Path, dst: Path, *, copy_current_quote: bool):
     (dst / "config").mkdir()
     for f in ("base.yaml", "units.yaml", "modes.yaml"):
         shutil.copy2(src_root / "config" / f, dst / "config" / f)
-    for f in ("fixed_costs.yaml", "bid_cost_basis.yaml"):
+    for f in ("fixed_costs.yaml", "bid_cost_basis.yaml", "generated_research_costs.json"):
         source = src_root / "config" / f
         if source.exists():
             shutil.copy2(source, dst / "config" / f)
@@ -59,6 +74,20 @@ def _copy_tree(src_root: Path, dst: Path):
         shutil.copy2(ov, dst / "data" / "profile_overrides.csv")
     if (src_root / "bids").exists():
         shutil.copytree(src_root / "bids", dst / "bids", dirs_exist_ok=True)
+    # The entire workspace (draft, reset baseline, history and manual markers)
+    # belongs to the scene, not only to typical scenarios. Quote-only writers
+    # replace this file atomically; the outer scene lock also keeps unit edits
+    # and their matching quote together without taking writer locks in reverse.
+    if copy_current_quote and (src_root / "current_quote.json").exists():
+        shutil.copy2(src_root / "current_quote.json", dst / "current_quote.json")
+    # A copied typical scenario retains its original curve reference. Without
+    # these files another composition would silently compound the old factors.
+    if (src_root / "config/typical_scenario.json").exists():
+        for relative in ("config/typical_scenario.json", "data/typical_baseline_profiles.csv",
+                         "data/typical_source_overrides.csv", "data/typical_source_current_quote.json"):
+            source = src_root / relative
+            if source.exists():
+                shutil.copy2(source, dst / relative)
 
 
 def create_scenario(name: str, source: str | None = None, note: str = "") -> Path:
@@ -67,10 +96,12 @@ def create_scenario(name: str, source: str | None = None, note: str = "") -> Pat
     if dst.exists():
         raise FileExistsError(f"场景 {name} 已存在")
     src_root = ROOT if source is None else scenario_path(source)
-    _copy_tree(src_root, dst)
+    _copy_tree(src_root, dst, copy_current_quote=source is not None)
     meta = dict(name=name, source=source or "仓库 config/", note=note,
                 created=_dt.datetime.now().isoformat(timespec="seconds"))
     (dst / "scenario.json").write_text(json.dumps(meta, ensure_ascii=False, indent=2), encoding="utf-8")
+    from .research_cost_setup import initialize_missing_cost_defaults
+    initialize_missing_cost_defaults(dst)
     return dst
 
 
@@ -118,6 +149,12 @@ def read_yaml(name: str, which: str):
 
 
 def write_yaml(name: str, which: str, data):
+    from .unit_edit_transaction import scene_input_lock
+    with scene_input_lock(scenario_path(name)):
+        _write_yaml_unlocked(name, which, data)
+
+
+def _write_yaml_unlocked(name, which, data):
     p = scenario_path(name) / "config" / f"{which}.yaml"
     with open(p, "w", encoding="utf-8") as f:
         _yaml().dump(data, f)

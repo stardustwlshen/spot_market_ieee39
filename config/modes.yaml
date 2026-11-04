@@ -87,7 +87,7 @@ MKT:
                                      # 甘肃2026 V3.2第64(四)/73允许经安全校核的自调度申报结合最新能力参与实时优化
     storage:
       mode: sced_anchor              # 充放 0-1 状态在窗口 MIP 内决策； sced_anchor：沿用日前封存报价（第六十二条）进入实时 SCED，初值 = 实际 SOC；fixed_da：执行日前充放电曲线（价格接受者）
-      anchor: hourly_eq              # 研究默认（模式 B2）：各整点以 E_RT = E_DA 为带罚软锚点目标；广东对应条款未核实
+      anchor: two_hour_eq            # 用户研究策略：北京时间02/04/…/24点末SOC、抽蓄上库容硬等于日前；不允许罚项替代一致
                                      # 可选 window_end_pct（模式 B1）：甘V3.2 运营细则附录5 第9项，窗口末 (1−x)E_DA ≤ E_RT ≤ (1+x)E_DA（同时满足 SOC 上下限）
       x: 0.05                        # 假设值：仅 window_end_pct 使用；甘肃细则未给出 x
       anchor_penalty: 1.0e5          # 仅旧配置兼容；新tracking_policy以可放电等价MWh统一计罚

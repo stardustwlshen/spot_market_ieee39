@@ -35,6 +35,8 @@ renewable_vom:
   W1: 8
   W2: 11
   PV1: 5
+  PV2: 5
+  PV3: 5
 renewable_strategy_increments:
 - 0
 - 10

@@ -1,0 +1,54 @@
+mkdir -p failed for path /home/agent/.config/matplotlib: [Errno 30] Read-only file system: '/home/agent/.config/matplotlib'
+Matplotlib created a temporary cache directory at /tmp/matplotlib-9o5jpax4 because there was an issue with the default path (/home/agent/.config/matplotlib); it is highly recommended to set the MPLCONFIGDIR environment variable to a writable directory, in particular to speed up the import of Matplotlib and to better support multiprocessing.
+Fontconfig error: No writable cache directories
+Fontconfig error: No writable cache directories
+Fontconfig error: No writable cache directories
+Fontconfig error: No writable cache directories
+Fontconfig error: No writable cache directories
+Fontconfig error: No writable cache directories
+Fontconfig error: No writable cache directories
+Fontconfig error: No writable cache directories
+Fontconfig error: No writable cache directories
+Fontconfig error: No writable cache directories
+Fontconfig error: No writable cache directories
+Fontconfig error: No writable cache directories
+Fontconfig error: No writable cache directories
+Fontconfig error: No writable cache directories
+Fontconfig error: No writable cache directories
+Fontconfig error: No writable cache directories
+Fontconfig error: No writable cache directories
+Fontconfig error: No writable cache directories
+Fontconfig error: No writable cache directories
+Fontconfig error: No writable cache directories
+Fontconfig error: No writable cache directories
+Fontconfig error: No writable cache directories
+Fontconfig error: No writable cache directories
+Fontconfig error: No writable cache directories
+Fontconfig error: No writable cache directories
+Fontconfig error: No writable cache directories
+Fontconfig error: No writable cache directories
+Fontconfig error: No writable cache directories
+Fontconfig error: No writable cache directories
+Fontconfig error: No writable cache directories
+2026-11-03 22:32:17.911 WARNING streamlit.runtime.caching.cache_data_api: No runtime found, using MemoryCacheStorageManager
+2026-11-03 22:32:17.914 WARNING streamlit.runtime.caching.cache_data_api: No runtime found, using MemoryCacheStorageManager
+2026-11-03 22:32:17.982 WARNING streamlit.runtime.scriptrunner_utils.script_run_context: Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-11-03 22:32:20.502 No runtime found, using MemoryCacheStorageManager
+{
+  "source_directory": "IEEE39-39568d6",
+  "original_source_files_unchanged": 429,
+  "prepared_periods": 96,
+  "PV_mw": 2152,
+  "bids_version": 3,
+  "solver_gap": 0.01,
+  "solver_time_limit_s": 600,
+  "home_run_result_comparison_AppTest_exceptions": 0,
+  "normal_quote_upload_entry_present": true,
+  "full_day_display": "96 / 96 段",
+  "legal_prefix_display": "8 / 96 段",
+  "whole_unit_loss_rejected_and_can_switch_back": true,
+  "cross_range_difference_blocked": true,
+  "new_environment_installation": false,
+  "market_solve_performed": false,
+  "pixel_browser_QA": false
+}

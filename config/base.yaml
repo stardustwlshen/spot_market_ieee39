@@ -4,8 +4,11 @@ season: wet               # wet 丰水期 / dry 枯水期
 rule_set: MKT             # 统一市场规则（config/modes.yaml，参考川/甘）
 periods: 96
 dt_h: 0.25
-load_scale: 0.68          # case39 节点负荷 × 标幺日曲线 × load_scale（假设值：保证可满足正备用≈最大单机+负荷3%+新能源10%）
+tie_line_mode: supply     # 区外来电按固定计划注入；取消此前误设的来电转负荷
+load_scale: 0.68          # case39 节点负荷 × 标幺日曲线 × load_scale（研究假设；常规组合仍须全天出清验证）
 seed: 20260715
+forecast:
+  model: multiscale_v2   # 新默认离线多尺度风光情景；旧场景缺model仍保留legacy_v1，上传列优先
 
 # 全网研究倍率：在下方逐线因素之后乘1.2；相对上一版600MW场景增加20%，不是实际扩建结论。
 line_capacity_multiplier: 1.2

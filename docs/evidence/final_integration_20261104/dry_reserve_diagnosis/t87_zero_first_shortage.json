@@ -1,0 +1,49 @@
+{
+  "period": 87,
+  "time": "21:45",
+  "scope": "Exact exported state/DA plan. Impose first reserve shortage=0 and shed/surplus/network slacks=0 throughout current window. Future reserve short allowed and original objective retained. Not full-day validation.",
+  "base_RT_solver": {
+    "tracking_policy": {
+      "mode": "soft_deliverable_energy",
+      "penalty_yuan_per_discharge_mwh": 1000
+    },
+    "interval_min": 15,
+    "lookahead_h": 2,
+    "boundary_lead_min": 30,
+    "binding_periods": 1,
+    "first_period_actual": true,
+    "lock_types": [
+      "coal",
+      "gas_ccgt"
+    ],
+    "free_types": [
+      "gas_gt"
+    ],
+    "hydro": "window_end_da",
+    "storage": {
+      "mode": "sced_anchor",
+      "anchor": "two_hour_eq",
+      "x": 0.05,
+      "anchor_penalty": "1.0e5"
+    },
+    "mip_rel_gap": 0.01,
+    "time_limit_s": 180
+  },
+  "status": "infeasible",
+  "error": "RT窗口[87,95)出清失败，储能/抽蓄锚点={'policy': 'two_hour_eq', 'hard': True, 'actual_storage_MWh': {'ES1': 100.0, 'ES2': 92.05579593454965, 'ES3': 100.0}, 'actual_pumped': {'PS1': {'V': 194.04761904761904, 'ng': 0, 'np': 0, 'xg': 0, 'xp': 0}}, 'actual_pumped_starts_used': {'PS1': {'gen': 4.0, 'pump': 1.0}}, 'remaining_day_asset_certificate': True, 'storage_targets': {'ES1': [(0, 100.0, 100.0)], 'ES2': [(0, 91.48001292173088, 91.48001292173088)], 'ES3': [(0, 100.0, 100.0)]}, 'pumped_targets': {'PS1': [(0, 200.0, 200.0)]}}；硬锚点不自动放松；水电模式=window_end_da，实际初态/硬目标={'H1': {'initial_V_1e4m3': 15017.279999999999, 'initial_P_mw': 215.0, 'initial_online': 3, 'hard_target_V_1e4m3': None}}；原始异常 RuntimeError: SCUC失败：highs_model_status=HighsModelStatus.kInfeasible, primal_solution_available=False；A feasible solution was not found, so no solution can be loaded. If using the appsi.solvers.Highs interface, you can set opt.config.load_solution=False. If using the environ.SolverFactory interface, you can set opt.solve(model, load_solutions = False). Then you can check results.termination_condition and results.best_feasible_objective before loading a solution.",
+  "solver_budget": {
+    "total_solver_budget_s": 180.0,
+    "solver_elapsed_s": 0.32624014700013504,
+    "remaining_solver_s": 179.67375985299986,
+    "reserve_lp_s": 10.0,
+    "scope": "solver_calls_only_not_build_export_or_OS_wall_clock",
+    "calls": [
+      {
+        "phase": "scuc",
+        "time_limit_s": 170.0,
+        "elapsed_s": 0.32624014700013504,
+        "returned": false
+      }
+    ]
+  }
+}

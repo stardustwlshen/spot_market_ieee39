@@ -1,6 +1,7 @@
 """负荷/风光 96 点曲线与“预测 vs 实际”数据生成（方案第 9.1–9.2 节）。
 
-- 实际曲线 A：标幺日曲线（假设值形状）× 容量 / 峰值。
+- 下列为 legacy_v1（缺省，保持历史复现）；multiscale_v2 须显式采用，见 forecast_multiscale.py。
+- 旧版实际曲线 A：标幺日曲线（假设值形状）× 容量 / 峰值。
 - 预测 F = A − e。误差 e 用 AR(1) 生成：e_t = φ e_{t-1} + σ sqrt(1-φ²) ξ_t，只作为数据工具，不进入出清模型。
 - 越晚越准（假设做法）：日内/超短期误差 = 同一条噪声按 σ 比例缩小 + 少量独立噪声。
 - σ 取方案 sigma 表的中值（风电日前 15%、光伏 12.5%（白天）、负荷 2.5%），均为假设值。
@@ -55,27 +56,61 @@ def ar1(T, phi, rng, xi=None):
 
 
 def validate_profiles(cfg, frame):
+    if not frame.columns.is_unique:
+        raise ValueError('profiles列名重复')
     if len(frame) != cfg.T:
         raise ValueError(f"profiles需{cfg.T}行")
+    if 'period' in frame and not np.array_equal(frame['period'].to_numpy(), np.arange(1, cfg.T + 1)):
+        raise ValueError('profiles period须按1..T严格顺序且无重复/缺失')
+    from .input_validation import _series
     caps = {r['id']:float(r['cap']) for r in cfg.units['renewable']}
     for name in ['load']+list(caps):
         for stage in ('actual','da','id','rt'):
             col=f'{name}_{stage}'
             if col not in frame:raise ValueError(f'profiles缺少{col}')
-            values=frame[col].to_numpy(dtype=float)
-            if not np.isfinite(values).all() or (values<0).any():raise ValueError(f'profiles {col}必须为有限非负数')
+            values = _series(frame[col].to_numpy(), cfg.T, f'profiles {col}')
             if name in caps and (values>caps[name]+1e-9).any():raise ValueError(f'profiles {col}超出装机容量')
+    from .fixed_load import tie_mode, tie_profiles
+    if tie_mode(cfg) == "fixed_load":
+        for unit in cfg.units.get("tie", []):
+            tie_profiles(cfg, frame, unit)
+    else:
+        for unit in cfg.units.get('tie', []):
+            col = f"{unit['id']}_sched"
+            if col not in frame:
+                raise ValueError(f'profiles缺少区外来电曲线{col}')
+            _series(frame[col].to_numpy(), cfg.T, f'profiles {col}', maximum=unit['pmax'])
     return frame
 
 
 def generate_profiles(cfg: Config, seed: int | None = None) -> pd.DataFrame:
+    """Versioned offline scenarios; omitted model retains the exact legacy path.
+
+    ``multiscale_v2`` is explicitly selected for future runs, never inferred from
+    the code version. Uploaded columns still take precedence in the separate
+    ``apply_profile_overrides`` step. Neither model is an operational forecaster.
+    """
+    fo = cfg.base.get("forecast") or {}
+    if not isinstance(fo, dict):
+        raise ValueError("forecast须为配置对象")
+    model = fo.get("model", "legacy_v1")
+    if model not in ("legacy_v1", "multiscale_v2"):
+        raise ValueError("forecast.model须为legacy_v1或multiscale_v2")
+    frame = _generate_legacy_profiles(cfg, seed)
+    if model == "multiscale_v2":
+        from .forecast_multiscale import renewable_profiles
+        frame = renewable_profiles(cfg, frame, seed)
+    return validate_profiles(cfg, frame)
+
+
+def _generate_legacy_profiles(cfg: Config, seed: int | None = None) -> pd.DataFrame:
     """返回 96 行：各对象的 actual / da / id / rt 四列（MW）及 tie 计划。"""
     T = cfg.T
     rng = np.random.default_rng(cfg.base["seed"] if seed is None else seed)
     # 可选覆盖（base.yaml 的 forecast 段，网页应用“风光预测误差”用）：sigma.{wind,pv,load}.{da,id,rt}、phi.{wind,pv,load}
     fo = cfg.base.get("forecast") or {}
-    if not isinstance(fo, dict) or set(fo)-{'sigma','phi'}:
-        raise ValueError('forecast仅支持sigma/phi配置')
+    if not isinstance(fo, dict) or set(fo)-{'model','sigma','phi'}:
+        raise ValueError('forecast仅支持model/sigma/phi配置')
     for key in ('sigma','phi'):
         value=fo.get(key) or {}
         if not isinstance(value,dict) or set(value)-set(PHI):raise ValueError(f'forecast.{key}类型/资源键非法')
@@ -127,6 +162,10 @@ def generate_profiles(cfg: Config, seed: int | None = None) -> pd.DataFrame:
             make(spec["id"], cap * shp, cap, "pv", daylight=(shp > 0).astype(float) * np.sqrt(shp / shp.max()), clip_cap=cap)
     for tie in cfg.units.get("tie", []):
         out[f"{tie['id']}_sched"] = np.round(tie["pmax"] * interp96(TIE_SHAPE, T), 3)
+        from .fixed_load import tie_mode
+        if tie_mode(cfg) == "fixed_load":
+            for stage in ("actual", "da", "id", "rt"):
+                out[f"{tie['id']}_{stage}"] = out[f"{tie['id']}_sched"].copy()
     return validate_profiles(cfg, out)
 
 
@@ -141,12 +180,20 @@ def apply_profile_overrides(cfg: Config, df: pd.DataFrame, overrides: pd.DataFra
         p = cfg.root / "data" / "profile_overrides.csv"
         if not p.exists():
             return df
-        overrides = pd.read_csv(p)
+        from .input_validation import read_input_csv
+        overrides = read_input_csv(p)
     if len(overrides) != len(df):
         raise ValueError(f"profile_overrides 需 {len(df)} 行，实际 {len(overrides)} 行")
     out = df.copy()
     caps = {r["id"]: r["cap"] for r in cfg.units["renewable"]}
-    names = ["load"] + list(caps)
+    from .fixed_load import tie_mode, tie_profiles
+    fixed_names = []
+    if tie_mode(cfg) == "fixed_load":
+        for unit in cfg.units.get("tie", []):
+            fixed_names.append(unit["id"])
+            for col, values in tie_profiles(cfg, df, unit).items():
+                out[col] = values
+    names = ["load"] + list(caps) + fixed_names
     allowed={'period','time'}|{f'{n}_{stage}' for n in names for stage in ('actual','da','id','rt')}
     unknown=set(overrides.columns)-allowed
     if unknown:raise ValueError(f'profile_overrides未知列: {sorted(unknown)}')
@@ -175,10 +222,10 @@ def apply_profile_overrides(cfg: Config, df: pd.DataFrame, overrides: pd.DataFra
     for n in names:
         a_col = f"{n}_actual"
         if a_col in overrides and overrides[a_col].notna().all():
-            a_old = df[a_col].to_numpy(float)
+            a_old = out[a_col].to_numpy(float)
             a_new = overrides[a_col].to_numpy(float)
-            for st in ("da", "id", "rt"):
-                e = a_old - df[f"{n}_{st}"].to_numpy(float)
+            for st in (() if n in fixed_names else ("da", "id", "rt")):
+                e = a_old - out[f"{n}_{st}"].to_numpy(float)
                 if n == "load":
                     e = e * np.divide(a_new, a_old, out=np.ones_like(a_new), where=a_old > 0)
                 f = a_new - e

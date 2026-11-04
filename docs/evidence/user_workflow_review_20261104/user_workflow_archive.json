@@ -1,0 +1,15 @@
+{
+  "file": "IEEE39_user_workflow_outputs_20261104.tar.gz",
+  "bytes": 2789288,
+  "sha256": "4447cb933f19cd0fcfcfd8cead86409ddb75eebbdfd36890dfb7b6c1d71838a4",
+  "checks": [
+    {
+      "run": "20261103-211945-688139_full",
+      "scope": "debug_prefix",
+      "executed_periods": 8,
+      "indexed_files": 53,
+      "matched": true
+    }
+  ],
+  "note": "DA96 + RT8 debug_prefix and separate cancelled DA; not another complete market day. Snapshot and final scenes differ deliberately as user edited and launched a second cancelled run."
+}

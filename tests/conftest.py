@@ -16,6 +16,10 @@ def da_result():
     from smm.network import build_network
 
     cfg = load_config()
+    cfg.base["tie_line_mode"] = "supply"  # historical regression contract; new fixed demand tested separately
+    cfg.base["forecast"] = {"model": "legacy_v1"}  # explicit historical curve golden; current v2 tested separately
+    cfg.units["renewable"] = [u for u in cfg.units["renewable"] if u["id"] not in {"PV2", "PV3"}]  # pre-expansion asset golden
+    cfg.mode["realtime"]["storage"]["anchor"] = "hourly_eq"  # explicit historical soft-anchor fixture
     cfg.mode["startup_cost_mode"] = "state_dependent"  # historical detailed-startup regression
     # Explicit historical regression fixture: retain its exact prior safety/price
     # policy rather than accidentally testing new defaults under old assertions.

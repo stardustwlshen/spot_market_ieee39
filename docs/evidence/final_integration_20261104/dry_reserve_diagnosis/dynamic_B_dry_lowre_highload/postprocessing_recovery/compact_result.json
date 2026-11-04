@@ -1,0 +1,50 @@
+{
+  "source_run": "ieee39-dry-reserve-evidence/dynamic_B_dry_lowre_highload",
+  "executed_periods": 96,
+  "DA": {
+    "objective": 9022009.570091836,
+    "scuc_objective": 9022009.570092227,
+    "gap": 0.024172097752060452,
+    "termination": "maxTimeLimit",
+    "best_bound": 8803928.672843933,
+    "requested_mip_gap": 0.01,
+    "requested_gap_met": false,
+    "curtail_mwh": 0.0
+  },
+  "DA_scuc_time_s": 602.5990871440008,
+  "DA_reserve_short_max_mw": 0.0,
+  "DA_reserve_short_integral_mw_h": 0.0,
+  "RT_max_gap": 0.0086489677224744,
+  "executed_reserve_short_periods": 4,
+  "executed_reserve_short_max_mw": 73.6996232891969,
+  "executed_reserve_short_integral_mw_h": 59.90819872212052,
+  "RT_shed_mwh": 0.0,
+  "RT_surplus_mwh": 0.0,
+  "RT_curtailment_mwh": 0.0,
+  "RT_line_overload_max_mw": 0.0,
+  "hard_anchors_satisfied": true,
+  "cash_operating_cost_yuan": 15148678.771928977,
+  "cash_revenue_yuan": 25427904.904988777,
+  "cash_operating_profit_yuan": 10279226.133059798,
+  "DA_CCGT_hours": 10.0,
+  "RT_CCGT_hours": 10.0,
+  "DA_GT_hours": 24.0,
+  "RT_GT_hours": 9.0,
+  "full_activation_risk_resource_periods": 13,
+  "phase_times": {
+    "da": 612.5937422549996,
+    "intraday": 0.0,
+    "realtime": 182.290482187007,
+    "settlement": 0.3143744240005617,
+    "total": 828.1638539399992
+  },
+  "original_runner_status": {
+    "status": "failed",
+    "elapsed_s": 833.264654826,
+    "error_type": "AssertionError",
+    "error": "",
+    "executed_periods": 96
+  },
+  "postprocessing_status": "full_precision_audit_completed_no_new_solve",
+  "additional_reserve_audit_violation_count": 0
+}

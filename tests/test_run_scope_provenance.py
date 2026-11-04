@@ -38,3 +38,37 @@ def test_fingerprint_is_bounded_content_addressed_and_not_later_state(tmp_path):
 
     with pytest.raises(FileExistsError):
         capture_provenance(out,root,source_root=root)
+
+
+@pytest.mark.parametrize("remove_bids", [False, True])
+def test_read_only_prepare_preserves_every_frozen_input_byte(tmp_path, remove_bids):
+    import shutil
+    from smm.config import load_config
+    from smm.live_runner import freeze_inputs
+    from smm.pipeline import prepare
+    cfg=load_config()
+    snap=freeze_inputs(cfg.root,tmp_path)
+    if remove_bids:
+        shutil.rmtree(snap/'bids')
+    # Existing profile may reflect an earlier seed. It must remain untouched.
+    old=snap/'data/profiles/old.csv';old.parent.mkdir(parents=True,exist_ok=True)
+    old.write_text('historical profile bytes\n')
+    frozen=load_config(root=snap)
+    before={p.relative_to(snap):p.read_bytes() for p in snap.rglob('*') if p.is_file()}
+    evidence=capture_provenance(tmp_path,snap)
+    case=prepare(frozen,verbose=False,read_only=True)
+    after={p.relative_to(snap):p.read_bytes() for p in snap.rglob('*') if p.is_file()}
+    assert before == after
+    assert evidence['inputs']==file_fingerprint(snap,('config','data','bids'))
+    assert len(case.profiles)==frozen.T
+    assert case.profiles.attrs['generation_metadata']['seed']==frozen.base['seed']
+    if remove_bids:
+        assert case.bids['version']==1
+        with pytest.raises(FileNotFoundError):
+            prepare(frozen,bid_version=99,verbose=False,read_only=True)
+
+
+def test_scenario_runner_uses_read_only_preparation():
+    from pathlib import Path
+    source=(Path(__file__).resolve().parents[1]/'scripts/run_scenario.py').read_text()
+    assert 'prepare(cfg, a.bid_version, read_only=True)' in source

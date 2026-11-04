@@ -1,0 +1,34 @@
+{
+  "code_commit": "c1f829a",
+  "runtime_source_sha256": "42909a61f51ff65c9eda844b045bc45f3357134da39fea45c976f32394630358",
+  "python": "3.12",
+  "model_source_commit": "50223f4",
+  "unchanged_model_files": {
+    "src/smm/scuc.py": true,
+    "src/smm/da.py": true,
+    "src/smm/rolling.py": true,
+    "src/smm/forecast.py": true,
+    "src/smm/case.py": true,
+    "src/smm/network.py": true,
+    "src/smm/settlement.py": true,
+    "src/smm/full.py": true,
+    "src/smm/pipeline.py": true,
+    "src/smm/bids.py": true,
+    "config/base.yaml": true,
+    "config/modes.yaml": true,
+    "config/units.yaml": true,
+    "src/smm/auxiliary_pricing.py": true,
+    "src/smm/storage_anchors.py": true,
+    "src/smm/regulation.py": true,
+    "src/smm/input_validation.py": true,
+    "src/smm/typical_scenarios.py": true
+  },
+  "final_full_suite_commit": "2aec3d62eba96fcb0863249676b11f009cb96f44",
+  "final_full_suite_result": {
+    "passed": 1434,
+    "failed": 0,
+    "skipped": 0,
+    "elapsed_s": 562.37
+  },
+  "changes_after_frozen_run": "TIE input chart and ordinary scene quote-copy preservation plus test fixtures; core model/solver/configuration files unchanged"
+}

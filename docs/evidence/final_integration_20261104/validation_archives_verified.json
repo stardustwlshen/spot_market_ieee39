@@ -1,0 +1,60 @@
+[
+  {
+    "file": "IEEE39_boundary_outputs_20261104.tar.gz",
+    "cases": {
+      "dry_lowre_highload": true,
+      "wet_highre_lowload": true
+    },
+    "indexed_files": {
+      "dry_lowre_highload": 71,
+      "wet_highre_lowload": 71
+    },
+    "verified": true
+  },
+  {
+    "file": "IEEE39_baseline_outputs_20261104.tar.gz",
+    "cases": {
+      "wet_baseline": true,
+      "dry_baseline": true
+    },
+    "indexed_files": {
+      "wet_baseline": 71,
+      "dry_baseline": 71
+    },
+    "verified": true
+  },
+  {
+    "file": "IEEE39_reserve_counterfactuals_20261104.tar.gz",
+    "cases": {
+      "da_buffer100": true,
+      "da_buffer250": true
+    },
+    "indexed_files": {
+      "da_buffer100": 53,
+      "da_buffer250": 53
+    },
+    "verified": true
+  },
+  {
+    "file": "IEEE39_parallel_strategy_outputs_20261104.tar.gz",
+    "cases": {
+      "parallel_strategy_full96": true
+    },
+    "indexed_files": {
+      "parallel_strategy_full96": 53
+    },
+    "verified": true
+  },
+  {
+    "file": "IEEE39_dynamic_reserve_outputs_20261104.tar.gz",
+    "cases": {
+      "dynamic_B_boundary": true,
+      "dynamic_B_ordinary_dry": true
+    },
+    "indexed_files": {
+      "dynamic_B_boundary": 53,
+      "dynamic_B_ordinary_dry": 53
+    },
+    "verified": true
+  }
+]

@@ -1,0 +1,325 @@
+2026-11-03 22:00:25.795 WARNING streamlit.runtime.caching.cache_data_api: No runtime found, using MemoryCacheStorageManager
+2026-11-03 22:00:25.796 WARNING streamlit.runtime.caching.cache_data_api: No runtime found, using MemoryCacheStorageManager
+2026-11-03 22:00:25.796 WARNING streamlit.runtime.caching.cache_data_api: No runtime found, using MemoryCacheStorageManager
+2026-11-03 22:00:25.796 WARNING streamlit.runtime.caching.cache_data_api: No runtime found, using MemoryCacheStorageManager
+2026-11-03 22:00:25.835 WARNING streamlit.runtime.caching.cache_data_api: No runtime found, using MemoryCacheStorageManager
+2026-11-03 22:00:25.987 WARNING streamlit.runtime.scriptrunner_utils.script_run_context: Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-11-03 22:00:26.220 DEBUG   streamlit.runtime.scriptrunner.script_runner: Running script
+2026-11-03 22:00:26.220 DEBUG   streamlit.runtime.media_file_manager: Disconnecting files for session with ID test session id
+2026-11-03 22:00:26.220 DEBUG   streamlit.runtime.media_file_manager: Sessions still active: dict_keys([])
+2026-11-03 22:00:26.220 DEBUG   streamlit.runtime.media_file_manager: Files: 0; Sessions with files: 0
+2026-11-03 22:00:26.375 DEBUG   streamlit.runtime.media_file_manager: Removing orphaned files...
+2026-11-03 22:00:26.375 DEBUG   streamlit.runtime.media_file_manager: Removing orphaned deferred callables...
+2026-11-03 22:00:26.375 DEBUG   streamlit.runtime.scriptrunner.script_runner: Running script
+2026-11-03 22:00:26.375 DEBUG   streamlit.runtime.media_file_manager: Disconnecting files for session with ID test session id
+2026-11-03 22:00:26.375 DEBUG   streamlit.runtime.media_file_manager: Sessions still active: dict_keys([])
+2026-11-03 22:00:26.375 DEBUG   streamlit.runtime.media_file_manager: Files: 0; Sessions with files: 0
+2026-11-03 22:00:26.480 DEBUG   streamlit.runtime.memory_media_file_storage: Adding media file 97a255f7f522e54177a28f445f8e7dd9
+2026-11-03 22:00:26.495 DEBUG   streamlit.runtime.memory_media_file_storage: Adding media file 5d66497c07b52c078543a5b28df58aa0
+2026-11-03 22:00:26.543 DEBUG   streamlit.runtime.caching.cache_data_api: Creating new DataCache (key=77d6c98f9e1646fcce49e0d0abfccdb1, persist=None, max_entries=None, ttl=None)
+2026-11-03 22:00:26.544 DEBUG   streamlit.runtime.caching.cache_utils: Cache key: bcf3af6fc21328553c92ec25bd7d6bf3
+2026-11-03 22:00:26.544 DEBUG   streamlit.runtime.caching.storage.in_memory_cache_storage_wrapper: Memory cache MISS: bcf3af6fc21328553c92ec25bd7d6bf3
+2026-11-03 22:00:26.544 DEBUG   streamlit.runtime.caching.storage.in_memory_cache_storage_wrapper: Memory cache MISS: bcf3af6fc21328553c92ec25bd7d6bf3
+2026-11-03 22:00:27.601 DEBUG   streamlit.runtime.media_file_manager: Removing orphaned files...
+2026-11-03 22:00:27.601 DEBUG   streamlit.runtime.media_file_manager: Removing orphaned deferred callables...
+2026-11-03 22:00:27.606 DEBUG   streamlit.runtime.scriptrunner.script_runner: Beginning script thread
+2026-11-03 22:00:27.607 DEBUG   streamlit.runtime.scriptrunner.script_runner: Running script
+2026-11-03 22:00:27.607 DEBUG   streamlit.runtime.media_file_manager: Disconnecting files for session with ID test session id
+2026-11-03 22:00:27.607 DEBUG   streamlit.runtime.media_file_manager: Sessions still active: dict_keys([])
+2026-11-03 22:00:27.607 DEBUG   streamlit.runtime.media_file_manager: Files: 0; Sessions with files: 0
+2026-11-03 22:00:29.199 DEBUG   streamlit.runtime.memory_media_file_storage: Adding media file 3c62d4cabd97b5327482d639230a8f09
+2026-11-03 22:00:29.200 DEBUG   streamlit.runtime.memory_media_file_storage: Adding media file 21d63354aa7dbe7d80ebeaa9b7bbc674
+2026-11-03 22:00:29.201 DEBUG   streamlit.runtime.memory_media_file_storage: Adding media file 5c11e900010de64e3a5f15f72b937786
+2026-11-03 22:00:29.236 DEBUG   streamlit.runtime.memory_media_file_storage: Adding media file 6495881b6c790623e6da5bb8833a6ce8
+2026-11-03 22:00:29.238 DEBUG   streamlit.runtime.memory_media_file_storage: Adding media file aba5df9cb83deafca01c7de426435587
+2026-11-03 22:00:29.382 DEBUG   streamlit.runtime.memory_media_file_storage: Adding media file 993f029ec09d424f4bd01d6202ff9d2e
+2026-11-03 22:00:29.432 DEBUG   streamlit.runtime.memory_media_file_storage: Adding media file 40746f1f4112672165b17a0943b5102c
+2026-11-03 22:00:29.433 DEBUG   streamlit.runtime.memory_media_file_storage: Adding media file d1a6d0863eefbbfdfc74847ebcc5a8b8
+2026-11-03 22:00:29.484 DEBUG   streamlit.runtime.memory_media_file_storage: Adding media file 0ec04e8e5ee0e3f5399929b8f9628ed6
+2026-11-03 22:00:29.487 DEBUG   streamlit.runtime.memory_media_file_storage: Adding media file 971f421b6ff5fa18dd1e8661c3e3ee9c
+2026-11-03 22:00:29.496 DEBUG   streamlit.runtime.memory_media_file_storage: Adding media file 3947a7bcf4412fc93b785e94e2d43037
+2026-11-03 22:00:29.500 DEBUG   streamlit.runtime.memory_media_file_storage: Adding media file f60a27b4242cf6389143547bab1eba20
+2026-11-03 22:00:29.552 DEBUG   streamlit.runtime.memory_media_file_storage: Adding media file 7bda685efe81684177177a57dc387246
+2026-11-03 22:00:29.555 DEBUG   streamlit.runtime.memory_media_file_storage: Adding media file 504ff81c087142b556759e6466d09157
+2026-11-03 22:00:29.770 DEBUG   streamlit.runtime.memory_media_file_storage: Adding media file 83dc415122655a2e459f249fea1a9859
+2026-11-03 22:00:29.772 DEBUG   streamlit.runtime.memory_media_file_storage: Adding media file 71c838c157da7b9c1707060792a68b65
+2026-11-03 22:00:29.879 DEBUG   streamlit.runtime.caching.cache_utils: Cache key: bcf3af6fc21328553c92ec25bd7d6bf3
+2026-11-03 22:00:29.879 DEBUG   streamlit.runtime.caching.storage.in_memory_cache_storage_wrapper: Memory cache HIT: bcf3af6fc21328553c92ec25bd7d6bf3
+2026-11-03 22:00:30.234 DEBUG   streamlit.runtime.memory_media_file_storage: Adding media file eb6e7098efbc3fab1b8c4e591f01cee8
+2026-11-03 22:00:30.235 DEBUG   streamlit.runtime.memory_media_file_storage: Adding media file 96bb65573506a597f525d5062d01a2f3
+2026-11-03 22:00:30.243 DEBUG   streamlit.runtime.memory_media_file_storage: Adding media file 5f11582b3dde5225b2f5af29cfb361f6
+2026-11-03 22:00:30.245 DEBUG   streamlit.runtime.memory_media_file_storage: Adding media file d7be060e41305377b9a2df214137d62e
+2026-11-03 22:00:30.251 DEBUG   streamlit.runtime.memory_media_file_storage: Adding media file fe1e5c6b23956406ce57b59fb506f9f3
+2026-11-03 22:00:30.252 DEBUG   streamlit.runtime.memory_media_file_storage: Adding media file dc0ff2f084df131741e2593d011ef0f6
+2026-11-03 22:00:30.265 DEBUG   streamlit.runtime.memory_media_file_storage: Adding media file eb9dbe0989039f24d6d4b961f18a5e5e
+2026-11-03 22:00:30.266 DEBUG   streamlit.runtime.memory_media_file_storage: Adding media file f7a0ac3c9a7750f877369f2b3e041b34
+2026-11-03 22:00:30.298 DEBUG   streamlit.runtime.memory_media_file_storage: Adding media file 52af932d1fdde303c10257b93b3a1d10
+2026-11-03 22:00:30.322 DEBUG   streamlit.runtime.memory_media_file_storage: Adding media file aad253fa9c6267048aac4e33b139d889
+2026-11-03 22:00:30.363 DEBUG   streamlit.runtime.memory_media_file_storage: Adding media file 3805a3de1659feff233f4573b6b4a5b2
+2026-11-03 22:00:30.364 DEBUG   streamlit.runtime.memory_media_file_storage: Adding media file 492a269e59056731e3a253c0cdfd15dc
+2026-11-03 22:00:30.394 DEBUG   streamlit.runtime.memory_media_file_storage: Adding media file 5d1280bb838851cf2880258f9706d5c6
+2026-11-03 22:00:30.396 DEBUG   streamlit.runtime.memory_media_file_storage: Adding media file ece13daac6d4cfe776193529e1f11f26
+2026-11-03 22:00:30.452 DEBUG   streamlit.runtime.memory_media_file_storage: Adding media file 85f7c2e547b4a13d83ca243fbc2250ac
+2026-11-03 22:00:30.454 DEBUG   streamlit.runtime.memory_media_file_storage: Adding media file dd37becc5daf84d81f737cbcfc57d401
+2026-11-03 22:00:31.110 DEBUG   streamlit.runtime.memory_media_file_storage: Adding media file c93785c441bacbcdf23de5d735bd015d
+2026-11-03 22:00:31.112 DEBUG   streamlit.runtime.memory_media_file_storage: Adding media file 6331fd0b6ca205f60e9e3ef11b3dbecf
+2026-11-03 22:00:31.132 DEBUG   streamlit.runtime.memory_media_file_storage: Adding media file 3a90124e7eb95194e3dfb1a4992f25bc
+2026-11-03 22:00:31.168 DEBUG   streamlit.runtime.memory_media_file_storage: Adding media file 90f1f0598ec9a371c3057cd5a8eaec35
+2026-11-03 22:00:31.169 DEBUG   streamlit.runtime.memory_media_file_storage: Adding media file 9a2a766fb95a0ba2026c14a181134dc8
+2026-11-03 22:00:31.180 DEBUG   streamlit.runtime.memory_media_file_storage: Adding media file 91f895b490078beecc6b036a880884cf
+2026-11-03 22:00:31.184 DEBUG   streamlit.runtime.media_file_manager: Removing orphaned files...
+2026-11-03 22:00:31.184 DEBUG   streamlit.runtime.media_file_manager: Removing orphaned deferred callables...
+2026-11-03 22:00:31.250 WARNING streamlit.runtime.scriptrunner_utils.script_run_context: Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-11-03 22:00:31.404 DEBUG   streamlit.components.v2.manifest_scanner: Filtered 175 packages down to 1 candidates for component scanning
+2026-11-03 22:00:31.404 DEBUG   streamlit.components.v2.manifest_scanner: Scanning 1 candidate packages for component manifests using 1 worker threads
+2026-11-03 22:00:31.426 DEBUG   streamlit.components.v2.manifest_scanner: Found 0 component manifests total
+2026-11-03 22:00:31.427 DEBUG   streamlit.runtime.scriptrunner.script_runner: Beginning script thread
+2026-11-03 22:00:31.427 DEBUG   streamlit.runtime.scriptrunner.script_runner: Running script
+2026-11-03 22:00:31.427 DEBUG   streamlit.runtime.media_file_manager: Disconnecting files for session with ID test session id
+2026-11-03 22:00:31.427 DEBUG   streamlit.runtime.media_file_manager: Sessions still active: dict_keys([])
+2026-11-03 22:00:31.427 DEBUG   streamlit.runtime.media_file_manager: Files: 0; Sessions with files: 0
+2026-11-03 22:00:31.440 DEBUG   streamlit.runtime.media_file_manager: Removing orphaned files...
+2026-11-03 22:00:31.440 DEBUG   streamlit.runtime.media_file_manager: Removing orphaned deferred callables...
+2026-11-03 22:00:31.440 DEBUG   streamlit.runtime.scriptrunner.script_runner: Running script
+2026-11-03 22:00:31.440 DEBUG   streamlit.runtime.media_file_manager: Disconnecting files for session with ID test session id
+2026-11-03 22:00:31.440 DEBUG   streamlit.runtime.media_file_manager: Sessions still active: dict_keys([])
+2026-11-03 22:00:31.440 DEBUG   streamlit.runtime.media_file_manager: Files: 0; Sessions with files: 0
+2026-11-03 22:00:31.539 DEBUG   streamlit.runtime.memory_media_file_storage: Adding media file 97a255f7f522e54177a28f445f8e7dd9
+2026-11-03 22:00:31.550 DEBUG   streamlit.runtime.memory_media_file_storage: Adding media file 1655c0b1cbf5f187f0d2f6507563c8c1
+2026-11-03 22:00:31.589 DEBUG   streamlit.runtime.caching.cache_utils: Cache key: bcf3af6fc21328553c92ec25bd7d6bf3
+2026-11-03 22:00:31.589 DEBUG   streamlit.runtime.caching.storage.in_memory_cache_storage_wrapper: Memory cache HIT: bcf3af6fc21328553c92ec25bd7d6bf3
+2026-11-03 22:00:31.864 DEBUG   streamlit.runtime.media_file_manager: Removing orphaned files...
+2026-11-03 22:00:31.864 DEBUG   streamlit.runtime.media_file_manager: Removing orphaned deferred callables...
+2026-11-03 22:00:31.868 DEBUG   streamlit.runtime.scriptrunner.script_runner: Beginning script thread
+2026-11-03 22:00:31.868 DEBUG   streamlit.runtime.scriptrunner.script_runner: Running script
+2026-11-03 22:00:31.868 DEBUG   streamlit.runtime.media_file_manager: Disconnecting files for session with ID test session id
+2026-11-03 22:00:31.869 DEBUG   streamlit.runtime.media_file_manager: Sessions still active: dict_keys([])
+2026-11-03 22:00:31.869 DEBUG   streamlit.runtime.media_file_manager: Files: 0; Sessions with files: 0
+2026-11-03 22:00:33.484 DEBUG   streamlit.runtime.memory_media_file_storage: Adding media file 3c62d4cabd97b5327482d639230a8f09
+2026-11-03 22:00:33.485 DEBUG   streamlit.runtime.memory_media_file_storage: Adding media file 21d63354aa7dbe7d80ebeaa9b7bbc674
+2026-11-03 22:00:33.485 DEBUG   streamlit.runtime.memory_media_file_storage: Adding media file 5c11e900010de64e3a5f15f72b937786
+2026-11-03 22:00:33.517 DEBUG   streamlit.runtime.memory_media_file_storage: Adding media file 6495881b6c790623e6da5bb8833a6ce8
+2026-11-03 22:00:33.519 DEBUG   streamlit.runtime.memory_media_file_storage: Adding media file aba5df9cb83deafca01c7de426435587
+2026-11-03 22:00:33.597 DEBUG   streamlit.runtime.memory_media_file_storage: Adding media file 993f029ec09d424f4bd01d6202ff9d2e
+2026-11-03 22:00:33.643 DEBUG   streamlit.runtime.memory_media_file_storage: Adding media file 40746f1f4112672165b17a0943b5102c
+2026-11-03 22:00:33.644 DEBUG   streamlit.runtime.memory_media_file_storage: Adding media file d1a6d0863eefbbfdfc74847ebcc5a8b8
+2026-11-03 22:00:33.669 ERROR   streamlit.error_util: Uncaught app execution
+Traceback (most recent call last):
+  File "/workspace/shared/ieee39_test_deps/pandas/core/indexes/base.py", line 3816, in get_loc
+    return self._engine.get_loc(casted_key)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "pandas/_libs/index.pyx", line 172, in pandas._libs.index.IndexEngine.get_loc
+  File "pandas/_libs/index.pyx", line 201, in pandas._libs.index.IndexEngine.get_loc
+  File "pandas/_libs/hashtable_class_helper.pxi", line 2767, in pandas._libs.hashtable.Int64HashTable.get_item
+  File "pandas/_libs/hashtable_class_helper.pxi", line 2791, in pandas._libs.hashtable.Int64HashTable.get_item
+KeyError: 16
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/workspace/shared/ieee39_test_deps/streamlit/runtime/scriptrunner/exec_code.py", line 136, in exec_func_with_error_handling
+    result = func()
+             ^^^^^^
+  File "/workspace/shared/ieee39_test_deps/streamlit/runtime/scriptrunner/script_runner.py", line 922, in code_to_exec
+    _mpa_v1(self._main_script_path)
+  File "/workspace/shared/ieee39_test_deps/streamlit/runtime/scriptrunner/script_runner.py", line 180, in _mpa_v1
+    page.run()
+  File "/workspace/shared/ieee39_test_deps/streamlit/navigation/page.py", line 511, in run
+    exec(code, module.__dict__)  # noqa: S102
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/scratch/42c5fe32dad0/ieee39-operator-boundary-qa/app/pages/3_结果.py", line 209, in <module>
+    fig.add_scatter(x=[lbl[t] for t in prt.columns], y=prt.loc[b], name=f"节点{b} 实时",
+                                                       ~~~~~~~^^^
+  File "/workspace/shared/ieee39_test_deps/pandas/core/indexing.py", line 1342, in __getitem__
+    return self._getitem_axis(maybe_callable, axis=axis)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/shared/ieee39_test_deps/pandas/core/indexing.py", line 1966, in _getitem_axis
+    return self._get_label(key, axis=axis)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/shared/ieee39_test_deps/pandas/core/indexing.py", line 1884, in _get_label
+    return self.obj.xs(label, axis=axis)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/shared/ieee39_test_deps/pandas/core/generic.py", line 4291, in xs
+    loc = index.get_loc(key)
+          ^^^^^^^^^^^^^^^^^^
+  File "/workspace/shared/ieee39_test_deps/pandas/core/indexes/base.py", line 3823, in get_loc
+    raise KeyError(key) from err
+KeyError: 16
+2026-11-03 22:00:33.675 DEBUG   streamlit.runtime.media_file_manager: Removing orphaned files...
+2026-11-03 22:00:33.675 DEBUG   streamlit.runtime.media_file_manager: Removing orphaned deferred callables...
+2026-11-03 22:00:34.119 WARNING streamlit.runtime.scriptrunner_utils.script_run_context: Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-11-03 22:00:34.301 DEBUG   streamlit.components.v2.manifest_scanner: Filtered 175 packages down to 1 candidates for component scanning
+2026-11-03 22:00:34.301 DEBUG   streamlit.components.v2.manifest_scanner: Scanning 1 candidate packages for component manifests using 1 worker threads
+2026-11-03 22:00:34.331 DEBUG   streamlit.components.v2.manifest_scanner: Found 0 component manifests total
+2026-11-03 22:00:34.332 DEBUG   streamlit.runtime.scriptrunner.script_runner: Beginning script thread
+2026-11-03 22:00:34.332 DEBUG   streamlit.runtime.scriptrunner.script_runner: Running script
+2026-11-03 22:00:34.332 DEBUG   streamlit.runtime.media_file_manager: Disconnecting files for session with ID test session id
+2026-11-03 22:00:34.332 DEBUG   streamlit.runtime.media_file_manager: Sessions still active: dict_keys([])
+2026-11-03 22:00:34.332 DEBUG   streamlit.runtime.media_file_manager: Files: 0; Sessions with files: 0
+2026-11-03 22:00:34.345 DEBUG   streamlit.runtime.media_file_manager: Removing orphaned files...
+2026-11-03 22:00:34.345 DEBUG   streamlit.runtime.media_file_manager: Removing orphaned deferred callables...
+2026-11-03 22:00:34.345 DEBUG   streamlit.runtime.scriptrunner.script_runner: Running script
+2026-11-03 22:00:34.345 DEBUG   streamlit.runtime.media_file_manager: Disconnecting files for session with ID test session id
+2026-11-03 22:00:34.345 DEBUG   streamlit.runtime.media_file_manager: Sessions still active: dict_keys([])
+2026-11-03 22:00:34.345 DEBUG   streamlit.runtime.media_file_manager: Files: 0; Sessions with files: 0
+2026-11-03 22:00:34.450 DEBUG   streamlit.runtime.memory_media_file_storage: Adding media file 97a255f7f522e54177a28f445f8e7dd9
+2026-11-03 22:00:34.465 DEBUG   streamlit.runtime.memory_media_file_storage: Adding media file 1655c0b1cbf5f187f0d2f6507563c8c1
+2026-11-03 22:00:34.518 DEBUG   streamlit.runtime.caching.cache_utils: Cache key: bcf3af6fc21328553c92ec25bd7d6bf3
+2026-11-03 22:00:34.518 DEBUG   streamlit.runtime.caching.storage.in_memory_cache_storage_wrapper: Memory cache HIT: bcf3af6fc21328553c92ec25bd7d6bf3
+2026-11-03 22:00:34.834 DEBUG   streamlit.runtime.media_file_manager: Removing orphaned files...
+2026-11-03 22:00:34.834 DEBUG   streamlit.runtime.media_file_manager: Removing orphaned deferred callables...
+2026-11-03 22:00:34.839 DEBUG   streamlit.runtime.scriptrunner.script_runner: Beginning script thread
+2026-11-03 22:00:34.839 DEBUG   streamlit.runtime.scriptrunner.script_runner: Running script
+2026-11-03 22:00:34.839 DEBUG   streamlit.runtime.media_file_manager: Disconnecting files for session with ID test session id
+2026-11-03 22:00:34.839 DEBUG   streamlit.runtime.media_file_manager: Sessions still active: dict_keys([])
+2026-11-03 22:00:34.839 DEBUG   streamlit.runtime.media_file_manager: Files: 0; Sessions with files: 0
+2026-11-03 22:00:36.404 DEBUG   streamlit.runtime.memory_media_file_storage: Adding media file 3c62d4cabd97b5327482d639230a8f09
+2026-11-03 22:00:36.405 DEBUG   streamlit.runtime.memory_media_file_storage: Adding media file 21d63354aa7dbe7d80ebeaa9b7bbc674
+2026-11-03 22:00:36.405 DEBUG   streamlit.runtime.memory_media_file_storage: Adding media file 5c11e900010de64e3a5f15f72b937786
+2026-11-03 22:00:36.438 DEBUG   streamlit.runtime.memory_media_file_storage: Adding media file 6495881b6c790623e6da5bb8833a6ce8
+2026-11-03 22:00:36.440 DEBUG   streamlit.runtime.memory_media_file_storage: Adding media file aba5df9cb83deafca01c7de426435587
+2026-11-03 22:00:36.517 ERROR   streamlit.error_util: Uncaught app execution
+Traceback (most recent call last):
+  File "/workspace/shared/ieee39_test_deps/streamlit/runtime/scriptrunner/exec_code.py", line 136, in exec_func_with_error_handling
+    result = func()
+             ^^^^^^
+  File "/workspace/shared/ieee39_test_deps/streamlit/runtime/scriptrunner/script_runner.py", line 922, in code_to_exec
+    _mpa_v1(self._main_script_path)
+  File "/workspace/shared/ieee39_test_deps/streamlit/runtime/scriptrunner/script_runner.py", line 180, in _mpa_v1
+    page.run()
+  File "/workspace/shared/ieee39_test_deps/streamlit/navigation/page.py", line 511, in run
+    exec(code, module.__dict__)  # noqa: S102
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/scratch/42c5fe32dad0/ieee39-operator-boundary-qa/app/pages/3_结果.py", line 139, in <module>
+    fig.add_scatter(x=[lbl[t] for t in lw_da.index], y=lw_da.values, name="日前", line=dict(color=DA_COLOR, width=2.2))
+                       ~~~^^^
+TypeError: list indices must be integers or slices, not float
+2026-11-03 22:00:36.519 DEBUG   streamlit.runtime.media_file_manager: Removing orphaned files...
+2026-11-03 22:00:36.519 DEBUG   streamlit.runtime.media_file_manager: Removing orphaned deferred callables...
+2026-11-03 22:00:36.609 DEBUG   streamlit.runtime.caching.cache_utils: Cache key: 9a98064ac477a48fbc9536ad0e391c94
+2026-11-03 22:00:36.610 DEBUG   streamlit.runtime.caching.storage.in_memory_cache_storage_wrapper: Memory cache MISS: 9a98064ac477a48fbc9536ad0e391c94
+2026-11-03 22:00:36.610 DEBUG   streamlit.runtime.caching.storage.in_memory_cache_storage_wrapper: Memory cache MISS: 9a98064ac477a48fbc9536ad0e391c94
+2026-11-03 22:00:36.696 WARNING streamlit.runtime.scriptrunner_utils.script_run_context: Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-11-03 22:00:36.862 DEBUG   streamlit.components.v2.manifest_scanner: Filtered 175 packages down to 1 candidates for component scanning
+2026-11-03 22:00:36.862 DEBUG   streamlit.components.v2.manifest_scanner: Scanning 1 candidate packages for component manifests using 1 worker threads
+2026-11-03 22:00:37.054 DEBUG   streamlit.components.v2.manifest_scanner: Found 0 component manifests total
+2026-11-03 22:00:37.055 DEBUG   streamlit.runtime.scriptrunner.script_runner: Beginning script thread
+2026-11-03 22:00:37.055 DEBUG   streamlit.runtime.scriptrunner.script_runner: Running script
+2026-11-03 22:00:37.055 DEBUG   streamlit.runtime.media_file_manager: Disconnecting files for session with ID test session id
+2026-11-03 22:00:37.055 DEBUG   streamlit.runtime.media_file_manager: Sessions still active: dict_keys([])
+2026-11-03 22:00:37.055 DEBUG   streamlit.runtime.media_file_manager: Files: 0; Sessions with files: 0
+2026-11-03 22:00:37.068 DEBUG   streamlit.runtime.media_file_manager: Removing orphaned files...
+2026-11-03 22:00:37.068 DEBUG   streamlit.runtime.media_file_manager: Removing orphaned deferred callables...
+2026-11-03 22:00:37.068 DEBUG   streamlit.runtime.scriptrunner.script_runner: Running script
+2026-11-03 22:00:37.068 DEBUG   streamlit.runtime.media_file_manager: Disconnecting files for session with ID test session id
+2026-11-03 22:00:37.068 DEBUG   streamlit.runtime.media_file_manager: Sessions still active: dict_keys([])
+2026-11-03 22:00:37.068 DEBUG   streamlit.runtime.media_file_manager: Files: 0; Sessions with files: 0
+2026-11-03 22:00:37.172 DEBUG   streamlit.runtime.memory_media_file_storage: Adding media file 97a255f7f522e54177a28f445f8e7dd9
+2026-11-03 22:00:37.186 DEBUG   streamlit.runtime.memory_media_file_storage: Adding media file 1655c0b1cbf5f187f0d2f6507563c8c1
+2026-11-03 22:00:37.230 DEBUG   streamlit.runtime.caching.cache_utils: Cache key: bcf3af6fc21328553c92ec25bd7d6bf3
+2026-11-03 22:00:37.230 DEBUG   streamlit.runtime.caching.storage.in_memory_cache_storage_wrapper: Memory cache HIT: bcf3af6fc21328553c92ec25bd7d6bf3
+2026-11-03 22:00:37.517 DEBUG   streamlit.runtime.media_file_manager: Removing orphaned files...
+2026-11-03 22:00:37.517 DEBUG   streamlit.runtime.media_file_manager: Removing orphaned deferred callables...
+2026-11-03 22:00:37.521 DEBUG   streamlit.runtime.scriptrunner.script_runner: Beginning script thread
+2026-11-03 22:00:37.522 DEBUG   streamlit.runtime.scriptrunner.script_runner: Running script
+2026-11-03 22:00:37.522 DEBUG   streamlit.runtime.media_file_manager: Disconnecting files for session with ID test session id
+2026-11-03 22:00:37.522 DEBUG   streamlit.runtime.media_file_manager: Sessions still active: dict_keys([])
+2026-11-03 22:00:37.522 DEBUG   streamlit.runtime.media_file_manager: Files: 0; Sessions with files: 0
+2026-11-03 22:00:39.168 DEBUG   streamlit.runtime.memory_media_file_storage: Adding media file 3c62d4cabd97b5327482d639230a8f09
+2026-11-03 22:00:39.169 DEBUG   streamlit.runtime.memory_media_file_storage: Adding media file 21d63354aa7dbe7d80ebeaa9b7bbc674
+2026-11-03 22:00:39.170 DEBUG   streamlit.runtime.memory_media_file_storage: Adding media file 5c11e900010de64e3a5f15f72b937786
+2026-11-03 22:00:39.210 DEBUG   streamlit.runtime.memory_media_file_storage: Adding media file b5e1f187809e41fbe83d7199c083a368
+2026-11-03 22:00:39.212 DEBUG   streamlit.runtime.memory_media_file_storage: Adding media file 85331261363a024716fe8f953c2c8c75
+2026-11-03 22:00:39.373 DEBUG   streamlit.runtime.memory_media_file_storage: Adding media file 40746f1f4112672165b17a0943b5102c
+2026-11-03 22:00:39.374 DEBUG   streamlit.runtime.memory_media_file_storage: Adding media file d1a6d0863eefbbfdfc74847ebcc5a8b8
+2026-11-03 22:00:39.409 DEBUG   streamlit.runtime.memory_media_file_storage: Adding media file 0ec04e8e5ee0e3f5399929b8f9628ed6
+2026-11-03 22:00:39.411 DEBUG   streamlit.runtime.memory_media_file_storage: Adding media file 971f421b6ff5fa18dd1e8661c3e3ee9c
+2026-11-03 22:00:39.418 DEBUG   streamlit.runtime.memory_media_file_storage: Adding media file 3947a7bcf4412fc93b785e94e2d43037
+2026-11-03 22:00:39.422 DEBUG   streamlit.runtime.memory_media_file_storage: Adding media file f60a27b4242cf6389143547bab1eba20
+2026-11-03 22:00:39.467 DEBUG   streamlit.runtime.memory_media_file_storage: Adding media file 7bda685efe81684177177a57dc387246
+2026-11-03 22:00:39.470 DEBUG   streamlit.runtime.memory_media_file_storage: Adding media file 504ff81c087142b556759e6466d09157
+2026-11-03 22:00:39.580 DEBUG   streamlit.runtime.memory_media_file_storage: Adding media file 83dc415122655a2e459f249fea1a9859
+2026-11-03 22:00:39.582 DEBUG   streamlit.runtime.memory_media_file_storage: Adding media file 71c838c157da7b9c1707060792a68b65
+2026-11-03 22:00:39.676 DEBUG   streamlit.runtime.memory_media_file_storage: Adding media file eb6e7098efbc3fab1b8c4e591f01cee8
+2026-11-03 22:00:39.678 DEBUG   streamlit.runtime.memory_media_file_storage: Adding media file 96bb65573506a597f525d5062d01a2f3
+2026-11-03 22:00:39.691 DEBUG   streamlit.runtime.memory_media_file_storage: Adding media file 5f11582b3dde5225b2f5af29cfb361f6
+2026-11-03 22:00:39.693 DEBUG   streamlit.runtime.memory_media_file_storage: Adding media file d7be060e41305377b9a2df214137d62e
+2026-11-03 22:00:39.704 DEBUG   streamlit.runtime.memory_media_file_storage: Adding media file 07f18a6819cd8e6830d16031b0349bdc
+2026-11-03 22:00:39.705 DEBUG   streamlit.runtime.memory_media_file_storage: Adding media file 1169a236fb3066aed0c89dda0765178e
+2026-11-03 22:00:39.749 DEBUG   streamlit.runtime.memory_media_file_storage: Adding media file e2d42d4cf605029c124c57aba05b6e89
+2026-11-03 22:00:39.750 DEBUG   streamlit.runtime.memory_media_file_storage: Adding media file b52d3b2a256f457e385fc2b0d1564a76
+2026-11-03 22:00:39.791 DEBUG   streamlit.runtime.memory_media_file_storage: Adding media file 615ae0e44b7e3dd36e9303e081c96036
+2026-11-03 22:00:39.792 DEBUG   streamlit.runtime.memory_media_file_storage: Adding media file feddd1d6a49f4ef3d3e5360b2feb5624
+2026-11-03 22:00:39.854 DEBUG   streamlit.runtime.memory_media_file_storage: Adding media file 901c9103c3632250bddee49d7300d00c
+2026-11-03 22:00:39.855 DEBUG   streamlit.runtime.memory_media_file_storage: Adding media file c3151ed169e8cfe86343afb5aab64a42
+2026-11-03 22:00:40.525 DEBUG   streamlit.runtime.memory_media_file_storage: Adding media file c93785c441bacbcdf23de5d735bd015d
+2026-11-03 22:00:40.527 DEBUG   streamlit.runtime.memory_media_file_storage: Adding media file 6331fd0b6ca205f60e9e3ef11b3dbecf
+2026-11-03 22:00:40.553 DEBUG   streamlit.runtime.memory_media_file_storage: Adding media file 3a90124e7eb95194e3dfb1a4992f25bc
+2026-11-03 22:00:40.589 DEBUG   streamlit.runtime.memory_media_file_storage: Adding media file 90f1f0598ec9a371c3057cd5a8eaec35
+2026-11-03 22:00:40.590 DEBUG   streamlit.runtime.memory_media_file_storage: Adding media file 9a2a766fb95a0ba2026c14a181134dc8
+2026-11-03 22:00:40.601 DEBUG   streamlit.runtime.memory_media_file_storage: Adding media file 91f895b490078beecc6b036a880884cf
+2026-11-03 22:00:40.605 DEBUG   streamlit.runtime.media_file_manager: Removing orphaned files...
+2026-11-03 22:00:40.605 DEBUG   streamlit.runtime.media_file_manager: Removing orphaned deferred callables...
+[
+  {
+    "case": "missing_period",
+    "full": true,
+    "validate": "accepted",
+    "exceptions": [],
+    "errors": [],
+    "metrics": [
+      {
+        "label": "实时执行范围",
+        "value": "96 / 96 段",
+        "delta": ""
+      }
+    ],
+    "warnings": []
+  },
+  {
+    "case": "missing_bus",
+    "full": true,
+    "validate": "accepted",
+    "exceptions": [
+      "16"
+    ],
+    "errors": [],
+    "metrics": [
+      {
+        "label": "实时执行范围",
+        "value": "96 / 96 段",
+        "delta": ""
+      }
+    ],
+    "warnings": []
+  },
+  {
+    "case": "float_period",
+    "full": true,
+    "validate": "accepted",
+    "exceptions": [
+      "list indices must be integers or slices, not float"
+    ],
+    "errors": [],
+    "metrics": [
+      {
+        "label": "实时执行范围",
+        "value": "96 / 96 段",
+        "delta": ""
+      }
+    ],
+    "warnings": []
+  },
+  {
+    "case": "missing_rt_prices",
+    "full": false,
+    "validate": "accepted",
+    "exceptions": [],
+    "errors": [],
+    "metrics": [],
+    "warnings": [
+      "历史结果缺少冻结输入：仅使用已保存的限额与参数，缺失项记为未知；缺少冻结网络时不显示历史拓扑；缺少负荷权重时加权价格保留未知，不使用当前基准补齐。",
+      "冻结输入未记录有效时段长度，电量显示未记录；仍可查看保存的功率。未借用当前场景的时长。"
+    ]
+  }
+]

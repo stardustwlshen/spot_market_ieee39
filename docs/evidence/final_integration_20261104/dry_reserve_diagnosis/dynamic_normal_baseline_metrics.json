@@ -1,0 +1,21 @@
+{
+  "DA": {
+    "objective": 2776764.0392751046,
+    "scuc_objective": 2776764.039275138,
+    "gap": 0.0010502429604219217,
+    "termination": "optimal",
+    "best_bound": 2773847.7623901367,
+    "requested_mip_gap": 0.01,
+    "requested_gap_met": true,
+    "curtail_mwh": 679.1456325146212
+  },
+  "DA_scuc_time_s": 12.987278307999986,
+  "RT_max_gap": 0.0087060468471998,
+  "RT_curtailment_mwh": 932.8273197238668,
+  "cash_cost": 10041063.532041376,
+  "cash_revenue": 17591772.71227031,
+  "cash_profit": 7550709.180228932,
+  "RT_CCGT_hours": 0.0,
+  "RT_GT_hours": 5.0,
+  "full_activation_risk_resource_periods": 22
+}

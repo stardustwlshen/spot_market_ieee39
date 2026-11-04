@@ -22,6 +22,66 @@ def _reset_widgets(key, uid):
             del st.session_state[field]
 
 
+def quote_rule_notes(cfg, uid, typ, curve):
+    """Explain the same effective per-type rules the validator will enforce."""
+    from smm.bids import bid_rules_for_type
+    rules = bid_rules_for_type(cfg, typ)
+    decreasing = curve in ('ch_segments', 'pump_segments')
+    direction = ('严格递减' if rules['strict_monotonic'] else '非递增') if decreasing else (
+        '严格递增' if rules['strict_monotonic'] else '非递减')
+    notes = [f"本场景报价范围 {rules['price_min']:g}～{rules['price_max']:g} 元/MWh"
+             f"（不是结算电价范围）；申报 {rules['segments_min']:g}～{rules['segments_max']:g} 段，"
+             f"价格{direction}，功率区间须连续。"]
+    if rules['price_step']:
+        notes.append(f"价格须为 {rules['price_step']:g} 元/MWh 的整数倍。")
+    if rules['max_adjacent_step']:
+        exception = '（不含内部最小出力块到首个市场段）' if typ in ('coal', 'gas_ccgt', 'gas_gt') and not rules['thermal_market_above_pmin'] else ''
+        notes.append(f"相邻报价段价差上限 {rules['max_adjacent_step']:g} 元/MWh{exception}。")
+    if rules['thermal_market_above_pmin']:
+        unit = next(u for u in cfg.units['thermal'] if u['id'] == uid)
+        width = unit['pmax'] - unit['pmin']
+        basis = width if rules['min_segment_basis'] == 'dispatchable' else unit['pmax']
+        minimum = min(basis, max(rules['min_segment_fraction'] * basis, rules['min_segment_mw']))
+        notes.append(f"第一行 0～{unit['pmin']:g} MW 是内部最小出力块，不计入上述市场段数；"
+                     "其报价仍进入优化，不能高于后续市场段。")
+        notes.append(f"市场申报从 {unit['pmin']:g} MW 起，每段至少 {minimum:g} MW"
+                     + (f"，须覆盖到 {unit['pmax']:g} MW。" if rules['require_capacity_coverage'] else "。"))
+    elif rules['require_capacity_coverage']:
+        notes.append('申报曲线须完整覆盖装机容量。' + ('新能源实际出力仍受可用预测量限制。' if typ in ('wind', 'pv') else ''))
+    if typ in ('storage', 'pumped') and cfg.mode.get('storage_dis_gt_ch', 'error') in ('error', 'warn'):
+        requirement = '须' if cfg.mode.get('storage_dis_gt_ch', 'error') == 'error' else '建议'
+        notes.append(f'放电/发电最低报价{requirement}高于充电/抽水最高报价；买入报价表示购电意愿。')
+    return notes
+
+
+def cost_archive_recovery(cfg, name, *, disabled=False):
+    """One explicit action generates type/capacity defaults without editing originals."""
+    from smm.research_cost_setup import (FILENAME, apply_generated_cost_setup,
+                                         prepare_generated_cost_setup)
+    try:
+        plan = prepare_generated_cost_setup(cfg)
+        if not plan['changed']:
+            st.caption('模拟成本已按机组参数生成；自定义成本仍保留。' if plan['generated_units']
+                       else '正在使用已有成本档案；自定义值不会自动替换。')
+            return
+        st.info('可按机组类型、容量和效率自动生成模拟成本，无需逐项填写。采用合成研究假设（非实测），'
+                '将永久另存到当前场景；仅替换可确认的原研究默认值，真实或自定义成本、报价及原始档案不改。')
+        label = ('使用研究默认成本' if not (cfg.root / 'config/fixed_costs.yaml').exists()
+                 else '按机组参数生成模拟成本')
+        if st.button(label, disabled=disabled,
+                     key=f'cost_import:{name}:{plan["data"]["fingerprint"]}:{plan["snapshot"]}'):
+            apply_generated_cost_setup(plan)
+            st.rerun()
+        with st.expander('查看成本来源'):
+            st.caption('支持煤电、联合循环、燃机、风电、光伏、水电、电池、抽蓄。容量用于分段电量及固定费用缩放，'
+                       '不是把单位电量成本乘装机容量。水价值和替代电能仅用于报价，不重复计入运营成本。')
+            st.text('生成成本：' + '、'.join(plan['generated_units']) + '\n保留自定义成本：' + ('、'.join(plan['preserved_units']) or '无'))
+            st.download_button('下载生成依据', json.dumps(plan['data'], ensure_ascii=False, indent=2),
+                               file_name=FILENAME, mime='application/json', key=f'cost_source:{name}')
+    except (OSError, ValueError, KeyError, TypeError, RuntimeError) as exc:
+        business_error('当前场景不能自动补齐成本', exc, '缺少匹配的研究参数时不会估造；已有档案保持不变。')
+
+
 def quotation_workspace(cfg, name, *, disabled=False):
     """Return exact current draft; persist workspace without rewriting bid archives."""
     from smm.bids import default_bids, resolve_startup_bid, validate_bids
@@ -50,35 +110,39 @@ def quotation_workspace(cfg, name, *, disabled=False):
         st.info(info['origin'])
     if info.get('history'):
         with st.expander('保留的旧编辑'):
-            st.caption('历史编辑已完整备份，不作为隐藏运行输入。需要找回时下载并解压，上传其中的报价 JSON，核对后仅恢复所选机组。')
+            st.caption('历史编辑已完整备份，不作为隐藏运行输入。需要找回时下载并解压，再在下方“从文件恢复报价”中上传其中的报价 JSON。')
             st.download_button('下载保留的旧编辑', quotation_backup(st.session_state, name),
                                file_name=f'{name}_报价备份.zip', mime='application/zip')
-            uploaded = st.file_uploader('恢复报价 JSON（仅所选机组）', type=['json'],
-                                        key=f'quote_recovery_file:{name}', disabled=disabled)
-            if uploaded is not None:
-                try:
-                    recovered = json.loads(uploaded.getvalue())['units'][uid]
-                    if not isinstance(recovered, dict):
-                        raise ValueError('该机组报价不是有效对象')
-                    for curve in CURVE_CN:
-                        rows = recovered.get(curve)
-                        if rows is not None and (not isinstance(rows, list) or any(not isinstance(row, dict) for row in rows)):
-                            raise ValueError(f'{CURVE_CN[curve]}须为分段对象列表')
-                    if not isinstance(recovered.get('startup_cost', {}), dict):
-                        raise ValueError('启动报价须为分状态对象')
-                    from unit_input_view import field_rows
-                    st.dataframe(pd.DataFrame(field_rows(recovered))[["参数", "数值"]], hide_index=True, width='stretch')
-                    if st.button('恢复文件中本机组报价', disabled=disabled, key=f'quote_recover:{key}:{uid}'):
-                        previous = copy.deepcopy(draft)
-                        stamp = hashlib.sha256(json.dumps(previous, sort_keys=True).encode()).hexdigest()[:12]
-                        info['history'].setdefault(f'恢复前当前报价:{stamp}', previous)
-                        draft['units'][uid] = copy.deepcopy(recovered)
-                        st.session_state[key + ':manual'] = sorted(set(st.session_state.get(key + ':manual', [])) | {uid})
-                        st.session_state[key + ':reset_unit'] = uid
-                        st.session_state.pop(key + ':preview', None)
-                        st.rerun()
-                except (ValueError, TypeError, KeyError) as exc:
-                    business_error('恢复文件不能读取，当前报价未改动', exc, '请选择包含当前机组的报价备份 JSON。')
+    with st.expander('从文件恢复报价（仅所选机组）', expanded=False):
+        st.caption('可上传“下载当前报价”保存的 JSON，或旧编辑备份中的报价 JSON。先预览，确认后只替换当前所选机组；其他机组、成本和技术参数不变，恢复前的完整当前报价会另存备份。')
+        uploaded = st.file_uploader('恢复报价 JSON（仅所选机组）', type=['json'],
+                                   key=f'quote_recovery_file:{name}', disabled=disabled)
+        if uploaded is not None:
+            try:
+                recovered = json.loads(uploaded.getvalue())['units'][uid]
+                if not isinstance(recovered, dict):
+                    raise ValueError('该机组报价不是有效对象')
+                if 'mode' in recovered and not isinstance(recovered['mode'], str):
+                    raise ValueError('申报方式须为文本，当前报价未改动')
+                for curve in CURVE_CN:
+                    rows = recovered.get(curve)
+                    if rows is not None and (not isinstance(rows, list) or any(not isinstance(row, dict) for row in rows)):
+                        raise ValueError(f'{CURVE_CN[curve]}须为分段对象列表')
+                if not isinstance(recovered.get('startup_cost', {}), dict):
+                    raise ValueError('启动报价须为分状态对象')
+                from unit_input_view import field_rows
+                st.dataframe(pd.DataFrame(field_rows(recovered))[["参数", "数值"]], hide_index=True, width='stretch')
+                if st.button('恢复文件中本机组报价', disabled=disabled, key=f'quote_recover:{key}:{uid}'):
+                    previous = copy.deepcopy(draft)
+                    stamp = hashlib.sha256(json.dumps(previous, sort_keys=True).encode()).hexdigest()[:12]
+                    info.setdefault('history', {}).setdefault(f'恢复前当前报价:{stamp}', previous)
+                    draft['units'][uid] = copy.deepcopy(recovered)
+                    st.session_state[key + ':manual'] = sorted(set(st.session_state.get(key + ':manual', [])) | {uid})
+                    st.session_state[key + ':reset_unit'] = uid
+                    st.session_state.pop(key + ':preview', None)
+                    st.rerun()
+            except (ValueError, TypeError, KeyError) as exc:
+                business_error('恢复文件不能读取，当前报价未改动', exc, '请选择包含当前机组的报价备份 JSON。')
     reset_uid = st.session_state.pop(key + ':reset_unit', None)
     if reset_uid is not None:
         # Reset is requested before rerender so editors don't replay old deltas.
@@ -91,6 +155,7 @@ def quotation_workspace(cfg, name, *, disabled=False):
         st.rerun()
 
     field_errors = []
+    table_changed = False
     def number_input(label, raw, suffix, *, disabled):
         valid = isinstance(raw, Real) and not isinstance(raw, bool) and math.isfinite(raw)
         value = st.number_input(label, value=float(raw) if valid else None,
@@ -101,11 +166,15 @@ def quotation_workspace(cfg, name, *, disabled=False):
             return raw
         return value
 
-    quote_column, information_column = st.columns([1.2, 1])
+    quote_column, information_column = st.columns([2, 1])
     with information_column:
-        render_unit_information(cfg, uid, compact=True)
+        with st.expander('机组参数与成本（只读）', expanded=False):
+            render_unit_information(cfg, uid, compact=True)
+        with st.expander('成本来源与研究假设（可选）', expanded=False):
+            cost_archive_recovery(cfg, name, disabled=disabled)
     with quote_column:
         st.subheader(f'{uid} 报价')
+        st.caption('直接修改下表的功率区间和价格。修改自动保存，校验通过后即可运行。')
         ub = draft['units'][uid]
         before = copy.deepcopy(ub)
         typ = unit_types.get(uid)
@@ -117,7 +186,8 @@ def quotation_workspace(cfg, name, *, disabled=False):
                        'quantity_only': '报量不报价：充放电或抽发价格不进入出清',
                        'self_schedule': '自调度：执行申报功率曲线，价格不进入出清',
                        'dispatch': '历史调度模式：按报量不报价处理，价格不进入出清'}
-            st.warning(reasons.get(bid_mode, '当前申报模式无效，不能模拟改价') + '。未自动改变运行模式。')
+            reason = reasons.get(bid_mode) if isinstance(bid_mode, str) else None
+            st.warning((reason or '当前申报模式无效，不能模拟改价') + '。未自动改变运行模式。')
             if st.button('切换该机组为报量报价', disabled=disabled, key=f'quote_mode_switch:{key}:{uid}',
                          help='仅改变本机组申报方式；缺少的量价曲线由本机组缺省报价补齐，采用前请核对。'):
                 template = default_bids(cfg)['units'][uid]
@@ -133,6 +203,8 @@ def quotation_workspace(cfg, name, *, disabled=False):
             frame = pd.DataFrame(ub.get(curve) or [], columns=['p_start', 'p_end', 'price'])
             frame = frame.rename(columns={'p_start': '起点（MW）', 'p_end': '终点（MW）', 'price': '报价（元/MWh）'})
             st.markdown(f'**{CURVE_CN[curve]}**')
+            if price_enabled:
+                st.caption(' '.join(quote_rule_notes(cfg, uid, typ, curve)))
             edited = st.data_editor(frame, hide_index=True, num_rows='dynamic', width='stretch',
                 key=f'quote_edit:{key}:{uid}:{curve}', disabled=quote_disabled)
             # Browsing never rewrites missing fields, extra metadata or row types.
@@ -151,6 +223,7 @@ def quotation_workspace(cfg, name, *, disabled=False):
                         segment[field] = value
                     segments.append(segment)
                 ub[curve] = segments
+                table_changed = True
         if typ == 'storage':
             previous = ub.get('soc_end')  # Missing and null both mean unreported for batteries.
             declared = st.checkbox('申报期末 SOC', value=previous is not None,
@@ -194,6 +267,7 @@ def quotation_workspace(cfg, name, *, disabled=False):
                                    {'cold':'冷态启动（元/次）','warm':'温态启动（元/次）','hot':'热态启动（元/次）','very_hot':'极热态启动（元/次）'}.items()})
                 if not values.equals(original_startup):
                     ub['startup_cost'] = values.iloc[0].to_dict()
+                    table_changed = True
             thermal = next(u for u in cfg.units['thermal'] if u['id'] == uid)
             previous = ub.get('noload_cost', thermal['noload'])
             value = number_input('空载报价（元/h）', previous, 'noload', disabled=disabled)
@@ -204,27 +278,37 @@ def quotation_workspace(cfg, name, *, disabled=False):
         other = {k: v for k, v in ub.items() if k not in {*CURVE_CN, 'startup_cost', 'startup_cost_yuan', 'noload_cost', 'soc_end', 'vup_end'}}
         if other:
             from unit_input_view import field_rows
-            st.dataframe(pd.DataFrame(field_rows(other))[["参数", "数值"]], hide_index=True, width='stretch')
+            with st.expander('更多申报信息（只读）', expanded=False):
+                st.dataframe(pd.DataFrame(field_rows(other))[["参数", "数值"]], hide_index=True, width='stretch')
         if ub != before:
             st.session_state[key + ':manual'] = sorted(set(st.session_state.get(key + ':manual', [])) | {uid})
 
-        st.markdown('**模拟生成该机组报价**')
-        method = st.radio('生成方式', ['按成本生成', '随机策略'], horizontal=True, key=f'quote_method:{key}:{uid}', disabled=quote_disabled)
-        use_strategy = st.checkbox('叠加随机策略', key=f'quote_strategy:{key}:{uid}', disabled=quote_disabled) if method == '按成本生成' else True
-        seed = (st.number_input('报价随机种子', 0, 2147483647, int(cfg.base['seed']), key=f'quote_seed:{key}:{uid}', disabled=quote_disabled)
-                if use_strategy else None)
-        st.caption('仅改变所选机组报价，其他机组和设备参数不变。先预览，采用后再运行。')
         protected = st.session_state.get(key + ':manual', [])
         replace_manual = st.checkbox('允许模拟报价替换该机组手工修改', key=f'quote_replace:{key}:{uid}', disabled=quote_disabled) if uid in protected else False
+        st.caption('也可按成本生成报价，先预览，确认采用后才会改变当前表格。')
+        cost_clicked = st.button('按成本生成预览', disabled=quote_disabled, key=f'quote_generate:{key}:{uid}')
+        with st.expander('随机报价（可选）', expanded=False):
+            random_basis = st.radio('随机报价依据', ['当前报价', '成本报价'], horizontal=True,
+                                    key=f'quote_random_basis:{key}:{uid}', disabled=quote_disabled)
+            seed = st.number_input('报价随机种子', 0, 2147483647, int(cfg.base['seed']),
+                                   key=f'quote_seed:{key}:{uid}', disabled=quote_disabled,
+                                   help='相同机组、输入和种子会生成相同预览；修改种子可换一组。不会修改风光预测种子。')
+            st.caption('只生成所选机组的随机报价，不改其他机组、设备参数或预测曲线。')
+            random_clicked = st.button('生成随机报价预览', disabled=quote_disabled, key=f'quote_random_generate:{key}:{uid}')
         inputs = {filename: hashlib.sha256((cfg.root / 'config' / filename).read_bytes()).hexdigest()
-                  if (cfg.root / 'config' / filename).exists() else None for filename in ('fixed_costs.yaml', 'bid_cost_basis.yaml')}
-        request = dict(uid=uid, method=method, seed=seed, costs=inputs, replace_manual=replace_manual)
-        if st.button('生成报价预览', disabled=quote_disabled, key=f'quote_generate:{key}:{uid}'):
+                  if (cfg.root / 'config' / filename).exists() else None for filename in ('fixed_costs.yaml', 'bid_cost_basis.yaml', 'generated_research_costs.json')}
+        cost_request = dict(uid=uid, method='按成本生成', seed=None, costs=inputs,
+                            replace_manual=replace_manual, entry='cost')
+        random_request = dict(uid=uid, method='按成本生成' if random_basis == '成本报价' else '随机策略',
+                              seed=seed, costs=inputs, replace_manual=replace_manual, entry='random')
+        if cost_clicked or random_clicked:
+            request = cost_request if cost_clicked else random_request
             st.session_state.pop(key + ':preview', None)
             try:
                 from smm.bid_simulation import research_cost_bid_preview, simulate_bids
+                method = request['method']
                 generator = research_cost_bid_preview if method == '按成本生成' else simulate_bids
-                seed_arg = {'strategy_seed': seed} if method == '按成本生成' else {'seed': seed}
+                seed_arg = {'strategy_seed': request['seed']} if method == '按成本生成' else {'seed': request['seed']}
                 candidate = generator(cfg, selected_unit_ids=[uid], base_bids=draft,
                     protected_unit_ids=[u for u in protected if u != uid or not replace_manual], **seed_arg)
                 st.session_state[key + ':preview'] = dict(candidate=candidate, baseline=copy.deepcopy(draft),
@@ -233,6 +317,9 @@ def quotation_workspace(cfg, name, *, disabled=False):
                 business_error('模拟报价未生成，当前草稿不变', exc, '请核对成本档案或手工修改保护。')
         preview = st.session_state.get(key + ':preview')
         if preview and preview['request']['uid'] == uid:
+            # Old-session previews lack the new entry marker and require regeneration.
+            request = random_request if preview['request'].get('entry') == 'random' else cost_request
+            st.markdown('**报价预览：确认后再采用**')
             candidate = preview['candidate']
             rows = [dict(曲线=CURVE_CN[curve], 段=i, **{'起点（MW）': seg['p_start'], '终点（MW）': seg['p_end'], '预览报价（元/MWh）': seg['price']})
                     for curve in CURVE_CN for i, seg in enumerate(candidate['units'][uid].get(curve, []), 1)]
@@ -267,8 +354,14 @@ def quotation_workspace(cfg, name, *, disabled=False):
                        '本页编辑仍在，请先下载备份；不要刷新或关闭。原报价版本和已有存档未被覆盖。')
         errors.append('当前报价未保存')
     else:
-        st.caption(f'{info["basis_label"]} · {"含当前编辑" if modified else "未修改"}。'
-                   '已自动保存；切换场景、刷新或重启后保留。运行直接冻结当前报价，无需另存版本。')
+        if table_changed:
+            # data_editor identity includes its input dataframe. Finish the
+            # rebase now, before the operator's next edit; otherwise the next
+            # edit arrives on the old identity and Streamlit silently drops it.
+            st.rerun()
+        st.caption('已自动保存。运行直接使用当前报价，切换场景或重启后仍保留。')
+        with st.expander('报价保存与来源', expanded=False):
+            st.caption(f'{info["basis_label"]} · {"含当前编辑" if modified else "未修改"}。本次运行会冻结报价，不随之后编辑变化。')
     st.download_button('下载当前报价', json.dumps(draft, ensure_ascii=False, indent=2),
                        file_name=f'{name}_当前报价.json', mime='application/json')
     return draft, errors

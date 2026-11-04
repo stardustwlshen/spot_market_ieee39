@@ -67,6 +67,9 @@ def test_explicit_zero_outflow_limit_is_not_omitted():
     from smm.scuc import build_model
     import pyomo.environ as pyo
     c=hydro_case(T=1);c.cfg.units['hydro'][0]['qout_max']=0
+    # A zero release limit requires a consistent zero ecological minimum.
+    for season in c.cfg.units['hydro'][0]['seasons'].values():
+        season['qeco']=0
     m=build_model(c)
     assert ('H1',0) in m.c_qout
     assert pyo.value(m.c_qout['H1',0].upper)==0

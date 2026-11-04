@@ -7,8 +7,12 @@ from streamlit.testing.v1 import AppTest
 ROOT=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT/'app'))
 
-def test_actual_results_business_first_and_technical_collapsed():
+def test_actual_results_business_first_and_technical_collapsed(monkeypatch):
     import common
+    import os
+    supplied=os.environ.get("IEEE39_SAVED_RUN_FOR_UI")
+    if supplied:
+        monkeypatch.setattr(common,"all_results",lambda:[dict(dir=supplied,scenario="验收只读存档",mode="full",status="done")])
     catalog=common.all_results()
     if not catalog:pytest.skip('real saved run unavailable')
     full=next((m for m in catalog if Path(m['dir']).joinpath('rt_prices.csv').exists()),None)
@@ -19,7 +23,7 @@ def test_actual_results_business_first_and_technical_collapsed():
     at.session_state['result_sel']=full['dir']
     at.switch_page('pages/3_结果.py').run()
     assert not at.exception
-    assert all(label in [t.label for t in at.tabs] for label in ['运行总览','结算电价与电量','出力计划与实际','收入、成本与利润'])
+    assert all(label in [t.label for t in at.tabs] for label in ['全网概览','日前实时对比','机组及电网运行','结算与收益','异常诊断'])
     assert '诊断' not in [t.label for t in at.tabs]
     advanced=next(e for e in at.expander if e.label=='高级诊断与技术记录（按需查看）')
     assert advanced.proto.expanded is False
@@ -35,4 +39,7 @@ def test_actual_results_business_first_and_technical_collapsed():
     saved_profit=pd.read_csv(Path(full['dir'])/'operating_profit_by_unit.csv')
     pd.testing.assert_series_equal(profit_table['模拟运营利润 元'].reset_index(drop=True),saved_profit.simulated_operating_profit_yuan,check_names=False)
     assert (profit_table['模拟运营利润 元']<0).sum()==(saved_profit.simulated_operating_profit_yuan<0).sum()
-    assert [t.label for t in advanced.tabs][:3]==['线路','网络拓扑','主体与求解阶段']
+    assert '线路负载' in [t.label for t in at.tabs]
+    assert '主体与求解阶段' in [t.label for t in at.tabs]
+    assert '电能量结算' in [t.label for t in at.tabs] and '成本与利润' in [t.label for t in at.tabs]
+    assert '电网拓扑' in [t.label for t in at.tabs]

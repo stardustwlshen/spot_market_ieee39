@@ -21,11 +21,11 @@ def _setup_font():
 
 
 _setup_font()
-TYPE_ORDER = ["tie", "coal", "hydro", "wind", "pv", "gas_ccgt", "gas_gt", "storage"]
+TYPE_ORDER = ["tie", "coal", "hydro", "wind", "pv", "gas_ccgt", "gas_gt", "storage", "pumped"]
 TYPE_LABEL = {"tie": "区外来电", "coal": "燃煤", "hydro": "水电", "wind": "风电", "pv": "光伏", "gas_ccgt": "燃气联合循环",
-              "gas_gt": "燃气轮机", "storage": "储能(放电)", "storage_ch": "储能(充电)"}
+              "gas_gt": "燃气轮机", "storage": "储能(放电)", "storage_ch": "储能(充电)", "pumped": "抽蓄(发电)", "pumped_ch": "抽蓄(抽水)"}
 TYPE_COLOR = {"tie": "#7f7f7f", "coal": "#4d4d4d", "hydro": "#1f77b4", "wind": "#2ca02c", "pv": "#ffbf00",
-              "gas_ccgt": "#d62728", "gas_gt": "#ff7f0e", "storage": "#9467bd"}
+              "gas_ccgt": "#d62728", "gas_gt": "#ff7f0e", "storage": "#9467bd", "pumped": "#17becf"}
 
 
 def _xt(ax, T=96):
@@ -55,12 +55,12 @@ def lmp_curves(prices: pd.DataFrame, system: pd.DataFrame, path: Path, buses=Non
     piv = prices.pivot(index="period", columns="bus", values="lmp")
     if buses is None:  # 取最低、最高、和参考母线
         avg = piv.mean()
-        buses = sorted(set([avg.idxmin(), avg.idxmax(), 31, 39, 30, 16]))
+        buses = sorted(set([avg.idxmin(), avg.idxmax(), *[b for b in (31,39,30,16) if b in piv.columns]]))
     fig, ax = plt.subplots(figsize=(12, 5))
     for b in buses:
         ax.plot(piv.index, piv[b], label=f"母线{b}", lw=1.3)
     ax.plot(system.period, system.energy_price, "k--", lw=1.5, label="系统能量价 λ")
-    _xt(ax)
+    _xt(ax, int(system.period.max())+1)
     ax.set_ylabel("元/MWh")
     ax.set_title(title)
     ax.grid(alpha=0.3)
@@ -70,24 +70,30 @@ def lmp_curves(prices: pd.DataFrame, system: pd.DataFrame, path: Path, buses=Non
     plt.close(fig)
 
 
-def generation_stack(units: pd.DataFrame, system: pd.DataFrame, path: Path, title="日前出清分类型出力"):
+def generation_stack(units: pd.DataFrame, system: pd.DataFrame, path: Path, title="日前出清分类型出力", load_label="负荷（日前预测）"):
     u = units.copy()
     u["P_pos"] = u.P_mw.clip(lower=0)
     u["P_neg"] = u.P_mw.clip(upper=0)
     pos = u.pivot_table(index="period", columns="type", values="P_pos", aggfunc="sum").fillna(0)
-    neg = u[u.type == "storage"].groupby("period").P_neg.sum()
-    types = [t for t in TYPE_ORDER if t in pos.columns]
+    neg = u[u.type.isin(["storage", "pumped"])].pivot_table(index="period", columns="type", values="P_neg", aggfunc="sum").fillna(0)
+    types = [t for t in TYPE_ORDER if t in pos.columns] + [t for t in pos if t not in TYPE_ORDER]
     fig, ax = plt.subplots(figsize=(12, 5.5))
-    ax.stackplot(pos.index, *[pos[t] for t in types], labels=[TYPE_LABEL[t] for t in types],
-                 colors=[TYPE_COLOR[t] for t in types], alpha=0.9)
-    ax.fill_between(neg.index, neg.values, 0, color="#c5b0d5", label=TYPE_LABEL["storage_ch"])
-    ax.plot(system.period, system.load_mw, "k-", lw=1.8, label="负荷（日前预测）")
+    ax.stackplot(pos.index, *[pos[t] for t in types], labels=[TYPE_LABEL.get(t,t) for t in types],
+                 colors=[TYPE_COLOR.get(t,"#8c564b") for t in types], alpha=0.9)
+    bottom = np.zeros(len(neg))
+    for kind in ("storage", "pumped"):
+        if kind in neg:
+            ax.fill_between(neg.index, bottom, bottom + neg[kind].to_numpy(), color=TYPE_COLOR[kind], alpha=.45, label=TYPE_LABEL[kind+"_ch"])
+            bottom += neg[kind].to_numpy()
+    ax.plot(system.period, system.load_mw, "k-", lw=1.8, label=load_label)
+    if "shed_mw" in system and system.shed_mw.max() > 1e-6:
+        ax.plot(system.period, system.load_mw-system.shed_mw, "r--", label="实际供给负荷（扣缺额）")
     re = units[units.type.isin(["wind", "pv"])]
     curt = re.groupby("period").curtail_mw.sum()
     if curt.max() > 1e-3:
         top = pos[types].sum(axis=1)
         ax.fill_between(curt.index, top, top + curt, facecolor="none", hatch="////", edgecolor="#2ca02c", lw=0.6, label="风光弃电")
-    _xt(ax)
+    _xt(ax, int(system.period.max())+1)
     ax.set_ylabel("MW")
     ax.set_title(title)
     ax.legend(loc="upper left", ncol=5, fontsize=8)
@@ -107,7 +113,7 @@ def storage_soc(storage: pd.DataFrame, path: Path, prices: pd.DataFrame | None =
         ax.bar(d.period, -d.P_ch, color="#c5b0d5", label="充电 MW")
         ax.set_ylabel("MW")
         ax2 = ax.twinx()
-        ax2.plot(d.period, d.soc * 100, "k-", lw=1.5, label="荷电状态 %")
+        ax2.plot(d.period + 1, d.soc * 100, "k-", lw=1.5, label="时段末荷电状态 %")
         ax2.set_ylim(0, 100)
         ax2.set_ylabel("荷电状态 %")
         if prices is not None:
@@ -121,7 +127,7 @@ def storage_soc(storage: pd.DataFrame, path: Path, prices: pd.DataFrame | None =
         h1, l1 = ax.get_legend_handles_labels()
         h2, l2 = ax2.get_legend_handles_labels()
         ax.legend(h1 + h2, l1 + l2, fontsize=7, loc="upper left", ncol=3)
-        _xt(ax)
+        _xt(ax, int(storage.period.max())+2)
     fig.suptitle(title)
     fig.tight_layout()
     fig.savefig(path, dpi=130)
@@ -135,7 +141,7 @@ def line_loading(lines: pd.DataFrame, path: Path, top=6, title="重载/阻塞线
         d = lines[lines.line == l]
         ax.plot(d.period, d.loading * 100, label=l)
     ax.axhline(100, color="r", ls="--", lw=1)
-    _xt(ax)
+    _xt(ax, int(lines.period.max())+1)
     ax.set_ylabel("负载率 %")
     ax.set_title(title)
     ax.legend(ncol=6, fontsize=8)
@@ -173,16 +179,21 @@ def rebid_compare(base_prices, new_prices, base_units, new_units, unit_ids, path
 
 
 def forecast_plot(profiles: pd.DataFrame, path: Path, title="日前/日内/实时预测与实际"):
-    fig, axes = plt.subplots(4, 1, figsize=(12, 11), sharex=True)
-    for ax, key, name in zip(axes, ["load", "W1", "W2", "PV1"], ["系统负荷", "风电 W1", "风电 W2", "光伏 PV1"]):
-        ax.plot(profiles.period, profiles[f"{key}_actual"], "k-", lw=1.6, label="实际")
-        ax.plot(profiles.period, profiles[f"{key}_da"], "--", label="日前短期预测")
-        ax.plot(profiles.period, profiles[f"{key}_id"], ":", label="日内超短期预测")
+    keys = [c[:-7] for c in profiles if c.endswith("_actual") and c[:-7]+"_da" in profiles]
+    if not keys:
+        return
+    fig, axes = plt.subplots(len(keys), 1, figsize=(12, max(3,2.8*len(keys))), sharex=True)
+    periods = profiles.period if "period" in profiles else np.arange(len(profiles))
+    for ax, key in zip(np.atleast_1d(axes), keys):
+        ax.plot(periods, profiles[f"{key}_actual"], "k-", lw=1.6, label="实际")
+        ax.plot(periods, profiles[f"{key}_da"], "--", label="日前短期预测")
+        if f"{key}_id" in profiles:
+            ax.plot(periods, profiles[f"{key}_id"], ":", label="日内超短期预测")
         ax.set_ylabel("MW")
-        ax.set_title(name, fontsize=10)
+        ax.set_title("系统负荷" if key == "load" else key, fontsize=10)
         ax.grid(alpha=0.3)
         ax.legend(fontsize=8, ncol=3)
-        _xt(ax)
+        _xt(ax, len(profiles))
     fig.suptitle(title)
     fig.tight_layout()
     fig.savefig(path, dpi=120)
@@ -191,7 +202,7 @@ def forecast_plot(profiles: pd.DataFrame, path: Path, title="日前/日内/实�
 
 # ----------------------------------------------------------------------------- 全流程（日前→日内→实时→结算）
 SETTLE_LABEL = {"coal": "燃煤", "gas_ccgt": "燃气联合循环", "gas_gt": "燃气轮机", "hydro": "水电", "wind": "风电", "pv": "光伏",
-                "storage_dis": "储能放电", "storage_ch": "储能充电", "load": "负荷", "tie": "区外来电", "slack": "平衡松弛"}
+                "storage_dis": "储能放电", "storage_ch": "储能充电", "pumped_gen": "抽蓄发电", "pumped_pump": "抽蓄抽水", "load": "负荷", "tie": "区外来电", "slack": "平衡松弛"}
 
 
 def da_vs_rt_lmp(da_prices: np.ndarray, rt_prices: np.ndarray, load_da: np.ndarray, load_rt: np.ndarray, buses, path: Path):
@@ -228,14 +239,19 @@ def da_vs_rt_lmp(da_prices: np.ndarray, rt_prices: np.ndarray, load_da: np.ndarr
 
 
 def rolling_plans(id_plans: pd.DataFrame, id_sto: pd.DataFrame, rt_units: pd.DataFrame, rt_sto: pd.DataFrame,
-                  da_units: pd.DataFrame, da_sto: pd.DataFrame, path: Path, units=("GT", "CCGT", "H1"), sto="ES1", x=None):
+                  da_units: pd.DataFrame, da_sto: pd.DataFrame, path: Path, units=None, sto=None, x=None):
     """（开日内时）各轮日内计划（细线）vs 日前（虚线）vs 实时执行（黑线）；x 给出时画日前 SOC ±x 锚点带。"""
     T = int(rt_units.period.max()) + 1
     rounds = sorted(id_plans.tau.unique())
     cmap = plt.cm.viridis
-    panels = list(units) + [f"{sto}:soc"]
+    if units is None:
+        candidates = da_units[da_units.type.isin(["coal", "gas_ccgt", "gas_gt", "hydro"])]
+        units = list(candidates.unit.unique()[:3]) or list(da_units.unit.unique()[:3])
+    if sto is None and not da_sto.empty:
+        sto = da_sto.unit.iloc[0]
+    panels = list(units) + ([f"{sto}:soc"] if sto is not None else [])
     fig, axes = plt.subplots(len(panels), 1, figsize=(13, 3.0 * len(panels)), sharex=True)
-    for ax, name in zip(axes, panels):
+    for ax, name in zip(np.atleast_1d(axes), panels):
         if name.endswith(":soc"):
             s = name.split(":")[0]
             for k, tau in enumerate(rounds):
@@ -292,3 +308,49 @@ def settlement_bars(by_type: pd.DataFrame, by_entity: pd.DataFrame, path: Path):
     ax.axvline(0, color="k", lw=.8); ax.set_xlabel("万元"); ax.set_title("各主体结算总额（日前+实时偏差）")
     ax.tick_params(axis="y", labelsize=7); ax.grid(axis="x", alpha=.3)
     fig.tight_layout(); fig.savefig(path, dpi=130); plt.close(fig)
+
+
+def reserve_balance(system: pd.DataFrame, path: Path, title="上备用需求、供给与缺额"):
+    fig, axes = plt.subplots(2, 1, figsize=(12, 6), sharex=True)
+    for key, label in (("R_up_req", "需求"), ("R_up_supply", "资源供给"), ("R_up_re_credit_mw", "新能源置信折算")):
+        if key in system:
+            axes[0].plot(system.period, system[key], label=label)
+    axes[0].set_title(title); axes[0].set_ylabel("MW"); axes[0].legend()
+    axes[1].bar(system.period, system.R_up_short, label="上备用缺额", color="#d62728")
+    axes[1].set_ylabel("MW"); axes[1].legend(); _xt(axes[1], int(system.period.max())+1)
+    fig.tight_layout(); fig.savefig(path, dpi=130); plt.close(fig)
+
+
+def water_states(hydro: pd.DataFrame, pumped: pd.DataFrame, path: Path, title="水电与抽蓄库存"):
+    groups = [(str(u), d, "V_1e4m3") for u,d in hydro.groupby("station")] if not hydro.empty else []
+    groups += [(str(u), d, "V_up") for u,d in pumped.groupby("unit")] if not pumped.empty else []
+    if not groups:
+        return
+    fig, axes = plt.subplots(len(groups), 1, figsize=(12, max(3,2.5*len(groups))), sharex=True)
+    for ax,(name,data,column) in zip(np.atleast_1d(axes),groups):
+        ax.plot(data.period + 1, data[column], label="时段末库存")
+        if "V_start" in data and pd.notna(data.V_start.iloc[0]):
+            ax.scatter([data.period.iloc[0]], [data.V_start.iloc[0]], label="初始库存", s=20)
+        ax.set_title(name); ax.set_ylabel("万m³"); ax.grid(alpha=.3)
+        _xt(ax, int(data.period.max())+2)
+    fig.suptitle(title); fig.tight_layout(); fig.savefig(path,dpi=130); plt.close(fig)
+
+
+def dispatch_plots(tables, directory: Path, *, stage="da"):
+    """All standard dispatch families, no hard-coded resource IDs."""
+    label = "日前计划" if stage == "da" else "实时已执行"
+    prefix = "" if stage == "da" else "rt_"
+    lmp_heatmap(tables["prices"], directory / f"{prefix}lmp_heatmap.png", title=label+"节点结算价")
+    lmp_curves(tables["prices"], tables["system"], directory / f"{prefix}lmp_curves.png", title=label+"节点电价曲线")
+    generation_stack(tables["units"], tables["system"], directory / f"{prefix}generation_stack.png", title=label+"分类型出力", load_label=label+"需求负荷")
+    if not tables["storage"].empty:
+        storage_soc(tables["storage"], directory / f"{prefix}storage_soc.png", tables["prices"], title=label+"储能充放电与SOC")
+    line_loading(tables["lines"], directory / f"{prefix}line_loading.png", title=label+"线路负载率")
+    reserve_balance(tables["system"], directory / f"{prefix}reserve_balance.png", title=label+"上备用")
+    water_states(tables["hydro"], tables["pumped"], directory / f"{prefix}water_states.png", title=label+"水电与抽蓄库存")
+    names = ["lmp_heatmap.png", "lmp_curves.png", "generation_stack.png", "line_loading.png", "reserve_balance.png"]
+    if not tables["storage"].empty:
+        names.append("storage_soc.png")
+    if not tables["hydro"].empty or not tables["pumped"].empty:
+        names.append("water_states.png")
+    return [prefix+name for name in names]

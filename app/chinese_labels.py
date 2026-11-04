@@ -5,10 +5,13 @@ import pandas as pd
 
 COLUMNS = {
  'A':'方案甲','B':'方案乙','B−A':'方案乙−方案甲',
+ 'constraint_kind':'跟踪约束类型','state_end_hour':'北京时间状态时刻（小时）',
  'unit':'主体','entity':'结算主体','type':'资源类型','bus':'节点','line':'线路','station':'电站','period':'时段序号','time':'时刻',
  'stage':'求解阶段','status':'状态','mode':'工况','on':'在线状态或台数','startup':'启动数','startup_count':'发电启动次数','pump_startup_count':'抽水启动次数',
  'P_mw':'净出力 MW','P_ch_mw':'充电功率 MW','P_dis_mw':'放电功率 MW','P_gen_mw':'发电功率 MW','P_pump_mw':'抽水功率 MW',
  'P_ch':'充电功率 MW','P_dis':'放电功率 MW','P_gen':'发电功率 MW','P_pump':'抽水功率 MW','avail_mw':'可用出力 MW','curtail_mw':'弃风弃光功率 MW',
+ 'energy_mwh':'净电量 MWh','rt_price_valuation_yuan':'按实时价估值（非两级结算）元','served_load_mw':'扣缺额后供给负荷 MW',
+ 'Q_gen':'发电流量 m³/s','Q_spill':'弃水流量 m³/s','Q_in':'来水流量（含上游）m³/s',
  'E_mwh':'储能电量 MWh','E_start':'时段初电量 MWh','soc':'荷电状态（比例）','u_ch':'充电状态','u_dis':'放电状态',
  'V_up':'时段末上库库容 万m³','V_start':'时段初库容 万m³','V_1e4m3':'时段末库容 万m³','V_up_1e4m3':'上库库容 万m³','V_dn':'下库库容 万m³',
  'n_gen':'发电台数','n_pump':'抽水台数','Q_out':'总下泄流量 m³/s','qout_m3s':'总下泄流量 m³/s','qout_max_m3s':'声明下泄上限 m³/s',
@@ -42,6 +45,7 @@ COLUMNS = {
  'energy_generated_or_discharged_mwh':'实际发电或放电量 MWh','completed_scope':'完成范围','settlement_scope':'结算范围',
  'executed_periods':'已执行时段数','expected_periods':'预期时段数','cost_profile_sha256':'固定成本文件校验指纹','cost_source_kind':'成本数据来源类型',
  'cost_available':'成本参数完整','cost_missing_reason':'成本缺项原因','inventory_unit':'库存单位','inventory_start':'期初库存','inventory_end':'期末库存','inventory_change':'库存变化',
+ 'report_kind':'核算报告类型',
  'cash_revenue_yuan':'净能量现金结算 元','cash_operating_cost_yuan':'现金运营成本 元','simulated_operating_profit_yuan':'模拟运营利润 元',
  'da_cash_revenue_yuan':'日前现金结算 元','rt_deviation_cash_revenue_yuan':'实时偏差现金结算 元','charging_settlement_yuan':'其中充电或抽水结算 元（已含）',
  'variable_cost_yuan':'可变运营成本 元','fixed_online_cost_yuan':'在线固定成本 元','startup_cost_yuan':'启动成本 元',
@@ -52,8 +56,9 @@ for side,word in [('up','向上'),('down','向下'),('lower','下界'),('upper',
  for suffix,unit in [('mwh','MWh'),('1e4m3','万m³')]:
   COLUMNS[f'reserve_duration_{side}_margin_{suffix}']=f'持续激活{word}余量 {unit}'
 VALUES={
+ 'hard_equality':'硬等式','soft_target':'带罚软目标',
  'incremental_current_stock':'当前时段初库存增量筛选',
- 'coal':'燃煤','gas_ccgt':'燃气联合循环','gas_gt':'燃气轮机','hydro':'水电','wind':'风电','pv':'光伏','storage':'储能','pumped':'抽水蓄能','tie':'区外联络线','load':'负荷','slack':'平衡松弛',
+ 'coal':'燃煤','gas_ccgt':'燃气联合循环','gas_gt':'燃气轮机','hydro':'水电','wind':'风电','pv':'光伏','storage':'储能','pumped':'抽水蓄能','fixed_load':'原联络线固定负荷','tie':'区外联络线','load':'负荷','slack':'平衡松弛',
  'storage_dis':'储能放电','storage_ch':'储能充电','pumped_gen':'抽蓄发电','pumped_pump':'抽蓄抽水',
  'standard_sced':'正式调度边际定价','dispatch_sced':'正式调度边际定价','bounded_auxiliary_pricing':'辅助定价（数量不执行）',
  'scuc_preplan':'日前或窗口启停预计划','energy_sced':'正式能量调度','auxiliary_pricing':'辅助定价（数量不执行）','agc_auxiliary':'历史调频辅助阶段',
@@ -65,6 +70,9 @@ VALUES={
  'segments':'发电报价','dis_segments':'放电报价','ch_segments':'充电报价','gen_segments':'抽蓄发电报价','pump_segments':'抽水报价',
  'price_quantity':'报量报价','fixed_da':'执行日前计划','generating':'发电','pumping':'抽水','idle':'空闲','charging':'充电','discharging':'放电',
  'explicit unit cost profile missing':'未提供独立主体固定成本参数','cost profile resource type mismatch':'成本参数与资源类型不一致',
+ 'original_frozen_cost':'本次运行冻结成本','retrospective_supplemental_assumption':'后来补充的成本假设',
+ 'retrospective_supplemental_assumptions':'历史成本补算（原始结果保留）',
+ 'mixed_explicit_and_synthetic_costs':'包含原有成本与生成研究假设（逐主体列明）',
 }
 VARIABLES={'u':'在线状态','v':'启动状态','w':'停机状态','u_ch':'充电状态','u_dis':'放电状态','delta':'水电稳定区台数','ngen':'抽蓄发电台数','npump':'抽蓄抽水台数','xg':'抽蓄发电工况','xp':'抽蓄抽水工况','sg':'抽蓄发电启动台数','sp':'抽蓄抽水启动台数','z_s':'历史储能备用资格整数','z_p':'历史抽蓄备用资格整数','y':'热启动状态','ycold':'冷启动状态'}
 

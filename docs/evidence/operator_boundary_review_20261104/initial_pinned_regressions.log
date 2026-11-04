@@ -1,0 +1,266 @@
+.......................F.F.............................................. [ 84%]
+.............                                                            [100%]
+=================================== FAILURES ===================================
+_ test_real_comparison_missing_history_keeps_unknown_and_never_borrows_current _
+
+self = Index(['指标', '方案甲', '方案乙', '方案乙减方案甲'], dtype='object'), key = 'A'
+
+    def get_loc(self, key):
+        """
+        Get integer location, slice or boolean mask for requested label.
+
+        Parameters
+        ----------
+        key : label
+
+        Returns
+        -------
+        int if unique index, slice if monotonic index, else mask
+
+        Examples
+        --------
+        >>> unique_index = pd.Index(list('abc'))
+        >>> unique_index.get_loc('b')
+        1
+
+        >>> monotonic_index = pd.Index(list('abbc'))
+        >>> monotonic_index.get_loc('b')
+        slice(1, 3, None)
+
+        >>> non_monotonic_index = pd.Index(list('abcb'))
+        >>> non_monotonic_index.get_loc('b')
+        array([False,  True, False,  True])
+        """
+        casted_key = self._maybe_cast_indexer(key)
+        try:
+>           return self._engine.get_loc(casted_key)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+../ieee39-cloud/repo/.venv/lib/python3.12/site-packages/pandas/core/indexes/base.py:3812:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+pandas/_libs/index.pyx:167: in pandas._libs.index.IndexEngine.get_loc
+    ???
+pandas/_libs/index.pyx:196: in pandas._libs.index.IndexEngine.get_loc
+    ???
+pandas/_libs/hashtable_class_helper.pxi:7088: in pandas._libs.hashtable.PyObjectHashTable.get_item
+    ???
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+>   ???
+E   KeyError: 'A'
+
+pandas/_libs/hashtable_class_helper.pxi:7096: KeyError
+
+The above exception was the direct cause of the following exception:
+
+evidence = PosixPath('/workspace/scratch/42c5fe32dad0/ieee39-final-evidence')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7fdf5be4edb0>
+tmp_path = PosixPath('/tmp/pytest-of-agent/pytest-110/test_real_comparison_missing_h0')
+
+    def test_real_comparison_missing_history_keeps_unknown_and_never_borrows_current(evidence, monkeypatch, tmp_path):
+        import common
+        paths = [evidence / n for n in ('final_c1f829a_baseline_full96', 'pv2152_dry_lowre_highload_full96')]
+        results = [common.get_result(dict(dir=str(p), mode='full')) for p in paths]
+        for result in results:
+            result['snapshot_root'] = str(tmp_path / 'missing')
+            for key in ('da_nodal_prices', 'rt_prices'):
+                result[key] = result[key].drop(columns='load_mw', errors='ignore')
+            result['da_summary'].pop('lmp_load_weighted_avg', None)
+        records = [dict(dir=str(p), scenario=p.name, mode='full', status='done') for p in paths]
+        at = open_comparison(monkeypatch, tmp_path, records,
+                             lambda m: deepcopy(results[[str(p) for p in paths].index(m['dir'])]))
+        assert not at.exception, [x.message for x in at.exception]
+        assert any('不借用当前网络' in x.value for x in at.warning)
+        metrics = at.dataframe[0].value
+        row = metrics[metrics['指标'] == '日前负荷电量加权结算价 元/MWh'].iloc[0]
+>       assert pd.isna(row['A']) and pd.isna(row['B']) and pd.isna(row['B−A'])
+                       ^^^^^^^^
+
+tests/test_operator_comparison_boundary.py:65:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+../ieee39-cloud/repo/.venv/lib/python3.12/site-packages/pandas/core/series.py:1133: in __getitem__
+    return self._get_value(key)
+           ^^^^^^^^^^^^^^^^^^^^
+../ieee39-cloud/repo/.venv/lib/python3.12/site-packages/pandas/core/series.py:1249: in _get_value
+    loc = self.index.get_loc(label)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = Index(['指标', '方案甲', '方案乙', '方案乙减方案甲'], dtype='object'), key = 'A'
+
+    def get_loc(self, key):
+        """
+        Get integer location, slice or boolean mask for requested label.
+
+        Parameters
+        ----------
+        key : label
+
+        Returns
+        -------
+        int if unique index, slice if monotonic index, else mask
+
+        Examples
+        --------
+        >>> unique_index = pd.Index(list('abc'))
+        >>> unique_index.get_loc('b')
+        1
+
+        >>> monotonic_index = pd.Index(list('abbc'))
+        >>> monotonic_index.get_loc('b')
+        slice(1, 3, None)
+
+        >>> non_monotonic_index = pd.Index(list('abcb'))
+        >>> non_monotonic_index.get_loc('b')
+        array([False,  True, False,  True])
+        """
+        casted_key = self._maybe_cast_indexer(key)
+        try:
+            return self._engine.get_loc(casted_key)
+        except KeyError as err:
+            if isinstance(casted_key, slice) or (
+                isinstance(casted_key, abc.Iterable)
+                and any(isinstance(x, slice) for x in casted_key)
+            ):
+                raise InvalidIndexError(key)
+>           raise KeyError(key) from err
+E           KeyError: 'A'
+
+../ieee39-cloud/repo/.venv/lib/python3.12/site-packages/pandas/core/indexes/base.py:3819: KeyError
+----------------------------- Captured stderr call -----------------------------
+2026-11-03 22:08:14.548 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+------------------------------ Captured log call -------------------------------
+WARNING  streamlit.runtime.scriptrunner_utils.script_run_context:script_run_context.py:508 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+_ test_real_debug_prefix_remains_readable_and_comparison_does_not_subtract_full_day _
+
+self = Index(['指标', '方案甲', '方案乙', '方案乙减方案甲'], dtype='object'), key = 'A'
+
+    def get_loc(self, key):
+        """
+        Get integer location, slice or boolean mask for requested label.
+
+        Parameters
+        ----------
+        key : label
+
+        Returns
+        -------
+        int if unique index, slice if monotonic index, else mask
+
+        Examples
+        --------
+        >>> unique_index = pd.Index(list('abc'))
+        >>> unique_index.get_loc('b')
+        1
+
+        >>> monotonic_index = pd.Index(list('abbc'))
+        >>> monotonic_index.get_loc('b')
+        slice(1, 3, None)
+
+        >>> non_monotonic_index = pd.Index(list('abcb'))
+        >>> non_monotonic_index.get_loc('b')
+        array([False,  True, False,  True])
+        """
+        casted_key = self._maybe_cast_indexer(key)
+        try:
+>           return self._engine.get_loc(casted_key)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+../ieee39-cloud/repo/.venv/lib/python3.12/site-packages/pandas/core/indexes/base.py:3812:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+pandas/_libs/index.pyx:167: in pandas._libs.index.IndexEngine.get_loc
+    ???
+pandas/_libs/index.pyx:196: in pandas._libs.index.IndexEngine.get_loc
+    ???
+pandas/_libs/hashtable_class_helper.pxi:7088: in pandas._libs.hashtable.PyObjectHashTable.get_item
+    ???
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+>   ???
+E   KeyError: 'A'
+
+pandas/_libs/hashtable_class_helper.pxi:7096: KeyError
+
+The above exception was the direct cause of the following exception:
+
+evidence = PosixPath('/workspace/scratch/42c5fe32dad0/ieee39-final-evidence')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7fdf53897fe0>
+tmp_path = PosixPath('/tmp/pytest-of-agent/pytest-110/test_real_debug_prefix_remains0')
+
+    def test_real_debug_prefix_remains_readable_and_comparison_does_not_subtract_full_day(evidence, monkeypatch, tmp_path):
+        import common
+        prefix = os.environ.get('IEEE39_OPERATOR_PREFIX')
+        if not prefix:
+            pytest.skip('set IEEE39_OPERATOR_PREFIX to an existing actual DA96/RT8 run')
+        paths = [evidence / 'final_c1f829a_baseline_full96', Path(prefix)]
+        files = [p / n for p in paths for n in ('summary.json', 'rt_prices.csv', 'rt_units.csv')]
+        before = {str(p): hashlib.sha256(p.read_bytes()).hexdigest() for p in files}
+        original_get = common.get_result
+        records = [dict(dir=str(p), scenario=p.name, mode='full', status='done') for p in paths]
+        at = open_comparison(monkeypatch, tmp_path, records, original_get)
+        assert not at.exception, [x.message for x in at.exception]
+        assert any('不计算跨范围差值' in x.value for x in at.warning)
+        table = at.dataframe[0].value
+        quantity = table[table['指标'] == '负荷总支付 万元'].iloc[0]
+>       assert pd.notna(quantity['A']) and pd.notna(quantity['B']) and pd.isna(quantity['B−A'])
+                        ^^^^^^^^^^^^^
+
+tests/test_operator_comparison_boundary.py:101:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+../ieee39-cloud/repo/.venv/lib/python3.12/site-packages/pandas/core/series.py:1133: in __getitem__
+    return self._get_value(key)
+           ^^^^^^^^^^^^^^^^^^^^
+../ieee39-cloud/repo/.venv/lib/python3.12/site-packages/pandas/core/series.py:1249: in _get_value
+    loc = self.index.get_loc(label)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = Index(['指标', '方案甲', '方案乙', '方案乙减方案甲'], dtype='object'), key = 'A'
+
+    def get_loc(self, key):
+        """
+        Get integer location, slice or boolean mask for requested label.
+
+        Parameters
+        ----------
+        key : label
+
+        Returns
+        -------
+        int if unique index, slice if monotonic index, else mask
+
+        Examples
+        --------
+        >>> unique_index = pd.Index(list('abc'))
+        >>> unique_index.get_loc('b')
+        1
+
+        >>> monotonic_index = pd.Index(list('abbc'))
+        >>> monotonic_index.get_loc('b')
+        slice(1, 3, None)
+
+        >>> non_monotonic_index = pd.Index(list('abcb'))
+        >>> non_monotonic_index.get_loc('b')
+        array([False,  True, False,  True])
+        """
+        casted_key = self._maybe_cast_indexer(key)
+        try:
+            return self._engine.get_loc(casted_key)
+        except KeyError as err:
+            if isinstance(casted_key, slice) or (
+                isinstance(casted_key, abc.Iterable)
+                and any(isinstance(x, slice) for x in casted_key)
+            ):
+                raise InvalidIndexError(key)
+>           raise KeyError(key) from err
+E           KeyError: 'A'
+
+../ieee39-cloud/repo/.venv/lib/python3.12/site-packages/pandas/core/indexes/base.py:3819: KeyError
+----------------------------- Captured stderr call -----------------------------
+2026-11-03 22:08:17.796 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+------------------------------ Captured log call -------------------------------
+WARNING  streamlit.runtime.scriptrunner_utils.script_run_context:script_run_context.py:508 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+=========================== short test summary info ============================
+FAILED tests/test_operator_comparison_boundary.py::test_real_comparison_missing_history_keeps_unknown_and_never_borrows_current
+FAILED tests/test_operator_comparison_boundary.py::test_real_debug_prefix_remains_readable_and_comparison_does_not_subtract_full_day
+2 failed, 83 passed in 118.54s (0:01:58)

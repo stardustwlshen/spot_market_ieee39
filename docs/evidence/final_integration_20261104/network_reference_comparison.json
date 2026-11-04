@@ -1,0 +1,11 @@
+{
+  "comparison": "Current persisted project PTDF versus installed pandapower case39 converted PPC and makePTDF, slack bus31; no operational flow or AC validity claim",
+  "reference_package": "pandapower 3.5.6",
+  "branches": 46,
+  "nonunity_tap_count": 11,
+  "nonzero_shift_count": 0,
+  "x_max_abs_difference_pu": 2.899999999998737e-05,
+  "ptdf_max_abs_difference": 0.00030117898549095884,
+  "ptdf_largest_difference_branch": "T12-11",
+  "ptdf_largest_difference_bus": 13
+}

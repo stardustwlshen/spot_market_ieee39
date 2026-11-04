@@ -9,9 +9,13 @@ from test_full_safety import fixture
 
 
 def test_nodal_duals_and_dispatch_duals_are_separate():
-    m=NS(_md=NS(T=1,buses=[1]))
+    m=NS(_md=NS(T=1,buses=[1]),
+         _case=NS(load_bus={1:np.array([123.])}, fixed_load={'TIE@1':(1,np.array([23.]))}),
+         shed={(1,0):2.})
     def prices(x):return dict(lmp=np.array([[x]]),lmp_clamped=np.array([[min(x,800.)]]),energy=np.array([x]),congestion=np.array([[0.]]),lmp_decomp=np.array([[x]]))
     frame=results.price_tables(m,prices(900.),0.,800.,dispatch_prices=prices(1100.),pricing_source='bounded_auxiliary_pricing')
+    assert frame.iloc[0]['load_mw']==123. and frame.iloc[0]['fixed_load_mw']==23.
+    assert frame.iloc[0]['shed_mw']==2.  # Physical demand stays independent of pricing-model quantities.
     assert frame.iloc[0].lmp_raw==900.
     assert frame.iloc[0].lmp==800.
     assert frame.iloc[0].dispatch_raw_lmp==1100.

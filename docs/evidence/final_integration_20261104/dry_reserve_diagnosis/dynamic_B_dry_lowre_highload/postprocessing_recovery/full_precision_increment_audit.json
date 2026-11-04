@@ -1,0 +1,11 @@
+{
+  "DA_baseline_plus_B_max_error_mw": 1.1368683772161603e-13,
+  "all_RT_windows_requirement_max_difference_mw": 0.0,
+  "DA_CSV_quantization_max_error_mw": 4.8390619213023456e-05,
+  "RT_CSV_quantization_max_error_mw": 4.992462254449492e-05,
+  "expected_DA_formula_difference_count": 96,
+  "expected_DA_formula_difference_vs_B_max_error_mw": 2.8421709430404007e-13,
+  "additional_reserve_audit_violations": [],
+  "declared_increment_audit_passed": true,
+  "scope": "RHS provenance/serialization audit only. Shortages, physical limits and optimality are independent metrics. Original reserve passed=false and original runner status preserved."
+}

@@ -9,7 +9,7 @@ from .bids import bid_dir, bids_to_csv, default_bids, load_bids, raise_on_errors
 from .case import build_da_case
 from .config import Config
 from .da import DAResult, run_da, summarize
-from .forecast import accuracy_summary, apply_profile_overrides, generate_profiles, save_profiles
+from .forecast import apply_profile_overrides, generate_profiles, save_profiles
 from .network import build_network
 
 
@@ -24,12 +24,23 @@ def ensure_default_bids(cfg: Config) -> Path:
     return sorted(d.glob("bids_v*.json"), key=lambda p: int(p.stem.split("_v")[-1]))[-1]
 
 
-def prepare(cfg: Config, bid_version: int | None = None, verbose=True):
+def prepare(cfg: Config, bid_version: int | None = None, verbose=True, *, read_only=False):
+    """Prepare an in-memory case; frozen runs must not write generated inputs."""
     net = build_network(cfg)
     prof = apply_profile_overrides(cfg, generate_profiles(cfg, cfg.base["seed"]))   # 无覆盖文件时不变
-    save_profiles(cfg, prof)
-    ensure_default_bids(cfg)
-    bids = load_bids(cfg, bid_version)
+    from .forecast_settings import generation_metadata
+    prof.attrs["generation_metadata"] = generation_metadata(cfg)
+    if not read_only:
+        save_profiles(cfg, prof)
+        ensure_default_bids(cfg)
+    if read_only and not list(bid_dir(cfg).glob("bids_v*.json")):
+        # Same default v1 as the writable path, but archive resolved_bids outside
+        # the frozen tree. An explicitly missing later version must still fail.
+        if bid_version not in (None, 1):
+            raise FileNotFoundError(f"No frozen bid version {bid_version}")
+        bids = default_bids(cfg)
+    else:
+        bids = load_bids(cfg, bid_version)
     issues = validate_bids(cfg, bids)
     if verbose:
         print(f"[报价] {cfg.rule_set} v{bids['version']}：校验 {len(issues)} 条提示")
@@ -48,29 +59,35 @@ def out_dir(cfg: Config, bids_version: int, tag: str = "") -> Path:
 
 def write_outputs(res: DAResult, d: Path, make_plots=True) -> dict:
     t = res.tables
-    t["units"].to_csv(d / "da_unit_awards.csv", index=False, float_format="%.4f")
-    t["prices"].to_csv(d / "da_nodal_prices.csv", index=False, float_format="%.4f")
-    t["prices"].pivot(index="bus", columns="time", values="lmp").to_csv(d / "da_lmp_matrix.csv", float_format="%.2f")
-    t["lines"].to_csv(d / "da_line_flows.csv", index=False, float_format="%.4f")
-    t["storage"].to_csv(d / "da_storage.csv", index=False, float_format="%.4f")
-    t["hydro"].to_csv(d / "da_hydro.csv", index=False, float_format="%.4f")
-    t["pumped"].to_csv(d / "da_pumped.csv", index=False, float_format="%.4f")
-    t["system"].to_csv(d / "da_system.csv", index=False, float_format="%.4f")
+    from .output_catalog import write_da_tables, write_catalog
+    from .live_runner import completion_metadata
+    write_da_tables(res, d)
+    from .results import reserve_snapshot
+    import pandas as pd
+    reserve = reserve_snapshot(res.model)
+    pd.DataFrame(reserve["resources"]).to_csv(d / "da_reserve.csv", index=False, float_format="%.4f")
+    pd.DataFrame(reserve["system"]).to_csv(d / "da_reserve_system.csv", index=False, float_format="%.4f")
+    (d / "reserve_window_evidence.json").write_text(json.dumps({"da":reserve,"rt_windows":[]}, ensure_ascii=False), encoding="utf-8")
+    (d / "stage_diagnostics.json").write_text(json.dumps({"da":res.stage_diagnostics,"rt_windows":[]}, ensure_ascii=False, default=float), encoding="utf-8")
+    from .full import write_pricing_evidence
+    write_pricing_evidence(res, [], d)
     if "dispatch_with_slack_units" in t:
         t["dispatch_with_slack_units"].to_csv(d / "da_unit_awards_dispatch_penalty.csv", index=False)
     s = summarize(res)
+    scope = completion_metadata(res.case.cfg.T, 0, mode="da")
+    s.update(scope)
     s["costs"] = res.costs
     s["reserve_rule"] = {k: v for k, v in res.case.reserve_info.items() if not isinstance(v, list)}
-    acc = accuracy_summary(res.case.profiles, {r["id"]: r["cap"] for r in res.case.cfg.units["renewable"]})
-    acc.to_csv(d / "forecast_accuracy.csv", index=False)
+    from .output_catalog import write_profile_evidence
+    write_profile_evidence(res.case, d)
     (d / "summary.json").write_text(json.dumps(s, ensure_ascii=False, indent=2, default=float), encoding="utf-8")
+    plot_files = []
     if make_plots:
-        plots.lmp_heatmap(t["prices"], d / "lmp_heatmap.png")
-        plots.lmp_curves(t["prices"], t["system"], d / "lmp_curves.png")
-        plots.generation_stack(t["units"], t["system"], d / "generation_stack.png")
-        plots.storage_soc(t["storage"], d / "storage_soc.png", t["prices"])
-        plots.line_loading(t["lines"], d / "line_loading.png")
+        plot_files = plots.dispatch_plots(t, d)
         plots.forecast_plot(res.case.profiles, d / "forecast_vs_actual.png")
+        if any(c.endswith("_actual") and c[:-7]+"_da" in res.case.profiles for c in res.case.profiles):
+            plot_files.append("forecast_vs_actual.png")
+    write_catalog(d, scope, plot_files=plot_files)
     return s
 
 

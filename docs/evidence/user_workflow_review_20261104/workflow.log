@@ -1,0 +1,108 @@
+2026-11-03 21:19:06.849 WARNING streamlit.runtime.scriptrunner_utils.script_run_context: Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+open errors= []
+2026-11-03 21:19:08.718 The widget with key "_sel_scenario" was created with a default value but also had its value set via the Session State API.
+Stack (most recent call last):
+  File "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/threading.py", line 1032, in _bootstrap
+    self._bootstrap_inner()
+  File "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/threading.py", line 1075, in _bootstrap_inner
+    self.run()
+  File "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/threading.py", line 1012, in run
+    self._target(*self._args, **self._kwargs)
+  File "/workspace/scratch/42c5fe32dad0/ieee39-cloud/repo/.venv/lib/python3.12/site-packages/streamlit/testing/v1/local_script_runner.py", line 144, in _run_script_thread
+    super()._run_script_thread()
+  File "/workspace/scratch/42c5fe32dad0/ieee39-cloud/repo/.venv/lib/python3.12/site-packages/streamlit/runtime/scriptrunner/script_runner.py", line 436, in _run_script_thread
+    self._run_script(request.rerun_data)
+  File "/workspace/scratch/42c5fe32dad0/ieee39-cloud/repo/.venv/lib/python3.12/site-packages/streamlit/runtime/scriptrunner/script_runner.py", line 949, in _run_script
+    ) = exec_func_with_error_handling(code_to_exec, ctx)
+  File "/workspace/scratch/42c5fe32dad0/ieee39-cloud/repo/.venv/lib/python3.12/site-packages/streamlit/runtime/scriptrunner/exec_code.py", line 136, in exec_func_with_error_handling
+    result = func()
+  File "/workspace/scratch/42c5fe32dad0/ieee39-cloud/repo/.venv/lib/python3.12/site-packages/streamlit/runtime/scriptrunner/script_runner.py", line 924, in code_to_exec
+    exec(code, module.__dict__)  # noqa: S102
+  File "/workspace/scratch/42c5fe32dad0/ieee39-generator-qa/app/pages/2_运行.py", line 18, in <module>
+    name = scenario_selector()
+  File "/workspace/scratch/42c5fe32dad0/ieee39-generator-qa/app/common.py", line 230, in scenario_selector
+    name = box.selectbox(label, names, index=names.index(cur), key=f"_sel_{key}")
+  File "/workspace/scratch/42c5fe32dad0/ieee39-cloud/repo/.venv/lib/python3.12/site-packages/streamlit/runtime/metrics_util.py", line 725, in wrapped_func
+    result = non_optional_func(*args, **kwargs)
+  File "/workspace/scratch/42c5fe32dad0/ieee39-cloud/repo/.venv/lib/python3.12/site-packages/streamlit/elements/widgets/selectbox.py", line 635, in selectbox
+    return self._selectbox(
+  File "/workspace/scratch/42c5fe32dad0/ieee39-cloud/repo/.venv/lib/python3.12/site-packages/streamlit/elements/widgets/selectbox.py", line 684, in _selectbox
+    check_widget_policies(
+  File "/workspace/scratch/42c5fe32dad0/ieee39-cloud/repo/.venv/lib/python3.12/site-packages/streamlit/elements/lib/policies.py", line 146, in check_widget_policies
+    check_session_state_rules(
+  File "/workspace/scratch/42c5fe32dad0/ieee39-cloud/repo/.venv/lib/python3.12/site-packages/streamlit/elements/lib/policies.py", line 90, in check_session_state_rules
+    _LOGGER.warning(
+new scene errors= []
+inspect coal errors= []
+validate coal errors= []
+save coal errors= []
+choose coal errors= []
+2026-11-03 21:19:13.021 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+invalid price coal errors= ['报价存在违规，修正后才能运行。当前原值仍自动保留以便修复。']
+2026-11-03 21:19:13.604 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+repair price coal errors= []
+preview coal errors= []
+accept coal errors= []
+inspect wind errors= []
+validate wind errors= []
+save wind errors= []
+choose wind errors= []
+2026-11-03 21:19:19.419 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+invalid price wind errors= ['报价存在违规，修正后才能运行。当前原值仍自动保留以便修复。']
+2026-11-03 21:19:20.011 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+repair price wind errors= []
+preview wind errors= []
+accept wind errors= []
+inspect pv errors= []
+validate pv errors= []
+save pv errors= []
+choose pv errors= []
+2026-11-03 21:19:25.888 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+invalid price pv errors= ['报价存在违规，修正后才能运行。当前原值仍自动保留以便修复。']
+2026-11-03 21:19:26.528 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+repair price pv errors= []
+preview pv errors= []
+accept pv errors= []
+inspect storage errors= []
+validate storage errors= []
+save storage errors= []
+choose storage errors= []
+2026-11-03 21:19:32.161 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+invalid price storage errors= ['报价存在违规，修正后才能运行。当前原值仍自动保留以便修复。']
+2026-11-03 21:19:32.742 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+repair price storage errors= []
+preview storage errors= []
+accept storage errors= []
+inspect pumped errors= []
+validate pumped errors= []
+save pumped errors= []
+choose pumped errors= []
+2026-11-03 21:19:38.783 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+invalid price pumped errors= ['报价存在违规，修正后才能运行。当前原值仍自动保留以便修复。']
+2026-11-03 21:19:39.352 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+repair price pumped errors= []
+preview pumped errors= []
+accept pumped errors= []
+real start errors= []
+RUN /workspace/scratch/42c5fe32dad0/ieee39-generator-evidence/flow3/runs/报价员实操/20261103-211945-688139_full
+WAIT running 准备
+WAIT running 日前出清 + 实时滚动
+WAIT running 日前出清 + 实时滚动
+WAIT running 日前出清 + 实时滚动
+WAIT running 日前出清 + 实时滚动
+WAIT running 日前出清 + 实时滚动
+WAIT running 日前出清 + 实时滚动
+TERMINAL {'scenario': '报价员实操', 'mode': 'full', 'bid_version': 3, 'periods': 8, 'status': 'done', 'stage': '调试前缀完成（非全天）', 'started': '2026-11-03T21:19:45', 'launcher_identity': {'pid': 7, 'create_time': 1793769545.12, 'scope': {'host': '9fb1575ce12e', 'platform': 'linux', 'boot_time': 1793757032.0, 'pid_namespace': 'pid:[4026532522]'}}, 'pid': 226, 'process_identity': {'pid': 226, 'create_time': 1793769585.36, 'scope': {'host': '9fb1575ce12e', 'platform': 'linux', 'boot_time': 1793757032.0, 'pid_namespace': 'pid:[4026532522]'}}, 'expected_periods': 96, 'requested_periods': 8, 'executed_periods': 8, 'completed_scope': 'debug_prefix', 'settlement_scope': 'illustrative_prefix', 'git_head': 'fb6f0adfd7e0aff0fe0c5a81355b11f3759ef4d1', 'git_dirty': True, 'source_fingerprint': 'abd119c3a6209e6541a268fe6971236501902da0c3fc7f326862c4ddbcc2de9a', 'input_fingerprint': 'c4e112b3ecdda3b3c55a508226f884c8fe0d7bc192a559dfb45eb1d0fc6f7b5b', 'settlement_calculated': True, 'settled': False, 'finished': '2026-11-03T21:20:53', 'elapsed_s': 67.2}
+completed UI errors= []
+METRICS [('节点数量', '39'), ('支路数量', '46'), ('启用资源', '21'), ('节点 1 · 基准负荷', '97.60 MW'), ('节点负荷分配占比', '1.56%'), ('实际负荷峰值（MW）', '4,313.52'), ('日前预测负荷峰值（MW）', '4,294.43'), ('用时（s）', '67.2'), ('所选结果末时段', '7'), ('负荷 MW', '2853.15'), ('报价主体净出力 MW', '2853.15'), ('节点算术平均结算价 元/MWh', '40.00'), ('主体 / 类型', 'C1 / 燃煤'), ('最新净出力 MW', '290.00'), ('最新启停/工况', '1'), ('窗口起点实际库容 万m³', '16261.392496'), ('窗口前已执行功率 MW', '180.000000'), ('窗口时段范围（不含结束边界）', '7 → 15'), ('日前同钟点目标 万m³', '16527.727636'), ('求解计划末库容 万m³', '16527.727636'), ('计划末值−目标 万m³', '0.000000')]
+WARNINGS ['场景最新已保存报价与本页基础不同。本页继续使用场景已保存报价 v3及当前编辑，不会自动替换任何机组。']
+RUN-LOG-TAIL 开始 2026-11-03 21:19:47（本机时区） 场景 报价员实操 模式 full
+[报价] MKT v3：校验 0 条提示
+[DA] 模型构建 1.2s，开始 SCUC（HiGHS MILP）…
+[DA] SCUC optimal，用时 27.1s，目标 2290516，gap 0.8872%
+[DA] SCED(LP) 用时 3.4s，目标 2290516
+[RT] 已执行至 01:00（时段 3），首时段 LMP 40.0~40.0
+[RT] 已执行至 02:00（时段 7），首时段 LMP 40.0~40.0
+负荷加权均价 日前 146.16 实时 55.59 价差均值 -90.77
+结束 2026-11-03 21:20:53，用时 67s，输出 /workspace/scratch/42c5fe32dad0/ieee39-generator-evidence/flow3/runs/报价员实操/20261103-211945-688139_full
+

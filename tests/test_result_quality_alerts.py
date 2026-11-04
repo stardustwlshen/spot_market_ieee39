@@ -1,5 +1,6 @@
 """Saved output quality is prominent, scoped, and never inferred from defaults."""
 import json
+import os
 import sys
 from pathlib import Path
 import pytest
@@ -81,7 +82,7 @@ def test_soft_deviation_alone_is_not_a_physical_error(tmp_path):
 
 
 def test_real_gap1_saved_outputs_if_available():
-    directory=ROOT.parent/'full96_gap1'
+    directory=Path(os.environ.get('IEEE39_SAVED_GAP1_RUN', str(ROOT.parent/'full96_gap1')))
     if not (directory/'summary.json').exists():pytest.skip('local validation run not distributed')
     summary=json.loads((directory/'summary.json').read_text())
     messages=result_quality_messages(summary,summary['da_summary'],directory=directory)
@@ -96,7 +97,7 @@ def test_real_gap1_alerts_visible_in_both_pages(monkeypatch,tmp_path,page):
     import hashlib
     import common
     from smm import scenario
-    directory=ROOT.parent/'full96_gap1'
+    directory=Path(os.environ.get('IEEE39_SAVED_GAP1_RUN', str(ROOT.parent/'full96_gap1')))
     if not (directory/'summary.json').exists():pytest.skip('local validation run not distributed')
     watched=['summary.json','stage_diagnostics.json','rt_lines.csv','rt_reserve_system.csv','meta.json']
     before={name:hashlib.sha256((directory/name).read_bytes()).hexdigest() for name in watched}

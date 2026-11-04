@@ -25,8 +25,10 @@ def capture(m, stage, info=None):
     summary['status']='正式SCED（RT仅窗口首段执行）' if stage=='energy_sced' else '预计划/辅助筛选（不执行、不结算）'
     summary['objective_kind']='regulation_score_only_not_payment' if stage=='agc_auxiliary' else 'energy_objective_including_penalties'
     summary['prices_are_market_prices']=stage=='energy_sced'
-    from .scuc import INT_VARS
+    from .scuc import integer_components
     integer_values = [dict(variable=name, index=list(index) if isinstance(index, tuple) else index,
                            value=val(v), fixed=bool(v.fixed))
-                      for name in INT_VARS for index, v in getattr(m, name).items()]
+                      for name, component in integer_components(m) for index, v in component.items()]
+    from .asset_reachability import diagnostics
+    summary['asset_reachability']=diagnostics(m)
     return {'units':rows,'summary':summary,'integer_values':integer_values}

@@ -3,27 +3,66 @@ from pathlib import Path
 
 import pandas as pd
 import streamlit as st
+import yaml
 
 from input_workflow import business_error, launch_error
 from common import (TYPE_CN, MODE_CN, STATUS_CN, page_setup, run_label, run_progress, run_status,
                     sc, scen_config, scenario_selector, start_run, stop_run)
 from quote_simulation import quotation_workspace
+from run_record_actions import elapsed_for_display, render_open_saved_result
 
 page_setup("单机报价模拟")
+pending_scene = st.session_state.pop('typical_switch_to', None)
+if pending_scene is not None:
+    st.session_state['scenario'] = pending_scene
+    st.session_state['_sel_scenario'] = pending_scene
 name = scenario_selector()
-cfg = scen_config(name)
+try:
+    cfg = scen_config(name)
+except (ValueError, KeyError, TypeError, AttributeError, OSError, yaml.YAMLError) as exc:
+    business_error('当前场景配置不能读取或校验未通过，原文件已保留', exc,
+                   '可在侧边栏切换其他场景，或按技术详情修复此场景后重试；不会自动重置。')
+    from smm.unit_edit_transaction import JOURNAL, recover_scene_unit_edit
+    if (sc.scenario_path(name) / JOURNAL).exists():
+        st.caption('上次机组保存意外中断时，可恢复到保存前的完整输入。外部修改冲突不会被覆盖。')
+        if st.button('恢复未完成的机组保存'):
+            try:
+                recover_scene_unit_edit(sc.scenario_path(name))
+            except (ValueError, KeyError, TypeError, OSError, RuntimeError) as recovery_error:
+                business_error('恢复未完成，现有文件仍保留，请核对备份', recovery_error)
+            else:
+                st.rerun()
+    st.stop()
+notice = st.session_state.pop('typical_created_notice', None)
+if notice:
+    st.success(notice)
 running = [m for m in sc.list_runs() if run_status(m) in ("running", "starting", "cancelling")]
-active = bool(running)
-if active:
+needs_restart = bool(st.session_state.get('runtime_needs_restart'))
+active = bool(running) or needs_restart
+if running:
     st.info("已有后台运行，或历史进程身份尚待核实。暂禁用改价和启动，避免重复求解。")
+elif needs_restart:
+    st.info("请先重启应用，再编辑报价、机组或开始运行，避免混用更新前后的代码。")
 st.caption(f"{cfg.base['date']} · { {'wet': '丰水期', 'dry': '枯水期'}.get(cfg.base['season'], cfg.base['season']) } · 选择一台机组改报价，观察整个市场的运行变化。")
 
 quote_tab, network_tab = st.tabs(['机组与报价', '全网与其他机组'])
 with quote_tab:
     draft, bid_errors = quotation_workspace(cfg, name, disabled=active)
+    from unit_editor import render_unit_editor
+    render_unit_editor(cfg, name, disabled=active)
 with network_tab:
     from unit_input_view import render_network_and_units
     render_network_and_units(cfg, key_prefix='network_inputs:' + name)
+
+from typical_scenario_controls import render_typical_scenarios
+render_typical_scenarios(cfg, name, bids=draft, disabled=active or bool(bid_errors))
+
+from forecast_controls import render_forecast_model_control
+render_forecast_model_control(cfg, name, bids=draft, disabled=active)
+from fixed_load_controls import render_fixed_load_policy
+render_fixed_load_policy(cfg, name, disabled=active)
+from anchor_policy_controls import render_anchor_policy
+render_anchor_policy(cfg, name, disabled=active)
 
 c1, c2 = st.columns(2)
 mode = c1.radio("运行模式", ["full", "da"], format_func=lambda value: {"da": "仅日前", "full": "全天：日前→实时→结算"}[value], horizontal=True, disabled=active)
@@ -33,9 +72,10 @@ periods = (c2.number_input("实时试跑时段数（每段15分钟）", 1, 96, 8
 if short_run and mode == 'full':
     st.caption("短时试跑仍先计算全天日前计划；只截短实时，不是完整日结算。")
 historical_regulation = bool(cfg.mode.get('regulation', {}).get('enabled', False))
+historical_fixed_load = cfg.base.get('tie_line_mode', 'supply') == 'fixed_load'
 if historical_regulation:
     st.error("此场景启用历史调频实验，不属于当前电能量模拟。请选择兼容场景；原参数不会被改写。")
-if st.button("▶ 开始运行", type="primary", width="stretch", disabled=active or historical_regulation or bool(bid_errors) or draft is None):
+if st.button("▶ 开始运行", type="primary", width="stretch", disabled=active or historical_regulation or historical_fixed_load or bool(bid_errors) or draft is None):
     try:
         d = start_run(name, mode, int(draft.get("version", 1)), int(periods) or None, bids=draft)
     except Exception as exc:
@@ -63,7 +103,7 @@ def monitor():
         m["status"] = run_status(m)
     # A timer reruns only this fragment. Refresh page-level editor/button state
     # when a background job ends (or another session starts one).
-    now_active = any(m['status'] in ('running', 'starting', 'cancelling') for m in runs)
+    now_active = any(m['status'] in ('running', 'starting', 'cancelling') for m in runs) or bool(st.session_state.get('runtime_needs_restart'))
     if now_active != active:
         st.rerun(scope='app')
     labels = {m["dir"]: run_label(m) for m in runs}
@@ -78,9 +118,14 @@ def monitor():
     logp = Path(sel) / "run.log"
     log = logp.read_text(encoding="utf-8", errors="replace") if logp.exists() else ""
     s = m["status"]
+    from run_recovery_controls import render_run_recovery
+    render_run_recovery(m, sc.RUNS_DIR)
     c1, c2, c3 = st.columns([3, 1, 1])
     c1.progress(run_progress(m, log), text=f"{STATUS_CN.get(s, s)} · 阶段：{m.get('stage', '')}")
-    c2.metric("用时（s）", m.get("elapsed_s", "…"))
+    elapsed, estimated = elapsed_for_display(m)
+    c2.metric("启动后约（s）" if estimated else "用时（s）",
+              f"{elapsed:.0f}" if elapsed is not None else "未知",
+              help="运行中按记录的启动时间估算墙钟时间，包含准备与等待；不是优化器纯求解时间。" if estimated else "已保存的运行耗时；缺失时保持未知。")
     if s in ("running", "starting") and c3.button("请求取消（窗口边界）"):
         stop_run(m)
         st.rerun()
@@ -94,6 +139,7 @@ def monitor():
         business_error(failure_summary, failure_detail, "请展开技术诊断查看原因；已执行前缀仍可查看。")
     if s == "done":
         st.info("所选运行范围计算结束，可到“结果”页查看；这不代表精度或物理检查通过。" + (" 注意：这是调试截断范围，不是完整日。" if m.get("periods") and m["periods"] < 96 else ""))
+        render_open_saved_result(m)
     if (Path(sel)/"cancel.request").exists() and s in ("running", "starting", "cancelling"):
         st.warning("取消已请求；当前SCUC/SCED不强杀，完成后停止。已执行前缀不是完整日结算。")
     from smm.live_runner import read_live

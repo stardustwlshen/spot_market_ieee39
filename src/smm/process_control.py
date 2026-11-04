@@ -62,6 +62,7 @@ def _psutil():
 
 
 def process_scope():
+    from .machine_identity import machine_identity, boot_identity
     psutil = _psutil()
     namespace = None
     if sys.platform.startswith("linux"):
@@ -70,7 +71,8 @@ def process_scope():
         except OSError:
             pass  # This namespace symlink is optional; retain creation identity.
     return dict(host=socket.gethostname(), platform=sys.platform,
-                boot_time=psutil.boot_time(), pid_namespace=namespace)
+                boot_time=psutil.boot_time(), pid_namespace=namespace,
+                machine_identity=machine_identity(), boot_identity=boot_identity())
 
 
 def process_identity(pid=None):
@@ -91,6 +93,13 @@ def process_state(identity):
     try:
         psutil = _psutil()
         current = process_scope()
+        from .machine_identity import valid_evidence
+        machine = scope.get("machine_identity")
+        if not valid_evidence(machine) or machine != current.get("machine_identity"):
+            return "unknown"
+        old_boot, now_boot = scope.get("boot_identity"), current.get("boot_identity")
+        if old_boot is not None and (not valid_evidence(old_boot) or old_boot != now_boot):
+            return "unknown"
         if any(scope.get(k) != current[k] for k in ("host", "platform", "pid_namespace")):
             return "unknown"
         boot = scope.get("boot_time")

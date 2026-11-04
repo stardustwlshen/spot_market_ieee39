@@ -1,0 +1,23 @@
+{
+  "cases": [
+    {
+      "table": "rt_units",
+      "deleted_unit": "PV1",
+      "missing_rows": 96,
+      "accepted_incomplete": true
+    },
+    {
+      "table": "da_unit_awards",
+      "deleted_unit": "PV1",
+      "missing_rows": 96,
+      "accepted_incomplete": true
+    },
+    {
+      "table": "rt_storage",
+      "deleted_unit": "ES1",
+      "missing_rows": 96,
+      "accepted_incomplete": true
+    }
+  ],
+  "archive_files_unchanged": 131
+}

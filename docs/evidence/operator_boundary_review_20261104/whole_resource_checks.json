@@ -1,0 +1,33 @@
+[
+  {
+    "archive": "final_c1f829a_baseline_full96",
+    "result": "valid"
+  },
+  {
+    "archive": "final_c1f829a_dry_nominal_full96",
+    "result": "valid"
+  },
+  {
+    "archive": "pv2152_dry_lowre_highload_full96",
+    "result": "valid"
+  },
+  {
+    "archive": "pv2152_wet_highre_lowload_full96",
+    "result": "valid"
+  },
+  {
+    "table": "rt_units",
+    "removed_unit": "PV1",
+    "result": "日前与实时出力的主体全集不一致；实时缺少：PV1"
+  },
+  {
+    "table": "da_unit_awards",
+    "removed_unit": "PV1",
+    "result": "日前机组出力缺少本次冻结启用主体：PV1"
+  },
+  {
+    "table": "rt_storage",
+    "removed_unit": "ES1",
+    "result": "rt_storage.csv 主体全集与本次保存的日前出力不一致"
+  }
+]

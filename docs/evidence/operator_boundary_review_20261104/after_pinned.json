@@ -1,0 +1,48 @@
+{
+  "scope": "Actual saved archive with controlled corruption; no optimization, browser or OS test.",
+  "archive": "/workspace/scratch/42c5fe32dad0/ieee39-final-evidence/final_c1f829a_baseline_full96",
+  "files_hashed": 131,
+  "unchanged": true,
+  "cases": [
+    {
+      "case": "missing_period",
+      "full": true,
+      "validation": "实时时段记录不连续或不是从第1段开始，不能冒充完整执行范围",
+      "exceptions": [],
+      "errors": [
+        "本次结果缺失或损坏，暂不能完整显示。原始存档未修改，也未用当前场景或零值补齐。"
+      ],
+      "execution_cards": []
+    },
+    {
+      "case": "missing_node",
+      "full": true,
+      "validation": "日前与实时节点电价的节点集合不一致，不能以缺失节点冒充全网结果",
+      "exceptions": [],
+      "errors": [
+        "本次结果缺失或损坏，暂不能完整显示。原始存档未修改，也未用当前场景或零值补齐。"
+      ],
+      "execution_cards": []
+    },
+    {
+      "case": "float_period",
+      "full": true,
+      "validation": "accepted",
+      "exceptions": [],
+      "errors": [],
+      "execution_cards": [
+        "96 / 96 段"
+      ]
+    },
+    {
+      "case": "missing_rt_prices",
+      "full": true,
+      "validation": "实时节点电价文件缺失或为空（rt_prices.csv）",
+      "exceptions": [],
+      "errors": [
+        "本次结果缺失或损坏，暂不能完整显示。原始存档未修改，也未用当前场景或零值补齐。"
+      ],
+      "execution_cards": []
+    }
+  ]
+}

@@ -78,7 +78,7 @@ try:
     print(f"开始 {datetime.now():%Y-%m-%d %H:%M:%S}（本机时区） 场景 {a.scenario} 模式 {a.mode}", flush=True)
     put(stage="报价校验与数据准备")
     progress.check_cancel()
-    case = prepare(cfg, a.bid_version)
+    case = prepare(cfg, a.bid_version, read_only=True)
     atomic_json(d/"resolved_bids.json",case.bids)
     case.profiles.to_csv(d / "profiles.csv", index=False)
     put(bid_version=case.bids["version"], stage="日前出清")
@@ -104,9 +104,7 @@ try:
     progress.state.update(phase="done", **scope)
     progress.write()
     atomic_json(d/"output_scope.json",scope)
-    if a.mode == "da":
-        s.update(scope)
-        atomic_json(d/"da"/"summary.json",s)
+    # The DA writer already saved this scope and checksummed its summary.
     put(status="done", stage="完成" if scope["completed_scope"] != "debug_prefix" else "调试前缀完成（非全天）",
         **scope, finished=datetime.now().isoformat(timespec="seconds"), elapsed_s=round(time.time() - t0, 1))
     print(f"结束 {datetime.now():%Y-%m-%d %H:%M:%S}，用时 {time.time() - t0:.0f}s，输出 {d}", flush=True)

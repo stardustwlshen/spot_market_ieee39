@@ -1,0 +1,50 @@
+{
+  "scope": "Actual saved archive with controlled corruption; no optimization, browser or OS test.",
+  "archive": "/workspace/scratch/42c5fe32dad0/ieee39-final-evidence/final_c1f829a_baseline_full96",
+  "files_hashed": 131,
+  "unchanged": true,
+  "cases": [
+    {
+      "case": "missing_period",
+      "full": true,
+      "validation": "accepted",
+      "exceptions": [],
+      "errors": [],
+      "execution_cards": [
+        "96 / 96 段"
+      ]
+    },
+    {
+      "case": "missing_node",
+      "full": true,
+      "validation": "accepted",
+      "exceptions": [
+        "16"
+      ],
+      "errors": [],
+      "execution_cards": [
+        "96 / 96 段"
+      ]
+    },
+    {
+      "case": "float_period",
+      "full": true,
+      "validation": "accepted",
+      "exceptions": [
+        "list indices must be integers or slices, not float"
+      ],
+      "errors": [],
+      "execution_cards": [
+        "96 / 96 段"
+      ]
+    },
+    {
+      "case": "missing_rt_prices",
+      "full": false,
+      "validation": "accepted",
+      "exceptions": [],
+      "errors": [],
+      "execution_cards": []
+    }
+  ]
+}

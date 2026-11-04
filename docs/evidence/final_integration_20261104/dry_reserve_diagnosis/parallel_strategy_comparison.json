@@ -1,0 +1,31 @@
+{
+  "baseline_archive": "pv2152_dry_lowre_highload_full96",
+  "parallel_trial": "parallel_on_DA",
+  "same_model_lp_sha256": "4d55b470ccebf4955a10d82be1371bbbf424ea47112687274032b9cb204fd163",
+  "baseline": {
+    "time_s": 603.4191219540007,
+    "gap": 0.019793715038037993,
+    "objective": 7930557.838047068,
+    "best_bound": 7773582.636108398,
+    "termination": "maxTimeLimit"
+  },
+  "parallel": {
+    "time_s": 228.70110342999942,
+    "termination": "optimal",
+    "objective": 7805892.5564852655,
+    "warm_start": null,
+    "best_bound": 7755290.877006531,
+    "gap": 0.006482497563548196,
+    "storage_simultaneous": 0,
+    "regulation_allocation": null
+  },
+  "incumbent_objective_improvement_yuan": 124665.28156180214,
+  "incumbent_objective_improvement_fraction": 0.015719610663920358,
+  "elapsed_reduction_fraction": 0.6209912892892486,
+  "notes": [
+    "One trial on one fixed scenario, not guaranteed speedup across scenarios.",
+    "Current run serialized after all other heavy tasks finished. Original archive concurrent workload was not controlled by this diagnostic.",
+    "LP hash equality proves option does not change model; does not prove identical runtime environment.",
+    "New DA plan was not propagated through RT96. No default strategy change made."
+  ]
+}

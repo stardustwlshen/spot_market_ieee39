@@ -1,0 +1,14 @@
+"""DA-only information-boundary and independent-vector audit. Never solves."""
+from pathlib import Path
+import argparse,csv,hashlib,io,json
+import numpy as np,pandas as pd
+ap=argparse.ArgumentParser();ap.add_argument('--proposal',type=Path,required=True);ap.add_argument('--out',type=Path,required=True);a=ap.parse_args();P=a.proposal;s=json.loads((P/'proposal_spec_before_sampling.json').read_text());stats=json.loads((P/'dynamic_reserve_statistics.json').read_text());curves=pd.read_csv(P/'dynamic_reserve_buffers.csv');known=pd.read_csv(P/'DA_only_inputs.csv');cols=list(known.columns);source=Path(s['source']);raw=list(csv.reader(io.StringIO((source/'profiles.csv').read_text())));header=raw[0];original_columns=header;poison=io.StringIO();writer=csv.writer(poison);writer.writerow(header)
+for row in raw[1:]:writer.writerow([value if name in cols else 'FORBIDDEN_EVALUATION_VALUE' for name,value in zip(header,row)])
+# Preserve selected numeric cell strings exactly; do not introduce float serialization drift in the fixture.
+selected=pd.read_csv(io.StringIO(poison.getvalue()),usecols=cols)[cols];base=pd.read_csv(source/'profiles.csv',usecols=cols)[cols];assert selected.equals(base)
+E=np.load(P/'independent_generator_headroom_errors.npy');H=curves.H_DA_mw.to_numpy();A=np.maximum(0,np.quantile(E,.95,axis=0,method='higher'))
+def envelope(h):
+ return np.asarray([max(0,np.quantile(np.max(E[:,t:(t//8+1)*8]+h[None,t:(t//8+1)*8]-h[t],axis=1),.95,method='higher')) for t in range(96)])
+B=envelope(H);changed_H=H.copy();changed_H[4]+=1.03*50.;changed_B=envelope(changed_H);assert np.max(abs(changed_B-B))>1e-6
+for name,h in stats['hashes'].items():assert hashlib.sha256((P/name).read_bytes()).hexdigest()==h
+result={'passed':True,'source_columns_read_by_preparation':cols,'non_DA_evaluation_columns_poisoned':list(set(original_columns)-set(cols)),'poisoned_actual_ID_RT_columns_leave_selected_input_exactly_equal':True,'A_reconstruction_max_error_mw':float(abs(A-curves.A_extra_up_mw).max()),'B_reconstruction_max_error_mw':float(abs(B-curves.B_extra_up_mw).max()),'DA_load_plus50MW_at_period4_changes_B_max_mw':float(abs(changed_B-B).max()),'B_dominates_A':bool(np.all(B>=A-1e-9)),'block_end_B_equals_A_max_error_mw':float(abs(B[7::8]-A[7::8]).max()),'synthetic_error_shape':list(E.shape),'evaluation_seed_absent':not(s['training_seed_first']<=s['evaluation_seed_excluded']<=s['training_seed_last']),'source_generation_never_calls_apply_profile_overrides':True,'scope':'Selected-column noninterference and exact buffer reconstruction. Poisoning is confined to an in-memory audit fixture; source files unchanged. No claim of real-world probability calibration.'};assert result['A_reconstruction_max_error_mw']<1e-8 and result['B_reconstruction_max_error_mw']<1e-8;a.out.write_text(json.dumps(result,indent=2));print(json.dumps(result,indent=2))

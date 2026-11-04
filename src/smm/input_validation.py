@@ -62,54 +62,342 @@ def _validate_hydro_topology(cfg):
         done.update(path)
 
 
+def _nonnegative(value, label):
+    value = number(value, label)
+    if value < 0:
+        raise ValueError(f'{label}须为有限非负数')
+    return value
+
+
+def _integer(value, label, *, positive=False):
+    value = number(value, label, positive=positive)
+    if value < 0 or not value.is_integer():
+        raise ValueError(f'{label}须为有限' + ('正整数' if positive else '非负整数'))
+    return int(value)
+
+
+def _active(cfg, family):
+    return [s for s in cfg.units.get(family, []) if s.get('enabled', True)]
+
+
+def _thermal_state(spec, state, label):
+    if not isinstance(state, dict) or not {'online', 'p0', 'hours'} <= set(state):
+        raise ValueError(f'{label}须含online/p0/hours')
+    online = state['online']
+    if not isinstance(online, (bool, int)) or online not in (0, 1):
+        raise ValueError(f'{label}.online须为布尔或0/1')
+    power = number(state['p0'], f'{label}.p0')
+    _nonnegative(state['hours'], f'{label}.hours')
+    low = spec['pmin'] if online else 0.
+    high = spec['pmax'] if online else 0.
+    if not low - 1e-6 <= power <= high + 1e-6:
+        raise ValueError(f'{label}在线状态/出力不一致，p0须在[{low}, {high}] MW')
+
+
+def hydro_volume_bounds(spec, season):
+    """The same reservoir/pondage envelope used by the optimization model."""
+    seasonal = spec['seasons'][season]
+    if spec.get('regulation', 'reservoir') == 'run_of_river':
+        upper = seasonal['v0']
+        return upper - (spec.get('pondage', 0) or 0), upper
+    return seasonal['vmin'], seasonal['vmax']
+
+
+def _validate_technical_parameters(cfg, init=None):
+    for family in ('thermal', 'hydro', 'pumped', 'storage', 'renewable', 'tie'):
+        for spec in _active(cfg, family):
+            _integer(spec.get('bus'), f"{spec['id']}.bus", positive=True)
+    for g in _active(cfg, 'thermal'):
+        uid = g['id']
+        maximum = number(g['pmax'], f'{uid}.pmax', positive=True)
+        minimum = _nonnegative(g['pmin'], f'{uid}.pmin')
+        if minimum > maximum:
+            raise ValueError(f'{uid}.pmin不得超过pmax')
+        number(g['ramp'], f'{uid}.ramp', positive=True)
+        for key in ('ut', 'dt', 'noload'):
+            _nonnegative(g[key], f'{uid}.{key}')
+        for key, value in g['startup'].items():
+            _nonnegative(value, f'{uid}.startup.{key}')
+        if init is None:
+            _thermal_state(g, g.get('init'), f'{uid}.init')
+    for family, key in (('renewable', 'cap'), ('tie', 'pmax')):
+        for spec in _active(cfg, family):
+            number(spec[key], f"{spec['id']}.{key}", positive=True)
+    for s in _active(cfg, 'storage'):
+        uid = s['id']
+        for key in ('eta_c', 'eta_d'):
+            value = number(s[key], f'{uid}.{key}', positive=True)
+            if value > 1:
+                raise ValueError(f'{uid}.{key} 效率不得超过1')
+        for key in ('ecap', 'pmax'):
+            number(s[key], f'{uid}.{key}', positive=True)
+        lo, hi, initial = (number(s[k], f'{uid}.{k}') for k in ('soc_min', 'soc_max', 'soc0'))
+        if not 0 <= lo <= initial <= hi <= 1:
+            raise ValueError(f'{uid} SOC技术边界/初值非法')
+        if s.get('soc_end_bid') is not None:
+            terminal = number(s['soc_end_bid'], f'{uid}.soc_end_bid')
+            if not lo <= terminal <= hi:
+                raise ValueError(f'{uid}.soc_end_bid超出技术SOC边界')
+    for p in _active(cfg, 'pumped'):
+        uid = p['id']
+        _integer(p['n_units'], f'{uid}.n_units', positive=True)
+        eg = number(p['e_gen'], f'{uid}.e_gen', positive=True)
+        ep = number(p['e_pump'], f'{uid}.e_pump', positive=True)
+        if eg > ep:
+            raise ValueError(f'{uid} 抽蓄综合效率e_gen/e_pump不得超过1')
+        gmax = number(p['unit_gen_max'], f'{uid}.unit_gen_max', positive=True)
+        gmin = _nonnegative(p['unit_gen_min'], f'{uid}.unit_gen_min')
+        pmax = number(p['unit_pump'], f'{uid}.unit_pump', positive=True)
+        if gmin > gmax:
+            raise ValueError(f'{uid}.unit_gen_min不得超过unit_gen_max')
+        if not isinstance(p.get('variable_speed', False), bool):
+            raise ValueError(f'{uid}.variable_speed须为布尔值')
+        if p.get('variable_speed', False):
+            pmin = number(p['unit_pump_min'], f'{uid}.unit_pump_min', positive=True)
+            if pmin > pmax:
+                raise ValueError(f'{uid}.unit_pump_min不得超过unit_pump')
+        total = number(p['v_total'], f'{uid}.v_total', positive=True)
+        volumes = {key: _nonnegative(p[key], f'{uid}.{key}')
+                   for key in ('vup_min', 'vup_max', 'vdn_min', 'vdn_max', 'vup0')}
+        if volumes['vup_min'] > volumes['vup_max'] or volumes['vdn_min'] > volumes['vdn_max']:
+            raise ValueError(f'{uid}上下库最小库容不得超过最大库容')
+        lo = max(volumes['vup_min'], total - volumes['vdn_max'])
+        hi = min(volumes['vup_max'], total - volumes['vdn_min'])
+        if lo > hi or (init is None and not lo <= volumes['vup0'] <= hi):
+            raise ValueError(f'{uid}.vup0超出上下库技术边界或上下库边界不相容')
+        for key in ('vup_end', 'vup_end_bid'):
+            if p.get(key) is not None and not lo <= number(p[key], f'{uid}.{key}') <= hi:
+                raise ValueError(f'{uid}.{key}超出上下库技术边界')
+        for key in ('switch_gap', 'max_gen_starts', 'max_pump_starts'):
+            _integer(p.get(key, 1) if key == 'switch_gap' else p[key], f'{uid}.{key}')
+        for key in ('start_cost_gen', 'start_cost_pump'):
+            _nonnegative(p[key], f'{uid}.{key}')
+        if p.get('init_mode', 'idle') not in ('idle', 'gen', 'pump'):
+            raise ValueError(f'{uid}.init_mode须为idle/gen/pump')
+    for h in _active(cfg, 'hydro'):
+        uid = h['id']
+        count = _integer(h['n_units'], f'{uid}.n_units', positive=True)
+        maximum = number(h['unit_pmax'], f'{uid}.unit_pmax', positive=True)
+        number(h['water_rate'], f'{uid}.water_rate', positive=True)
+        number(h.get('ramp'), f'{uid}.ramp', positive=True)
+        online = _integer(h.get('init_units_on'), f'{uid}.init_units_on')
+        initial_power = _nonnegative(h.get('init_p_unit'), f'{uid}.init_p_unit')
+        if online > count or initial_power > maximum:
+            raise ValueError(f'{uid}初始出力/在线台数超出技术边界')
+        zones = h.get('zones')
+        if not isinstance(zones, (list, tuple)) or not zones:
+            raise ValueError(f'{uid}.zones须为非空稳定运行区列表')
+        previous = -1.
+        for i, zone in enumerate(zones):
+            if not isinstance(zone, (list, tuple)) or len(zone) != 2:
+                raise ValueError(f'{uid}.zones[{i}]须为[下限,上限]')
+            low, high = (number(x, f'{uid}.zones[{i}]') for x in zone)
+            if not 0 <= low <= high <= maximum or low < previous:
+                raise ValueError(f'{uid}.zones须有序不重叠且位于[0,unit_pmax]')
+            previous = high
+        if online and not any(low - 1e-6 <= initial_power <= high + 1e-6 for low, high in zones):
+            raise ValueError(f'{uid}.init_p_unit不在声明稳定运行区内')
+        regulation = h.get('regulation', 'reservoir')
+        if regulation not in ('reservoir', 'run_of_river'):
+            raise ValueError(f'{uid}.regulation须为reservoir/run_of_river')
+        qout = h.get('qout_max')
+        if qout is not None:
+            _nonnegative(qout, f'{uid}.qout_max')
+        if h.get('e_day_min') is not None:
+            _nonnegative(h['e_day_min'], f'{uid}.e_day_min')
+        seasons = h.get('seasons')
+        if not isinstance(seasons, dict) or cfg.base['season'] not in seasons:
+            raise ValueError(f'{uid}.seasons缺少所选季节{cfg.base["season"]}')
+        for season, seasonal in seasons.items():
+            label = f'{uid}.seasons.{season}'
+            if not isinstance(seasonal, dict):
+                raise ValueError(f'{label}须为季节参数对象')
+            for key in ('qin', 'v0', 'vmin', 'vmax', 'v_end', 'qeco'):
+                _nonnegative(seasonal.get(key), f'{label}.{key}')
+            if not seasonal['vmin'] <= seasonal['v0'] <= seasonal['vmax']:
+                raise ValueError(f'{label}.v0超出水库技术边界')
+            if not seasonal['vmin'] <= seasonal['v_end'] <= seasonal['vmax']:
+                raise ValueError(f'{label}.v_end超出水库技术边界')
+            if qout is not None and seasonal['qeco'] > qout:
+                raise ValueError(f'{label}.qeco超过qout_max')
+            if seasonal.get('e_day') is not None:
+                upper = _nonnegative(seasonal['e_day'], f'{label}.e_day')
+                if regulation == 'reservoir' and h.get('e_day_min') is not None and h['e_day_min'] > upper:
+                    raise ValueError(f'{label}.e_day小于e_day_min')
+            if regulation == 'run_of_river':
+                pondage = _nonnegative(h.get('pondage', 0) or 0, f'{uid}.pondage')
+                if pondage > seasonal['v0']:
+                    raise ValueError(f'{uid}.pondage不得超过初始库容')
+
+
 def validate_physical_inputs(cfg, init=None):
     _validate_resource_ids(cfg)
-    dt=number(cfg.base['dt_h'], 'dt_h', positive=True)
-    T=cfg.base['periods']
-    if isinstance(T,bool) or not isinstance(T,Real) or T != int(T) or T <= 0:raise ValueError('periods须为正整数')
-    for s in cfg.units.get('storage', []):
-        uid=s['id']
-        for k in ('eta_c','eta_d'):
-            x=number(s[k],f'{uid}.{k}',positive=True)
-            if x>1:raise ValueError(f'{uid}.{k} 效率不得超过1')
-        for k in ('ecap','pmax'):number(s[k],f'{uid}.{k}',positive=True)
-        lo,hi,v=(number(s[k],f'{uid}.{k}') for k in ('soc_min','soc_max','soc0'))
-        if not 0<=lo<=v<=hi<=1:raise ValueError(f'{uid} SOC技术边界/初值非法')
-    for p in cfg.units.get('pumped', []):
-        uid=p['id'];eg=number(p['e_gen'],f'{uid}.e_gen',positive=True);ep=number(p['e_pump'],f'{uid}.e_pump',positive=True)
-        if eg>ep:raise ValueError(f'{uid} 抽蓄综合效率e_gen/e_pump不得超过1')
+    number(cfg.base['dt_h'], 'dt_h', positive=True)
+    _integer(cfg.base['periods'], 'periods', positive=True)
     _validate_hydro_topology(cfg)
-    for h in cfg.units.get('hydro', []):
-        number(h['water_rate'],f"{h['id']}.water_rate",positive=True)
-        if h.get('qout_max') is not None and number(h['qout_max'],f"{h['id']}.qout_max") < 0:
-            raise ValueError(f"{h['id']}.qout_max须非负或None")
-    if init is None:return
-    if not isinstance(init,dict):raise ValueError('滚动实际状态必须为对象')
-    th=init.get('thermal',{})
-    if not isinstance(th,dict) or set(th)!={x['id'] for x in cfg.units.get('thermal',[])}:
+    _validate_technical_parameters(cfg, init=init)
+    if init is None:
+        return
+    if not isinstance(init, dict):
+        raise ValueError('滚动实际状态必须为对象')
+    thermal = init.get('thermal', {})
+    if not isinstance(thermal, dict) or set(thermal) != {x['id'] for x in _active(cfg, 'thermal')}:
         raise ValueError('滚动实际thermal状态必须完整，不能退回技术初值')
-    for spec in cfg.units.get('thermal',[]):
-        uid=spec['id'];v=th[uid]
-        if not isinstance(v,dict) or not {'online','p0','hours'}<=set(v):raise ValueError(f'{uid}实际thermal状态须含online/p0/hours')
-        if not isinstance(v['online'],(bool,int)) or v['online'] not in (0,1):raise ValueError(f'{uid}.online须为布尔或0/1')
-        p=number(v['p0'],f'{uid}.p0');hours=number(v['hours'],f'{uid}.hours')
-        if hours<0 or p < -1e-6 or p>spec['pmax']+1e-6 or (not v['online'] and abs(p)>1e-6):raise ValueError(f'{uid}实际在线状态/出力/持续时间不一致')
-    for family in ('storage','pumped'):
-        expected={x['id'] for x in cfg.units.get(family,[])}
-        states=init.get(family,{})
-        if not isinstance(states,dict) or set(states)!=expected:
+    for spec in _active(cfg, 'thermal'):
+        _thermal_state(spec, thermal[spec['id']], f"{spec['id']}实际thermal状态")
+    for family in ('storage', 'pumped', 'hydro'):
+        expected = {x['id'] for x in _active(cfg, family)}
+        states = init.get(family, {})
+        if not isinstance(states, dict) or set(states) != expected:
             raise ValueError(f'滚动实际{family}状态必须完整包含所有启用资源，不能退回技术初值')
-        for spec in cfg.units.get(family,[]):
-            uid=spec['id'];state=states[uid]
-            if family=='storage':
-                e=number(state,f'{uid}实际E')
-                if not spec['soc_min']*spec['ecap']-1e-6<=e<=spec['soc_max']*spec['ecap']+1e-6:
+        for spec in _active(cfg, family):
+            uid, state = spec['id'], states[spec['id']]
+            if family == 'storage':
+                energy = number(state, f'{uid}实际E')
+                if not spec['soc_min'] * spec['ecap'] - 1e-6 <= energy <= spec['soc_max'] * spec['ecap'] + 1e-6:
                     raise ValueError(f'{uid}实际E超出技术SOC边界')
+            elif family == 'hydro':
+                volume = number(state, f'{uid}实际水库库容')
+                lo, hi = hydro_volume_bounds(spec, cfg.base['season'])
+                if not lo - 1e-6 <= volume <= hi + 1e-6:
+                    raise ValueError(f'{uid}实际水库库容超出技术边界')
             else:
-                if not isinstance(state,dict) or not {'V','ng','np','xg','xp'}<=set(state):raise ValueError(f'{uid}实际抽蓄状态须完整V/ng/np/xg/xp')
-                vals={k:number(state[k],f'{uid}.{k}') for k in ('V','ng','np','xg','xp')}
-                lo=max(spec['vup_min'],spec['v_total']-spec['vdn_max']);hi=min(spec['vup_max'],spec['v_total']-spec['vdn_min'])
-                if not lo-1e-6<=vals['V']<=hi+1e-6:raise ValueError(f'{uid}实际上库库容超出上下库技术边界')
-                if any(vals[k]!=round(vals[k]) for k in ('ng','np','xg','xp')) or vals['xg'] not in (0,1) or vals['xp'] not in (0,1) or vals['xg']+vals['xp']>1:
+                if not isinstance(state, dict) or not {'V', 'ng', 'np', 'xg', 'xp'} <= set(state):
+                    raise ValueError(f'{uid}实际抽蓄状态须完整V/ng/np/xg/xp')
+                vals = {k: number(state[k], f'{uid}.{k}') for k in ('V', 'ng', 'np', 'xg', 'xp')}
+                lo = max(spec['vup_min'], spec['v_total'] - spec['vdn_max'])
+                hi = min(spec['vup_max'], spec['v_total'] - spec['vdn_min'])
+                if not lo - 1e-6 <= vals['V'] <= hi + 1e-6:
+                    raise ValueError(f'{uid}实际上库库容超出上下库技术边界')
+                if (any(vals[k] != round(vals[k]) for k in ('ng', 'np', 'xg', 'xp'))
+                        or vals['xg'] not in (0, 1) or vals['xp'] not in (0, 1) or vals['xg'] + vals['xp'] > 1):
                     raise ValueError(f'{uid}实际工况/台数非法')
-                if not (vals['xg']<=vals['ng']<=spec['n_units']*vals['xg'] and vals['xp']<=vals['np']<=spec['n_units']*vals['xp']):raise ValueError(f'{uid}实际工况与台数不一致')
+                if not (vals['xg'] <= vals['ng'] <= spec['n_units'] * vals['xg']
+                        and vals['xp'] <= vals['np'] <= spec['n_units'] * vals['xp']):
+                    raise ValueError(f'{uid}实际工况与台数不一致')
+
+
+def validate_network_inputs(cfg, net):
+    """Reject detached resources/loads before network comprehensions can omit them."""
+    import numpy as np
+
+    buses = list(net.buses)
+    if not buses or len(buses) != len(set(buses)):
+        raise ValueError('网络母线编号须非空且唯一')
+    for bus in buses:
+        _integer(bus, 'network.bus', positive=True)
+    if net.ref_bus not in buses:
+        raise ValueError('网络参考母线不存在')
+    branches = net.branches
+    if not {'branch_id', 'rate_mw'} <= set(branches.columns):
+        raise ValueError('支路须包含branch_id/rate_mw')
+    ids = list(branches.branch_id)
+    if (len(ids) != len(set(ids))
+            or any(not isinstance(uid, str) or not uid.strip() for uid in ids)):
+        raise ValueError('网络支路branch_id须为唯一非空字符串')
+    for uid, rate in zip(ids, branches.rate_mw):
+        number(rate, f'{uid}.rate_mw', positive=True)
+    matrix = np.asarray(net.ptdf)
+    if (matrix.shape != (len(ids), len(buses)) or not np.issubdtype(matrix.dtype, np.number)
+            or np.issubdtype(matrix.dtype, np.complexfloating) or not np.isfinite(matrix).all()):
+        raise ValueError('PTDF须为支路数×母线数的有限数值矩阵')
+    if not np.allclose(matrix[:, buses.index(net.ref_bus)], 0., atol=1e-10, rtol=0.):
+        raise ValueError('PTDF参考母线列须为0')
+    if not net.load_share.index.is_unique or set(net.load_share.index) != set(buses):
+        raise ValueError('冻结基准负荷占比须完整对应唯一网络母线')
+    _series(net.load_share.to_numpy(), len(buses), 'network.load_share')
+    from .fixed_load import allocation_weights
+    allocation_weights(net)
+    number(net.base_load_mw, 'network.base_load_mw', positive=True)
+    for family in ('thermal', 'hydro', 'pumped', 'storage', 'renewable', 'tie'):
+        for spec in _active(cfg, family):
+            if spec['bus'] not in buses:
+                raise ValueError(f"{spec['id']}.bus={spec['bus']}不在网络母线中，禁止静默忽略资源")
+
+
+def _series(values, length, label, *, maximum=None):
+    """Do not coerce strings/booleans or truncate surplus periods."""
+    import numpy as np
+
+    array = np.asarray(values)
+    if (array.shape != (length,) or not np.issubdtype(array.dtype, np.number)
+            or np.issubdtype(array.dtype, np.complexfloating)
+            or not np.isfinite(array).all() or (array < 0).any()):
+        raise ValueError(f'{label}须为{length}段有限非负数值（禁止布尔/字符串/缺失/多余时段）')
+    if maximum is not None and (array > maximum + 1e-6).any():
+        raise ValueError(f'{label}超出技术容量{maximum} MW，禁止自动截断')
+    return array
+
+
+def validate_case_inputs(case):
+    """Every mutable direct/rolling case is checked at each model construction."""
+    from .fixed_load import tie_mode
+
+    cfg, net = case.cfg, case.net
+    for family in ('thermal', 'hydro', 'pumped', 'storage', 'renewable', 'tie'):
+        if any(not spec.get('enabled', True) for spec in cfg.units.get(family, [])):
+            raise ValueError(f'case.cfg.units.{family}包含停用资源；请先通过filter_enabled过滤，禁止模型继续调度停用资源')
+    validate_physical_inputs(cfg, case.init)
+    validate_network_inputs(cfg, net)
+    horizon = cfg.T if case.T is None else _integer(case.T, 'case.T', positive=True)
+    _integer(case.t0, 'case.t0')
+    # Standalone synthetic windows may carry an absolute clock independently of
+    # the profile length. Consumers of day-wide arrays validate their own indices.
+    for name in ('load_bus', 'ren_fc', 'tie', 'fixed_load', 'fixed'):
+        if not isinstance(getattr(case, name), dict):
+            raise ValueError(f'case.{name}须为映射对象')
+    if case.terminal is not None and not isinstance(case.terminal, dict):
+        raise ValueError('case.terminal须为对象或None')
+    for bus, values in case.load_bus.items():
+        _integer(bus, 'load_bus.bus', positive=True)
+        if bus not in net.buses:
+            raise ValueError(f'load_bus[{bus}]不在网络母线中，禁止静默丢弃负荷')
+        _series(values, horizon, f'load_bus[{bus}]')
+    renewable = {r['id']: r for r in _active(cfg, 'renewable')}
+    if set(case.ren_fc) != set(renewable):
+        raise ValueError('ren_fc须完整且仅包含启用新能源资源')
+    for uid, values in case.ren_fc.items():
+        _series(values, horizon, f'ren_fc[{uid}]', maximum=renewable[uid]['cap'])
+    for name in ('R_up', 'R_dn'):
+        _series(getattr(case, name), horizon, name)
+    expected_ties = {r['id']: r for r in _active(cfg, 'tie')} if tie_mode(cfg) == 'supply' else {}
+    if set(case.tie) != set(expected_ties):
+        raise ValueError('tie须完整对应区外来电资源；固定负荷模式不得再次注入')
+    for uid, value in case.tie.items():
+        if not isinstance(value, (tuple, list)) or len(value) != 2:
+            raise ValueError(f'tie[{uid}]须为(母线,曲线)')
+        bus, values = value
+        if bus != expected_ties[uid]['bus']:
+            raise ValueError(f'tie[{uid}]母线与资源配置不一致')
+        _series(values, horizon, f'tie[{uid}]', maximum=expected_ties[uid]['pmax'])
+    for uid, value in case.fixed_load.items():
+        if not isinstance(value, (tuple, list)) or len(value) != 2 or value[0] not in net.buses:
+            raise ValueError(f'fixed_load[{uid}]须为(有效母线,曲线)')
+        _series(value[1], horizon, f'fixed_load[{uid}]')
+
+
+def read_input_csv(path, **kwargs):
+    """Inspect original CSV structure before pandas can rename duplicate headers.
+
+    Validate and parse the same bytes, including row widths: pandas otherwise
+    can interpret an extra leading field as an index and shift boundary values.
+    """
+    import csv
+    import io
+    from pathlib import Path
+    import pandas as pd
+
+    text = Path(path).read_text(encoding='utf-8-sig')
+    try:
+        rows = csv.reader(io.StringIO(text), strict=True)
+        header = next(rows, [])
+        if not header or any(not name.strip() for name in header):
+            raise ValueError(f'{path}: CSV表头须为非空列名')
+        if len(header) != len(set(header)):
+            raise ValueError(f'{path}: CSV原始表头列名重复，禁止自动重命名')
+        for row in rows:
+            if row and len(row) != len(header):
+                raise ValueError(f'{path}: CSV第{rows.line_num}行列数与表头不一致，禁止自动移动索引')
+    except csv.Error as exc:
+        raise ValueError(f'{path}: CSV结构非法: {exc}') from exc
+    return pd.read_csv(io.StringIO(text), **kwargs)

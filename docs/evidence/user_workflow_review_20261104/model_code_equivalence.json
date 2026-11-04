@@ -1,0 +1,86 @@
+{
+  "tested_code_commit": "ca7eefe77293d411f1d7345a99dfa1a92bcd1f34",
+  "actual_model_run_commit": "50223f4",
+  "files": {
+    "src/smm/scuc.py": {
+      "unchanged": true,
+      "sha256": "a0c246357a7f790a616d9bec67b84a2cedea689ca0968a47ea54b5eb5397bbdb"
+    },
+    "src/smm/da.py": {
+      "unchanged": true,
+      "sha256": "8fd6ae74bdd819d51e2bb75551f2a5ab50cb3419d76a531045eea401e4a64aeb"
+    },
+    "src/smm/rolling.py": {
+      "unchanged": true,
+      "sha256": "482305c8dab09e2b328c536f06e99ea9605f6d7cf3f0ec91d8b80babb05feed5"
+    },
+    "src/smm/forecast.py": {
+      "unchanged": true,
+      "sha256": "ceddd913df756802bfd1127b8f92bf935e6812628b54a8213724dd132dc5dad9"
+    },
+    "src/smm/case.py": {
+      "unchanged": true,
+      "sha256": "7d4c78393f0760b36f782df99387e73e1a080dc77c9ee5c11e8f193d6470c84f"
+    },
+    "src/smm/network.py": {
+      "unchanged": true,
+      "sha256": "2ef4c5052626ee2c5a9ac63cbad29d83d62f40d4561573655a643c2f39177bd8"
+    },
+    "src/smm/settlement.py": {
+      "unchanged": true,
+      "sha256": "be1c7be21f0df6e46991b5e05810fc40106977fceb40feb5528525e334b8508c"
+    },
+    "src/smm/full.py": {
+      "unchanged": true,
+      "sha256": "976821d74e62e4c852dc5c7504623a36fb0a680ed451b09dbc21926fa4a281c4"
+    },
+    "src/smm/pipeline.py": {
+      "unchanged": true,
+      "sha256": "ad24c3e6666490ab27dc0fde0226e95496ae61b9eb779e1db6f6797f50b579a9"
+    },
+    "src/smm/bids.py": {
+      "unchanged": true,
+      "sha256": "091c34c6f9435672de383b3077e3c3f7db4d533190b205ffc3ff984dd71da3e5"
+    },
+    "config/base.yaml": {
+      "unchanged": true,
+      "sha256": "107c314c9b1d169b72d6da56ddf36c211e62432568c084b769e65f479f730eda"
+    },
+    "config/modes.yaml": {
+      "unchanged": true,
+      "sha256": "936fc91a91d4ecfb3d2d8d0084f597513ab852435c497fe0075da39973a55ffc"
+    },
+    "config/units.yaml": {
+      "unchanged": true,
+      "sha256": "977e6503af68003acf3017be99da1a8adeef27803c799ca2bdf8a3e30ddd89b3"
+    },
+    "src/smm/auxiliary_pricing.py": {
+      "unchanged": true,
+      "sha256": "d699d562323b04b0ea3d88da0c4e04c918a71ea9b3bb30db5dbc31494264a3d9"
+    },
+    "src/smm/storage_anchors.py": {
+      "unchanged": true,
+      "sha256": "2de50f3acd95df7003637e2761d3bafde92bea9eecff627abf03c09004275491"
+    },
+    "src/smm/regulation.py": {
+      "unchanged": true,
+      "sha256": "a37814fb3cf15fb8e8df3d885b1d84fd8fd9af354f7d7cc86aab3ed0f6c67389"
+    },
+    "src/smm/input_validation.py": {
+      "unchanged": true,
+      "sha256": "66d7a2ab11dd98c13e3e917758470f21375f4976a261acf5d7daf77d7e33e272"
+    },
+    "src/smm/typical_scenarios.py": {
+      "unchanged": true,
+      "sha256": "36342c8c8c87ce74926bb8dd66e481d65955081aa97543d8f25a43be53924a5b"
+    }
+  },
+  "scope": "UI, process identity and audited interruption recovery changed after previous release; these 18 model/config files remain identical.",
+  "final_full_suite": {
+    "passed": 1533,
+    "failed": 0,
+    "skipped": 0,
+    "elapsed_s": 741.33,
+    "exit_code": 0
+  }
+}

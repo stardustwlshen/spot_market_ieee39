@@ -139,10 +139,16 @@ def system_metrics(tables):
     c=st.columns(4)
     c[0].metric('所选结果末时段',period)
     c[1].metric('负荷 MW',f"{row['load_mw']:.2f}" if row is not None and 'load_mw' in row else '未记录')
-    c[2].metric('报价主体净出力 MW',f'{last.P_mw.sum():.2f}')
+    power=pd.to_numeric(last.P_mw,errors='coerce').replace([float('inf'),-float('inf')],float('nan'))
+    complete=power.notna().all() and len(last)==units.unit.nunique() and not last.unit.duplicated().any() if 'unit' in units else power.notna().all()
+    has_tie='type' in last and last.type.eq('tie').any()
+    label='已保存净供给（含来电） MW' if has_tie else '已保存主体净出力 MW'
+    c[2].metric(label,f'{power.sum():.2f}' if complete else '未记录完整')
     prices=_frame(tables.get('prices'));last_price=prices[prices.period==period] if not prices.empty else prices
     c[3].metric('节点算术平均结算价 元/MWh',f'{last_price.lmp.mean():.2f}' if not last_price.empty else '未记录')
-    st.caption('主体净出力包含储能/抽蓄充电负值；固定区外来电另在边界计划中，此合计不是含联络线的全部供给。')
+    st.caption('仅合计所选末时段保存的主体出力，储能充电/抽蓄抽水为负。'
+               + ('已包含保存的区外来电，不能再次相加；区外来电不是本地报价机组。' if has_tie else
+                  '该时段未记录区外来电行，不能据此推断来电为零或宣称全网供给完整。'))
 
 
 def hydro_window_dashboard(history, *, prefix='hydro_window'):
@@ -468,6 +474,12 @@ def result_quality_messages(summary, da_summary, *, directory, live=None):
     elif checks.get('physical_feasible_checked_constraints') is True:
         add('caption','已报告的物理检查通过；仅限保存的检查范围，不是所有动态/安全约束的认证。')
     else:add('info','物理检查完整性：未保存汇总认证，不能将缺失检查视为通过。')
+    if checks.get('storage_pumped_hard_anchors_active'):
+        verified = checks.get('storage_pumped_hard_anchors_satisfied')
+        if verified is True:
+            add('info', f"电池/抽蓄每2小时硬锚点已校核：已执行端点记录 {checks.get('hard_anchor_executed_count', 0)} 条；电池最大误差 {checks.get('storage_hard_anchor_max_err_mwh', 0):.3g} MWh，抽蓄 {checks.get('pumped_hard_anchor_max_err_1e4m3', 0):.3g} 万m³。仅覆盖已保存运行范围。")
+        else:
+            add('error', '电池/抽蓄每2小时硬锚点未通过或证据缺失；不能以零松弛宣称硬一致。')
     tracking=[]
     for key,label,unit in [('storage_anchor_slack_max_mwh','电池','MWh'),('pumped_anchor_slack_max_1e4m3','抽蓄','万m³'),('hydro_anchor_slack_max_1e4m3','水电','万m³')]:
         value=_quality_number(checks.get(key,(summary.get('realtime') or {}).get(key)))
@@ -478,7 +490,7 @@ def result_quality_messages(summary, da_summary, *, directory, live=None):
     return messages
 
 
-def result_health_dashboard(summary, da_summary, *, directory, live=None):
+def result_health_dashboard(summary, da_summary, *, directory, live=None, messages=None):
     """Prominent read-only quality status, shared by run and result pages."""
     summary=summary or {};da_summary=da_summary or {}
     expected=summary.get('expected_periods');executed=summary.get('executed_periods',summary.get('periods'))
@@ -489,10 +501,10 @@ def result_health_dashboard(summary, da_summary, *, directory, live=None):
         st.info(f"运行范围：仅展示已保存的 {executed} 时段；未据此认证完整日，金额均按该范围解释。")
     st.subheader('结果质量与未满足项')
     st.caption('正式调度数量与求解精度分开核对；完成、结算、精度达标和物理可行不是同一结论。')
-    for level,message in result_quality_messages(summary,da_summary,directory=directory,live=live):
+    for level,message in (result_quality_messages(summary,da_summary,directory=directory,live=live) if messages is None else messages):
         getattr(st,level)(message)
     profit=summary.get('operating_profit',{})
     if profit and not profit.get('all_unit_costs_available',False):
-        st.warning('部分主体缺失独立成本参数：对应利润 未记录，不作零成本推断。')
+        st.warning('原始结果中部分主体缺失独立成本参数，原始利润未记录。可在结算与收益中单独补算，不按零成本推断。')
     if profit.get('cost_profile_available'):
         st.caption('成本口径：冻结的模拟研究参数，非实测电厂成本；利润为现金运营利润，排除资本、融资、税费。')

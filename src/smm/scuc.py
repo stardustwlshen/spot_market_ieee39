@@ -213,6 +213,8 @@ def _attach_startup_state_constraints(m, md, dt):
 def build_model(case: DACase, penalties: dict | None = None) -> pyo.ConcreteModel:
     # DACase is mutable and can be constructed directly (including RT/ID windows).
     # Revalidate every build; never cache approval of a mutable bid dictionary.
+    from .input_validation import validate_case_inputs
+    validate_case_inputs(case)
     from .bids import validate_bids, raise_on_errors
     raise_on_errors(validate_bids(case.cfg, case.bids, require_complete=True))
     cfg, net = case.cfg, case.net
@@ -563,7 +565,8 @@ def build_model(case: DACase, penalties: dict | None = None) -> pyo.ConcreteMode
     m.c_elim = pyo.Constraint(m.S, m.T, rule=lambda m, s, t: pyo.inequality(md.storage[s]["soc_min"] * md.storage[s]["ecap"], m.E[s, t], md.storage[s]["soc_max"] * md.storage[s]["ecap"]))
     # 期末 SOC：
     #   日前：储能申报了运行日末期望 SOC → 硬约束 E[T−1] = soc_end·ecap（川V4.0 7.7.4、附件8 式(20)）；未申报 → 不约束，由出清决定。
-    #   实时（甘V3.2 运营细则附录5 第9项）：窗口内锚点时段 lo ≤ E ≤ hi（带显式松弛与罚项的软锚点），lo/hi 由 rolling 按日前 SOC 计算：
+    #   two_hour_eq：电池/抽蓄以c_anc_eq硬等式执行，sA固定0；水电软跟踪不受影响。
+    #   历史实时（甘V3.2 运营细则附录5 第9项）：窗口内锚点时段 lo ≤ E ≤ hi（带显式松弛与罚项的软锚点），lo/hi 由 rolling 按日前 SOC 计算：
     #     window_end_pct：窗口末时段 (1−x)E_DA ≤ E_RT ≤ (1+x)E_DA；hourly_eq：窗口内各整点 E_RT = E_DA（广东）。
     #   sA_up/sA_dn 为软锚点松弛（罚 anchor_penalty）；标准流程不再放宽边界或重定价，直接使用同次SCED对偶。
     if term is None:
@@ -589,9 +592,15 @@ def build_model(case: DACase, penalties: dict | None = None) -> pyo.ConcreteMode
         + [(h, T - 1, float(v), float(v), "V") for h, v in hydro_tracking.items()])
     m.A = pyo.Set(initialize=list(range(len(anchors))))
     m._anchors = anchors
+    hard = {i for i, a in enumerate(anchors) if (term or {}).get("storage_anchor_hard", False) and a[4] in ("E", "Vu")}
+    if any(anchors[i][2] != anchors[i][3] for i in hard):
+        raise ValueError("储能/抽蓄硬锚点必须给定相同上下界")
+    m._hard_anchor_indices = hard
     m._anchor_cost_coefficients = {}
     for i, (unit, _, _, _, kind) in enumerate(anchors):
-        if tracking is not None:
+        if i in hard:
+            coefficient = 0.
+        elif tracking is not None:
             conversion = (float(md.storage[unit]["eta_d"]) if kind == "E" else
                           float(md.pumped[unit]["e_gen"]) if kind == "Vu" else
                           1. / (.36 * float(md.hydro[unit]["water_rate"])))
@@ -606,6 +615,10 @@ def build_model(case: DACase, penalties: dict | None = None) -> pyo.ConcreteMode
     m.A_hi = pyo.Param(m.A, mutable=True, initialize={i: a[3] for i, a in enumerate(anchors)})
     m.sA_up = pyo.Var(m.A, domain=pyo.NonNegativeReals)
     m.sA_dn = pyo.Var(m.A, domain=pyo.NonNegativeReals)
+    for i in hard:
+        m.sA_up[i].fix(0.)
+        m.sA_dn[i].fix(0.)
+    m.c_anc_eq = pyo.Constraint(sorted(hard), rule=lambda m, i: getattr(m, anchors[i][4])[anchors[i][0], anchors[i][1]] == m.A_lo[i])
     m.c_anc_hi = pyo.Constraint(m.A, rule=lambda m, i: getattr(m, anchors[i][4])[anchors[i][0], anchors[i][1]] <= m.A_hi[i] + m.sA_up[i])
     m.c_anc_lo = pyo.Constraint(m.A, rule=lambda m, i: getattr(m, anchors[i][4])[anchors[i][0], anchors[i][1]] >= m.A_lo[i] - m.sA_dn[i])
 
@@ -735,13 +748,30 @@ def build_model(case: DACase, penalties: dict | None = None) -> pyo.ConcreteMode
 
     # ---------------- 滚动窗口：固定指定整数变量（日内锁定的启停、实时沿用的水电台数/储能状态）
     for name, vals in (case.fixed or {}).items():
+        if name not in INT_VARS or not isinstance(vals, dict):
+            raise ValueError(f'fixed.{name}须为受支持整数变量的索引映射')
         var = getattr(m, name)
         for idx, val in vals.items():
-            var[idx].fix(int(round(val)))
+            value = number(val, f'fixed.{name}[{idx}]')
+            if idx not in var or abs(value - round(value)) > 1e-6:
+                raise ValueError(f'fixed.{name}[{idx}]须为有效索引的整数值，禁止静默取整')
+            value = int(round(value))  # Solver integrality tolerance only.
+            if value not in var[idx].domain or (var[idx].lb is not None and value < var[idx].lb) or (var[idx].ub is not None and value > var[idx].ub):
+                raise ValueError(f'fixed.{name}[{idx}]超出整数变量技术边界')
+            var[idx].fix(value)
     for name, vals in ((term or {}).get("fix_power") or {}).items():   # 实时固定功率（水电/储能执行日前曲线）
+        if name not in ('P', 'Pw', 'Ph', 'Pd', 'Pc', 'Pg', 'Pp') or not isinstance(vals, dict):
+            raise ValueError(f'fix_power.{name}须为受支持功率变量的索引映射')
         var = getattr(m, name)
         for idx, val in vals.items():
-            var[idx].fix(max(0.0, float(val)))
+            value = number(val, f'fix_power.{name}[{idx}]')
+            if idx not in var or value < -1e-6:
+                raise ValueError(f'fix_power.{name}[{idx}]须为有效索引的非负功率，禁止静默裁剪')
+            var[idx].fix(value)
+
+    # Asset-only suffix keeps remaining hard anchors reachable without extending market clearing.
+    from .asset_reachability import attach as attach_reachability
+    attach_reachability(m)
 
     # ---------------- 目标
     m.obj = pyo.Objective(expr=_objective_expr(m), sense=pyo.minimize)
@@ -866,8 +896,14 @@ def solve_scuc(m: pyo.ConcreteModel, log=lambda *a: None):
     if cfg.base["solver"].get("warm_start", False):
         ws = warm_start(m, log)
     opt = _solver(cfg)
-    res = _solve_with_budget(m, opt, tee=bool(cfg.base["solver"].get("log", False)),
-                             warmstart=bool(ws and ws["ok"]), phase="scuc", reserve_lp=True)
+    try:
+        res = _solve_with_budget(m, opt, tee=bool(cfg.base["solver"].get("log", False)),
+                                 warmstart=bool(ws and ws["ok"]), phase="scuc", reserve_lp=True)
+    except RuntimeError as exc:
+        native=getattr(opt,"_solver_model",None)
+        status=str(native.getModelStatus()) if native is not None else "unavailable"
+        primal=bool(native.getSolution().value_valid) if native is not None else None
+        raise RuntimeError(f"SCUC失败：highs_model_status={status}, primal_solution_available={primal}；{exc}") from exc
     el = time.perf_counter() - t0
     tc = str(res.solver.termination_condition)
     if "optimal" not in tc.lower() and not ("maxtime" in tc.lower() or "time" in tc.lower()):
@@ -878,9 +914,17 @@ def solve_scuc(m: pyo.ConcreteModel, log=lambda *a: None):
     return info
 
 
-def fix_integers(m):
+def integer_components(m):
     for name in INT_VARS:
-        var = getattr(m, name)
+        yield name, getattr(m, name)
+    block=getattr(m,'asset_reachability',None)
+    if block is not None:
+        for name in block._integer_names:
+            yield 'asset_reachability.'+name, getattr(block,name)
+
+
+def fix_integers(m):
+    for name, var in integer_components(m):
         for idx in var:
             val = round(pyo.value(var[idx]))
             if name in ("u_ch", "u_dis") and not var[idx].is_binary():   # 仅对比试验的松弛模式：按实际功率确定状态
@@ -985,6 +1029,8 @@ def relax_anchors(m, tol=1e-6) -> int:
     """锚点松弛被触发时：把锚点边界放宽到实际解的 E，并固定 sA=0，使防无解罚因子不进入对偶电价。返回放宽个数。"""
     n = 0
     for i in m.A:
+        if i in getattr(m, "_hard_anchor_indices", ()):
+            continue  # Never turn an authorized hard consistency constraint into a soft target.
         s, t = m._anchors[i][0], m._anchors[i][1]
         e = pyo.value(getattr(m, m._anchors[i][4])[s, t])
         if pyo.value(m.sA_up[i]) > tol:

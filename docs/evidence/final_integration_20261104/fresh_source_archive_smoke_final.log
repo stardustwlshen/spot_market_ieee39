@@ -1,0 +1,3 @@
+2026-11-03 20:40:13.273 WARNING streamlit.runtime.scriptrunner_utils.script_run_context: Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+[报价] MKT v3：校验 0 条提示
+{"source": "IEEE39_source_6d0524d.zip", "code_commit": "6d0524d", "new_archive_prepare_readonly_hash_unchanged": true, "forecast_model": "multiscale_v2", "tie_mode": "supply", "PV_mw": 2152, "home_AppTest_exceptions": 0, "scope": "Reuses verified installed Python environment; not a new dependency installation, not browser pixel QA", "initial_harness_correction": "Initial smoke assertion used thermal pmax instead of renewable cap; corrected harness only before AppTest. No product code changed."}

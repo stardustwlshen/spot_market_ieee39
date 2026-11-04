@@ -1,0 +1,33 @@
+{
+  "status": "frozen_before_error_sampling_no_optimization",
+  "source": "/workspace/scratch/42c5fe32dad0/ieee39-final-evidence/pv2152_dry_lowre_highload_full96",
+  "evaluation_seed_excluded": 20260715,
+  "training_seed_first": 900000000,
+  "training_seed_last": 900004095,
+  "samples": 4096,
+  "quantile": 0.95,
+  "quantile_method": "higher",
+  "forecast_model": "multiscale_v2",
+  "season": "dry",
+  "load_scale": 0.7480000000000001,
+  "renewable_multiplier": 0.8,
+  "training_generation": "generate_profiles(cfg, independent_seed), never apply_profile_overrides; multiply each already-clipped renewable actual/DA/ID/RT series by declared renewable multiplier once, then clip to nameplate. Frozen load_scale already includes evaluation load multiplier; do not scale load again.",
+  "information_boundary": "Only evaluation DA forecast, fixed tie schedule, resolved DA bids, configuration and declared scenario multiplier used. No evaluation actual/ID/RT value read. Synthetic training actual is independently generated.",
+  "distribution_boundary": "Forward-generator unconditional clock-time error samples; not actual given observed DA posterior, not measured history, not empirical probability calibration. Actual-to-forecast clipping and all generator temporal/cross-resource correlations preserved.",
+  "formula_H": "(1+rho_L)*load-(1-rho_RE)*renewable-fixed_tie+contingency",
+  "formula_error": "(1+rho_L)*(training_load_actual-training_load_da)-(1-rho_RE)*sum(training_RE_actual-training_RE_da)",
+  "formula_A": "max(0, Q95(error[:,t]))",
+  "formula_B": "max(0,Q95(max_{k=t..anchor_block_end}(H_DA[k]-H_DA[t]+error[:,k])))",
+  "anchor_blocks": "[00:00,02:00),...,[22:00,24:00); each eight 15-minute periods. B varies within block; not a single blockwide constant. No next-day wrap.",
+  "B_scope": "Forward capacity envelope using known DA ramps; does not guarantee that capacity, operating mode, inventory or network delivery can transfer across times.",
+  "implementation_if_approved": "DA case.R_up=baseline_R_up+chosen_buffer; preserve RT original requirement and all physical/economic inputs. No change made now.",
+  "hashes": {
+    "DA_only_inputs.csv": "c479adfb365c72403a2a5db145cdcf5f387f732f1e8172790ab773a2b02677f8",
+    "resolved_bids.json": "ba466b1b1ba30cf3af82e7dc9b363bcccee7ef5b14b21f5b3a122a7c2bdb3261",
+    "config/base.yaml": "73c96a329f056679bf482681df5819fbc4c561bf206e583c0f8e95b187677d6b",
+    "config/units.yaml": "977e6503af68003acf3017be99da1a8adeef27803c799ca2bdf8a3e30ddd89b3",
+    "config/modes.yaml": "936fc91a91d4ecfb3d2d8d0084f597513ab852435c497fe0075da39973a55ffc",
+    "source/forecast.py": "ceddd913df756802bfd1127b8f92bf935e6812628b54a8213724dd132dc5dad9",
+    "source/forecast_multiscale.py": "c79d0c81891d34837ec4c76c49c3830ef39eb3fee1db9a420c74fa17c8034598"
+  }
+}

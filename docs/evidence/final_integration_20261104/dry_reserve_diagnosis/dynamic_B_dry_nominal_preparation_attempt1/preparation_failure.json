@@ -1,0 +1,6 @@
+{
+  "status": "preparation_failed_before_any_solve",
+  "DA_SCUC_executed": false,
+  "RT_executed": false,
+  "reason": "Poisoned CSV test initially reserialized parsed floats and failed strict equality from roundtrip representation; runner then stopped before config/model build because audit output absent. Raw-cell fixture correction leaves DA cell strings unchanged; no source profiles or reserve buffers changed."
+}

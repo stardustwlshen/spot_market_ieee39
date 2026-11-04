@@ -157,7 +157,9 @@ def test_network_capacity_separates_disabled_and_storage_energy(network_cfg):
     assert any(unit['id'] == 'H2' and not unit['enabled'] for _, unit in scenario_unit_catalog(network_cfg))
 
 
-def test_network_view_uses_overrides_and_never_writes(network_cfg):
+@pytest.mark.parametrize('tie_mode,actual_peak,da_peak', [('supply','3,000.00','3,100.00'), ('fixed_load','4,045.00','4,145.00')])
+def test_network_view_uses_overrides_and_never_writes(network_cfg,tie_mode,actual_peak,da_peak):
+    network_cfg.base['tie_line_mode'] = tie_mode
     import pandas as pd
     from smm.forecast import generate_profiles, apply_profile_overrides
     overrides = pd.DataFrame({'load_actual': [3000.] * network_cfg.T, 'load_da': [3100.] * network_cfg.T,
@@ -171,9 +173,11 @@ def test_network_view_uses_overrides_and_never_writes(network_cfg):
     assert not at.exception and not at.error
     metrics = {item.label: item.value for item in at.metric}
     assert metrics['节点数量'] == '39' and metrics['支路数量'] == '46'
-    assert metrics['实际负荷峰值（MW）'] == '3,000.00'
-    assert metrics['日前预测负荷峰值（MW）'] == '3,100.00'
-    assert len(at.get('vega_lite_chart')) == 2
+    assert metrics['实际负荷峰值（MW）'] == actual_peak
+    assert metrics['日前预测负荷峰值（MW）'] == da_peak
+    if tie_mode == 'supply':
+        assert any('供给注入，未加到负荷' in item.value for item in at.caption)
+    assert len(at.get('vega_lite_chart')) == 3
     assert not at.button and not at.number_input and not at.text_input
     selector = next(item for item in at.selectbox if item.label == '查看其他机组参数')
     assert any('H2' in label and '未启用' in label for label in selector.options)

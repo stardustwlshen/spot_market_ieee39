@@ -1,0 +1,31 @@
+{
+  "scope": "Analysis/reproducibility scripts and reports, not frozen run archive hashes",
+  "script_count": 12,
+  "files": {
+    "README_复现说明.md": "1e3ef7bf9fbd500e2118cfd344c05621b110c2c4f05c8b2c8db4ff3c32737f62",
+    "counterfactual_comparison.json": "a7e2494f1f05cb09e26dafe6830c3e9eec7db0546de150a0fc1e17fe6af5c6d9",
+    "dynamic_B_dry_lowre_highload_input_audit.json": "aa51cdab11337a952c3992da2584b71fa058adedec65fbe251a0a2fe9931926a",
+    "dynamic_B_dry_nominal_input_audit.json": "aa51cdab11337a952c3992da2584b71fa058adedec65fbe251a0a2fe9931926a",
+    "dynamic_normal_baseline_metrics.json": "41d69170412372ae7104c5f66e4f2879e7c75820153480bc6efe0bf6f98005f4",
+    "dynamic_normal_side_effects.json": "c6cde3536dea221d44d8b4696cc456296dd68382b8085d939c3b6a18562a1cbe",
+    "dynamic_reserve_comparison.json": "f1630efded8999b323ad7bd8921f4e9c79faba8ec8e63ec86f4a03d8699cbfc4",
+    "parallel_RT96_comparison.json": "4f3a6675373d44944047d2c3bb5c16709008138b371e2c4b021d780a1e47ea74",
+    "parallel_recovery_all_integer_audit.json": "9c5256775b5003ebd9c33b40a08948b9d487d32838fcb31c2417674f537d79d9",
+    "parallel_strategy_comparison.json": "4bce978d6767002d96b1bebf61e8aaddbc01004acbcdf33c0ef33ca6b4a1c4ee",
+    "scripts/analyze_frozen_reserve.py": "1047090b8b6d08c4f660647a160cee20930ff76c1b5baa7becb1e07b71273cdc",
+    "scripts/audit_dynamic_information.py": "47f9b5ed391304c22d660c608b0d9bb07c7932548aa45fac8c5e914f9a45baea",
+    "scripts/bench_frozen_parallel.py": "77aebf28130a4450beccce758826f00514088587ed40df1c5ace232da65faad7",
+    "scripts/continue_recovered_parallel_rt.py": "1070aa29e20cdc1116bae217381f06cb062ac4b2fb4eebe373b83f4f1f09c8e8",
+    "scripts/diagnose_frozen_reserve.py": "295cf359e577b73aebce067f8ac5b9d91ae1886dca0a190799bead44a2310785",
+    "scripts/export_recorded_formal.py": "8adaa27db77fde275269b5235519040dfb60825db648440e8ba279f843d11c40",
+    "scripts/finalize_dynamic_evidence.py": "9e60e8c5ea8fdfaa7ffaff628dea40e7e3c9bbbef3f929f9adcc05c246b806dd",
+    "scripts/prepare_dynamic_reserve.py": "7020b08c2dbc688fa988a572e1cb2f2e83efd503c7245dd256bbab2ed6e54d62",
+    "scripts/probe_frozen_rt.py": "9298c4ea4912808a8253e88ce7fb37302a7fc0b83c34eda45a547c9fb2b0835d",
+    "scripts/replay_formal_da_sced.py": "37b2b08d99ea81f146ad28d2b062dc3f95678139e41630a06ff5e20982230cc0",
+    "scripts/run_dynamic_reserve.py": "515665a7e18ee6681167c4b03735dc387071b39716457aa2b2ac89b30ffe7a3f",
+    "scripts/summarize_reserve_counterfactuals.py": "4e5d6381c20e19c270fd2b8b112f439efa2bae24410e7cbd8130e9d6ec53a3fa",
+    "动态日前预留研究说明.md": "3d440374ea2e8b34097eab3e46f2f4f826206a10a7f011d65fc441f7d90fb075",
+    "最终诊断文件清单.md": "163f3d2a295e27344d55c169de43355ce7a793723e530ea883db04b46de40af8",
+    "枯水低新能源高负荷备用诊断.md": "12af50f7cfe48f78a1ee300cfe40b278f7b64d7898c1b56ad57b613b5f7868c0"
+  }
+}

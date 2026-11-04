@@ -1,0 +1,9 @@
+{
+  "reserve_integral_reduction_vs_parallel_baseline_fraction": 0.93925472816662,
+  "reserve_integral_reduction_vs_original_archive_fraction": 0.9458238530535357,
+  "cash_operating_cost_delta_vs_parallel_yuan": 399826.15073720925,
+  "cash_profit_delta_vs_parallel_yuan": -1304366.043799555,
+  "DA_optimal_objective_increase_certified_lower_yuan": 998036.1163586676,
+  "DA_optimal_objective_increase_certified_upper_yuan": 1266718.6930856965,
+  "qualification": "Bounds compare same original objective and model except added DA reserve RHS. They bound true optimum cost increase, not realized cash cost or profit; each recorded bound/incumbent is finite."
+}

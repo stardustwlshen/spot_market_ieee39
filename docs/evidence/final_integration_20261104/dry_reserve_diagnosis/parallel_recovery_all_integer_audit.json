@@ -1,0 +1,18 @@
+{
+  "all_declared_integer_count": 2112,
+  "max_integer_error": 0.0,
+  "integer_counts_by_component": {
+    "u": 480,
+    "v": 480,
+    "delta": 192,
+    "u_ch": 288,
+    "u_dis": 288,
+    "xg": 96,
+    "xp": 96,
+    "ngen": 96,
+    "npump": 96
+  },
+  "recorded_variable_count": 27840,
+  "source": "all_recovered_formal_variables.json evaluated against original model variable domains; no solve",
+  "all_declared_integer_verified": true
+}

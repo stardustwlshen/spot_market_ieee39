@@ -1,0 +1,68 @@
+{
+  "root": "/workspace/scratch/42c5fe32dad0/ieee39-reboot-recovery",
+  "base_commit": "db5af5a7d90c350e6b1cb98d3f4879cde58ead0b",
+  "workspace": "/tmp/ieee39-recovery-review-1i3cf10q",
+  "first_only": {
+    "status": "failed",
+    "start_remains_disabled": true,
+    "cancel_file_preserved": true
+  },
+  "all_recovered": {
+    "start_enabled": true,
+    "non_meta_files_unchanged": true,
+    "statuses": [
+      "failed",
+      "failed"
+    ],
+    "settled": [
+      false,
+      false
+    ]
+  },
+  "new_scene_after_recovery": {
+    "scene": "恢复后新场景",
+    "start_enabled": true
+  },
+  "blocked": {
+    "legacy": {
+      "reason": "legacy_machine_identity",
+      "start_disabled": true,
+      "recovery_button_present": false,
+      "warnings": [
+        "旧记录缺少稳定机器身份；仅凭主机名、PID或启动时间不能安全解锁。"
+      ],
+      "info": [
+        "已有后台运行，或历史进程身份尚待核实。暂禁用改价和启动，避免重复求解。",
+        "可按机组类型、容量和效率自动生成模拟成本，无需逐项填写。采用合成研究假设（非实测），将永久另存到当前场景；仅替换可确认的原研究默认值，真实或自定义成本、报价及原始档案不改。",
+        "该节点未配置机组或区外来电。",
+        "若为升级前或其他机器的旧记录，请在原运行机器核对并正常停止后台服务。不要删除运行目录、改写PID或状态来绕过保护。无法取得原机器证据时，请保留原项目，由管理员确认所有原服务已停止后，另建不继承旧runs记录的独立项目副本；原项目与历史全部保留。本应用不能据此认定旧运行已死亡。"
+      ]
+    },
+    "foreign": {
+      "reason": "foreign_machine",
+      "start_disabled": true,
+      "recovery_button_present": false,
+      "warnings": [
+        "记录来自其他机器或系统身份已变化；不能在本机确认原进程已退出。"
+      ],
+      "info": [
+        "已有后台运行，或历史进程身份尚待核实。暂禁用改价和启动，避免重复求解。",
+        "可按机组类型、容量和效率自动生成模拟成本，无需逐项填写。采用合成研究假设（非实测），将永久另存到当前场景；仅替换可确认的原研究默认值，真实或自定义成本、报价及原始档案不改。",
+        "该节点未配置机组或区外来电。",
+        "若为升级前或其他机器的旧记录，请在原运行机器核对并正常停止后台服务。不要删除运行目录、改写PID或状态来绕过保护。无法取得原机器证据时，请保留原项目，由管理员确认所有原服务已停止后，另建不继承旧runs记录的独立项目副本；原项目与历史全部保留。本应用不能据此认定旧运行已死亡。"
+      ]
+    },
+    "alive": {
+      "reason": "alive",
+      "start_disabled": true,
+      "recovery_button_present": false,
+      "warnings": [],
+      "info": [
+        "已有后台运行，或历史进程身份尚待核实。暂禁用改价和启动，避免重复求解。",
+        "可按机组类型、容量和效率自动生成模拟成本，无需逐项填写。采用合成研究假设（非实测），将永久另存到当前场景；仅替换可确认的原研究默认值，真实或自定义成本、报价及原始档案不改。",
+        "该节点未配置机组或区外来电。"
+      ]
+    }
+  },
+  "market_solves_started": 0
+}

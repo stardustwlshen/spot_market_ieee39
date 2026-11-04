@@ -1,6 +1,7 @@
 """网页应用公共函数：路径、场景选择、结果读取、拓扑布局、通用图表。"""
 from __future__ import annotations
 
+from contextlib import nullcontext
 import json
 import os
 import re
@@ -22,7 +23,7 @@ from smm import scenario as sc  # noqa: E402
 from smm.config import load_config  # noqa: E402
 
 TYPE_CN = {"coal": "燃煤", "gas_ccgt": "燃气联合循环", "gas_gt": "燃气轮机", "hydro": "水电", "wind": "风电", "pv": "光伏",
-           "tie": "区外来电", "storage": "储能", "storage_dis": "储能放电", "storage_ch": "储能充电", "load": "负荷",
+           "tie": "区外来电", "fixed_load": "原联络线固定负荷", "storage": "储能", "storage_dis": "储能放电", "storage_ch": "储能充电", "load": "负荷",
            "pumped": "抽水蓄能", "pumped_gen": "抽蓄发电", "pumped_pump": "抽蓄抽水",
            "slack": "平衡松弛"}
 TYPE_COLOR = {"coal": "#5b5b5b", "gas_ccgt": "#e07b39", "gas_gt": "#f2b134", "hydro": "#2f7ed8", "wind": "#3cb371",
@@ -158,6 +159,8 @@ def page_setup(title: str, subtitle: str | None = None):
                        initial_sidebar_state="auto")   # 宽屏展开、窄屏自动收起
     st.markdown(_CSS, unsafe_allow_html=True)
     sidebar_nav()
+    from runtime_notices import render_runtime_notice
+    render_runtime_notice(ROOT)
     st.title(title)
     if subtitle:
         st.markdown(f'<div class="smm-sub">{subtitle}</div>', unsafe_allow_html=True)
@@ -216,12 +219,22 @@ def period_labels(T: int = 96) -> list[str]:
 def scenario_selector(key: str = "scenario", sidebar: bool = True, label: str = "当前场景") -> str:
     names = sc.list_scenarios()
     recommended=next((n for n in ("水电窗口硬锚点_20261102","电能量完善版_20261102") if n in names),sc.DEFAULT)
+    pending = st.session_state.pop('new_default_switch_to', None)
+    if pending is not None and pending in names:
+        st.session_state['scenario'] = pending
+        st.session_state[f'_sel_{key}'] = pending
     cur = st.session_state.get("scenario", recommended)
     if cur not in names:
         cur = names[0]
     box = st.sidebar if sidebar else st
     name = box.selectbox(label, names, index=names.index(cur), key=f"_sel_{key}")
     st.session_state["scenario"] = name
+    with (box if sidebar else nullcontext()):
+        notice = st.session_state.pop('new_default_created_notice', None)
+        if notice:
+            st.success(notice)
+        from new_default_scenario import render_new_default_scene
+        render_new_default_scene(name, key=key)
     return name
 
 
@@ -236,6 +249,9 @@ def start_run(scenario: str, mode: str, bid_version: int | None, periods: int | 
     import traceback
     from smm.live_runner import atomic_json, freeze_inputs
     from smm.process_control import LaunchError, file_lock, process_identity
+    from runtime_notices import runtime_status
+    if runtime_status(ROOT)["needs_restart"]:
+        raise RuntimeError("项目源码或Python环境已变化，请先关闭旧服务并使用一键入口重启，再运行市场。原场景与结果保留。")
     requested = load_config(root=sc.scenario_path(scenario))
     if requested.mode.get("regulation", {}).get("enabled", False) or (regulation or {}).get("enabled", False):
         raise ValueError("当前仅支持纯电能量现货正常运行；调频场景仅作历史归档，不启动。")
@@ -395,7 +411,7 @@ def result_label(m: dict) -> str:
 
 # ----------------------------------------------------------------------------- 结果读取
 @st.cache_data(show_spinner=False)
-def load_result(d: str, mtime: float) -> dict:  # mtime 只用于缓存失效
+def load_result(d: str, mtime) -> dict:  # mtime/fingerprint 只用于缓存失效
     d = Path(d)
     da_dir = d / "da" if (d / "da").exists() else d
     R: dict = {"dir": str(d)}
@@ -416,11 +432,14 @@ def load_result(d: str, mtime: float) -> dict:  # mtime 只用于缓存失效
     da_sp = da_dir / "summary.json"
     R["da_summary"] = (R["summary"].get("da_summary") or
                        (json.loads(da_sp.read_text(encoding="utf-8")) if da_sp.exists() else {}))
-    R["full"] = R["rt_prices"] is not None
+    # A lost RT price file must not silently relabel a full run as DA-only.
+    R["full"] = (R["rt_prices"] is not None or
+                 R["summary"].get("completed_scope") in ("full_day", "debug_prefix") or
+                 isinstance(R["summary"].get("realtime"), dict))
     prof = d / "profiles.csv"
     R["profiles"] = rd(prof)
     snap = d / "scenario_snapshot" / "data" / "case39"
-    R["case_dir"] = str(snap if snap.exists() else ROOT / "data" / "case39")
+    R["case_dir"] = str(snap)
     R["snapshot_root"] = str(d / "scenario_snapshot")
     R["input_provenance_known"] = (d / "scenario_snapshot" / "config" / "base.yaml").exists()
     return R
@@ -428,11 +447,18 @@ def load_result(d: str, mtime: float) -> dict:  # mtime 只用于缓存失效
 
 def get_result(m: dict) -> dict:
     d = Path(m["dir"])
-    mt = max((p.stat().st_mtime for p in d.glob("*.json")), default=0)
-    return load_result(str(d), mt)
+    # Include every file we read, including DA subdirectory and frozen inputs.
+    # Repairs/removals of CSVs must invalidate a cached view even when summary
+    # JSON is unchanged. Names also distinguish missing/replaced files.
+    fingerprint = tuple(sorted((str(p.relative_to(d)), p.stat().st_mtime_ns, p.stat().st_ctime_ns, p.stat().st_size)
+                               for p in d.rglob('*') if p.is_file() and
+                               p.suffix.lower() in ('.csv', '.json', '.yaml', '.yml')))
+    result = load_result(str(d), fingerprint)
+    if m.get('mode') == 'full':
+        result['full'] = True
+    return result
 
 
-@st.cache_data(show_spinner=False)
 def branches_with_rate(snapshot_root: str) -> pd.DataFrame:
     """支路表 + 生效限额（rate_mw × line_scale）。"""
     root = Path(snapshot_root)
@@ -488,13 +514,28 @@ def lmp_pivot(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def load_weighted(prices: pd.DataFrame, loads: pd.DataFrame | None = None) -> pd.Series:
-    """按节点负荷加权的系统均价（每时段）。rt_prices 自带 load_mw；日前用 buses.csv 负荷分布。"""
-    if "load_mw" in prices:
-        w = prices.load_mw.clip(lower=0)
+    """Per-period node-load-weighted price; unknown weights never become equal/zero."""
+    frozen_bus_ids = (set(loads.bus.dropna()) if loads is not None and 'bus' in loads
+                      and not loads.bus.duplicated().any() else None)
+    if 'load_mw' in prices:
+        weights = pd.to_numeric(prices.load_mw, errors='coerce')
+        # Even when archived rows carry their own loads, a dropped node cannot
+        # redefine the expected network. Frozen loads supply identity, not RT weights.
+        expected = frozen_bus_ids if frozen_bus_ids is not None else set(prices.bus.dropna())
+    elif loads is not None and {'bus', 'load_mw'} <= set(loads) and not loads.bus.duplicated().any():
+        weights = prices.bus.map(pd.to_numeric(loads.set_index('bus').load_mw, errors='coerce'))
+        expected = set(loads.bus.dropna())
     else:
-        w = prices.bus.map(loads.set_index("bus").load_mw).fillna(0) if loads is not None else pd.Series(1.0, index=prices.index)
-    g = prices.assign(w=w, lw=prices.lmp * w).groupby("period")
-    return g.lw.sum() / g.w.sum().replace(0, np.nan)
+        return pd.Series(np.nan, index=sorted(prices.period.unique()), name='lmp')
+    frame = prices[['period', 'bus']].assign(
+        weight=weights, price=pd.to_numeric(prices.lmp, errors='coerce'))
+    means = {}
+    for period, group in frame.groupby('period'):
+        valid = (set(group.bus) == expected and not group.bus.duplicated().any()
+                 and np.isfinite(group[['weight', 'price']].to_numpy()).all()
+                 and (group.weight >= 0).all() and group.weight.sum() > 0)
+        means[period] = float((group.weight * group.price).sum() / group.weight.sum()) if valid else np.nan
+    return pd.Series(means)
 
 
 # ----------------------------------------------------------------------------- 拓扑布局
@@ -511,6 +552,8 @@ def topo_layout(case_dir: str) -> dict:
 def unit_buses(cfg) -> dict:
     out = {}
     for grp in ("thermal", "tie", "renewable", "hydro", "storage", "pumped"):
+        if grp == "tie" and cfg.base.get("tie_line_mode") == "fixed_load":
+            continue
         for u in cfg.units.get(grp, []):
             out.setdefault(int(u["bus"]), []).append(u["id"])
     return out
@@ -529,7 +572,6 @@ def df_download(df: pd.DataFrame, name: str, label: str = "下载 CSV", key=None
         st.download_button("下载原字段表格", csv_bytes(df, chinese=False), file_name=name, mime="text/csv", key=None if key is None else key+":raw")
 
 
-@st.cache_data(show_spinner=False)
 def bus_resources(snapshot_root: str) -> dict:
     """{母线: [(机组id, 资源类型), ...]}；类型取 units.yaml 的 type，缺省按分组（tie/hydro/storage）。"""
     import yaml
@@ -537,8 +579,12 @@ def bus_resources(snapshot_root: str) -> dict:
         uy = yaml.safe_load((Path(snapshot_root) / "config" / "units.yaml").read_text(encoding="utf-8"))
     except Exception:  # noqa: BLE001
         return {}
+    bp = Path(snapshot_root) / "config" / "base.yaml"
+    base = yaml.safe_load(bp.read_text(encoding="utf-8")) if bp.exists() else {}
     out: dict = {}
     for grp in ("thermal", "tie", "renewable", "hydro", "storage", "pumped"):
+        if grp == "tie" and base.get("tie_line_mode") == "fixed_load":
+            continue
         for u in uy.get(grp, []) or []:
             if u.get("enabled", True) is False:
                 continue

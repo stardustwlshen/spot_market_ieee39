@@ -1,0 +1,33 @@
+{
+  "scope": "Post-run explanatory comparison only; actual data were not used to construct B",
+  "periods": [
+    {
+      "period": 90,
+      "time": "22:30",
+      "realized_deltaH": 348.1772272681698,
+      "B": 302.39462663627137,
+      "B_minus_realized_deltaH": -45.78260063189845
+    },
+    {
+      "period": 92,
+      "time": "23:00",
+      "realized_deltaH": 326.6488328636402,
+      "B": 291.370924918288,
+      "B_minus_realized_deltaH": -35.27790794535224
+    },
+    {
+      "period": 93,
+      "time": "23:15",
+      "realized_deltaH": 345.5261642902588,
+      "B": 293.7499397601828,
+      "B_minus_realized_deltaH": -51.77622453007598
+    },
+    {
+      "period": 94,
+      "time": "23:30",
+      "realized_deltaH": 327.250714733903,
+      "B": 294.84504997770864,
+      "B_minus_realized_deltaH": -32.40566475619437
+    }
+  ]
+}

@@ -142,6 +142,7 @@ def test_pumped_anchors_function():
     cfg = load_config()
     pid = cfg.units["pumped"][0]["id"]
     Vu = {pid: np.full(cfg.T, 300.0)}
+    cfg.mode["realtime"]["storage"]["anchor"] = "hourly_eq"  # historical soft-policy regression
     a = pumped_anchors(cfg, Vu, 0, 8)[pid]
     assert [k for k, _, _ in a] == [3, 7] and all(lo == hi == 300.0 for _, lo, hi in a)
     cfg.mode["realtime"]["storage"]["anchor"] = "window_end_pct"

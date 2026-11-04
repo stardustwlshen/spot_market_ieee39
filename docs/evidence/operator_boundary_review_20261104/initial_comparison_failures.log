@@ -1,0 +1,585 @@
+.FFF.....F........                                                       [100%]
+=================================== FAILURES ===================================
+_ test_real_comparison_missing_history_keeps_unknown_and_never_borrows_current _
+
+evidence = PosixPath('/workspace/scratch/42c5fe32dad0/ieee39-final-evidence')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7efe6f951760>
+tmp_path = PosixPath('/tmp/pytest-of-agent/pytest-109/test_real_comparison_missing_h0')
+
+    def test_real_comparison_missing_history_keeps_unknown_and_never_borrows_current(evidence, monkeypatch, tmp_path):
+        import common
+        paths = [evidence / n for n in ('final_c1f829a_baseline_full96', 'pv2152_dry_lowre_highload_full96')]
+        results = [common.get_result(dict(dir=str(p), mode='full')) for p in paths]
+        for result in results:
+            result['snapshot_root'] = str(tmp_path / 'missing')
+            for key in ('da_nodal_prices', 'rt_prices'):
+                result[key] = result[key].drop(columns='load_mw', errors='ignore')
+            result['da_summary'].pop('lmp_load_weighted_avg', None)
+        records = [dict(dir=str(p), scenario=p.name, mode='full', status='done') for p in paths]
+        at = open_comparison(monkeypatch, tmp_path, records,
+                             lambda m: deepcopy(results[[str(p) for p in paths].index(m['dir'])]))
+        assert not at.exception, [x.message for x in at.exception]
+>       assert any('不借用当前网络' in x.value for x in at.warning)
+E       assert False
+E        +  where False = any(<generator object test_real_comparison_missing_history_keeps_unknown_and_never_borrows_current.<locals>.<genexpr> at 0x7efe4a034110>)
+
+tests/test_operator_comparison_boundary.py:62: AssertionError
+----------------------------- Captured stderr call -----------------------------
+2026-11-03 22:06:40.627 WARNING streamlit.runtime.caching.cache_data_api: No runtime found, using MemoryCacheStorageManager
+2026-11-03 22:06:40.889 WARNING streamlit.runtime.scriptrunner_utils.script_run_context: Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-11-03 22:06:41.098 DEBUG   streamlit.runtime.scriptrunner.script_runner: Running script
+2026-11-03 22:06:41.098 DEBUG   streamlit.runtime.media_file_manager: Disconnecting files for session with ID test session id
+2026-11-03 22:06:41.099 DEBUG   streamlit.runtime.media_file_manager: Sessions still active: dict_keys([])
+2026-11-03 22:06:41.099 DEBUG   streamlit.runtime.media_file_manager: Files: 0; Sessions with files: 0
+2026-11-03 22:06:41.262 DEBUG   streamlit.runtime.media_file_manager: Removing orphaned files...
+2026-11-03 22:06:41.262 DEBUG   streamlit.runtime.media_file_manager: Removing orphaned deferred callables...
+2026-11-03 22:06:41.262 DEBUG   streamlit.runtime.scriptrunner.script_runner: Running script
+2026-11-03 22:06:41.262 DEBUG   streamlit.runtime.media_file_manager: Disconnecting files for session with ID test session id
+2026-11-03 22:06:41.262 DEBUG   streamlit.runtime.media_file_manager: Sessions still active: dict_keys([])
+2026-11-03 22:06:41.262 DEBUG   streamlit.runtime.media_file_manager: Files: 0; Sessions with files: 0
+2026-11-03 22:06:41.375 DEBUG   streamlit.runtime.memory_media_file_storage: Adding media file 97a255f7f522e54177a28f445f8e7dd9
+2026-11-03 22:06:41.395 DEBUG   streamlit.runtime.memory_media_file_storage: Adding media file 5d66497c07b52c078543a5b28df58aa0
+2026-11-03 22:06:41.456 DEBUG   streamlit.runtime.caching.cache_data_api: Creating new DataCache (key=77d6c98f9e1646fcce49e0d0abfccdb1, persist=None, max_entries=None, ttl=None)
+2026-11-03 22:06:41.457 DEBUG   streamlit.runtime.caching.cache_utils: Cache key: bcf3af6fc21328553c92ec25bd7d6bf3
+2026-11-03 22:06:41.457 DEBUG   streamlit.runtime.caching.storage.in_memory_cache_storage_wrapper: Memory cache MISS: bcf3af6fc21328553c92ec25bd7d6bf3
+2026-11-03 22:06:41.457 DEBUG   streamlit.runtime.caching.storage.in_memory_cache_storage_wrapper: Memory cache MISS: bcf3af6fc21328553c92ec25bd7d6bf3
+2026-11-03 22:06:42.499 DEBUG   streamlit.runtime.media_file_manager: Removing orphaned files...
+2026-11-03 22:06:42.499 DEBUG   streamlit.runtime.media_file_manager: Removing orphaned deferred callables...
+2026-11-03 22:06:42.504 DEBUG   streamlit.runtime.scriptrunner.script_runner: Beginning script thread
+2026-11-03 22:06:42.504 DEBUG   streamlit.runtime.scriptrunner.script_runner: Running script
+2026-11-03 22:06:42.504 DEBUG   streamlit.runtime.media_file_manager: Disconnecting files for session with ID test session id
+2026-11-03 22:06:42.504 DEBUG   streamlit.runtime.media_file_manager: Sessions still active: dict_keys([])
+2026-11-03 22:06:42.504 DEBUG   streamlit.runtime.media_file_manager: Files: 0; Sessions with files: 0
+2026-11-03 22:06:42.810 DEBUG   streamlit.runtime.media_file_manager: Removing orphaned files...
+2026-11-03 22:06:42.810 DEBUG   streamlit.runtime.media_file_manager: Removing orphaned deferred callables...
+------------------------------ Captured log call -------------------------------
+WARNING  streamlit.runtime.caching.cache_data_api:cache_data_api.py:398 No runtime found, using MemoryCacheStorageManager
+WARNING  streamlit.runtime.scriptrunner_utils.script_run_context:script_run_context.py:508 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+DEBUG    streamlit.runtime.scriptrunner.script_runner:script_runner.py:620 Running script
+DEBUG    streamlit.runtime.media_file_manager:media_file_manager.py:211 Disconnecting files for session with ID test session id
+DEBUG    streamlit.runtime.media_file_manager:media_file_manager.py:221 Sessions still active: dict_keys([])
+DEBUG    streamlit.runtime.media_file_manager:media_file_manager.py:225 Files: 0; Sessions with files: 0
+DEBUG    streamlit.runtime.media_file_manager:media_file_manager.py:150 Removing orphaned files...
+DEBUG    streamlit.runtime.media_file_manager:media_file_manager.py:171 Removing orphaned deferred callables...
+DEBUG    streamlit.runtime.scriptrunner.script_runner:script_runner.py:620 Running script
+DEBUG    streamlit.runtime.media_file_manager:media_file_manager.py:211 Disconnecting files for session with ID test session id
+DEBUG    streamlit.runtime.media_file_manager:media_file_manager.py:221 Sessions still active: dict_keys([])
+DEBUG    streamlit.runtime.media_file_manager:media_file_manager.py:225 Files: 0; Sessions with files: 0
+DEBUG    streamlit.runtime.memory_media_file_storage:memory_media_file_storage.py:164 Adding media file 97a255f7f522e54177a28f445f8e7dd9
+DEBUG    streamlit.runtime.memory_media_file_storage:memory_media_file_storage.py:164 Adding media file 5d66497c07b52c078543a5b28df58aa0
+DEBUG    streamlit.runtime.caching.cache_data_api:cache_data_api.py:242 Creating new DataCache (key=77d6c98f9e1646fcce49e0d0abfccdb1, persist=None, max_entries=None, ttl=None)
+DEBUG    streamlit.runtime.caching.cache_utils:cache_utils.py:1283 Cache key: bcf3af6fc21328553c92ec25bd7d6bf3
+DEBUG    streamlit.runtime.caching.storage.in_memory_cache_storage_wrapper:in_memory_cache_storage_wrapper.py:156 Memory cache MISS: bcf3af6fc21328553c92ec25bd7d6bf3
+DEBUG    streamlit.runtime.caching.storage.in_memory_cache_storage_wrapper:in_memory_cache_storage_wrapper.py:156 Memory cache MISS: bcf3af6fc21328553c92ec25bd7d6bf3
+DEBUG    streamlit.runtime.media_file_manager:media_file_manager.py:150 Removing orphaned files...
+DEBUG    streamlit.runtime.media_file_manager:media_file_manager.py:171 Removing orphaned deferred callables...
+DEBUG    streamlit.runtime.scriptrunner.script_runner:script_runner.py:406 Beginning script thread
+DEBUG    streamlit.runtime.scriptrunner.script_runner:script_runner.py:620 Running script
+DEBUG    streamlit.runtime.media_file_manager:media_file_manager.py:211 Disconnecting files for session with ID test session id
+DEBUG    streamlit.runtime.media_file_manager:media_file_manager.py:221 Sessions still active: dict_keys([])
+DEBUG    streamlit.runtime.media_file_manager:media_file_manager.py:225 Files: 0; Sessions with files: 0
+DEBUG    streamlit.runtime.media_file_manager:media_file_manager.py:150 Removing orphaned files...
+DEBUG    streamlit.runtime.media_file_manager:media_file_manager.py:171 Removing orphaned deferred callables...
+______________ test_real_comparison_damaged_selection_can_recover ______________
+
+evidence = PosixPath('/workspace/scratch/42c5fe32dad0/ieee39-final-evidence')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7efe4a9396a0>
+tmp_path = PosixPath('/tmp/pytest-of-agent/pytest-109/test_real_comparison_damaged_s0')
+
+    def test_real_comparison_damaged_selection_can_recover(evidence, monkeypatch, tmp_path):
+        import common
+        src = evidence / 'final_c1f829a_baseline_full96'
+        intact = common.get_result(dict(dir=str(src), mode='full'))
+        damaged = deepcopy(intact)
+        damaged['rt_prices'] = damaged['rt_prices'].query('period != 40').copy()
+        keys = ['damaged', 'intact', 'also_intact']
+        records = [dict(dir=k, scenario=k, mode='full', status='done') for k in keys]
+        at = open_comparison(monkeypatch, tmp_path, records,
+                             lambda m: deepcopy(damaged if m['dir'] == 'damaged' else intact))
+        assert not at.exception
+        assert any('所选结果缺失或损坏' in x.value for x in at.error)
+        assert not at.dataframe
+        at.selectbox[0].set_value('also_intact').run()
+        assert not at.exception, [x.message for x in at.exception]
+>       assert not at.error and at.dataframe
+E       AssertionError: assert (not ElementList(_list=[Error()]))
+E        +  where ElementList(_list=[Error()]) = AppTest(\n    _script_path='/workspace/scratch/42c5fe32dad0/ieee39-operator-boundary-qa/app/主页.py',\n    default_timeout...启动环境与版本'\n                )\n            }\n        ),\n        2: SpecialBlock(\n            type='event'\n        )\n    }\n).error
+
+tests/test_operator_comparison_boundary.py:83: AssertionError
+----------------------------- Captured stderr call -----------------------------
+2026-11-03 22:06:42.821 DEBUG   streamlit.runtime.caching.cache_utils: Cache key: c38505052e757dc06c3615b095be9c76
+2026-11-03 22:06:42.821 DEBUG   streamlit.runtime.caching.storage.in_memory_cache_storage_wrapper: Memory cache HIT: c38505052e757dc06c3615b095be9c76
+2026-11-03 22:06:42.950 WARNING streamlit.runtime.scriptrunner_utils.script_run_context: Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-11-03 22:06:43.129 DEBUG   streamlit.components.v2.manifest_scanner: Filtered 175 packages down to 1 candidates for component scanning
+2026-11-03 22:06:43.129 DEBUG   streamlit.components.v2.manifest_scanner: Scanning 1 candidate packages for component manifests using 1 worker threads
+2026-11-03 22:06:43.151 DEBUG   streamlit.components.v2.manifest_scanner: Found 0 component manifests total
+2026-11-03 22:06:43.152 DEBUG   streamlit.runtime.scriptrunner.script_runner: Beginning script thread
+2026-11-03 22:06:43.152 DEBUG   streamlit.runtime.scriptrunner.script_runner: Running script
+2026-11-03 22:06:43.152 DEBUG   streamlit.runtime.media_file_manager: Disconnecting files for session with ID test session id
+2026-11-03 22:06:43.152 DEBUG   streamlit.runtime.media_file_manager: Sessions still active: dict_keys([])
+2026-11-03 22:06:43.152 DEBUG   streamlit.runtime.media_file_manager: Files: 0; Sessions with files: 0
+2026-11-03 22:06:43.165 DEBUG   streamlit.runtime.media_file_manager: Removing orphaned files...
+2026-11-03 22:06:43.165 DEBUG   streamlit.runtime.media_file_manager: Removing orphaned deferred callables...
+2026-11-03 22:06:43.165 DEBUG   streamlit.runtime.scriptrunner.script_runner: Running script
+2026-11-03 22:06:43.165 DEBUG   streamlit.runtime.media_file_manager: Disconnecting files for session with ID test session id
+2026-11-03 22:06:43.165 DEBUG   streamlit.runtime.media_file_manager: Sessions still active: dict_keys([])
+2026-11-03 22:06:43.165 DEBUG   streamlit.runtime.media_file_manager: Files: 0; Sessions with files: 0
+2026-11-03 22:06:43.269 DEBUG   streamlit.runtime.memory_media_file_storage: Adding media file 97a255f7f522e54177a28f445f8e7dd9
+2026-11-03 22:06:43.280 DEBUG   streamlit.runtime.memory_media_file_storage: Adding media file 5d66497c07b52c078543a5b28df58aa0
+2026-11-03 22:06:43.321 DEBUG   streamlit.runtime.caching.cache_utils: Cache key: bcf3af6fc21328553c92ec25bd7d6bf3
+2026-11-03 22:06:43.322 DEBUG   streamlit.runtime.caching.storage.in_memory_cache_storage_wrapper: Memory cache HIT: bcf3af6fc21328553c92ec25bd7d6bf3
+2026-11-03 22:06:43.848 DEBUG   streamlit.runtime.media_file_manager: Removing orphaned files...
+2026-11-03 22:06:43.849 DEBUG   streamlit.runtime.media_file_manager: Removing orphaned deferred callables...
+2026-11-03 22:06:43.853 DEBUG   streamlit.runtime.scriptrunner.script_runner: Beginning script thread
+2026-11-03 22:06:43.853 DEBUG   streamlit.runtime.scriptrunner.script_runner: Running script
+2026-11-03 22:06:43.853 DEBUG   streamlit.runtime.media_file_manager: Disconnecting files for session with ID test session id
+2026-11-03 22:06:43.853 DEBUG   streamlit.runtime.media_file_manager: Sessions still active: dict_keys([])
+2026-11-03 22:06:43.853 DEBUG   streamlit.runtime.media_file_manager: Files: 0; Sessions with files: 0
+2026-11-03 22:06:44.025 DEBUG   streamlit.runtime.media_file_manager: Removing orphaned files...
+2026-11-03 22:06:44.025 DEBUG   streamlit.runtime.media_file_manager: Removing orphaned deferred callables...
+2026-11-03 22:06:44.026 DEBUG   streamlit.runtime.scriptrunner.script_runner: Beginning script thread
+2026-11-03 22:06:44.027 DEBUG   streamlit.runtime.scriptrunner.script_runner: Running script
+2026-11-03 22:06:44.027 DEBUG   streamlit.runtime.media_file_manager: Disconnecting files for session with ID test session id
+2026-11-03 22:06:44.027 DEBUG   streamlit.runtime.media_file_manager: Sessions still active: dict_keys([])
+2026-11-03 22:06:44.027 DEBUG   streamlit.runtime.media_file_manager: Files: 0; Sessions with files: 0
+2026-11-03 22:06:44.352 DEBUG   streamlit.runtime.media_file_manager: Removing orphaned files...
+2026-11-03 22:06:44.352 DEBUG   streamlit.runtime.media_file_manager: Removing orphaned deferred callables...
+------------------------------ Captured log call -------------------------------
+DEBUG    streamlit.runtime.caching.cache_utils:cache_utils.py:1283 Cache key: c38505052e757dc06c3615b095be9c76
+DEBUG    streamlit.runtime.caching.storage.in_memory_cache_storage_wrapper:in_memory_cache_storage_wrapper.py:153 Memory cache HIT: c38505052e757dc06c3615b095be9c76
+WARNING  streamlit.runtime.scriptrunner_utils.script_run_context:script_run_context.py:508 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+DEBUG    streamlit.components.v2.manifest_scanner:manifest_scanner.py:581 Filtered 175 packages down to 1 candidates for component scanning
+DEBUG    streamlit.components.v2.manifest_scanner:manifest_scanner.py:599 Scanning 1 candidate packages for component manifests using 1 worker threads
+DEBUG    streamlit.components.v2.manifest_scanner:manifest_scanner.py:619 Found 0 component manifests total
+DEBUG    streamlit.runtime.scriptrunner.script_runner:script_runner.py:406 Beginning script thread
+DEBUG    streamlit.runtime.scriptrunner.script_runner:script_runner.py:620 Running script
+DEBUG    streamlit.runtime.media_file_manager:media_file_manager.py:211 Disconnecting files for session with ID test session id
+DEBUG    streamlit.runtime.media_file_manager:media_file_manager.py:221 Sessions still active: dict_keys([])
+DEBUG    streamlit.runtime.media_file_manager:media_file_manager.py:225 Files: 0; Sessions with files: 0
+DEBUG    streamlit.runtime.media_file_manager:media_file_manager.py:150 Removing orphaned files...
+DEBUG    streamlit.runtime.media_file_manager:media_file_manager.py:171 Removing orphaned deferred callables...
+DEBUG    streamlit.runtime.scriptrunner.script_runner:script_runner.py:620 Running script
+DEBUG    streamlit.runtime.media_file_manager:media_file_manager.py:211 Disconnecting files for session with ID test session id
+DEBUG    streamlit.runtime.media_file_manager:media_file_manager.py:221 Sessions still active: dict_keys([])
+DEBUG    streamlit.runtime.media_file_manager:media_file_manager.py:225 Files: 0; Sessions with files: 0
+DEBUG    streamlit.runtime.memory_media_file_storage:memory_media_file_storage.py:164 Adding media file 97a255f7f522e54177a28f445f8e7dd9
+DEBUG    streamlit.runtime.memory_media_file_storage:memory_media_file_storage.py:164 Adding media file 5d66497c07b52c078543a5b28df58aa0
+DEBUG    streamlit.runtime.caching.cache_utils:cache_utils.py:1283 Cache key: bcf3af6fc21328553c92ec25bd7d6bf3
+DEBUG    streamlit.runtime.caching.storage.in_memory_cache_storage_wrapper:in_memory_cache_storage_wrapper.py:153 Memory cache HIT: bcf3af6fc21328553c92ec25bd7d6bf3
+DEBUG    streamlit.runtime.media_file_manager:media_file_manager.py:150 Removing orphaned files...
+DEBUG    streamlit.runtime.media_file_manager:media_file_manager.py:171 Removing orphaned deferred callables...
+DEBUG    streamlit.runtime.scriptrunner.script_runner:script_runner.py:406 Beginning script thread
+DEBUG    streamlit.runtime.scriptrunner.script_runner:script_runner.py:620 Running script
+DEBUG    streamlit.runtime.media_file_manager:media_file_manager.py:211 Disconnecting files for session with ID test session id
+DEBUG    streamlit.runtime.media_file_manager:media_file_manager.py:221 Sessions still active: dict_keys([])
+DEBUG    streamlit.runtime.media_file_manager:media_file_manager.py:225 Files: 0; Sessions with files: 0
+DEBUG    streamlit.runtime.media_file_manager:media_file_manager.py:150 Removing orphaned files...
+DEBUG    streamlit.runtime.media_file_manager:media_file_manager.py:171 Removing orphaned deferred callables...
+DEBUG    streamlit.runtime.scriptrunner.script_runner:script_runner.py:406 Beginning script thread
+DEBUG    streamlit.runtime.scriptrunner.script_runner:script_runner.py:620 Running script
+DEBUG    streamlit.runtime.media_file_manager:media_file_manager.py:211 Disconnecting files for session with ID test session id
+DEBUG    streamlit.runtime.media_file_manager:media_file_manager.py:221 Sessions still active: dict_keys([])
+DEBUG    streamlit.runtime.media_file_manager:media_file_manager.py:225 Files: 0; Sessions with files: 0
+DEBUG    streamlit.runtime.media_file_manager:media_file_manager.py:150 Removing orphaned files...
+DEBUG    streamlit.runtime.media_file_manager:media_file_manager.py:171 Removing orphaned deferred callables...
+_ test_real_debug_prefix_remains_readable_and_comparison_does_not_subtract_full_day _
+
+evidence = PosixPath('/workspace/scratch/42c5fe32dad0/ieee39-final-evidence')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7efe6f74c800>
+tmp_path = PosixPath('/tmp/pytest-of-agent/pytest-109/test_real_debug_prefix_remains0')
+
+    def test_real_debug_prefix_remains_readable_and_comparison_does_not_subtract_full_day(evidence, monkeypatch, tmp_path):
+        import common
+        prefix = os.environ.get('IEEE39_OPERATOR_PREFIX')
+        if not prefix:
+            pytest.skip('set IEEE39_OPERATOR_PREFIX to an existing actual DA96/RT8 run')
+        paths = [evidence / 'final_c1f829a_baseline_full96', Path(prefix)]
+        files = [p / n for p in paths for n in ('summary.json', 'rt_prices.csv', 'rt_units.csv')]
+        before = {str(p): hashlib.sha256(p.read_bytes()).hexdigest() for p in files}
+        original_get = common.get_result
+        records = [dict(dir=str(p), scenario=p.name, mode='full', status='done') for p in paths]
+        at = open_comparison(monkeypatch, tmp_path, records, original_get)
+        assert not at.exception, [x.message for x in at.exception]
+>       assert any('不计算跨范围差值' in x.value for x in at.warning)
+E       assert False
+E        +  where False = any(<generator object test_real_debug_prefix_remains_readable_and_comparison_does_not_subtract_full_day.<locals>.<genexpr> at 0x7efe4cab7370>)
+
+tests/test_operator_comparison_boundary.py:98: AssertionError
+----------------------------- Captured stderr call -----------------------------
+2026-11-03 22:06:44.415 WARNING streamlit.runtime.scriptrunner_utils.script_run_context: Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-11-03 22:06:44.634 DEBUG   streamlit.components.v2.manifest_scanner: Filtered 175 packages down to 1 candidates for component scanning
+2026-11-03 22:06:44.635 DEBUG   streamlit.components.v2.manifest_scanner: Scanning 1 candidate packages for component manifests using 1 worker threads
+2026-11-03 22:06:44.682 DEBUG   streamlit.components.v2.manifest_scanner: Found 0 component manifests total
+2026-11-03 22:06:44.683 DEBUG   streamlit.runtime.scriptrunner.script_runner: Beginning script thread
+2026-11-03 22:06:44.683 DEBUG   streamlit.runtime.scriptrunner.script_runner: Running script
+2026-11-03 22:06:44.683 DEBUG   streamlit.runtime.media_file_manager: Disconnecting files for session with ID test session id
+2026-11-03 22:06:44.683 DEBUG   streamlit.runtime.media_file_manager: Sessions still active: dict_keys([])
+2026-11-03 22:06:44.683 DEBUG   streamlit.runtime.media_file_manager: Files: 0; Sessions with files: 0
+2026-11-03 22:06:44.697 DEBUG   streamlit.runtime.media_file_manager: Removing orphaned files...
+2026-11-03 22:06:44.697 DEBUG   streamlit.runtime.media_file_manager: Removing orphaned deferred callables...
+2026-11-03 22:06:44.697 DEBUG   streamlit.runtime.scriptrunner.script_runner: Running script
+2026-11-03 22:06:44.697 DEBUG   streamlit.runtime.media_file_manager: Disconnecting files for session with ID test session id
+2026-11-03 22:06:44.697 DEBUG   streamlit.runtime.media_file_manager: Sessions still active: dict_keys([])
+2026-11-03 22:06:44.697 DEBUG   streamlit.runtime.media_file_manager: Files: 0; Sessions with files: 0
+2026-11-03 22:06:44.794 DEBUG   streamlit.runtime.memory_media_file_storage: Adding media file 97a255f7f522e54177a28f445f8e7dd9
+2026-11-03 22:06:44.805 DEBUG   streamlit.runtime.memory_media_file_storage: Adding media file 5d66497c07b52c078543a5b28df58aa0
+2026-11-03 22:06:44.856 DEBUG   streamlit.runtime.caching.cache_utils: Cache key: bcf3af6fc21328553c92ec25bd7d6bf3
+2026-11-03 22:06:44.856 DEBUG   streamlit.runtime.caching.storage.in_memory_cache_storage_wrapper: Memory cache HIT: bcf3af6fc21328553c92ec25bd7d6bf3
+2026-11-03 22:06:45.224 DEBUG   streamlit.runtime.media_file_manager: Removing orphaned files...
+2026-11-03 22:06:45.224 DEBUG   streamlit.runtime.media_file_manager: Removing orphaned deferred callables...
+2026-11-03 22:06:45.229 DEBUG   streamlit.runtime.scriptrunner.script_runner: Beginning script thread
+2026-11-03 22:06:45.229 DEBUG   streamlit.runtime.scriptrunner.script_runner: Running script
+2026-11-03 22:06:45.229 DEBUG   streamlit.runtime.media_file_manager: Disconnecting files for session with ID test session id
+2026-11-03 22:06:45.229 DEBUG   streamlit.runtime.media_file_manager: Sessions still active: dict_keys([])
+2026-11-03 22:06:45.229 DEBUG   streamlit.runtime.media_file_manager: Files: 0; Sessions with files: 0
+2026-11-03 22:06:45.248 DEBUG   streamlit.runtime.caching.cache_utils: Cache key: c38505052e757dc06c3615b095be9c76
+2026-11-03 22:06:45.248 DEBUG   streamlit.runtime.caching.storage.in_memory_cache_storage_wrapper: Memory cache HIT: c38505052e757dc06c3615b095be9c76
+2026-11-03 22:06:45.272 DEBUG   streamlit.runtime.caching.cache_utils: Cache key: 876e3692a3982a0f6f2a2d7640f5696f
+2026-11-03 22:06:45.272 DEBUG   streamlit.runtime.caching.storage.in_memory_cache_storage_wrapper: Memory cache MISS: 876e3692a3982a0f6f2a2d7640f5696f
+2026-11-03 22:06:45.273 DEBUG   streamlit.runtime.caching.storage.in_memory_cache_storage_wrapper: Memory cache MISS: 876e3692a3982a0f6f2a2d7640f5696f
+2026-11-03 22:06:45.399 DEBUG   streamlit.runtime.media_file_manager: Removing orphaned files...
+2026-11-03 22:06:45.400 DEBUG   streamlit.runtime.media_file_manager: Removing orphaned deferred callables...
+------------------------------ Captured log call -------------------------------
+WARNING  streamlit.runtime.scriptrunner_utils.script_run_context:script_run_context.py:508 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+DEBUG    streamlit.components.v2.manifest_scanner:manifest_scanner.py:581 Filtered 175 packages down to 1 candidates for component scanning
+DEBUG    streamlit.components.v2.manifest_scanner:manifest_scanner.py:599 Scanning 1 candidate packages for component manifests using 1 worker threads
+DEBUG    streamlit.components.v2.manifest_scanner:manifest_scanner.py:619 Found 0 component manifests total
+DEBUG    streamlit.runtime.scriptrunner.script_runner:script_runner.py:406 Beginning script thread
+DEBUG    streamlit.runtime.scriptrunner.script_runner:script_runner.py:620 Running script
+DEBUG    streamlit.runtime.media_file_manager:media_file_manager.py:211 Disconnecting files for session with ID test session id
+DEBUG    streamlit.runtime.media_file_manager:media_file_manager.py:221 Sessions still active: dict_keys([])
+DEBUG    streamlit.runtime.media_file_manager:media_file_manager.py:225 Files: 0; Sessions with files: 0
+DEBUG    streamlit.runtime.media_file_manager:media_file_manager.py:150 Removing orphaned files...
+DEBUG    streamlit.runtime.media_file_manager:media_file_manager.py:171 Removing orphaned deferred callables...
+DEBUG    streamlit.runtime.scriptrunner.script_runner:script_runner.py:620 Running script
+DEBUG    streamlit.runtime.media_file_manager:media_file_manager.py:211 Disconnecting files for session with ID test session id
+DEBUG    streamlit.runtime.media_file_manager:media_file_manager.py:221 Sessions still active: dict_keys([])
+DEBUG    streamlit.runtime.media_file_manager:media_file_manager.py:225 Files: 0; Sessions with files: 0
+DEBUG    streamlit.runtime.memory_media_file_storage:memory_media_file_storage.py:164 Adding media file 97a255f7f522e54177a28f445f8e7dd9
+DEBUG    streamlit.runtime.memory_media_file_storage:memory_media_file_storage.py:164 Adding media file 5d66497c07b52c078543a5b28df58aa0
+DEBUG    streamlit.runtime.caching.cache_utils:cache_utils.py:1283 Cache key: bcf3af6fc21328553c92ec25bd7d6bf3
+DEBUG    streamlit.runtime.caching.storage.in_memory_cache_storage_wrapper:in_memory_cache_storage_wrapper.py:153 Memory cache HIT: bcf3af6fc21328553c92ec25bd7d6bf3
+DEBUG    streamlit.runtime.media_file_manager:media_file_manager.py:150 Removing orphaned files...
+DEBUG    streamlit.runtime.media_file_manager:media_file_manager.py:171 Removing orphaned deferred callables...
+DEBUG    streamlit.runtime.scriptrunner.script_runner:script_runner.py:406 Beginning script thread
+DEBUG    streamlit.runtime.scriptrunner.script_runner:script_runner.py:620 Running script
+DEBUG    streamlit.runtime.media_file_manager:media_file_manager.py:211 Disconnecting files for session with ID test session id
+DEBUG    streamlit.runtime.media_file_manager:media_file_manager.py:221 Sessions still active: dict_keys([])
+DEBUG    streamlit.runtime.media_file_manager:media_file_manager.py:225 Files: 0; Sessions with files: 0
+DEBUG    streamlit.runtime.caching.cache_utils:cache_utils.py:1283 Cache key: c38505052e757dc06c3615b095be9c76
+DEBUG    streamlit.runtime.caching.storage.in_memory_cache_storage_wrapper:in_memory_cache_storage_wrapper.py:153 Memory cache HIT: c38505052e757dc06c3615b095be9c76
+DEBUG    streamlit.runtime.caching.cache_utils:cache_utils.py:1283 Cache key: 876e3692a3982a0f6f2a2d7640f5696f
+DEBUG    streamlit.runtime.caching.storage.in_memory_cache_storage_wrapper:in_memory_cache_storage_wrapper.py:156 Memory cache MISS: 876e3692a3982a0f6f2a2d7640f5696f
+DEBUG    streamlit.runtime.caching.storage.in_memory_cache_storage_wrapper:in_memory_cache_storage_wrapper.py:156 Memory cache MISS: 876e3692a3982a0f6f2a2d7640f5696f
+DEBUG    streamlit.runtime.media_file_manager:media_file_manager.py:150 Removing orphaned files...
+DEBUG    streamlit.runtime.media_file_manager:media_file_manager.py:171 Removing orphaned deferred callables...
+________ test_rt_never_fills_missing_period_or_resource_with_zero_or_da ________
+
+self = NumpyBlock: 46 dtype: float64
+indexer = (array([False, False, False, False, False, False, False, False, False,
+       False, False, False, False, False, False...lse, False, False, False, False,
+       False, False, False, False, False, False, False, False, False,
+       False]),)
+value = <ArrowStringArray>
+[]
+Length: 0, dtype: str
+
+    def setitem(self, indexer, value) -> Block:
+        """
+        Attempt self.values[indexer] = value, possibly creating a new array.
+
+        Parameters
+        ----------
+        indexer : tuple, list-like, array-like, slice, int
+            The subset of self.values to set
+        value : object
+            The value being set
+
+        Returns
+        -------
+        Block
+
+        Notes
+        -----
+        `indexer` is a direct slice/positional indexer. `value` must
+        be a compatible shape.
+        """
+
+        value = self._standardize_fill_value(value)
+
+        values = cast("np.ndarray", self.values)
+        if self.ndim == 2:
+            values = values.T
+
+        # length checking
+        check_setitem_lengths(indexer, value, values)
+
+        if self.dtype != _dtype_obj:
+            # GH48933: extract_array would convert a pd.Series value to np.ndarray
+            value = extract_array(value, extract_numpy=True)
+        try:
+>           casted = np_can_hold_element(values.dtype, value)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+../../../shared/ieee39_test_deps/pandas/core/internals/blocks.py:1179:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+dtype = dtype('float64'), element = <ArrowStringArray>
+[]
+Length: 0, dtype: str
+
+    def np_can_hold_element(dtype: np.dtype, element: Any) -> Any:
+        """
+        Raise if we cannot losslessly set this element into an ndarray with this dtype.
+
+        Specifically about places where we disagree with numpy.  i.e. there are
+        cases where numpy will raise in doing the setitem that we do not check
+        for here, e.g. setting str "X" into a numeric ndarray.
+
+        Returns
+        -------
+        Any
+            The element, potentially cast to the dtype.
+
+        Raises
+        ------
+        ValueError : If we cannot losslessly store this element with this dtype.
+        """
+        if dtype == _dtype_obj:
+            return element
+
+        tipo = _maybe_infer_dtype_type(element)
+
+        if dtype.kind in "iu":
+            if isinstance(element, range):
+                if _dtype_can_hold_range(element, dtype):
+                    return element
+                raise LossySetitemError
+
+            if is_integer(element) or (is_float(element) and element.is_integer()):
+                # e.g. test_setitem_series_int8 if we have a python int 1
+                #  tipo may be np.int32, despite the fact that it will fit
+                #  in smaller int dtypes.
+                info = np.iinfo(dtype)
+                if info.min <= element <= info.max:
+                    return dtype.type(element)
+                raise LossySetitemError
+
+            if tipo is not None:
+                if tipo.kind not in "iu":
+                    if isinstance(element, np.ndarray) and element.dtype.kind == "f":
+                        # If all can be losslessly cast to integers, then we can hold them
+                        with np.errstate(invalid="ignore"):
+                            # We check afterwards if cast was losslessly, so no need to show
+                            # the warning
+                            casted = element.astype(dtype)
+                        comp = casted == element
+                        if comp.all():
+                            # Return the casted values bc they can be passed to
+                            #  np.putmask, whereas the raw values cannot.
+                            #  see TestSetitemFloatNDarrayIntoIntegerSeries
+                            return casted
+                        raise LossySetitemError
+
+                    elif isinstance(element, ABCExtensionArray) and isinstance(
+                        element.dtype, CategoricalDtype
+                    ):
+                        # GH#52927 setting Categorical value into non-EA frame
+                        # TODO: general-case for EAs?
+                        try:
+                            casted = element.astype(dtype)
+                        except (ValueError, TypeError) as err:
+                            raise LossySetitemError from err
+                        # Check for cases of either
+                        #  a) lossy overflow/rounding or
+                        #  b) semantic changes like dt64->int64
+                        comp = casted == element
+                        if not comp.all():
+                            raise LossySetitemError
+                        return casted
+
+                    # Anything other than integer we cannot hold
+                    raise LossySetitemError
+                if (
+                    dtype.kind == "u"
+                    and isinstance(element, np.ndarray)
+                    and element.dtype.kind == "i"
+                ):
+                    # see test_where_uint64
+                    casted = element.astype(dtype)
+                    if (casted == element).all():
+                        # TODO: faster to check (element >=0).all()?  potential
+                        #  itemsize issues there?
+                        return casted
+                    raise LossySetitemError
+                if dtype.itemsize < tipo.itemsize:  # type: ignore[union-attr]
+                    raise LossySetitemError
+                if not isinstance(tipo, np.dtype):
+                    # i.e. nullable IntegerDtype; we can put this into an ndarray
+                    #  losslessly iff it has no NAs and the values themselves fit
+                    arr = (
+                        element._values
+                        if isinstance(element, (ABCIndex, ABCSeries))
+                        else element
+                    )
+                    if arr._hasna:  # type: ignore[union-attr]
+                        raise LossySetitemError
+                    # GH#47776 re-run the ndarray guards on the NA-free values, e.g.
+                    #  to reject a negative value going into an unsigned dtype.
+                    np_can_hold_element(dtype, np.asarray(arr))
+                    return element
+
+                return element
+
+            raise LossySetitemError
+
+        if dtype.kind == "f":
+            if lib.is_integer(element) or lib.is_float(element):
+                casted = dtype.type(element)
+                if np.isnan(casted) or casted == element:
+                    return casted
+                # otherwise e.g. overflow see TestCoercionFloat32
+                raise LossySetitemError
+
+            if tipo is not None:
+                # TODO: itemsize check?
+
+                if isinstance(tipo, CategoricalDtype):
+                    # GH#56376
+                    if tipo.categories.dtype.kind not in "iuf":
+                        # Anything other than float/integer we cannot hold
+                        raise LossySetitemError
+                    casted = np.asarray(element, dtype=dtype)
+                    if np.array_equal(casted, element, equal_nan=True):
+                        return casted
+                    raise LossySetitemError
+
+                if tipo.kind not in "iuf":
+                    # Anything other than float/integer we cannot hold
+>                   raise LossySetitemError
+E                   pandas.errors.LossySetitemError
+
+../../../shared/ieee39_test_deps/pandas/core/dtypes/cast.py:1830: LossySetitemError
+
+During handling of the above exception, another exception occurred:
+
+    def test_rt_never_fills_missing_period_or_resource_with_zero_or_da():
+        result = fixture_result()
+        data = network_data(ROOT)
+        snapshot = result_snapshot(data, result, 'rt', 3)
+        buses = snapshot['buses'].set_index('bus')
+        assert buses.loc[19, 'load_mw'] == 99
+        assert buses.loc[19, 'shed_mw'] == 2
+        assert np.isnan(buses.loc[3, 'load_mw'])
+        assert snapshot['resources'].P_mw.isna().all()
+        assert snapshot['branches'].flow_mw.isna().all()
+>       assert result_snapshot(data, result, 'da', 2)['buses'].load_mw.isna().all()
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_network_view.py:72:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+app/network_view.py:148: in result_snapshot
+    branches.loc[present, 'rate_eff'] = branches.loc[present, 'branch_id'].map(pd.to_numeric(lines.rate_mw, errors='coerce'))
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../../shared/ieee39_test_deps/pandas/core/indexing.py:1010: in __setitem__
+    iloc._setitem_with_indexer(indexer, value, self.name)
+../../../shared/ieee39_test_deps/pandas/core/indexing.py:2651: in _setitem_with_indexer
+    self._setitem_with_indexer_split_path(indexer, value, name)
+../../../shared/ieee39_test_deps/pandas/core/indexing.py:2693: in _setitem_with_indexer_split_path
+    self._setitem_single_column(ilocs[0], value, pi)
+../../../shared/ieee39_test_deps/pandas/core/indexing.py:2898: in _setitem_single_column
+    self.obj._mgr.column_setitem(loc, plane_indexer, value)
+../../../shared/ieee39_test_deps/pandas/core/internals/managers.py:1568: in column_setitem
+    new_mgr = col_mgr.setitem((idx,), value)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../../shared/ieee39_test_deps/pandas/core/internals/managers.py:625: in setitem
+    return self.apply("setitem", indexer=indexer, value=value)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../../shared/ieee39_test_deps/pandas/core/internals/managers.py:456: in apply
+    applied = getattr(b, f)(**kwargs)
+              ^^^^^^^^^^^^^^^^^^^^^^^
+../../../shared/ieee39_test_deps/pandas/core/internals/blocks.py:1182: in setitem
+    nb = self.coerce_to_target_dtype(value, raise_on_upcast=True)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = NumpyBlock: 46 dtype: float64
+other = <ArrowStringArray>
+[]
+Length: 0, dtype: str, raise_on_upcast = True
+
+    @final
+    def coerce_to_target_dtype(self, other, raise_on_upcast: bool) -> Block:
+        """
+        coerce the current block to a dtype compat for other
+        we will return a block, possibly object, and not raise
+
+        we can also safely try to coerce to the same dtype
+        and will receive the same block
+        """
+        new_dtype = find_result_type(self.values.dtype, other)
+        if new_dtype == self.dtype:
+            if lib.is_np_dtype(new_dtype, "mM"):
+                # GH#61671 e.g. datetime64[ns] column and a replacement value
+                # outside ns range. find_common_type picked the highest
+                # resolution which can't represent the value.
+                raise OutOfBoundsDatetime(
+                    f"Incompatible (high-resolution) value for "
+                    f"dtype='{self.dtype}'. "
+                    "Explicitly cast before operating."
+                )
+            # GH#52927 avoid RecursionError
+            raise AssertionError(
+                "Something has gone wrong, please report a bug at "
+                "https://github.com/pandas-dev/pandas/issues"
+            )
+
+        # In a future version of pandas, the default will be that
+        # setting `nan` into an integer series won't raise.
+        if (
+            is_scalar(other)
+            and is_integer_dtype(self.values.dtype)
+            and isna(other)
+            and other is not NaT
+            and not (
+                isinstance(other, (np.datetime64, np.timedelta64)) and np.isnat(other)
+            )
+        ):
+            raise_on_upcast = False
+        elif (
+            isinstance(other, np.ndarray)
+            and other.ndim == 1
+            and is_integer_dtype(self.values.dtype)
+            and is_float_dtype(other.dtype)
+            and lib.has_only_ints_or_nan(other)
+        ):
+            raise_on_upcast = False
+
+        if raise_on_upcast:
+>           raise TypeError(f"Invalid value '{other}' for dtype '{self.values.dtype}'")
+E           TypeError: Invalid value '<ArrowStringArray>
+E           []
+E           Length: 0, dtype: str' for dtype 'float64'
+
+../../../shared/ieee39_test_deps/pandas/core/internals/blocks.py:484: TypeError
+=============================== warnings summary ===============================
+tests/test_operator_comparison_boundary.py::test_real_comparison_missing_history_keeps_unknown_and_never_borrows_current
+tests/test_operator_comparison_boundary.py::test_real_comparison_missing_history_keeps_unknown_and_never_borrows_current
+tests/test_operator_comparison_boundary.py::test_real_comparison_missing_history_keeps_unknown_and_never_borrows_current
+tests/test_operator_comparison_boundary.py::test_real_comparison_damaged_selection_can_recover
+tests/test_operator_comparison_boundary.py::test_real_comparison_damaged_selection_can_recover
+tests/test_operator_comparison_boundary.py::test_real_comparison_damaged_selection_can_recover
+tests/test_operator_comparison_boundary.py::test_real_debug_prefix_remains_readable_and_comparison_does_not_subtract_full_day
+tests/test_operator_comparison_boundary.py::test_real_debug_prefix_remains_readable_and_comparison_does_not_subtract_full_day
+tests/test_operator_comparison_boundary.py::test_real_debug_prefix_remains_readable_and_comparison_does_not_subtract_full_day
+  /workspace/shared/ieee39_test_deps/streamlit/elements/lib/built_in_chart_utils.py:620: Pandas4Warning: The inplace keyword in DataFrame.reset_index is deprecated and will be removed in a future version (PDEP-8).
+  See https://pandas.pydata.org/docs/dev/whatsnew/v3.1.0.html#deprecation-inplace for more details.
+    df.reset_index(inplace=True)  # noqa: PD002
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/test_operator_comparison_boundary.py::test_real_comparison_missing_history_keeps_unknown_and_never_borrows_current
+FAILED tests/test_operator_comparison_boundary.py::test_real_comparison_damaged_selection_can_recover
+FAILED tests/test_operator_comparison_boundary.py::test_real_debug_prefix_remains_readable_and_comparison_does_not_subtract_full_day
+FAILED tests/test_network_view.py::test_rt_never_fills_missing_period_or_resource_with_zero_or_da
+4 failed, 14 passed, 9 warnings in 8.78s

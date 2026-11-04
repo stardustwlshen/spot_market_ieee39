@@ -1,0 +1,69 @@
+{
+  "executed_periods": 96,
+  "DA": {
+    "objective": 7805892.556484979,
+    "scuc_objective": 7805892.5564852655,
+    "gap": 0.006482497563548196,
+    "termination": "optimal",
+    "best_bound": 7755290.877006531,
+    "requested_mip_gap": 0.01,
+    "requested_gap_met": true,
+    "curtail_mwh": 0.0
+  },
+  "RT_max_gap": 0.0099199950851394,
+  "short_periods": 37,
+  "short_max_mw": 237.22833215988203,
+  "short_integral_mw_h": 986.2199462444503,
+  "short_reduction_fraction": 0.10814215968831797,
+  "realtime": {
+    "shed_mwh": 0.0,
+    "surplus_mwh": 0.0,
+    "curtail_mwh": 0.0
+  },
+  "hard_anchors_satisfied": true,
+  "line_overload_max_mw": 3.410605131648481e-13,
+  "full_activation_risk_resource_periods": 43,
+  "cash_cost_yuan": 14748852.621191768,
+  "cash_revenue_yuan": 26332444.798051123,
+  "cash_profit_yuan": 11583592.176859353,
+  "DA_CCGT_hours": 0.0,
+  "RT_CCGT_hours": 0.0,
+  "DA_GT_hours": 14.25,
+  "RT_GT_hours": 19.75,
+  "max_short_rows": [
+    {
+      "period": 87,
+      "relative_period": 0,
+      "reserve_down_enabled": false,
+      "load_mw": 3973.2469403952546,
+      "renewable_available_mw": 669.6844627191447,
+      "renewable_dispatch_mw": 669.6844627191447,
+      "R_up_req": 1051.1658544837721,
+      "R_dn_req": 0.0,
+      "R_up_supply": 813.9375223238901,
+      "R_dn_supply": 0.0,
+      "R_up_re_credit_mw": 0.0,
+      "R_up_short": 237.22833215988203,
+      "R_dn_short": 0.0,
+      "R_up_balance_mw": 0.0,
+      "R_dn_balance_mw": 0.0
+    }
+  ],
+  "timing": {
+    "DA_reused": true,
+    "new_DA_SCUC": false,
+    "original_scuc_s": 228.70110342999942,
+    "original_sced_s": 2.9228463289982756,
+    "recovery_LP_s": 3.24705376699967,
+    "new_RT_s": 192.4892282069868,
+    "DA_injection_call_s": 0.0002918419995694421,
+    "note": "Near-zero DA injection time is reuse, not a fresh day-ahead solve.",
+    "new_full_phase_times": {
+      "da": 0.0002918419995694421,
+      "intraday": 0.0,
+      "realtime": 192.4892282069868,
+      "settlement": 0.33588059499925293,
+      "total": 225.31800961999943
+    }
+  }
+}

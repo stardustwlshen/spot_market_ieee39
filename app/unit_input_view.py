@@ -46,7 +46,6 @@ LABELS = {
     'max_pump_starts': '单台每日抽水启动次数上限', 'init_mode': '初始工况',
     'start_cost_gen': '技术档案发电启动参数（元/台次，非独立核算成本）',
     'start_cost_pump': '技术档案抽水启动参数（元/台次，非独立核算成本）',
-    'capacity_price': '容量电价展示参数（元/kW·年）',
     'scalar_marginal_cost_yuan_per_mwh': '固定边际核算成本（元/MWh）',
     'fixed_online_cost_yuan_per_h': '在线固定核算成本（元/h）',
     'fixed_startup_cost_yuan_per_start': '单次启动核算成本（元/次）',
@@ -102,9 +101,15 @@ def _value(value):
     return str(value)
 
 
+# Retired non-energy-market display fields may remain in immutable legacy inputs.
+_RETIRED_PAYMENT_FIELDS = frozenset({'capacity_price', 'capacity_fee_per_day',
+                                     'capacity_payment_yuan', 'capacity_revenue_yuan'})
+
+
 def field_rows(value):
     return [{'参数': ' / '.join(LABELS.get(part, part) for part in path),
-             '数值': _value(raw), '原始字段': '.'.join(path)} for path, raw in _flatten(value)]
+             '数值': _value(raw), '原始字段': '.'.join(path)} for path, raw in _flatten(value)
+            if not any(part in _RETIRED_PAYMENT_FIELDS for part in path)]
 
 
 def parameter_rows(value):
@@ -115,11 +120,18 @@ def parameter_rows(value):
 def _read_archive(cfg, filename):
     path = Path(cfg.root) / 'config' / filename
     try:
+        if filename == 'fixed_costs.yaml':
+            from smm.profit import load_fixed_cost_profile
+            data = load_fixed_cost_profile(cfg)
+            return (data, None) if data['available'] else (None, '未知：场景未提供可读取的成本档案')
+        if filename == 'bid_cost_basis.yaml':
+            from smm.bid_cost_basis import research_cost_worksheet
+            return research_cost_worksheet(cfg), None
         data = yaml.safe_load(path.read_text(encoding='utf-8'))
         if not isinstance(data, dict):
             return None, '未知：档案不是有效参数表'
         return data, None
-    except (OSError, yaml.YAMLError):
+    except (OSError, yaml.YAMLError, ValueError, KeyError, TypeError):
         return None, '未知：场景未提供可读取的成本档案'
 
 
@@ -139,7 +151,7 @@ def unit_information_sections(cfg, uid):
     buckets = {'主体信息': {}, '技术与运行约束': {}, '初始状态': {}, '季节约束': {}, '技术档案费用参数（不是独立核算成本）': {}}
     for key, value in unit.items():
         category = ('主体信息' if key in ('id', 'type', 'bus', 'enabled', 'profile', 'schedule_pu_file') else
-                    '技术档案费用参数（不是独立核算成本）' if key in ('startup', 'noload', 'start_cost_gen', 'start_cost_pump', 'capacity_price') else
+                    '技术档案费用参数（不是独立核算成本）' if key in ('startup', 'noload', 'start_cost_gen', 'start_cost_pump') else
                     '初始状态' if key.startswith('init') or key in ('soc0', 'vup0') else
                     '季节约束' if key == 'seasons' else '技术与运行约束')
         buckets[category][key] = value
@@ -155,6 +167,11 @@ def unit_information_sections(cfg, uid):
         {'参数': '主体核算成本', '数值': error or '未知：未提供该主体的独立核算成本', '原始字段': uid}]
     if fixed:
         metadata = {key: value for key, value in fixed.items() if key != 'units'}
+        if 'unit_sources' in metadata:
+            metadata['unit_sources'] = {uid: metadata['unit_sources'][uid]} if uid in metadata['unit_sources'] else {}
+            if uid in metadata['unit_sources']:
+                metadata['profile_source_kind'] = metadata.get('source_kind')
+                metadata['source_kind'] = metadata['unit_sources'][uid]['source_kind']
         if metadata:
             sections['核算成本来源'] = field_rows(metadata)
     basis, error = _read_archive(cfg, 'bid_cost_basis.yaml')
@@ -170,6 +187,11 @@ def unit_information_sections(cfg, uid):
     prefixes = ('thermal_', 'renewable_', 'hydro_', 'storage_', 'pumped_', 'tie_')
     shared = {key: value for key, value in basis.items() if key not in type_keys and
               (key.startswith(group + '_') or not key.startswith(prefixes))}
+    if 'unit_sources' in shared:
+        shared['unit_sources'] = {uid: shared['unit_sources'][uid]} if uid in shared['unit_sources'] else {}
+        if uid in shared['unit_sources']:
+            shared['profile_source_kind'] = shared.get('source_kind')
+            shared['source_kind'] = shared['unit_sources'][uid]['source_kind']
     if shared:
         sections['报价依据来源与本类策略'] = field_rows(shared)
     return sections
@@ -220,8 +242,11 @@ def scenario_unit_catalog(cfg):
 
 def resource_capacity_rows(cfg):
     """Capacity totals split by resource type and enabled status, never summed twice."""
+    from smm.fixed_load import tie_mode
     totals = {}
     for group, unit in scenario_unit_catalog(cfg):
+        if group == 'tie' and tie_mode(cfg) == 'fixed_load':
+            continue  # Fixed demand has no generating capacity.
         kind = unit.get('type', group)
         status = '启用' if unit.get('enabled', True) else '未启用（不参与运行）'
         key = (kind, status)
@@ -252,16 +277,10 @@ def resource_capacity_rows(cfg):
 def render_network_and_units(cfg, key_prefix='network_inputs'):
     """Read-only pre-run system context and complete peer-unit information."""
     from smm.forecast import generate_profiles, apply_profile_overrides
-    from smm.network import build_network
+    from network_view import render_input_network
 
     st.caption('运行前场景数据，不是市场出清结果；“实际”曲线是本场景模拟输入。')
-    try:
-        network = build_network(cfg)
-        columns = st.columns(2)
-        columns[0].metric('节点数量', len(network.buses))
-        columns[1].metric('支路数量', len(network.branches))
-    except Exception as exc:
-        st.error(f'全网结构暂不能读取，请检查当前场景网络数据：{exc}')
+    render_input_network(cfg, key_prefix + ':topology')
 
     try:
         rows = resource_capacity_rows(cfg)
@@ -273,12 +292,30 @@ def render_network_and_units(cfg, key_prefix='network_inputs'):
     try:
         profiles = apply_profile_overrides(cfg, generate_profiles(cfg))
         columns = st.columns(2)
-        columns[0].metric('实际负荷峰值（MW）', f"{profiles['load_actual'].max():,.2f}")
-        columns[1].metric('日前预测负荷峰值（MW）', f"{profiles['load_da'].max():,.2f}")
+        from smm.fixed_load import nodal_demand, tie_mode, tie_profiles
+        from smm.network import build_network
+        net = build_network(cfg)
+        total_actual = sum(nodal_demand(cfg, net, profiles, profiles['load_actual'], stage='actual')[0].values())
+        total_da = sum(nodal_demand(cfg, net, profiles, profiles['load_da'])[0].values())
+        columns[0].metric('实际负荷峰值（MW）', f"{max(total_actual):,.2f}")
+        columns[1].metric('日前预测负荷峰值（MW）', f"{max(total_da):,.2f}")
         st.markdown('**负荷输入曲线**')
-        chart = profiles.set_index('time')[['load_actual', 'load_da']].rename(
-            columns={'load_actual': '实际负荷', 'load_da': '日前预测负荷'}).rename_axis('时间')
+        chart = pd.DataFrame({'实际总负荷': total_actual, '日前总负荷': total_da}, index=profiles.time).rename_axis('时间')
         st.line_chart(chart, y_label='功率（MW）')
+        if tie_mode(cfg) == 'fixed_load':
+            st.caption('总负荷含原节点固定负荷；不报价、不参与需求响应。原负荷与新增部分保留独立曲线，均按冻结基准节点占比分配；新增量逐段守恒。')
+            from smm.fixed_load import allocation_weights
+            st.dataframe(pd.DataFrame([{'负荷节点': bus, '新增量固定分配权重': weight} for bus, weight in allocation_weights(net).items()]), hide_index=True)
+            for unit in cfg.units.get('tie', []):
+                st.markdown(f"**{unit['id']} · 转换固定负荷四套总量输入（MW）**")
+                st.line_chart(pd.DataFrame(tie_profiles(cfg, profiles, unit), index=profiles.index).set_axis(profiles.time), y_label='功率（MW）')
+        else:
+            for unit in cfg.units.get('tie', []):
+                uid = unit['id']
+                st.markdown(f"**{uid} · 固定区外来电计划（MW）**")
+                st.caption('区外来电单独计为供给注入，未加到负荷，也不作为可报价负荷。')
+                st.line_chart(pd.DataFrame({f'{uid} · 供给注入': profiles[f'{uid}_sched'].to_numpy()},
+                                          index=profiles.time), y_label='功率（MW）')
         renewable_columns = {f"{unit['id']}_{stage}": f"{unit['id']} · {'实际' if stage == 'actual' else '日前预测'}"
                              for unit in cfg.units.get('renewable', []) for stage in ('actual', 'da')}
         if renewable_columns:
@@ -293,7 +330,7 @@ def render_network_and_units(cfg, key_prefix='network_inputs'):
         if not catalog:
             st.info('当前场景没有可查看的机组。')
             return
-        labels = {unit['id']: f"{unit['id']} · {VALUES.get(unit.get('type', group), unit.get('type', group))}"
+        labels = {unit['id']: f"{unit['id']} · {('转换负荷来源（非发电主体）' if group == 'tie' and cfg.base.get('tie_line_mode') == 'fixed_load' else VALUES.get(unit.get('type', group), unit.get('type', group)))}"
                   + ('（未启用）' if not unit.get('enabled', True) else '') for group, unit in catalog}
         uid = st.selectbox('查看其他机组参数', list(labels), format_func=labels.get, key=f'{key_prefix}:unit')
         render_unit_information(cfg, uid)

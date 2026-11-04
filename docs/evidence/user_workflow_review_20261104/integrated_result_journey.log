@@ -1,0 +1,66 @@
+................F.......................                                 [100%]
+=================================== FAILURES ===================================
+____ test_actual_run_card_button_overrides_old_history_then_keeps_selection ____
+
+tmp_path = PosixPath('/tmp/pytest-of-agent/pytest-97/test_actual_run_card_button_ov0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7fe1750d8e30>
+
+    def test_actual_run_card_button_overrides_old_history_then_keeps_selection(tmp_path, monkeypatch):
+        evidence = os.environ.get('IEEE39_OPERATOR_EVIDENCE')
+        if not evidence:
+            pytest.skip('set IEEE39_OPERATOR_EVIDENCE to existing read-only archives')
+        import common
+        from smm import scenario
+        paths = [Path(evidence) / name for name in
+                 ('final_c1f829a_baseline_full96', 'pv2152_dry_lowre_highload_full96')]
+        watched = [path / name for path in paths for name in
+                   ('summary.json', 'profiles.csv', 'resolved_bids.json', 'rt_reserve_system.csv')]
+        before = {str(p): hashlib.sha256(p.read_bytes()).hexdigest() for p in watched}
+        monkeypatch.setattr(scenario, 'SCEN_DIR', tmp_path / 'scenarios')
+        monkeypatch.setattr(scenario, 'RUNS_DIR', tmp_path / 'runs')
+        scenario.ensure_default()
+        records = [dict(dir=str(path), scenario='默认', mode='full', status='done',
+                        started='', bid_version=3) for path in paths]
+        monkeypatch.setattr(common, 'all_results', lambda: [dict(m) for m in records])
+        monkeypatch.setattr(scenario, 'list_runs', lambda: [dict(m) for m in records])
+        at = AppTest.from_file(str(ROOT / 'app/主页.py'), default_timeout=90).run()
+        at.switch_page('pages/3_结果.py').run()
+        at.selectbox(key='_result_sel_widget').set_value(str(paths[1])).run()
+        assert any('237.2283 MW' in x.value for x in at.error)
+        at.switch_page('pages/2_运行.py').run()
+        at.selectbox(key='run_sel').set_value(str(paths[0])).run()
+        next(b for b in at.button if b.label == '查看本次结果').click().run()
+        assert not at.exception, [x.value for x in at.exception]
+        assert at.selectbox(key='_result_sel_widget').value == str(paths[0])
+        assert not any('237.2283 MW' in x.value for x in at.error)
+        at.run()
+>       assert at.selectbox(key='_result_sel_widget').value == str(paths[0])
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_run_record_actions.py:99: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = WidgetList(_list=[Selectbox(key='quote_unit:默认', _value=InitialValue(), label='模拟机组', options=['C1 · 燃煤', 'C2 · 燃煤', '..., '91', '92', '93', '94', '95']), Selectbox(key='_sel_scenario', _value=InitialValue(), label='当前场景', options=['默认'])])
+key = '_result_sel_widget'
+
+    def __call__(self, key: str) -> El_co:
+        """Return the first element in this collection with the given user key.
+    
+        The same key can appear on different element types, so this returns the
+        first match in this collection. Use ``get_by_key`` when an ambiguous
+        key should raise.
+        """
+        for e in self._list:
+            if getattr(e, "key", None) == key:
+                return e
+>       raise KeyError(key)
+E       KeyError: '_result_sel_widget'
+
+../ieee39-cloud/repo/.venv/lib/python3.12/site-packages/streamlit/testing/v1/element_tree.py:590: KeyError
+----------------------------- Captured stderr call -----------------------------
+2026-11-03 21:30:48.208 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+------------------------------ Captured log call -------------------------------
+WARNING  streamlit.runtime.scriptrunner_utils.script_run_context:script_run_context.py:508 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+=========================== short test summary info ============================
+FAILED tests/test_run_record_actions.py::test_actual_run_card_button_overrides_old_history_then_keeps_selection
+1 failed, 39 passed in 95.82s (0:01:35)

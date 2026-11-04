@@ -17,8 +17,8 @@ from . import scuc
 
 def _integers(m):
     values = {}
-    for name in scuc.INT_VARS:
-        for index, v in getattr(m, name).items():
+    for name, component in scuc.integer_components(m):
+        for index, v in component.items():
             value = float(pyo.value(v))
             if not v.fixed or not np.isfinite(value) or abs(value - round(value)) > 1e-6:
                 raise ValueError(f'auxiliary pricing requires fixed integer {v.name}')
@@ -71,6 +71,8 @@ def _override_anchor_costs(m, specification):
         raise ValueError('anchor_penalty_yuan_per_discharge_mwh must be finite nonnegative')
     correction, rows = 0, []
     for i, (unit, t, lower, upper, kind) in enumerate(m._anchors):
+        if i in getattr(m, '_hard_anchor_indices', ()):
+            continue
         if kind not in ('E', 'Vu', 'V'):
             raise ValueError(f'unsupported anchor kind {kind}')
         conversion = (float(m._md.storage[unit]['eta_d']) if kind == 'E' else
@@ -94,6 +96,10 @@ def _override_anchor_costs(m, specification):
 def _remove_rt_tracking(m):
     """Remove only DA-state tracking from this RT pricing clone, never physical bounds."""
     rows, correction = [], 0
+    certificate=getattr(m,'asset_reachability',None)
+    if certificate is not None:
+        certificate.deactivate()  # clone only; all remaining DA-target reachability is pricing tracking
+        m._removed_asset_reachability=True
     for i, (unit, t, lower, upper, kind) in enumerate(m._anchors):
         conversion = (float(m._md.storage[unit]['eta_d']) if kind == 'E' else
                       float(m._md.pumped[unit]['e_gen']) if kind == 'Vu' else
@@ -101,13 +107,16 @@ def _remove_rt_tracking(m):
         coefficient = m._anchor_cost_coefficients[i]
         correction += coefficient * (m.sA_up[i] + m.sA_dn[i])
         m._anchor_cost_coefficients[i] = 0.
+        hard = i in getattr(m, "_hard_anchor_indices", ())
+        if hard:
+            m.c_anc_eq[i].deactivate()
         m.c_anc_hi[i].deactivate()
         m.c_anc_lo[i].deactivate()
         m.sA_up[i].fix(0.)
         m.sA_dn[i].fix(0.)
         rows.append(dict(unit=unit, relative_period=int(t), kind=kind, lower=lower, upper=upper,
                          discharge_mwh_per_native_unit=conversion, removed_cost_coefficient=coefficient,
-                         removed_constraint='soft_tracking', slack_zero_means_target_met=False))
+                         removed_constraint='hard_rt_da_tracking' if hard else 'soft_tracking', slack_zero_means_target_met=False))
     if hasattr(m, 'c_hydro_window_end'):
         for h, con in m.c_hydro_window_end.items():
             target = float(pyo.value(con.lower))
@@ -227,6 +236,7 @@ def run_auxiliary_pricing(dispatch_model):
             row[label+'_equivalent_discharge_residual_mwh'] = residual * row['discharge_mwh_per_native_unit']
             row[label+'_anchor_cost_yuan'] = native_slack * row['old_yuan_per_native_unit' if label == 'dispatch' else 'new_yuan_per_native_unit']
     return dict(model=auxiliary, dispatch_prices=dispatch_prices, anchor_costs=anchors, removed_rt_tracking=tracking,
+                removed_asset_reachability=bool(getattr(auxiliary,"_removed_asset_reachability",False)),
                 hydro_spill_fixation=spill_fixation, hydro_spill_policy="fixed_to_formal_dispatch_all_horizon",
                 auxiliary_prices=_prices(auxiliary, 'bounded_auxiliary_pricing'),
                 solve_info=info, bands=bands, penalties_yuan_per_mwh=specification["penalties_yuan_per_mwh"],

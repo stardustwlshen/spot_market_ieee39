@@ -1,0 +1,9 @@
+{
+  "tested_commit": "a37f1d33d8292ed3cab3a9e8035cdc616d9d594c",
+  "pytest_summary": "1606 passed in 921.75s (0:15:21)",
+  "wrapper_exit_code": 2,
+  "wrapper_error": "run_full_suite.sh: line 16: unexpected EOF while looking for matching quote",
+  "cause": "The wrapper file was edited to parameterize the final worktree while the earlier shell still read it. No tested application source changed during this run.",
+  "use_as_final_verification": false,
+  "final_runner": "run_full_suite.sh was syntax-checked and has remained unchanged since the final 39568d6 test run began."
+}

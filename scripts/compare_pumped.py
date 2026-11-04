@@ -48,7 +48,6 @@ def metrics(s: dict) -> dict:
         o[f"{pid}_日前发电_MWh"], o[f"{pid}_日前抽水_MWh"] = p["da"]["gen_mwh"], p["da"]["pump_mwh"]
         o[f"{pid}_实时发电_MWh"], o[f"{pid}_实时抽水_MWh"] = p["rt"]["gen_mwh"], p["rt"]["pump_mwh"]
         o[f"{pid}_电能量净收入_元"] = p["energy_net_revenue"]
-        o[f"{pid}_容量电费_元每日(信息)"] = p["capacity_fee_per_day"]
     return o
 
 

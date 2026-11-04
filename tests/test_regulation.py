@@ -92,6 +92,7 @@ def storage_case(power=5., charging=False, soc0=.5, sustain=.25):
     source = load_config()
     d = copy.deepcopy(source.units['storage'][0])
     d['soc0'] = soc0
+    d['bus'] = 2  # The synthetic network has buses 1/2; keep storage connected.
     c.cfg.units['storage'] = [d]
     c.bids['units']['ES1'] = default_bids(source)['units']['ES1']
     c.bids['units']['ES1']['soc_end'] = None

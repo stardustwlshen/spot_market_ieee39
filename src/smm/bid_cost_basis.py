@@ -93,9 +93,10 @@ def research_cost_worksheet(cfg) -> dict:
     import yaml
 
     path = Path(cfg.root) / 'config' / 'bid_cost_basis.yaml'
-    if not path.is_file():
+    from .research_cost_setup import merge_cost_worksheet
+    sheet = merge_cost_worksheet(cfg.root, yaml.safe_load(path.read_text(encoding='utf-8')) if path.is_file() else None)
+    if sheet is None:
         raise ValueError(f'缺少显式成本研究档案: {path}；不会回退到其他场景配置')
-    sheet = yaml.safe_load(path.read_text(encoding='utf-8'))
     if not isinstance(sheet, dict) or sheet.get('version') != 'synthetic-cost-study-v1':
         raise ValueError('成本研究档案须为synthetic-cost-study-v1对象')
     groups = {

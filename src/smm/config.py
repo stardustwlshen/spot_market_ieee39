@@ -34,6 +34,12 @@ class Config:
 def load_config(rule_set: str | None = None, season: str | None = None, overrides: dict | None = None,
                 root: Path | str | None = None) -> Config:
     """root：项目根目录（默认本仓库）；场景运行时传 scenarios/<名称>，其下有 config/、data/、bids/，布局与仓库一致。"""
+    from .unit_edit_transaction import scene_input_lock
+    with scene_input_lock(Path(root) if root else ROOT):
+        return _load_config_unlocked(rule_set, season, overrides, root)
+
+
+def _load_config_unlocked(rule_set=None, season=None, overrides=None, root=None):
     root = Path(root) if root else ROOT
     base = yaml.safe_load((root / "config" / "base.yaml").read_text(encoding="utf-8"))
     if rule_set:
@@ -49,6 +55,10 @@ def load_config(rule_set: str | None = None, season: str | None = None, override
     validate_auxiliary_pricing(mode)
     validate_tracking_policy(mode)
     cfg = Config(base=base, units=units, mode=mode, root=root)
+    from .fixed_load import tie_mode
+    tie_mode(cfg)
+    from .storage_anchors import validate_anchor_config
+    validate_anchor_config(cfg)
     from .input_validation import validate_physical_inputs
     validate_physical_inputs(cfg)
     return cfg

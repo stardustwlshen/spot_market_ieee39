@@ -1,0 +1,167 @@
+[
+  {
+    "run": "final_c1f829a_baseline_full96",
+    "scope": null,
+    "periods": 96,
+    "values": {
+      "da_all": [
+        187.25198761680002,
+        187.2519853706801
+      ],
+      "da_executed_range": [
+        187.25198761680002,
+        187.25198537068007
+      ],
+      "rt_executed_range": [
+        217.67985435243997,
+        217.67985384813215
+      ],
+      "period_spread_arithmetic_mean": [
+        25.657966105943316,
+        25.657968267282673
+      ]
+    },
+    "max_serialization_error": 2.2461199478129856e-06,
+    "stage_mean_difference": 30.427866735639952,
+    "spread_not_stage_mean_difference": true,
+    "files_unchanged": true,
+    "hashes": {
+      "summary.json": "94f320505b50178607ff490c73101207b7a7f8f973abcf8bc9f42b85f5a04e5b",
+      "da/summary.json": "cd1826b46fe57040f0873e26682782e97b616bc132849cc358ad02e8193e2799",
+      "da_nodal_prices.csv": "bf50b321beb6f49469afb26f8395cd28551ff691a2718ffedf6db964933743ed",
+      "rt_prices.csv": "e9aaddf5510a81365a7c3d4417ff9ef0419064d9995f264e4b5c0c66ec5765d9"
+    }
+  },
+  {
+    "run": "final_c1f829a_dry_nominal_full96",
+    "scope": null,
+    "periods": 96,
+    "values": {
+      "da_all": [
+        298.4536119734949,
+        298.4536109734155
+      ],
+      "da_executed_range": [
+        298.4536119734949,
+        298.4536109734154
+      ],
+      "rt_executed_range": [
+        228.63769913269584,
+        228.63769873533738
+      ],
+      "period_spread_arithmetic_mean": [
+        -77.66732073730188,
+        -77.66731960275612
+      ]
+    },
+    "max_serialization_error": 1.1345457551215077e-06,
+    "stage_mean_difference": -69.81591284079906,
+    "spread_not_stage_mean_difference": true,
+    "files_unchanged": true,
+    "hashes": {
+      "summary.json": "6a1bf78f6eaf528d512c9032595ca57e6829ed927e18d48dec17c2010f65a7fb",
+      "da/summary.json": "d0931161598a3ab21f792c4aea0fda6cfd7dff7915dea397465e23597f91a16a",
+      "da_nodal_prices.csv": "91708bb9fa90084573d24231d3ff2ceab84a8e98a206a52b03a80f37578648d1",
+      "rt_prices.csv": "07c79dee6356852b04dd3eaa7c63420c57308cd5907f074d31f93153dd311807"
+    }
+  },
+  {
+    "run": "pv2152_dry_lowre_highload_full96",
+    "scope": null,
+    "periods": 96,
+    "values": {
+      "da_all": [
+        355.8095218969559,
+        355.80951915110523
+      ],
+      "da_executed_range": [
+        355.8095218969559,
+        355.80951915110523
+      ],
+      "rt_executed_range": [
+        549.1124175678485,
+        549.1124176933405
+      ],
+      "period_spread_arithmetic_mean": [
+        181.3605870145744,
+        181.36058951990265
+      ]
+    },
+    "max_serialization_error": 2.7458506792754633e-06,
+    "stage_mean_difference": 193.3028956708926,
+    "spread_not_stage_mean_difference": true,
+    "files_unchanged": true,
+    "hashes": {
+      "summary.json": "12a811004eb163c5d8c6f13f6070210210163bd6d86c2d60783ea5a686b527a0",
+      "da/summary.json": "07e7fb0e397bc7019b7f46ce947d313f81b5fc44c7b697b6c3368c537f6f2743",
+      "da_nodal_prices.csv": "ba9de170c04ec143378cb42a2842b86080867e4be9426d277d47ebec693ee26f",
+      "rt_prices.csv": "8ccfdd517dec5215fe09d13590f28c2134ba8af4fc04eac9f98fe3e1b48a4851"
+    }
+  },
+  {
+    "run": "pv2152_wet_highre_lowload_full96",
+    "scope": null,
+    "periods": 96,
+    "values": {
+      "da_all": [
+        89.22046642051644,
+        89.22046789768581
+      ],
+      "da_executed_range": [
+        89.22046642051644,
+        89.22046789768582
+      ],
+      "rt_executed_range": [
+        127.20700835364724,
+        127.20700829490518
+      ],
+      "period_spread_arithmetic_mean": [
+        36.890445898980126,
+        36.89044505447473
+      ]
+    },
+    "max_serialization_error": 1.4771693770398997e-06,
+    "stage_mean_difference": 37.986541933130795,
+    "spread_not_stage_mean_difference": true,
+    "files_unchanged": true,
+    "hashes": {
+      "summary.json": "33b4da2fbf9ecab3864da00932bc317e14a64d7e806ae9826aeda49136a6dab8",
+      "da/summary.json": "fbd0075ea69a5e7385a801cb002855824c42dca58d14a2c889090bce590ad582",
+      "da_nodal_prices.csv": "f26b0e52aef715dfc8d40e87e5c0f5a4c525a49be62026910fdae6210de7c3aa",
+      "rt_prices.csv": "2613ab51cd9fdc65077937ae6dd31bc34180e2072826bab7f091de88ec301c88"
+    }
+  },
+  {
+    "run": "20261103-211945-688139_full",
+    "scope": null,
+    "periods": 8,
+    "values": {
+      "da_all": [
+        180.67644969610987,
+        180.6764496434433
+      ],
+      "da_executed_range": [
+        146.15977795698367,
+        146.15977402309645
+      ],
+      "rt_executed_range": [
+        55.58508774778961,
+        55.58508780259185
+      ],
+      "period_spread_arithmetic_mean": [
+        -90.77433750000002,
+        -90.77433344875345
+      ]
+    },
+    "max_serialization_error": 4.0512465631081795e-06,
+    "stage_mean_difference": -90.57469020919407,
+    "spread_not_stage_mean_difference": true,
+    "files_unchanged": true,
+    "hashes": {
+      "summary.json": "951cf5920eea95e7f5d960327b73a450354efa4d4f94b222d100010002f85726",
+      "da/summary.json": "b4d5b6e5567122147742828eb24aadfb771e675e4536c15eac20b8e1587050cd",
+      "da_nodal_prices.csv": "59cc4999eeddc4dac466a8f74bef0140feb1df23bcaed3266d24efb00a8ac548",
+      "rt_prices.csv": "263091b37b730a89288188dd2bbada7f4053ec32c8d395a8e445d501e93cbf74"
+    }
+  }
+]

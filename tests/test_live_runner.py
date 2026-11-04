@@ -105,9 +105,8 @@ def test_streamlit_simulation_updates_only_selected_draft_without_touching_v2(tm
     before = {p: p.read_bytes() for p in cfg.root.rglob('*') if p.is_file()}
     at = AppTest.from_file(str(root / 'app/pages/2_运行.py'), default_timeout=60).run()
     key = next(x for x in at.number_input if x.label == '空载报价（元/h）').key.removeprefix('quote_edit:').removesuffix(':C1:noload')
-    next(x for x in at.radio if x.label == '生成方式').set_value('随机策略').run()
     initial = copy.deepcopy(at.session_state[key])
-    next(x for x in at.button if x.label == '生成报价预览').click().run()
+    next(x for x in at.button if x.label == '生成随机报价预览').click().run()
     assert at.session_state[key] == initial
     next(x for x in at.button if x.label == '采用预览报价').click().run()
     assert not at.exception

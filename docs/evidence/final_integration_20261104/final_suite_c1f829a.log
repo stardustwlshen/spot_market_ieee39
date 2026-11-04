@@ -1,0 +1,382 @@
+........................................................................ [  5%]
+........................................................................ [ 10%]
+..................................................................F..... [ 15%]
+........................................................................ [ 20%]
+........................................................................ [ 25%]
+........................................................................ [ 30%]
+........................................................................ [ 35%]
+........................................................................ [ 40%]
+...........................................F............................ [ 45%]
+........................................................................ [ 50%]
+..........................F.F..F.F...................................... [ 55%]
+........................................................................ [ 60%]
+........................................................................ [ 65%]
+........................................................................ [ 70%]
+..............................................sss....................... [ 75%]
+........................................................................ [ 80%]
+........................................................................ [ 85%]
+........................................................................ [ 90%]
+........................................................................ [ 95%]
+.......................................................F..               [100%]
+=================================== FAILURES ===================================
+__________ test_result_page_mounts_visible_overview_and_dedicated_tab __________
+
+    def test_result_page_mounts_visible_overview_and_dedicated_tab():
+        text = (ROOT / 'app/pages/3_结果.py').read_text()
+        assert 'curtailment_overview(curtailment)' in text
+>       assert 'with operation_tabs[3]:\n    curtailment_dashboard(curtailment)' in text
+E       assert 'with operation_tabs[3]:\n    curtailment_dashboard(curtailment)' in '"""结果展示：概览、电价、出力、储能、线路、拓扑、结算。"""\nfrom pathlib import Path\n\nimport numpy as np\nimport pandas as pd\nimport plotly....b\'\\0\'+p.read_bytes() for p in ui_files)).hexdigest()\n        st.caption(\'当前结果界面指纹：\'+ui_hash+\'；界面更新不表示重新求解。\')\n'
+
+tests/test_curtailment_views.py:223: AssertionError
+__________ test_multiseed_smoothness_without_erasing_prediction_error __________
+
+    def test_multiseed_smoothness_without_erasing_prediction_error():
+        old = load_config()
+        new = config_v2()
+        metrics = {model: [] for model in ('legacy', 'v2')}
+        for seed in range(20260715, 20260715 + 128):
+            for model, cfg in (('legacy', old), ('v2', new)):
+                p = generate_profiles(cfg, seed)
+                a, f = p.W1_actual.to_numpy(), p.W1_da.to_numpy()
+                metrics[model].append([np.mean(abs(np.diff(f))), np.mean(np.diff(f, n=2) ** 2),
+                                       np.mean((f - a) ** 2), np.mean(abs(np.diff(a)))])
+                if model == 'v2':
+                    for uid in ('W1', 'W2', 'PV1'):
+                        errors = [np.mean((p[uid + '_' + stage] - p[uid + '_actual']) ** 2)
+                                  for stage in ('da', 'id', 'rt')]
+                        assert errors[0] >= errors[1] >= errors[2]
+        o, n = (np.mean(metrics[k], axis=0) for k in ('legacy', 'v2'))
+>       assert n[0] < .65 * o[0]       # Less adjacent movement.
+        ^^^^^^^^^^^^^^^^^^^^^^^^
+E       assert np.float64(18.43926999444876) < (0.65 * np.float64(18.43926999444876))
+
+tests/test_multiscale_forecast.py:152: AssertionError
+_____ test_events_deliver_executed_prefix_before_next_solve_and_settlement _____
+
+mocked_flow = (namespace(T=3, dt=0.25, mode={'intraday': {'enabled': False, 'interval_h': 1}}), namespace(case=namespace(cfg=namespa...de={'intraday': {'enabled': False, 'interval_h': 1}}))), [0], <Mock id='140164201410208'>, <Mock id='140164201409392'>)
+
+    def test_events_deliver_executed_prefix_before_next_solve_and_settlement(mocked_flow):
+        cfg, da, calls, run_da, settle = mocked_flow
+        phases, prefix = [], []
+        def callback(event):
+            phases.append(event['phase'])
+            assert not settle.called
+            if event['phase']=='rt_window':
+                rr = event['rr']
+                assert event['da'] is da
+                assert len(rr.rt)==event['completed']==len(calls)
+                assert [r['t'] for r in rr.rt] == list(range(event['completed']))
+                assert event['round'] is rr.rt[-1]
+                # Copy at callback time: rr is intentionally a live mutable prefix.
+                prefix.append(tuple(r['t'] for r in rr.rt))
+>       result = full.run_full(cfg,da.case,progress_callback=callback)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_progress.py:53: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/smm/full.py:355: in run_full
+    rr = rolling.run_rolling(da, periods=periods, log=log, progress_callback=emit, should_cancel=should_cancel)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+da_res = namespace(case=namespace(cfg=namespace(T=3, dt=0.25, mode={'intraday': {'enabled': False, 'interval_h': 1}})))
+periods = None, log = <built-in function print>
+progress_callback = <function run_full.<locals>.emit at 0x7f7aa8c377e0>
+should_cancel = None
+
+    def run_rolling(da_res, periods: int | None = None, log=print, *, progress_callback=None, should_cancel=None) -> RollingResult:
+        """逐时段实时滚动；MKT.intraday.enabled 时在每个日内触发时刻先做一轮日内，实时开机沿用日内计划。"""
+        case = da_res.case
+        cfg = case.cfg
+        T = cfg.T if periods is None else min(cfg.T, periods)
+        ic = cfg.mode["intraday"]
+        use_id = bool(ic.get("enabled", False))
+        step = max(1, int(round(ic["interval_h"] / cfg.dt)))
+        da_plan = _da_plan_arrays(da_res)
+        plan = _abs_plan(da_plan, 0, cfg.T)
+        state = initial_state(cfg)
+        out = RollingResult()
+        out.plans.append(plan)
+        t_id = t_rt = 0.0
+        for t in range(T):
+            if should_cancel and should_cancel():
+                from .live_runner import RunCancelled
+                raise RunCancelled(f"Cancelled after {len(out.rt)} executed periods")
+            if use_id and t % step == 0:
+                a = time.perf_counter()
+                r = run_intraday_round(case, da_plan, cfg, state, t, log)
+                t_id += time.perf_counter() - a
+                plan = _abs_plan(r["snap"], t, cfg.T, plan)
+                r["plan_abs"] = plan
+                out.id_rounds.append(r)
+                out.plans.append(plan)
+            a = time.perf_counter()
+            r = run_rt_period(case, da_plan, plan, cfg, state, t)
+            t_rt += time.perf_counter() - a
+            out.states.append(state)
+            out.rt.append(dict(t=t, snap=r["snap"], prices=r["prices"], dispatch_prices=r["dispatch_prices"],
+                               pricing_info=r["pricing_info"], solver_budget=r.get("solver_budget"), build_time_s=r.get("build_time_s"),
+                               non_solver_elapsed_s=r.get("non_solver_elapsed_s"), repriced_meaning=r["repriced_meaning"], slack=r["slack"], repriced=r["repriced"],
+                               hydro_window_targets=r["hydro_window_targets"],
+                               anchor_relaxed=r["anchor_relaxed"], anchor_slack_present=r["anchor_slack_present"],
+                               pricing_source=r["pricing_source"], time_s=r["time_s"], mip_time=r["mip"]["time_s"],
+>                              mip=dict(r["mip"]), sced=dict(r["sced"]),
+                                                             ^^^^^^^^^
+                               regulation_allocation=r["mip"].get("regulation_allocation", {}),
+                               stage_diagnostics=r.get("stage_diagnostics", {}),
+                               plan_idx=len(out.plans) - 1))
+E           KeyError: 'sced'
+
+src/smm/rolling.py:595: KeyError
+_ test_cancel_between_windows_preserves_prefix_without_next_solve_or_settlement _
+
+mocked_flow = (namespace(T=3, dt=0.25, mode={'intraday': {'enabled': False, 'interval_h': 1}}), namespace(case=namespace(cfg=namespa...de={'intraday': {'enabled': False, 'interval_h': 1}}))), [0], <Mock id='140164201404688'>, <Mock id='140164201401328'>)
+
+    def test_cancel_between_windows_preserves_prefix_without_next_solve_or_settlement(mocked_flow):
+        cfg, da, calls, run_da, settle = mocked_flow
+        stop = False
+        prefixes=[]
+        def callback(event):
+            nonlocal stop
+            if event['phase']=='rt_window':
+                prefixes.append(tuple(r['t'] for r in event['rr'].rt)); stop=True
+        with pytest.raises(RunCancelled,match='after 1'):
+>           full.run_full(cfg,da.case,progress_callback=callback,should_cancel=lambda:stop)
+
+tests/test_progress.py:76: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/smm/full.py:355: in run_full
+    rr = rolling.run_rolling(da, periods=periods, log=log, progress_callback=emit, should_cancel=should_cancel)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+da_res = namespace(case=namespace(cfg=namespace(T=3, dt=0.25, mode={'intraday': {'enabled': False, 'interval_h': 1}})))
+periods = None, log = <built-in function print>
+progress_callback = <function run_full.<locals>.emit at 0x7f7aa8c347c0>
+should_cancel = <function test_cancel_between_windows_preserves_prefix_without_next_solve_or_settlement.<locals>.<lambda> at 0x7f7aa8c34a40>
+
+    def run_rolling(da_res, periods: int | None = None, log=print, *, progress_callback=None, should_cancel=None) -> RollingResult:
+        """逐时段实时滚动；MKT.intraday.enabled 时在每个日内触发时刻先做一轮日内，实时开机沿用日内计划。"""
+        case = da_res.case
+        cfg = case.cfg
+        T = cfg.T if periods is None else min(cfg.T, periods)
+        ic = cfg.mode["intraday"]
+        use_id = bool(ic.get("enabled", False))
+        step = max(1, int(round(ic["interval_h"] / cfg.dt)))
+        da_plan = _da_plan_arrays(da_res)
+        plan = _abs_plan(da_plan, 0, cfg.T)
+        state = initial_state(cfg)
+        out = RollingResult()
+        out.plans.append(plan)
+        t_id = t_rt = 0.0
+        for t in range(T):
+            if should_cancel and should_cancel():
+                from .live_runner import RunCancelled
+                raise RunCancelled(f"Cancelled after {len(out.rt)} executed periods")
+            if use_id and t % step == 0:
+                a = time.perf_counter()
+                r = run_intraday_round(case, da_plan, cfg, state, t, log)
+                t_id += time.perf_counter() - a
+                plan = _abs_plan(r["snap"], t, cfg.T, plan)
+                r["plan_abs"] = plan
+                out.id_rounds.append(r)
+                out.plans.append(plan)
+            a = time.perf_counter()
+            r = run_rt_period(case, da_plan, plan, cfg, state, t)
+            t_rt += time.perf_counter() - a
+            out.states.append(state)
+            out.rt.append(dict(t=t, snap=r["snap"], prices=r["prices"], dispatch_prices=r["dispatch_prices"],
+                               pricing_info=r["pricing_info"], solver_budget=r.get("solver_budget"), build_time_s=r.get("build_time_s"),
+                               non_solver_elapsed_s=r.get("non_solver_elapsed_s"), repriced_meaning=r["repriced_meaning"], slack=r["slack"], repriced=r["repriced"],
+                               hydro_window_targets=r["hydro_window_targets"],
+                               anchor_relaxed=r["anchor_relaxed"], anchor_slack_present=r["anchor_slack_present"],
+                               pricing_source=r["pricing_source"], time_s=r["time_s"], mip_time=r["mip"]["time_s"],
+>                              mip=dict(r["mip"]), sced=dict(r["sced"]),
+                                                             ^^^^^^^^^
+                               regulation_allocation=r["mip"].get("regulation_allocation", {}),
+                               stage_diagnostics=r.get("stage_diagnostics", {}),
+                               plan_idx=len(out.plans) - 1))
+E           KeyError: 'sced'
+
+src/smm/rolling.py:595: KeyError
+_ test_callback_failure_propagates_without_settlement[rt_window-expected_calls2] _
+
+mocked_flow = (namespace(T=3, dt=0.25, mode={'intraday': {'enabled': False, 'interval_h': 1}}), namespace(case=namespace(cfg=namespa...de={'intraday': {'enabled': False, 'interval_h': 1}}))), [0], <Mock id='140164826164032'>, <Mock id='140164826165472'>)
+phase = 'rt_window', expected_calls = [0]
+
+    @pytest.mark.parametrize('phase,expected_calls',[('da_start',[]),('da_done',[]),('rt_window',[0])])
+    def test_callback_failure_propagates_without_settlement(mocked_flow,phase,expected_calls):
+        cfg, da, calls, run_da, settle = mocked_flow
+        def callback(event):
+            if event['phase']==phase: raise OSError('progress write failed')
+        with pytest.raises(OSError,match='progress write failed'):
+>           full.run_full(cfg,da.case,progress_callback=callback)
+
+tests/test_progress.py:87: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/smm/full.py:355: in run_full
+    rr = rolling.run_rolling(da, periods=periods, log=log, progress_callback=emit, should_cancel=should_cancel)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+da_res = namespace(case=namespace(cfg=namespace(T=3, dt=0.25, mode={'intraday': {'enabled': False, 'interval_h': 1}})))
+periods = None, log = <built-in function print>
+progress_callback = <function run_full.<locals>.emit at 0x7f7aa8c34ea0>
+should_cancel = None
+
+    def run_rolling(da_res, periods: int | None = None, log=print, *, progress_callback=None, should_cancel=None) -> RollingResult:
+        """逐时段实时滚动；MKT.intraday.enabled 时在每个日内触发时刻先做一轮日内，实时开机沿用日内计划。"""
+        case = da_res.case
+        cfg = case.cfg
+        T = cfg.T if periods is None else min(cfg.T, periods)
+        ic = cfg.mode["intraday"]
+        use_id = bool(ic.get("enabled", False))
+        step = max(1, int(round(ic["interval_h"] / cfg.dt)))
+        da_plan = _da_plan_arrays(da_res)
+        plan = _abs_plan(da_plan, 0, cfg.T)
+        state = initial_state(cfg)
+        out = RollingResult()
+        out.plans.append(plan)
+        t_id = t_rt = 0.0
+        for t in range(T):
+            if should_cancel and should_cancel():
+                from .live_runner import RunCancelled
+                raise RunCancelled(f"Cancelled after {len(out.rt)} executed periods")
+            if use_id and t % step == 0:
+                a = time.perf_counter()
+                r = run_intraday_round(case, da_plan, cfg, state, t, log)
+                t_id += time.perf_counter() - a
+                plan = _abs_plan(r["snap"], t, cfg.T, plan)
+                r["plan_abs"] = plan
+                out.id_rounds.append(r)
+                out.plans.append(plan)
+            a = time.perf_counter()
+            r = run_rt_period(case, da_plan, plan, cfg, state, t)
+            t_rt += time.perf_counter() - a
+            out.states.append(state)
+            out.rt.append(dict(t=t, snap=r["snap"], prices=r["prices"], dispatch_prices=r["dispatch_prices"],
+                               pricing_info=r["pricing_info"], solver_budget=r.get("solver_budget"), build_time_s=r.get("build_time_s"),
+                               non_solver_elapsed_s=r.get("non_solver_elapsed_s"), repriced_meaning=r["repriced_meaning"], slack=r["slack"], repriced=r["repriced"],
+                               hydro_window_targets=r["hydro_window_targets"],
+                               anchor_relaxed=r["anchor_relaxed"], anchor_slack_present=r["anchor_slack_present"],
+                               pricing_source=r["pricing_source"], time_s=r["time_s"], mip_time=r["mip"]["time_s"],
+>                              mip=dict(r["mip"]), sced=dict(r["sced"]),
+                                                             ^^^^^^^^^
+                               regulation_allocation=r["mip"].get("regulation_allocation", {}),
+                               stage_diagnostics=r.get("stage_diagnostics", {}),
+                               plan_idx=len(out.plans) - 1))
+E           KeyError: 'sced'
+
+src/smm/rolling.py:595: KeyError
+____________ test_cancel_after_final_window_still_blocks_settlement ____________
+
+mocked_flow = (namespace(T=3, dt=0.25, mode={'intraday': {'enabled': False, 'interval_h': 1}}), namespace(case=namespace(cfg=namespa...de={'intraday': {'enabled': False, 'interval_h': 1}}))), [0], <Mock id='140164826154144'>, <Mock id='140164826167056'>)
+
+    def test_cancel_after_final_window_still_blocks_settlement(mocked_flow):
+        cfg, da, calls, run_da, settle = mocked_flow
+        stop = False
+        def callback(event):
+            nonlocal stop
+            if event['phase']=='rt_window' and event['completed']==event['total']:
+                stop=True
+        with pytest.raises(RunCancelled):
+>           full.run_full(cfg,da.case,progress_callback=callback,should_cancel=lambda:stop)
+
+tests/test_progress.py:114: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/smm/full.py:355: in run_full
+    rr = rolling.run_rolling(da, periods=periods, log=log, progress_callback=emit, should_cancel=should_cancel)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+da_res = namespace(case=namespace(cfg=namespace(T=3, dt=0.25, mode={'intraday': {'enabled': False, 'interval_h': 1}})))
+periods = None, log = <built-in function print>
+progress_callback = <function run_full.<locals>.emit at 0x7f7aa8c353a0>
+should_cancel = <function test_cancel_after_final_window_still_blocks_settlement.<locals>.<lambda> at 0x7f7aa8c37ce0>
+
+    def run_rolling(da_res, periods: int | None = None, log=print, *, progress_callback=None, should_cancel=None) -> RollingResult:
+        """逐时段实时滚动；MKT.intraday.enabled 时在每个日内触发时刻先做一轮日内，实时开机沿用日内计划。"""
+        case = da_res.case
+        cfg = case.cfg
+        T = cfg.T if periods is None else min(cfg.T, periods)
+        ic = cfg.mode["intraday"]
+        use_id = bool(ic.get("enabled", False))
+        step = max(1, int(round(ic["interval_h"] / cfg.dt)))
+        da_plan = _da_plan_arrays(da_res)
+        plan = _abs_plan(da_plan, 0, cfg.T)
+        state = initial_state(cfg)
+        out = RollingResult()
+        out.plans.append(plan)
+        t_id = t_rt = 0.0
+        for t in range(T):
+            if should_cancel and should_cancel():
+                from .live_runner import RunCancelled
+                raise RunCancelled(f"Cancelled after {len(out.rt)} executed periods")
+            if use_id and t % step == 0:
+                a = time.perf_counter()
+                r = run_intraday_round(case, da_plan, cfg, state, t, log)
+                t_id += time.perf_counter() - a
+                plan = _abs_plan(r["snap"], t, cfg.T, plan)
+                r["plan_abs"] = plan
+                out.id_rounds.append(r)
+                out.plans.append(plan)
+            a = time.perf_counter()
+            r = run_rt_period(case, da_plan, plan, cfg, state, t)
+            t_rt += time.perf_counter() - a
+            out.states.append(state)
+            out.rt.append(dict(t=t, snap=r["snap"], prices=r["prices"], dispatch_prices=r["dispatch_prices"],
+                               pricing_info=r["pricing_info"], solver_budget=r.get("solver_budget"), build_time_s=r.get("build_time_s"),
+                               non_solver_elapsed_s=r.get("non_solver_elapsed_s"), repriced_meaning=r["repriced_meaning"], slack=r["slack"], repriced=r["repriced"],
+                               hydro_window_targets=r["hydro_window_targets"],
+                               anchor_relaxed=r["anchor_relaxed"], anchor_slack_present=r["anchor_slack_present"],
+                               pricing_source=r["pricing_source"], time_s=r["time_s"], mip_time=r["mip"]["time_s"],
+>                              mip=dict(r["mip"]), sced=dict(r["sced"]),
+                                                             ^^^^^^^^^
+                               regulation_allocation=r["mip"].get("regulation_allocation", {}),
+                               stage_diagnostics=r.get("stage_diagnostics", {}),
+                               plan_idx=len(out.plans) - 1))
+E           KeyError: 'sced'
+
+src/smm/rolling.py:595: KeyError
+______________ test_network_view_uses_overrides_and_never_writes _______________
+
+network_cfg = Config(base={'date': '2026-07-15', 'season': 'wet', 'rule_set': 'MKT', 'periods': 96, 'dt_h': 0.25, 'tie_line_mode': '...ce': 1.5, 'bid_yuan_per_mw': 8.0}}}}, root=PosixPath('/tmp/pytest-of-agent/pytest-65/test_network_view_uses_overrid0'))
+
+    def test_network_view_uses_overrides_and_never_writes(network_cfg):
+        import pandas as pd
+        from smm.forecast import generate_profiles, apply_profile_overrides
+        overrides = pd.DataFrame({'load_actual': [3000.] * network_cfg.T, 'load_da': [3100.] * network_cfg.T,
+                                  'W1_actual': [111.] * network_cfg.T, 'W1_da': [112.] * network_cfg.T})
+        overrides.to_csv(network_cfg.root / 'data/profile_overrides.csv', index=False)
+        before = {path: path.read_bytes() for path in network_cfg.root.rglob('*') if path.is_file()}
+        units_before = copy.deepcopy(network_cfg.units)
+        at = AppTest.from_function(network_app)
+        at.session_state['cfg'] = network_cfg
+        at.run()
+        assert not at.exception and not at.error
+        metrics = {item.label: item.value for item in at.metric}
+        assert metrics['节点数量'] == '39' and metrics['支路数量'] == '46'
+>       assert metrics['实际负荷峰值（MW）'] == '4,045.00'
+E       AssertionError: assert '3,000.00' == '4,045.00'
+E         
+E         - 4,045.00
+E         + 3,000.00
+
+tests/test_unit_input_view.py:174: AssertionError
+----------------------------- Captured stderr call -----------------------------
+2026-11-03 19:51:22.201 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-11-03 19:51:22.201 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+------------------------------ Captured log call -------------------------------
+WARNING  streamlit.runtime.scriptrunner_utils.script_run_context:script_run_context.py:508 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+WARNING  streamlit.runtime.scriptrunner_utils.script_run_context:script_run_context.py:508 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+=========================== short test summary info ============================
+FAILED tests/test_curtailment_views.py::test_result_page_mounts_visible_overview_and_dedicated_tab
+FAILED tests/test_multiscale_forecast.py::test_multiseed_smoothness_without_erasing_prediction_error
+FAILED tests/test_progress.py::test_events_deliver_executed_prefix_before_next_solve_and_settlement
+FAILED tests/test_progress.py::test_cancel_between_windows_preserves_prefix_without_next_solve_or_settlement
+FAILED tests/test_progress.py::test_callback_failure_propagates_without_settlement[rt_window-expected_calls2]
+FAILED tests/test_progress.py::test_cancel_after_final_window_still_blocks_settlement
+FAILED tests/test_unit_input_view.py::test_network_view_uses_overrides_and_never_writes
+7 failed, 1416 passed, 3 skipped in 568.62s (0:09:28)
+
+PYTEST_EXIT=1
