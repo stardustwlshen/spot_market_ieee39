@@ -1,0 +1,794 @@
+[
+  {
+    "t": 0,
+    "tau": 7,
+    "recovery": 2311.92,
+    "minimum_window_end": 15688.08,
+    "original_forecast_end": 16149.55774798751,
+    "original_forecast_shortage_lower_bound": 0,
+    "lower_bound_cost": 0.0
+  },
+  {
+    "t": 1,
+    "tau": 8,
+    "recovery": 2279.88,
+    "minimum_window_end": 15720.119999999999,
+    "original_forecast_end": 16181.597747987511,
+    "original_forecast_shortage_lower_bound": 0,
+    "lower_bound_cost": 0.0
+  },
+  {
+    "t": 2,
+    "tau": 9,
+    "recovery": 2239.2,
+    "minimum_window_end": 15760.8,
+    "original_forecast_end": 16222.277747987511,
+    "original_forecast_shortage_lower_bound": 0,
+    "lower_bound_cost": 0.0
+  },
+  {
+    "t": 3,
+    "tau": 10,
+    "recovery": 2202.84,
+    "minimum_window_end": 15797.16,
+    "original_forecast_end": 16255.553987464762,
+    "original_forecast_shortage_lower_bound": 0,
+    "lower_bound_cost": 0.0
+  },
+  {
+    "t": 4,
+    "tau": 11,
+    "recovery": 2161.62,
+    "minimum_window_end": 15838.380000000001,
+    "original_forecast_end": 16295.249959289515,
+    "original_forecast_shortage_lower_bound": 0,
+    "lower_bound_cost": 0.0
+  },
+  {
+    "t": 5,
+    "tau": 12,
+    "recovery": 2129.58,
+    "minimum_window_end": 15870.42,
+    "original_forecast_end": 16318.217959289515,
+    "original_forecast_shortage_lower_bound": 0,
+    "lower_bound_cost": 0.0
+  },
+  {
+    "t": 6,
+    "tau": 13,
+    "recovery": 2098.62,
+    "minimum_window_end": 15901.380000000001,
+    "original_forecast_end": 16342.697959289515,
+    "original_forecast_shortage_lower_bound": 0,
+    "lower_bound_cost": 0.0
+  },
+  {
+    "t": 7,
+    "tau": 14,
+    "recovery": 2057.94,
+    "minimum_window_end": 15942.06,
+    "original_forecast_end": 16380.137959289514,
+    "original_forecast_shortage_lower_bound": 0,
+    "lower_bound_cost": 0.0
+  },
+  {
+    "t": 8,
+    "tau": 15,
+    "recovery": 2017.26,
+    "minimum_window_end": 15982.74,
+    "original_forecast_end": 16417.577959289512,
+    "original_forecast_shortage_lower_bound": 0,
+    "lower_bound_cost": 0.0
+  },
+  {
+    "t": 9,
+    "tau": 16,
+    "recovery": 1976.58,
+    "minimum_window_end": 16023.42,
+    "original_forecast_end": 16457.00515928951,
+    "original_forecast_shortage_lower_bound": 0,
+    "lower_bound_cost": 0.0
+  },
+  {
+    "t": 10,
+    "tau": 17,
+    "recovery": 1935.8999999999999,
+    "minimum_window_end": 16064.1,
+    "original_forecast_end": 16496.43235928951,
+    "original_forecast_shortage_lower_bound": 0,
+    "lower_bound_cost": 0.0
+  },
+  {
+    "t": 11,
+    "tau": 18,
+    "recovery": 1895.22,
+    "minimum_window_end": 16104.78,
+    "original_forecast_end": 16535.859559289507,
+    "original_forecast_shortage_lower_bound": 0,
+    "lower_bound_cost": 0.0
+  },
+  {
+    "t": 12,
+    "tau": 19,
+    "recovery": 1859.3999999999999,
+    "minimum_window_end": 16140.6,
+    "original_forecast_end": 16571.679559289507,
+    "original_forecast_shortage_lower_bound": 0,
+    "lower_bound_cost": 0.0
+  },
+  {
+    "t": 13,
+    "tau": 20,
+    "recovery": 1818.72,
+    "minimum_window_end": 16181.28,
+    "original_forecast_end": 16611.106759289505,
+    "original_forecast_shortage_lower_bound": 0,
+    "lower_bound_cost": 0.0
+  },
+  {
+    "t": 14,
+    "tau": 21,
+    "recovery": 1778.04,
+    "minimum_window_end": 16221.96,
+    "original_forecast_end": 16651.786759289505,
+    "original_forecast_shortage_lower_bound": 0,
+    "lower_bound_cost": 0.0
+  },
+  {
+    "t": 15,
+    "tau": 22,
+    "recovery": 1737.36,
+    "minimum_window_end": 16262.64,
+    "original_forecast_end": 16690.437266300727,
+    "original_forecast_shortage_lower_bound": 0,
+    "lower_bound_cost": 0.0
+  },
+  {
+    "t": 16,
+    "tau": 23,
+    "recovery": 1701.0,
+    "minimum_window_end": 16299.0,
+    "original_forecast_end": 16720.64126630073,
+    "original_forecast_shortage_lower_bound": 0,
+    "lower_bound_cost": 0.0
+  },
+  {
+    "t": 17,
+    "tau": 24,
+    "recovery": 1670.04,
+    "minimum_window_end": 16329.96,
+    "original_forecast_end": 16746.29981729535,
+    "original_forecast_shortage_lower_bound": 0,
+    "lower_bound_cost": 0.0
+  },
+  {
+    "t": 18,
+    "tau": 25,
+    "recovery": 1647.1799999999998,
+    "minimum_window_end": 16352.82,
+    "original_forecast_end": 16765.826227652266,
+    "original_forecast_shortage_lower_bound": 0,
+    "lower_bound_cost": 0.0
+  },
+  {
+    "t": 19,
+    "tau": 26,
+    "recovery": 1624.32,
+    "minimum_window_end": 16375.68,
+    "original_forecast_end": 16780.999871787037,
+    "original_forecast_shortage_lower_bound": 0,
+    "lower_bound_cost": 0.0
+  },
+  {
+    "t": 20,
+    "tau": 27,
+    "recovery": 1601.46,
+    "minimum_window_end": 16398.54,
+    "original_forecast_end": 16792.0726330933,
+    "original_forecast_shortage_lower_bound": 0,
+    "lower_bound_cost": 0.0
+  },
+  {
+    "t": 21,
+    "tau": 28,
+    "recovery": 1583.46,
+    "minimum_window_end": 16416.54,
+    "original_forecast_end": 16801.02226880609,
+    "original_forecast_shortage_lower_bound": 0,
+    "lower_bound_cost": 0.0
+  },
+  {
+    "t": 22,
+    "tau": 29,
+    "recovery": 1561.1399999999999,
+    "minimum_window_end": 16438.86,
+    "original_forecast_end": 16812.795134444572,
+    "original_forecast_shortage_lower_bound": 0,
+    "lower_bound_cost": 0.0
+  },
+  {
+    "t": 23,
+    "tau": 30,
+    "recovery": 1538.82,
+    "minimum_window_end": 16461.18,
+    "original_forecast_end": 16822.94526152838,
+    "original_forecast_shortage_lower_bound": 0,
+    "lower_bound_cost": 0.0
+  },
+  {
+    "t": 24,
+    "tau": 31,
+    "recovery": 1516.5,
+    "minimum_window_end": 16483.5,
+    "original_forecast_end": 16835.149560460577,
+    "original_forecast_shortage_lower_bound": 0,
+    "lower_bound_cost": 0.0
+  },
+  {
+    "t": 25,
+    "tau": 32,
+    "recovery": 1494.1799999999998,
+    "minimum_window_end": 16505.82,
+    "original_forecast_end": 16846.716256955504,
+    "original_forecast_shortage_lower_bound": 0,
+    "lower_bound_cost": 0.0
+  },
+  {
+    "t": 26,
+    "tau": 33,
+    "recovery": 1471.86,
+    "minimum_window_end": 16528.14,
+    "original_forecast_end": 16862.74457231846,
+    "original_forecast_shortage_lower_bound": 0,
+    "lower_bound_cost": 0.0
+  },
+  {
+    "t": 27,
+    "tau": 34,
+    "recovery": 1449.0,
+    "minimum_window_end": 16551.0,
+    "original_forecast_end": 16882.31549745096,
+    "original_forecast_shortage_lower_bound": 0,
+    "lower_bound_cost": 0.0
+  },
+  {
+    "t": 28,
+    "tau": 35,
+    "recovery": 1435.32,
+    "minimum_window_end": 16564.68,
+    "original_forecast_end": 16895.016848658794,
+    "original_forecast_shortage_lower_bound": 0,
+    "lower_bound_cost": 0.0
+  },
+  {
+    "t": 29,
+    "tau": 36,
+    "recovery": 1413.0,
+    "minimum_window_end": 16587.0,
+    "original_forecast_end": 16908.953745667684,
+    "original_forecast_shortage_lower_bound": 0,
+    "lower_bound_cost": 0.0
+  },
+  {
+    "t": 30,
+    "tau": 37,
+    "recovery": 1395.0,
+    "minimum_window_end": 16605.0,
+    "original_forecast_end": 16924.271773577526,
+    "original_forecast_shortage_lower_bound": 0,
+    "lower_bound_cost": 0.0
+  },
+  {
+    "t": 31,
+    "tau": 38,
+    "recovery": 1372.6799999999998,
+    "minimum_window_end": 16627.32,
+    "original_forecast_end": 16935.603996372396,
+    "original_forecast_shortage_lower_bound": 0,
+    "lower_bound_cost": 0.0
+  },
+  {
+    "t": 32,
+    "tau": 39,
+    "recovery": 1346.04,
+    "minimum_window_end": 16653.96,
+    "original_forecast_end": 16953.982073217892,
+    "original_forecast_shortage_lower_bound": 0,
+    "lower_bound_cost": 0.0
+  },
+  {
+    "t": 33,
+    "tau": 40,
+    "recovery": 1319.3999999999999,
+    "minimum_window_end": 16680.6,
+    "original_forecast_end": 16973.933075024997,
+    "original_forecast_shortage_lower_bound": 0,
+    "lower_bound_cost": 0.0
+  },
+  {
+    "t": 34,
+    "tau": 41,
+    "recovery": 1283.04,
+    "minimum_window_end": 16716.96,
+    "original_forecast_end": 17004.23142722033,
+    "original_forecast_shortage_lower_bound": 0,
+    "lower_bound_cost": 0.0
+  },
+  {
+    "t": 35,
+    "tau": 42,
+    "recovery": 1252.08,
+    "minimum_window_end": 16747.92,
+    "original_forecast_end": 17029.430279004344,
+    "original_forecast_shortage_lower_bound": 0,
+    "lower_bound_cost": 0.0
+  },
+  {
+    "t": 36,
+    "tau": 43,
+    "recovery": 1221.12,
+    "minimum_window_end": 16778.88,
+    "original_forecast_end": 17057.884679004343,
+    "original_forecast_shortage_lower_bound": 0,
+    "lower_bound_cost": 0.0
+  },
+  {
+    "t": 37,
+    "tau": 44,
+    "recovery": 1185.3,
+    "minimum_window_end": 16814.7,
+    "original_forecast_end": 17089.109277413885,
+    "original_forecast_shortage_lower_bound": 0,
+    "lower_bound_cost": 0.0
+  },
+  {
+    "t": 38,
+    "tau": 45,
+    "recovery": 1154.34,
+    "minimum_window_end": 16845.66,
+    "original_forecast_end": 17118.83350370556,
+    "original_forecast_shortage_lower_bound": 0,
+    "lower_bound_cost": 0.0
+  },
+  {
+    "t": 39,
+    "tau": 46,
+    "recovery": 1123.3799999999999,
+    "minimum_window_end": 16876.62,
+    "original_forecast_end": 17147.4526031387,
+    "original_forecast_shortage_lower_bound": 0,
+    "lower_bound_cost": 0.0
+  },
+  {
+    "t": 40,
+    "tau": 47,
+    "recovery": 1092.42,
+    "minimum_window_end": 16907.58,
+    "original_forecast_end": 17177.712738629794,
+    "original_forecast_shortage_lower_bound": 0,
+    "lower_bound_cost": 0.0
+  },
+  {
+    "t": 41,
+    "tau": 48,
+    "recovery": 1051.74,
+    "minimum_window_end": 16948.26,
+    "original_forecast_end": 17216.049055012838,
+    "original_forecast_shortage_lower_bound": 0,
+    "lower_bound_cost": 0.0
+  },
+  {
+    "t": 42,
+    "tau": 49,
+    "recovery": 1015.92,
+    "minimum_window_end": 16984.08,
+    "original_forecast_end": 17251.612490433494,
+    "original_forecast_shortage_lower_bound": 0,
+    "lower_bound_cost": 0.0
+  },
+  {
+    "t": 43,
+    "tau": 50,
+    "recovery": 975.24,
+    "minimum_window_end": 17024.76,
+    "original_forecast_end": 17291.039690433492,
+    "original_forecast_shortage_lower_bound": 0,
+    "lower_bound_cost": 0.0
+  },
+  {
+    "t": 44,
+    "tau": 51,
+    "recovery": 934.56,
+    "minimum_window_end": 17065.44,
+    "original_forecast_end": 17328.47969043349,
+    "original_forecast_shortage_lower_bound": 0,
+    "lower_bound_cost": 0.0
+  },
+  {
+    "t": 45,
+    "tau": 52,
+    "recovery": 898.74,
+    "minimum_window_end": 17101.26,
+    "original_forecast_end": 17363.83411122732,
+    "original_forecast_shortage_lower_bound": 0,
+    "lower_bound_cost": 0.0
+  },
+  {
+    "t": 46,
+    "tau": 53,
+    "recovery": 862.38,
+    "minimum_window_end": 17137.62,
+    "original_forecast_end": 17396.447376440618,
+    "original_forecast_shortage_lower_bound": 0,
+    "lower_bound_cost": 0.0
+  },
+  {
+    "t": 47,
+    "tau": 54,
+    "recovery": 826.56,
+    "minimum_window_end": 17173.44,
+    "original_forecast_end": 17432.267376440617,
+    "original_forecast_shortage_lower_bound": 0,
+    "lower_bound_cost": 0.0
+  },
+  {
+    "t": 48,
+    "tau": 55,
+    "recovery": 790.1999999999999,
+    "minimum_window_end": 17209.8,
+    "original_forecast_end": 17468.627376440618,
+    "original_forecast_shortage_lower_bound": 0,
+    "lower_bound_cost": 0.0
+  },
+  {
+    "t": 49,
+    "tau": 56,
+    "recovery": 749.52,
+    "minimum_window_end": 17250.48,
+    "original_forecast_end": 17506.081254353077,
+    "original_forecast_shortage_lower_bound": 0,
+    "lower_bound_cost": 0.0
+  },
+  {
+    "t": 50,
+    "tau": 57,
+    "recovery": 708.3,
+    "minimum_window_end": 17291.7,
+    "original_forecast_end": 17545.508454353076,
+    "original_forecast_shortage_lower_bound": 0,
+    "lower_bound_cost": 0.0
+  },
+  {
+    "t": 51,
+    "tau": 58,
+    "recovery": 667.62,
+    "minimum_window_end": 17332.38,
+    "original_forecast_end": 17585.709538564606,
+    "original_forecast_shortage_lower_bound": 0,
+    "lower_bound_cost": 0.0
+  },
+  {
+    "t": 52,
+    "tau": 59,
+    "recovery": 635.5799999999999,
+    "minimum_window_end": 17364.42,
+    "original_forecast_end": 17617.595340518932,
+    "original_forecast_shortage_lower_bound": 0,
+    "lower_bound_cost": 0.0
+  },
+  {
+    "t": 53,
+    "tau": 60,
+    "recovery": 608.9399999999999,
+    "minimum_window_end": 17391.06,
+    "original_forecast_end": 17640.463458827388,
+    "original_forecast_shortage_lower_bound": 0,
+    "lower_bound_cost": 0.0
+  },
+  {
+    "t": 54,
+    "tau": 61,
+    "recovery": 582.3,
+    "minimum_window_end": 17417.7,
+    "original_forecast_end": 17661.647174961356,
+    "original_forecast_shortage_lower_bound": 0,
+    "lower_bound_cost": 0.0
+  },
+  {
+    "t": 55,
+    "tau": 62,
+    "recovery": 559.98,
+    "minimum_window_end": 17440.02,
+    "original_forecast_end": 17678.799589381517,
+    "original_forecast_shortage_lower_bound": 0,
+    "lower_bound_cost": 0.0
+  },
+  {
+    "t": 56,
+    "tau": 63,
+    "recovery": 537.66,
+    "minimum_window_end": 17462.34,
+    "original_forecast_end": 17693.49719632681,
+    "original_forecast_shortage_lower_bound": 0,
+    "lower_bound_cost": 0.0
+  },
+  {
+    "t": 57,
+    "tau": 64,
+    "recovery": 519.66,
+    "minimum_window_end": 17480.34,
+    "original_forecast_end": 17703.755584630097,
+    "original_forecast_shortage_lower_bound": 0,
+    "lower_bound_cost": 0.0
+  },
+  {
+    "t": 58,
+    "tau": 65,
+    "recovery": 497.34,
+    "minimum_window_end": 17502.66,
+    "original_forecast_end": 17713.7635846301,
+    "original_forecast_shortage_lower_bound": 0,
+    "lower_bound_cost": 0.0
+  },
+  {
+    "t": 59,
+    "tau": 66,
+    "recovery": 474.47999999999996,
+    "minimum_window_end": 17525.52,
+    "original_forecast_end": 17723.0155846301,
+    "original_forecast_shortage_lower_bound": 0,
+    "lower_bound_cost": 0.0
+  },
+  {
+    "t": 60,
+    "tau": 67,
+    "recovery": 456.47999999999996,
+    "minimum_window_end": 17543.52,
+    "original_forecast_end": 17725.7875846301,
+    "original_forecast_shortage_lower_bound": 0,
+    "lower_bound_cost": 0.0
+  },
+  {
+    "t": 61,
+    "tau": 68,
+    "recovery": 442.8,
+    "minimum_window_end": 17557.2,
+    "original_forecast_end": 17727.03716122158,
+    "original_forecast_shortage_lower_bound": 0,
+    "lower_bound_cost": 0.0
+  },
+  {
+    "t": 62,
+    "tau": 69,
+    "recovery": 429.12,
+    "minimum_window_end": 17570.88,
+    "original_forecast_end": 17723.490001103735,
+    "original_forecast_shortage_lower_bound": 0,
+    "lower_bound_cost": 0.0
+  },
+  {
+    "t": 63,
+    "tau": 70,
+    "recovery": 415.44,
+    "minimum_window_end": 17584.56,
+    "original_forecast_end": 17719.026001103735,
+    "original_forecast_shortage_lower_bound": 0,
+    "lower_bound_cost": 0.0
+  },
+  {
+    "t": 64,
+    "tau": 71,
+    "recovery": 401.76,
+    "minimum_window_end": 17598.24,
+    "original_forecast_end": 17714.562001103735,
+    "original_forecast_shortage_lower_bound": 0,
+    "lower_bound_cost": 0.0
+  },
+  {
+    "t": 65,
+    "tau": 72,
+    "recovery": 388.08,
+    "minimum_window_end": 17611.92,
+    "original_forecast_end": 17710.098001103735,
+    "original_forecast_shortage_lower_bound": 0,
+    "lower_bound_cost": 0.0
+  },
+  {
+    "t": 66,
+    "tau": 73,
+    "recovery": 374.4,
+    "minimum_window_end": 17625.6,
+    "original_forecast_end": 17705.634001103735,
+    "original_forecast_shortage_lower_bound": 0,
+    "lower_bound_cost": 0.0
+  },
+  {
+    "t": 67,
+    "tau": 74,
+    "recovery": 360.71999999999997,
+    "minimum_window_end": 17639.28,
+    "original_forecast_end": 17701.170001103736,
+    "original_forecast_shortage_lower_bound": 0,
+    "lower_bound_cost": 0.0
+  },
+  {
+    "t": 68,
+    "tau": 75,
+    "recovery": 347.03999999999996,
+    "minimum_window_end": 17652.96,
+    "original_forecast_end": 17696.706001103736,
+    "original_forecast_shortage_lower_bound": 0,
+    "lower_bound_cost": 0.0
+  },
+  {
+    "t": 69,
+    "tau": 76,
+    "recovery": 333.36,
+    "minimum_window_end": 17666.64,
+    "original_forecast_end": 17692.242001103736,
+    "original_forecast_shortage_lower_bound": 0,
+    "lower_bound_cost": 0.0
+  },
+  {
+    "t": 70,
+    "tau": 77,
+    "recovery": 319.68,
+    "minimum_window_end": 17680.32,
+    "original_forecast_end": 17687.778001103736,
+    "original_forecast_shortage_lower_bound": 0,
+    "lower_bound_cost": 0.0
+  },
+  {
+    "t": 71,
+    "tau": 78,
+    "recovery": 306.0,
+    "minimum_window_end": 17694.0,
+    "original_forecast_end": 17683.314001103736,
+    "original_forecast_shortage_lower_bound": 10.68599889626421,
+    "lower_bound_cost": 24736.10855616715
+  },
+  {
+    "t": 72,
+    "tau": 79,
+    "recovery": 292.32,
+    "minimum_window_end": 17707.68,
+    "original_forecast_end": 17678.850001103736,
+    "original_forecast_shortage_lower_bound": 28.829998896264442,
+    "lower_bound_cost": 66736.10855616769
+  },
+  {
+    "t": 73,
+    "tau": 80,
+    "recovery": 278.64,
+    "minimum_window_end": 17721.36,
+    "original_forecast_end": 17674.386001103736,
+    "original_forecast_shortage_lower_bound": 46.973998896264675,
+    "lower_bound_cost": 108736.10855616823
+  },
+  {
+    "t": 74,
+    "tau": 81,
+    "recovery": 264.96,
+    "minimum_window_end": 17735.04,
+    "original_forecast_end": 17669.922001103736,
+    "original_forecast_shortage_lower_bound": 65.11799889626491,
+    "lower_bound_cost": 150736.10855616877
+  },
+  {
+    "t": 75,
+    "tau": 82,
+    "recovery": 251.28,
+    "minimum_window_end": 17748.72,
+    "original_forecast_end": 17665.458001103736,
+    "original_forecast_shortage_lower_bound": 83.26199889626514,
+    "lower_bound_cost": 192736.10855616932
+  },
+  {
+    "t": 76,
+    "tau": 83,
+    "recovery": 237.6,
+    "minimum_window_end": 17762.4,
+    "original_forecast_end": 17660.994001103736,
+    "original_forecast_shortage_lower_bound": 101.40599889626537,
+    "lower_bound_cost": 234736.10855616984
+  },
+  {
+    "t": 77,
+    "tau": 84,
+    "recovery": 223.92,
+    "minimum_window_end": 17776.08,
+    "original_forecast_end": 17656.530001103736,
+    "original_forecast_shortage_lower_bound": 119.5499988962656,
+    "lower_bound_cost": 276736.10855617037
+  },
+  {
+    "t": 78,
+    "tau": 85,
+    "recovery": 210.23999999999998,
+    "minimum_window_end": 17789.76,
+    "original_forecast_end": 17652.066001103736,
+    "original_forecast_shortage_lower_bound": 137.6939988962622,
+    "lower_bound_cost": 318736.1085561625
+  },
+  {
+    "t": 79,
+    "tau": 86,
+    "recovery": 196.56,
+    "minimum_window_end": 17803.44,
+    "original_forecast_end": 17647.602001103736,
+    "original_forecast_shortage_lower_bound": 155.83799889626243,
+    "lower_bound_cost": 360736.10855616303
+  },
+  {
+    "t": 80,
+    "tau": 87,
+    "recovery": 182.88,
+    "minimum_window_end": 17817.12,
+    "original_forecast_end": 17646.650013926745,
+    "original_forecast_shortage_lower_bound": 170.4699860732544,
+    "lower_bound_cost": 394606.4492436444
+  },
+  {
+    "t": 81,
+    "tau": 88,
+    "recovery": 169.2,
+    "minimum_window_end": 17830.8,
+    "original_forecast_end": 17653.85705388638,
+    "original_forecast_shortage_lower_bound": 176.94294611362056,
+    "lower_bound_cost": 409590.1530407883
+  },
+  {
+    "t": 82,
+    "tau": 89,
+    "recovery": 151.2,
+    "minimum_window_end": 17848.8,
+    "original_forecast_end": 17663.628724101905,
+    "original_forecast_shortage_lower_bound": 185.17127589809388,
+    "lower_bound_cost": 428637.21272706916
+  },
+  {
+    "t": 83,
+    "tau": 90,
+    "recovery": 128.88,
+    "minimum_window_end": 17871.12,
+    "original_forecast_end": 17675.9447087609,
+    "original_forecast_shortage_lower_bound": 195.17529123909844,
+    "lower_bound_cost": 451794.6556460612
+  },
+  {
+    "t": 84,
+    "tau": 91,
+    "recovery": 106.56,
+    "minimum_window_end": 17893.44,
+    "original_forecast_end": 17689.55710481245,
+    "original_forecast_shortage_lower_bound": 203.88289518754755,
+    "lower_bound_cost": 471951.1462674712
+  },
+  {
+    "t": 85,
+    "tau": 92,
+    "recovery": 79.92,
+    "minimum_window_end": 17920.08,
+    "original_forecast_end": 17707.03870481245,
+    "original_forecast_shortage_lower_bound": 213.04129518755144,
+    "lower_bound_cost": 493151.14626748016
+  },
+  {
+    "t": 86,
+    "tau": 93,
+    "recovery": 53.28,
+    "minimum_window_end": 17946.72,
+    "original_forecast_end": 17724.52030481245,
+    "original_forecast_shortage_lower_bound": 222.1996951875517,
+    "lower_bound_cost": 514351.1462674808
+  },
+  {
+    "t": 87,
+    "tau": 94,
+    "recovery": 26.64,
+    "minimum_window_end": 17973.36,
+    "original_forecast_end": 17742.00190481245,
+    "original_forecast_shortage_lower_bound": 231.35809518755195,
+    "lower_bound_cost": 535551.1462674814
+  }
+]

@@ -1,17 +1,11 @@
-"""实时 15 min 滚动 SCED（甘肃方式，默认不设独立日内市场）。
+"""15分钟实时滚动：默认2小时前瞻，只执行首时段。
 
-时序（参数见 config/modes.yaml 的 MKT.realtime；窗口与时序见该文件注明的甘V3.2 条款）：
-  日前（DA）出清 → 对每个 15 min 时段 t：窗口 [t, t+8)（2 h，日末截断），首时段用实际负荷/风光（假设做法）；
-    - 煤电、燃气 CCGT 启停锁定日前结果；燃气 GT 启停在窗口 MIP 内按需决策；
-    - 水电默认固定日前稳定区台数，窗口内出力可调；实际库容起步，窗口末库容沿同钟点日前值；显式新研究tracking_policy采用带罚软跟踪，旧配置保留硬等式；
-    - 储能按 realtime.storage.mode：
-        sced_anchor（默认）：沿用日前封存报价进入 SCED，初值 = 实际 SOC，锚点约束跟随日前 SOC：
-            anchor=two_hour_eq（默认）：北京时间02/04/…/24点末状态硬等于日前；
-            anchor=hourly_eq（历史B2）：整点带罚软锚点；
-            anchor=window_end_pct（可选，B1）：窗口末带罚软区间 (1±x)E_DA；
-        fixed_da：执行日前出清充放电曲线，价格接受者（山西第九十五条等）；
-    - 固定整数 → LP 求 LMP；只执行首时段，SOC/库容/机组状态滚入下一时段。
-  MKT.intraday.enabled=true 时另做事件式日内滚动（川V4.0 8.1，仅对比用）。
+日前锁定类始终继承日前启停。可选日内市场优化剩余全天，开启交接时
+快速火电继承最新日内启停，储能/抽蓄/水电逐主体采用有效日内参考。
+无日内或显式关闭启停交接时保留历史实时自由GT模式。
+状态价值是带符号的同日延续边际值；覆盖日末时额外价值为0，日末目标独立保留。
+仅明确硬约束不可行才在同一求解预算内重试软带，不能以辅助算价或程序故障触发软化。
+旧sced_anchor/fixed_da及水电window_end_da/fixed_da为显式可选策略。
 """
 from __future__ import annotations
 
@@ -23,7 +17,7 @@ import numpy as np
 import pandas as pd
 import pyomo.environ as pyo
 
-from . import scuc
+from . import scuc, handoff
 from .case import DACase, reserve_requirement
 from .forecast import forecast_view
 from .storage_anchors import anchor_periods, exact_target, validate_anchor_config, policy_metadata, validate_actual_state
@@ -138,6 +132,7 @@ def make_window_case(da_case: DACase, cfg, t0: int, t1: int, issue_t: int, first
     if set(state.hydro_p) != expected_hydro or set(state.hydro_online) != expected_hydro:
         raise ValueError("滚动水电状态缺少实际hydro_p/hydro_online，不能退回日前出力")
     init = dict(thermal=copy.deepcopy(state.thermal), storage=dict(state.storage), hydro=dict(state.hydro),
+                hydro_used=dict(state.hydro_used),
                 hydro_p=dict(state.hydro_p), hydro_online=dict(state.hydro_online),
                 pumped=copy.deepcopy(state.pumped), pumped_used=copy.deepcopy(state.pumped_used),
                 pumped_hist=copy.deepcopy(state.pumped_hist), hydro_hist={h: a for h, a in state.hydro_hist.items()})
@@ -234,10 +229,12 @@ def snapshot(m) -> dict:
     sn["tracking"] = tracking_results(m).to_dict("records")
     from .asset_reachability import diagnostics as reachability_diagnostics
     sn["asset_reachability"] = reachability_diagnostics(m)
+    from .hydro_daily_energy import diagnostics as daily_energy_diagnostics
+    sn["hydro_daily_energy"] = daily_energy_diagnostics(m)
     return sn
 
 
-def clear_window(case: DACase, log=lambda *a: None) -> dict:
+def clear_window(case: DACase, log=lambda *a: None, *, solver_budget=None) -> dict:
     """Energy MIP → fixed integers → optional regulation allocation → final energy SCED.
 
     The allocation LP is not a repricing solve and its power/duals never execute.
@@ -258,7 +255,7 @@ def clear_window(case: DACase, log=lambda *a: None) -> dict:
         total = float(raw_total)
         if isinstance(raw_total, bool) or not np.isfinite(total) or total <= 0.:
             raise ValueError("RT total solver budget must be finite positive seconds")
-        m._solver_budget = scuc.SolverBudget(total_s=total, reserve_lp_s=min(10.,total*.1))
+        m._solver_budget = solver_budget if solver_budget is not None else scuc.SolverBudget(total_s=total, reserve_lp_s=min(10.,total*.1))
     from . import regulation
     from .stage_diagnostics import capture
     stages = {}
@@ -291,6 +288,26 @@ def clear_window(case: DACase, log=lambda *a: None) -> dict:
         stages["auxiliary_pricing"] = capture(pricing_model, "auxiliary_pricing", aux["solve_info"])
         stages["auxiliary_pricing"]["summary"].update(status="辅助算价（数量不执行；价格用于结算）", prices_are_market_prices=True,
                                                     objective_kind="auxiliary_pricing_not_dispatch_cost", quantities_execute=False)
+    value_window = []
+    for i, (kind, unit, t_rel, lo, hi, label) in enumerate(getattr(m, "_state_bands", [])):
+        x = V(getattr(m, kind)[unit, t_rel])
+        v = next((val for k2, u2, t2, val in m._state_values if (k2, u2, t2) == (kind, unit, t_rel)), None)
+        value_window.append(dict(kind=kind, unit=unit, period=case.t0 + t_rel, relative_period=t_rel, label=label,
+                                 value_native=v, state=x, lower=lo, upper=hi,
+                                 lower_binding=bool(x <= lo + 1e-6), upper_binding=bool(x >= hi - 1e-6),
+                                 slack_up=V(m.sB_up[i]), slack_dn=V(m.sB_dn[i]),
+                                 soft=i in getattr(m, "_state_band_soft_indices", set(m.B) if m._state_band_soft else set())))
+        policy = getattr(m, "_state_band_terminal_policy", {"mode": "hard"})
+        planned = bool(case.stage == "RT" and label == "day_end" and policy.get("mode") == "soft")
+        factor = getattr(m, "_state_band_energy_factors", {}).get(i)
+        deviation = V(m.sB_up[i]) + V(m.sB_dn[i])
+        value_window[-1].update(terminal_policy=policy.get("mode", "hard"), planned_terminal_soft=planned,
+            terminal_penalty_yuan_per_discharge_mwh=policy.get("penalty_yuan_per_discharge_mwh") if planned else None,
+            discharge_energy_factor=factor if planned else None,
+            deviation_discharge_mwh=deviation * factor if planned and factor is not None else None,
+            terminal_penalty_cost=deviation * getattr(m, "_state_band_cost_coefficients", {}).get(i, 0.) if planned else None)
+    sn["value_window"] = value_window
+    sn["hydro_terminal_lookahead"] = scuc.hydro_terminal_lookahead_diagnostics(m)
     return dict(model=m, snap=sn, prices=pr, dispatch_prices=dispatch_prices,
                 pricing_model=pricing_model, pricing_info=pricing_info, slack=slack, stage_diagnostics=stages,
                 repriced=pricing_model is not None, repriced_meaning="separate_bounded_auxiliary_clone" if pricing_model is not None else "not_repriced",
@@ -305,7 +322,138 @@ def clear_window(case: DACase, log=lambda *a: None) -> dict:
 # ----------------------------------------------------------------------------- 日内滚动
 def _da_plan_arrays(da_res) -> dict:
     m = da_res.model
-    return snapshot(m)
+    plan = snapshot(m)
+    plan["state_values"] = scuc.state_values(m) if hasattr(m, "dual") else {"E": {}, "Vu": {}, "V": {}}
+    return plan
+
+
+def handoff_config(cfg) -> dict:
+    """日内→实时交接开关（realtime.handoff_source / handoff / intraday_commit_rt）。"""
+    return handoff.configuration(cfg)
+
+
+def intraday_reference(da_plan: dict, ref: dict, id_round: dict, T: int, *, cfg=None) -> dict:
+    """第三轮：用一轮日内结果更新实时参考（[τ, T) 覆盖，之前沿用原参考）。
+
+    状态轨迹 E/Vu/Vh、稳定区台数 delta、出库 Qout 与日内SCED价值成包验证，
+    相对时段映射到绝对时段。资源缺失或无效时尾部回退日前，不挪用旧日内轮的价值。
+    未设跨日残值，因此末时段延续价值为0；终态目标对偶单列诊断，不是对偶本身为0。
+    日末目标独立取日前值，水电保持最低日末库容，不用末端奖励替代目标约束。
+    """
+    m = id_round.get("model")
+    vals, error = {}, None
+    if m is None or not hasattr(m, "dual"):
+        error = "intraday_SCED_model_or_duals_missing"
+    else:
+        try:
+            vals = scuc.state_values(m)
+        except KeyError as exc:
+            error = f"intraday_SCED_dual_missing: {exc}"
+    return handoff.merge_intraday(da_plan, ref, id_round, T, vals, cfg=cfg, value_error=error)
+
+
+def _hydro_bounds(cfg, h):
+    season = h["seasons"][cfg.base["season"]]
+    vmin, vmax, vend = float(season["vmin"]), float(season["vmax"]), float(season["v_end"])
+    if h.get("regulation") == "run_of_river":
+        vmax = float(season["v0"]); vmin = vmax - float(h.get("pondage", 0) or 0); vend = vmax
+    return vmin, vmax, vend, season
+
+
+def value_method_terms(cfg, da_plan, t, t1, *, storage=True, pumped=True, hydro=True, day_end_plan=None, realtime=False) -> dict:
+    """第二轮C/D项：窗口末状态价值 + 偏差带 + 日末约束（本函数仅生成常数）。
+
+    实时value模式连接整数资产续程；soft只施加有限末态目标成本，hard保留严格可达域。
+
+    窗口末 τ=t1−1：目标加 −v_τ·X_τ（v 取日前最终SCED对偶，scuc.state_values）；
+    偏差带 |X_τ − X^DA_τ| ≤ δ_τ，δ_τ = min(δ0, R_τ)：δ0 = band_fraction×容量（假设值2%），
+    R_τ 为按额定充/放（抽/发）功率或最小出库流量从 X_τ 仍可在日末回到日前日末值的可达距离。
+    窗口覆盖日末（t1=T）时：E/Vu双侧目标、水电下限目标；RT soft从首次求解有限计罚，ID仍硬。
+    """
+    from .config import rt_terminal_policy
+    policy = rt_terminal_policy(cfg.mode) if realtime else {"mode": "hard", "penalty_yuan_per_discharge_mwh": None}
+    soft_terminal = policy["mode"] == "soft"
+    vm = cfg.mode["realtime"].get("value_method", {})
+    frac = float(vm.get("band_fraction", 0.02))
+    hfrac = float(vm.get("hydro_band_fraction", frac))
+    T, dt = cfg.T, cfg.dt
+    tau = t1 - 1
+    rel = tau - t
+    n = T - 1 - tau
+    day_end = t1 == T
+    target_plan = da_plan if day_end_plan is None else day_end_plan
+    values = da_plan.get("state_values", {})
+    sv, bands = [], []
+
+    def value(kind, unit):
+        if day_end:
+            return 0.  # 日末目标约束不是跨日残值；软化后也不能再奖励终态偏移。
+        arr = values.get(kind, {}).get(unit, {}).get("value_native")
+        if arr is None or len(arr) != T or not np.isfinite(float(arr[tau])):
+            raise ValueError(f"{kind}.{unit} 缺少有效SCED状态价值，不能用零代替")
+        return float(arr[tau])
+
+    def add(kind, unit, x_da, target, lo_phys, hi_phys, d0, reach_lo, reach_hi, day_end_lo=None, day_end_hi=None):
+        if day_end:
+            lo = target if day_end_lo is None else day_end_lo
+            hi = target if day_end_hi is None else day_end_hi
+            lo, hi = min(max(lo, lo_phys), hi_phys), min(max(hi, lo_phys), hi_phys)
+            label = "day_end"
+        else:
+            lo = max(x_da - d0, lo_phys, lo_phys if soft_terminal else reach_lo)
+            hi = min(x_da + d0, hi_phys, hi_phys if soft_terminal else reach_hi)
+            label = "band"
+            if lo > hi:   # 数值保护：日前轨迹本身可达，取日前值
+                lo = hi = min(max(x_da, lo_phys), hi_phys)
+        sv.append((kind, unit, rel, value(kind, unit)))
+        bands.append((kind, unit, rel, lo, hi, label))
+
+    if storage:
+        for d in cfg.units["storage"]:
+            s = d["id"]
+            if s not in da_plan.get("E", {}):
+                continue
+            emin, emax = d["soc_min"] * d["ecap"], d["soc_max"] * d["ecap"]
+            x_da, target = float(da_plan["E"][s][tau]), float(target_plan["E"][s][T - 1])
+            pmax = float(d["pmax"])
+            add("E", s, x_da, target, emin, emax, frac * d["ecap"],
+                target - n * dt * d["eta_c"] * pmax, target + n * dt * pmax / d["eta_d"])
+    if pumped:
+        for d in cfg.units.get("pumped", []):
+            p = d["id"]
+            if p not in da_plan.get("Vu", {}):
+                continue
+            vlo = max(float(d["vup_min"]), float(d["v_total"]) - float(d["vdn_max"]))
+            vhi = min(float(d["vup_max"]), float(d["v_total"]) - float(d["vdn_min"]))
+            N = int(d["n_units"])
+            x_da, target = float(da_plan["Vu"][p][tau]), float(target_plan["Vu"][p][T - 1])
+            add("Vu", p, x_da, target, vlo, vhi, frac * (vhi - vlo),
+                target - n * dt * N * float(d["unit_pump"]) / float(d["e_pump"]),
+                target + n * dt * N * float(d["unit_gen_max"]) / float(d["e_gen"]))
+    if hydro:
+        specs = {h["id"]: h for h in cfg.units["hydro"]}
+        for h, d in specs.items():
+            if h not in da_plan.get("Vh", {}):
+                continue
+            vmin, vmax, vend, season = _hydro_bounds(cfg, d)
+            x_da = float(da_plan["Vh"][h][tau])
+            # R⁻：τ 之后按最小出库（max(生态流量, 日前锁定台数×稳定区下限×耗水率)）蓄水，日末仍能达到 v_end
+            inflow = 0.
+            for k in range(tau + 1, T):
+                pmin = sum(int(arr[k]) * float(d["zones"][z][0]) for (j, z), arr in da_plan["delta"].items() if j == h)
+                qmin = max(float(season["qeco"]), float(d["water_rate"]) * pmin)
+                up = 0.
+                if d.get("upstream") and d["upstream"] in da_plan.get("Qout", {}):
+                    k_up = k - int(d.get("lag_periods", 0))
+                    up = (float(da_plan["Qout"][d["upstream"]][k_up]) if k_up >= 0
+                          else _pre_day_hydro_outflow(cfg, d["upstream"]))
+                inflow += (float(season["qin"]) + up - qmin) * dt * .36
+            add("V", h, x_da, vend, vmin, vmax, hfrac * (vmax - vmin), vend - inflow, vmax,
+                day_end_lo=vend, day_end_hi=vmax)
+    out = dict(state_value=sv, state_band=bands)
+    if realtime:
+        out["state_band_terminal_policy"] = policy
+    return out
 
 
 def storage_anchors(cfg, E_da: dict, t: int, t1: int) -> dict:
@@ -319,7 +467,8 @@ def storage_anchors(cfg, E_da: dict, t: int, t1: int) -> dict:
         s = d["id"]
         emin, emax = d["soc_min"] * d["ecap"], d["soc_max"] * d["ecap"]
         if kind == "window_end_pct":
-            ks, xx = [t1 - 1], x
+            # 窗口覆盖日末时区间收为日前日末值（与日前 B 项、价值法日末约束一致；K 验证发现此前日末可漂移 ±x）
+            ks, xx = [t1 - 1], (0.0 if t1 >= cfg.T else x)
         elif kind in ("hourly_eq", "two_hour_eq"):
             xx = 0.0
         else:
@@ -351,7 +500,8 @@ def pumped_anchors(cfg, Vu_da: dict, t: int, t1: int) -> dict:
         vlo = max(float(d["vup_min"]), float(d["v_total"]) - float(d["vdn_max"]))
         vhi = min(float(d["vup_max"]), float(d["v_total"]) - float(d["vdn_min"]))
         if kind == "window_end_pct":
-            ks, xx = [t1 - 1], x
+            # 窗口覆盖日末时区间收为日前日末值（与日前 B 项、价值法日末约束一致；K 验证发现此前日末可漂移 ±x）
+            ks, xx = [t1 - 1], (0.0 if t1 >= cfg.T else x)
         elif kind in ("hourly_eq", "two_hour_eq"):
             xx = 0.0
         else:
@@ -372,6 +522,8 @@ def pumped_anchors(cfg, Vu_da: dict, t: int, t1: int) -> dict:
 def run_intraday_round(da_case, da_plan, cfg, state: SysState, tau: int, log=print) -> dict:
     """（可选，默认关闭）τ 时刻的一轮日内滚动（窗口至日末）：锁定煤电/CCGT；水电期末库容硬约束；
     储能日末 SOC 锚定日前出清日末值（同实时 window_end_pct 规则）。"""
+    from .input_validation import validate_time_grid
+    validate_time_grid(cfg)
     ic = cfg.mode["intraday"]
     T = cfg.T
     lock = set(ic["lock_types"])
@@ -381,30 +533,123 @@ def run_intraday_round(da_case, da_plan, cfg, state: SysState, tau: int, log=pri
             for t in range(tau, T):
                 fixed_u[(u["id"], t - tau)] = int(da_plan["u"][u["id"]][t])
     sc = cfg.mode["realtime"]["storage"]
-    term = dict(hydro_vend=True, storage_anchor=storage_anchors(cfg, da_plan["E"], tau, T),
-                anchor_penalty=float(sc.get("anchor_penalty", 1e5)))
-    if sc.get("anchor") == "two_hour_eq":
-        term["storage_anchor_hard"] = True
-    if da_plan.get("Vu"):
-        term["pumped_anchor"] = pumped_anchors(cfg, da_plan["Vu"], tau, T)
+    if sc.get("mode", "value") == "value":
+        # 价值法：日内窗口至日末，储能/抽蓄日末状态 = 日前日末值（同日前B项），水电 V_T ≥ v_end（hydro_vend）
+        term = dict(hydro_vend=True, **value_method_terms(cfg, da_plan, tau, T, hydro=False))
+    else:
+        term = dict(hydro_vend=True, storage_anchor=storage_anchors(cfg, da_plan["E"], tau, T),
+                    anchor_penalty=float(sc.get("anchor_penalty", 1e5)))
+        if sc.get("anchor") == "two_hour_eq":
+            term["storage_anchor_hard"] = True
+        if da_plan.get("Vu"):
+            term["pumped_anchor"] = pumped_anchors(cfg, da_plan["Vu"], tau, T)
     c2 = _sub_cfg(cfg, mip_rel_gap=ic.get("mip_rel_gap", 0.005), time_limit_s=ic.get("time_limit_s", 60),
                   warm_start=False, tighten=False)
     issue = max(0, tau - int(ic.get("lead_issue_periods", 1)))
     case = make_window_case(da_case, c2, tau, T, issue, False, state, {"u": fixed_u}, term, "ID")
     r = clear_window(case)
     r.update(tau=tau, issue_t=issue)
+    target_gap = float(ic.get("mip_rel_gap", 0.005))
+    actual_gap = float(r["mip"]["gap"])
+    r["solution_quality"] = dict(termination=r["mip"].get("termination"), target_gap=target_gap,
+        actual_gap=actual_gap, gap_target_met=bool(np.isfinite(actual_gap) and actual_gap <= target_gap + 1e-9),
+        acceptance="existing_feasible_incumbent_policy_not_physical_failure")
     log(f"[ID] 第 {tau//4:02d}:{(tau%4)*15:02d} 轮 窗口 {tau}–{T-1}  MIP {r['mip']['time_s']:.1f}s gap {r['mip']['gap']:.3%}"
         f"  {'(存在松弛；标准SCED原始对偶定价)' if any(v > 1e-6 for v in r['slack'].values()) else ''}")
     return r
 
 
-def run_rt_period(da_case, da_plan: dict, plan: dict, cfg, state: SysState, t: int) -> dict:
+def _pre_day_hydro_outflow(cfg, upstream):
+    """Match SCUC's declared pre-day generation outflow, with no invented spill."""
+    spec = next((h for h in cfg.units.get("hydro", []) if h["id"] == upstream), None)
+    if spec is None:
+        raise ValueError(f"缺少上游水电{upstream}的日前前史设备申报")
+    value = float(spec["water_rate"]) * float(spec["init_units_on"]) * float(spec["init_p_unit"])
+    if not np.isfinite(value) or value < 0:
+        raise ValueError(f"上游水电{upstream}日前前史出库必须有限非负")
+    return value
+
+
+def hydro_terminal_lookahead_terms(cfg, plan, state, t, t1, metadata):
+    """Reference-continuation shortage preference, not a feasible future dispatch."""
+    from .config import rt_terminal_policy
+    selector = cfg.mode.get("realtime", {}).get("value_method", {}).get("hydro_lookahead", "off")
+    if selector not in ("off", "reference_continuation"):
+        raise ValueError("value_method.hydro_lookahead须为off/reference_continuation")
+    if selector == "off" or rt_terminal_policy(cfg.mode)["mode"] != "soft" or t1 >= cfg.T:
+        return None
+    rows = {}
+    for d in cfg.units.get("hydro", []):
+        h = d["id"]
+        _, _, vend, season = _hydro_bounds(cfg, d)
+        own = handoff._array(plan.get("Qout", {}).get(h), cfg.T, f"lookahead.Qout.{h}", bounds=(0, np.inf))
+        upstream = d.get("upstream")
+        upref = (handoff._array(plan.get("Qout", {}).get(upstream), cfg.T,
+                    f"lookahead.Qout.{upstream}", bounds=(0, np.inf)) if upstream else None)
+        periods, outflows, arrivals, sources = [], [], [], []
+        for k in range(t1, cfg.T):
+            periods.append(k); outflows.append(float(own[k]))
+            shifted = k - int(d.get("lag_periods", 0))
+            if not upstream:
+                arrival, source = 0., "none_or_before_day"
+            elif shifted < 0:
+                arrival, source = _pre_day_hydro_outflow(cfg, upstream), "pre_day_initial_outflow"
+            elif shifted < t:
+                hist = state.hydro_hist.get(upstream)
+                if hist is None or shifted >= len(hist) or not np.isfinite(float(hist[shifted])) or hist[shifted] < 0:
+                    raise ValueError(f"水电前瞻缺少已执行上游出库 {upstream}[{shifted}]")
+                arrival, source = float(hist[shifted]), "executed_history"
+            else:
+                arrival, source = float(upref[shifted]), "selected_reference"
+            arrivals.append(arrival); sources.append(source)
+        recovery = sum(float(season["qin"]) + up - q for up, q in zip(arrivals, outflows)) * cfg.dt * .36
+        meta = metadata.get("V", {}).get(h, {})
+        label = meta.get("trajectory_source", "day_ahead")
+        rows[h] = dict(relative_period=t1-t-1, minimum_window_end_volume=vend-recovery,
+            terminal_target=vend, reference_recovery_volume=recovery,
+            reference_source="intraday" if str(label).startswith("intraday") else "day_ahead",
+            reference_source_label=label, reference_round=meta.get("round"),
+            reference_fallback_reason=meta.get("fallback_reason"),
+            future_periods=periods, reference_outflows_m3s=outflows,
+            upstream_arrivals_m3s=arrivals, upstream_arrival_sources=sources,
+            upstream_reference_metadata=copy.deepcopy(metadata.get("V", {}).get(upstream)) if upstream else None,
+            natural_inflow_m3s=float(season["qin"]), dt_h=cfg.dt)
+    return rows
+
+
+def value_asset_reachability(cfg, da_plan, window_end):
+    """Integer physical continuation with explicit hard/soft DA day-end policy."""
+    if window_end >= cfg.T or not (cfg.units["storage"] or cfg.units.get("pumped")):
+        return None
+    relative = cfg.T - 1 - window_end
+    targets = {}
+    for family, key, name in (("storage", "E", "storage_targets"), ("pumped", "Vu", "pumped_targets")):
+        targets[name] = {}
+        for unit in cfg.units.get(family, []):
+            uid = unit["id"]
+            array = handoff._array(da_plan.get(key, {}).get(uid), cfg.T, f"day_ahead.{key}.{uid}")
+            target = float(array[-1])
+            targets[name][uid] = [(relative, target, target)]
+    from .config import rt_terminal_policy
+    policy = rt_terminal_policy(cfg.mode)
+    return dict(target_policy="day_end_soft" if policy["mode"] == "soft" else "day_end",
+                penalty_yuan_per_discharge_mwh=policy["penalty_yuan_per_discharge_mwh"],
+                start_period=window_end, end_period_exclusive=cfg.T, **targets)
+
+
+def run_rt_period(da_case, da_plan: dict, plan: dict, cfg, state: SysState, t: int, *, ref: dict | None = None,
+                  id_active: bool = False) -> dict:
     """时段 t 的实时 SCED：窗口 [t, t+H)（日末截断），首时段实际值。
-    da_plan = 日前出清（全天），plan = 参考计划（无日内时即日前；开日内时为最近一轮日内计划）。"""
+    da_plan = 日前出清（全天），plan = 参考计划（无日内时即日前；开日内时为最近一轮日内计划）。
+    ref = 价值法参考（状态轨迹 + 价值 v，intraday_reference 生成；None = 日前）。id_active = 本时段前已有日内结果。"""
     rc = cfg.mode["realtime"]
     validate_anchor_config(cfg)
-    if rc["storage"].get("mode", "sced_anchor") == "sced_anchor":
-        validate_actual_state(cfg, da_plan, state, t)
+    from .input_validation import validate_time_grid
+    validate_time_grid(cfg)
+    state_deviations = []
+    if rc["storage"].get("mode", "value") == "sced_anchor":
+        # 第二轮C项：硬→软回退后起点可能已偏离锚点，只记录偏差，不抛异常、不重置实际库存
+        state_deviations = validate_actual_state(cfg, da_plan, state, t, tolerate=True)
     if state.t != t or not 0 <= t < cfg.T:
         raise ValueError("实时窗口起点必须等于实际状态时标，且位于当前运行日内")
     T = cfg.T
@@ -412,18 +657,52 @@ def run_rt_period(da_case, da_plan: dict, plan: dict, cfg, state: SysState, t: i
     t1 = min(T, t + H)
     win = range(t, t1)
     lock = set(rc["lock_types"])
+    vplan, reference_metadata, ho, use_ref = handoff.selected_reference(cfg, da_plan, ref, id_active)
+    inherited = set()
+    if id_active and ho["source"] == "intraday" and ho["commitment"] and ho["commit_rt"] == "inherit":
+        # 第三轮：快速机组（intraday.free_types 中的火电类型）由日内按最新预测决定启停，实时继承（不再在 2h 窗口内自行开停）
+        inherited = set(cfg.mode["intraday"].get("free_types", [])) & {u["type"] for u in cfg.units["thermal"]}
     types = {u["id"]: u["type"] for u in cfg.units["thermal"]}
-    fixed = {"u": {(g, k - t): int(plan["u"][g][k]) for g in plan["u"] if types[g] in lock for k in win}}
+    fixed = {"u": {}}
+    thermal_reference_u = {}
+    for g, typ in types.items():
+        if typ not in lock and typ not in inherited:
+            continue
+        chosen, meta = da_plan, dict(source="day_ahead", round=None, fallback_reason=None)
+        if typ not in lock:
+            chosen = ref or da_plan
+            meta = copy.deepcopy((ref or {}).get("reference_metadata", {}).get("u", {}).get(g,
+                dict(source=(ref or {}).get("reference_source", "intraday" if ref else "day_ahead"), round=None,
+                     fallback_reason=None if ref else "intraday_reference_missing")))
+        try:
+            values = handoff._array(chosen.get("u", {}).get(g), T, f"reference.u.{g}", integer=True, binary=True)
+        except ValueError as exc:
+            if chosen is da_plan:
+                raise
+            values = handoff._array(da_plan.get("u", {}).get(g), T, f"day_ahead.u.{g}", integer=True, binary=True)
+            meta = dict(source="day_ahead", round=None, fallback_reason=str(exc))
+        thermal_reference_u[g] = np.rint(values[t:t1]).astype(int)
+        fixed["u"].update({(g, k - t): int(values[k]) for k in win})
+        reference_metadata["u"][g] = meta
     fix_power = {}
-    hydro_mode = rc.get("hydro", "window_end_da")
-    if hydro_mode not in ("fixed_da", "window_end_da", "sced"):
+    hydro_mode = rc.get("hydro", "value")
+    if hydro_mode not in ("value", "fixed_da", "window_end_da", "sced"):
         raise ValueError(f"未知水电实时模式 {hydro_mode}")
-    if hydro_mode in ("fixed_da", "window_end_da"):
-        fixed["delta"] = {(j, z, k - t): int(da_plan["delta"][(j, z)][k]) for (j, z) in da_plan["delta"] for k in win}
+    hydro_reference_delta = {}
+    if hydro_mode in ("value", "fixed_da", "window_end_da"):
+        # 旧 fixed_da/window_end_da 仍使用DA，不能混入ID台数与固定DA出力冲突。
+        dsrc = vplan if hydro_mode == "value" else da_plan
+        normalized_delta = {jz: handoff._array(a, T, f"reference.delta.{jz}", integer=True)
+                            for jz, a in dsrc["delta"].items()}
+        fixed["delta"] = {(j, z, k - t): int(normalized_delta[(j, z)][k]) for (j, z) in normalized_delta for k in win}
+        hydro_reference_delta = {jz: np.asarray(a[t:t1], dtype=int).copy() for jz, a in normalized_delta.items()}
+        if hydro_mode != "value":
+            reference_metadata["V"] = {h: dict(trajectory_source="day_ahead", value_source=None, round=None, fallback_reason=None)
+                                       for h in da_plan.get("Vh", {})}
     if hydro_mode == "fixed_da":
         fix_power["Ph"] = {(h, k - t): float(da_plan["Ph"][h][k]) for h in da_plan["Ph"] for k in win}
     sc = rc["storage"]
-    mode = sc.get("mode", "sced_anchor")
+    mode = sc.get("mode", "value")
     term = dict(anchor_penalty=float(sc.get("anchor_penalty", 1e5)))
     if mode == "sced_anchor" and sc.get("anchor") == "two_hour_eq":
         term["storage_anchor_hard"] = True
@@ -432,7 +711,7 @@ def run_rt_period(da_case, da_plan: dict, plan: dict, cfg, state: SysState, t: i
             term["asset_reachability"] = dict(start_period=t1,end_period_exclusive=T,
                 storage_targets=storage_anchors(cfg,da_plan["E"],t1,T),
                 pumped_targets=pumped_anchors(cfg,da_plan.get("Vu",{}),t1,T))
-    tracking = rc.get("tracking_policy")
+    tracking = rc.get("tracking_policy") if hydro_mode == "window_end_da" else None
     if tracking is not None and tracking.get("mode") != "legacy":
         if tracking.get("mode") != "soft_deliverable_energy" or hydro_mode != "window_end_da" or mode != "sced_anchor":
             raise ValueError("soft tracking requires window_end_da hydro and sced_anchor storage")
@@ -446,9 +725,22 @@ def run_rt_period(da_case, da_plan: dict, plan: dict, cfg, state: SysState, t: i
         fix_power["Pc"] = {(s, k - t): float(da_plan["Pc"][s][k]) for s in da_plan["Pc"] for k in win}
     elif mode == "sced_anchor":                            # 进入 SCED，锚定日前 SOC
         term["storage_anchor"] = storage_anchors(cfg, da_plan["E"], t, t1)
-    else:
+    elif mode != "value":
         raise ValueError(f"未知储能实时模式 {mode}")
-    if da_plan.get("Pg") or (sc.get("anchor") == "two_hour_eq" and cfg.units.get("pumped")):
+    if mode == "value" or hydro_mode == "value":
+        vt = value_method_terms(cfg, vplan, t, t1, storage=mode == "value", pumped=mode == "value",
+                                hydro=hydro_mode == "value", day_end_plan=da_plan, realtime=True)
+        term.update(vt)
+        if hydro_mode == "value":
+            hydro_lookahead = hydro_terminal_lookahead_terms(cfg, vplan, state, t, t1, reference_metadata)
+            if hydro_lookahead:
+                term["hydro_terminal_lookahead"] = hydro_lookahead
+        term["state_band_penalty"] = float(rc.get("value_method", {}).get("fallback_penalty", 1.0e5))
+        if mode == "value":
+            certificate = value_asset_reachability(cfg, da_plan, t1)
+            if certificate is not None:
+                term["asset_reachability"] = certificate
+    if mode != "value" and (da_plan.get("Pg") or (sc.get("anchor") == "two_hour_eq" and cfg.units.get("pumped"))):
         # 抽蓄实时规则同储能（realtime.storage）：fixed_da = 执行日前抽发曲线（工况、台数、功率）；
         # sced_anchor = 抽/发 0-1 工况与台数在窗口 MIP 内决策，上库库容按储能同一锚点规则（B2 hourly_eq / B1 window_end_pct）。
         if mode == "fixed_da":
@@ -459,12 +751,53 @@ def run_rt_period(da_case, da_plan: dict, plan: dict, cfg, state: SysState, t: i
         else:
             term["pumped_anchor"] = pumped_anchors(cfg, da_plan["Vu"], t, t1)
     term["fix_power"] = fix_power
+    from .hydro_daily_energy import reference_terms as daily_energy_reference_terms
+    daily_reference = daily_energy_reference_terms(cfg, da_plan, vplan, hydro_mode, t1, reference_metadata)
+    if daily_reference is not None:
+        term["hydro_daily_energy_reference"] = daily_reference
     c2 = _sub_cfg(cfg, mip_rel_gap=float(rc.get("mip_rel_gap", 0.01)), time_limit_s=float(rc.get("time_limit_s", 30)),
                   warm_start=False, tighten=False)
+    total = c2.base["solver"]["time_limit_s"]
+    solver_budget = scuc.SolverBudget(total_s=total, reserve_lp_s=min(10., total * .1))
     case = make_window_case(da_case, c2, t, t1, t, bool(rc.get("first_period_actual", True)), state, fixed, term, "RT")
+    fallback = None
     try:
-        r = clear_window(case)
+        try:
+            r = clear_window(case, solver_budget=solver_budget)
+        except scuc.InfeasibleModelError as hard_exc:
+            # 第二轮C项回退：先硬后软。偏差带/日末约束/两小时硬锚点在本窗口改为高罚软约束（假设值罚因子），
+            # 记录原因并继续滚动；软化后仍失败才视为真实错误。
+            # Planned day-end targets are already soft: retrying them cannot
+            # repair a physical infeasibility and must not be called fallback.
+            planned_soft = term.get("state_band_terminal_policy", {}).get("mode") == "soft"
+            hard_bands = any(not (planned_soft and len(row) > 5 and row[5] == "day_end")
+                             for row in term.get("state_band", []))
+            softenable = ((hard_bands or bool(term.get("storage_anchor_hard")))
+                          and hard_exc.phase in ("scuc", "formal_sced"))
+            if not softenable:
+                raise
+            soft = copy.deepcopy(term)
+            penalty = float(rc.get("value_method", {}).get("fallback_penalty", 1.0e5))
+            soft["state_band_soft"] = True
+            # Keep the selected hard/soft asset suffix when current bands soften.
+            # Planned terminal softness never becomes an emergency penalty.
+            # Legacy hard-clock fallback is unchanged.
+            if soft.pop("storage_anchor_hard", False):
+                soft.pop("asset_reachability", None)
+                soft["anchor_penalty"] = penalty
+                soft["pumped_anchor_penalty"] = penalty
+            fallback = dict(t=t, window_end_exclusive=t1, reason=f"{type(hard_exc).__name__}: {str(hard_exc)[:300]}",
+                            penalty=penalty, softened=("state_band" if term.get("state_band") else "") +
+                            ("+two_hour_eq" if term.get("storage_anchor_hard") else ""))
+            case = make_window_case(da_case, c2, t, t1, t, bool(rc.get("first_period_actual", True)), state, fixed, soft, "RT")
+            solver_budget.allowance()
+            r = clear_window(case, solver_budget=solver_budget)
+            fallback["band_slack_max"] = r["slack"].get("state_band_slack_max", 0.)
+            fallback["anchor_slack_max"] = r["slack"].get("anchor_slack_max_mwh", 0.)
     except Exception as exc:
+        from .live_runner import RunCancelled
+        if isinstance(exc, (RunCancelled, scuc.SolverBudgetExceededError)):
+            raise
         details = {h: dict(initial_V_1e4m3=state.hydro[h], initial_P_mw=state.hydro_p[h],
                            initial_online=state.hydro_online[h],
                            hard_target_V_1e4m3=term.get("hydro_window_end", {}).get(h)) for h in state.hydro}
@@ -473,7 +806,11 @@ def run_rt_period(da_case, da_plan: dict, plan: dict, cfg, state: SysState, t: i
                               actual_pumped_starts_used=state.pumped_used,
                               remaining_day_asset_certificate="asset_reachability" in term,
                               storage_targets=term.get("storage_anchor"), pumped_targets=term.get("pumped_anchor"))
-        raise RuntimeError(f"RT窗口[{t},{t1})出清失败，储能/抽蓄锚点={anchor_details}；硬锚点不自动放松；水电模式={hydro_mode}，实际初态/硬目标={details}；"
+        from .hydro_daily_energy import limits as daily_energy_limits
+        daily_limits = daily_energy_limits(cfg)
+        daily_context = {h: dict(daily_minimum_mwh=v, executed_before_mwh=state.hydro_used[h],
+                                remaining_minimum_mwh=max(0., v-state.hydro_used[h])) for h,v in daily_limits.items()}
+        raise RuntimeError(f"RT窗口[{t},{t1})出清失败，储能/抽蓄锚点={anchor_details}；仅明确硬约束不可行时允许受预算限制的软化；水电模式={hydro_mode}，实际初态/硬目标={details}；水电硬日电量下限={daily_context}（不得软化）；"
                            f"原始异常 {type(exc).__name__}: {exc}") from exc
     r["t"] = t
     targets = []
@@ -493,7 +830,37 @@ def run_rt_period(da_case, da_plan: dict, plan: dict, cfg, state: SysState, t: i
                             current_V_1e4m3=diag["v_start_1e4m3"], current_P_mw=diag["p_start_mw"],
                             ramp_violation_max_mw=violation))
     r["hydro_window_targets"] = targets  # forecast horizon terminal state, not executed state
+    r["fallback"] = fallback
+    r["state_deviations"] = state_deviations
+    r["reference_metadata"] = reference_metadata
+    r["thermal_reference_u"] = thermal_reference_u
+    r["hydro_reference_delta"] = hydro_reference_delta
+    r["handoff_config"] = {k: v for k, v in ho.items() if k != "levels"}
+    r["handoff_config"]["intraday_attempted"] = bool(id_active)
+    r["handoff_config"]["levels"] = {stage: {key: sorted(value) for key, value in groups.items()} for stage, groups in ho["levels"].items()}
+    for w in r["snap"].get("value_window", []):
+        kind, unit = w["kind"], w["unit"]
+        meta = reference_metadata[kind][unit]
+        w.update(reference_source=meta["trajectory_source"], value_source=meta["value_source"],
+                 reference_round=meta["round"], reference_fallback_reason=meta["fallback_reason"],
+                 reference_state=float(vplan[handoff.STATE_KEYS[kind]][unit][w["period"]]))
+    sources = {w["reference_source"] for w in r["snap"].get("value_window", [])}
+    r["reference_source"] = next(iter(sources)) if len(sources) == 1 else ("mixed" if sources else "day_ahead")
     return r
+
+
+def failed_intraday_reference(da_plan, tau, reason):
+    """An explicit failed attempt replaces every resource bundle with DA."""
+    ref = copy.deepcopy(da_plan)
+    ref["reference_source"] = "day_ahead"
+    ref["reference_metadata"] = {}
+    why = f"intraday_physical_infeasible@{tau}: {reason}"
+    for kind, key in handoff.STATE_KEYS.items():
+        ref["reference_metadata"][kind] = {unit: dict(trajectory_source="day_ahead", value_source="day_ahead",
+            round=None, attempted_round=tau, fallback_reason=why) for unit in da_plan.get(key, {})}
+    ref["reference_metadata"]["u"] = {unit: dict(source="day_ahead", round=None, attempted_round=tau,
+        fallback_reason=why) for unit in da_plan.get("u", {})}
+    return ref
 
 
 def _abs_plan(snap: dict, t0: int, T: int, base: dict | None = None) -> dict:
@@ -550,6 +917,7 @@ def advance(state: SysState, snap: dict, cfg) -> SysState:
 @dataclass
 class RollingResult:
     id_rounds: list = field(default_factory=list)      # 每轮日内 dict(tau, snap, prices, slack, ...)
+    id_failures: list = field(default_factory=list)  # confirmed physical failures, never successful ID rounds
     rt: list = field(default_factory=list)             # 每个实时时段 dict(t, snap(首时段), prices(首时段), ...)
     states: list = field(default_factory=list)         # 每个时段开始时的实际状态
     plans: list = field(default_factory=list)          # 每轮日内后的全天计划（绝对时段）
@@ -558,14 +926,20 @@ class RollingResult:
 
 def run_rolling(da_res, periods: int | None = None, log=print, *, progress_callback=None, should_cancel=None) -> RollingResult:
     """逐时段实时滚动；MKT.intraday.enabled 时在每个日内触发时刻先做一轮日内，实时开机沿用日内计划。"""
+    from .input_validation import validate_requested_periods
+    validate_requested_periods(periods)
     case = da_res.case
     cfg = case.cfg
+    from .input_validation import validate_time_grid
+    validate_time_grid(cfg)
     T = cfg.T if periods is None else min(cfg.T, periods)
     ic = cfg.mode["intraday"]
     use_id = bool(ic.get("enabled", False))
-    step = max(1, int(round(ic["interval_h"] / cfg.dt)))
+    step = int(round(ic["interval_h"] / cfg.dt)) if use_id else 1
     da_plan = _da_plan_arrays(da_res)
     plan = _abs_plan(da_plan, 0, cfg.T)
+    ref = None
+    ho = handoff_config(cfg)
     state = initial_state(cfg)
     out = RollingResult()
     out.plans.append(plan)
@@ -576,26 +950,46 @@ def run_rolling(da_res, periods: int | None = None, log=print, *, progress_callb
             raise RunCancelled(f"Cancelled after {len(out.rt)} executed periods")
         if use_id and t % step == 0:
             a = time.perf_counter()
-            r = run_intraday_round(case, da_plan, cfg, state, t, log)
+            try:
+                r = run_intraday_round(case, da_plan, cfg, state, t, log)
+            except scuc.InfeasibleModelError as exc:
+                if exc.phase not in ("scuc", "formal_sced"):
+                    raise
+                failure = dict(tau=t, phase=exc.phase, solver_status=exc.solver_status,
+                               reason=str(exc), fallback="day_ahead", status="failed_physical_infeasible")
+                out.id_failures.append(failure)
+                # Discard stale ID references without resetting actual executed states.
+                plan = _abs_plan(da_plan, 0, cfg.T)
+                ref = failed_intraday_reference(da_plan, t, str(exc))
+                log(f"[ID失败] 时段 {t}，{exc.phase}/{exc.solver_status}；该轮不计成功，实时回退日前参考：{exc}")
+            else:
+                plan = _abs_plan(r["snap"], t, cfg.T, plan)
+                r["plan_abs"] = plan
+                if ho["source"] == "intraday":
+                    ref = intraday_reference(da_plan, ref or da_plan, r, cfg.T, cfg=cfg)
+                out.id_rounds.append(r)
             t_id += time.perf_counter() - a
-            plan = _abs_plan(r["snap"], t, cfg.T, plan)
-            r["plan_abs"] = plan
-            out.id_rounds.append(r)
             out.plans.append(plan)
         a = time.perf_counter()
-        r = run_rt_period(case, da_plan, plan, cfg, state, t)
+        r = run_rt_period(case, da_plan, plan, cfg, state, t, ref=ref, id_active=bool(out.id_rounds or out.id_failures))
         t_rt += time.perf_counter() - a
         out.states.append(state)
         out.rt.append(dict(t=t, snap=r["snap"], prices=r["prices"], dispatch_prices=r["dispatch_prices"],
                            pricing_info=r["pricing_info"], solver_budget=r.get("solver_budget"), build_time_s=r.get("build_time_s"),
                            non_solver_elapsed_s=r.get("non_solver_elapsed_s"), repriced_meaning=r["repriced_meaning"], slack=r["slack"], repriced=r["repriced"],
                            hydro_window_targets=r["hydro_window_targets"],
+                           fallback=r.get("fallback"), state_deviations=r.get("state_deviations", []),
                            anchor_relaxed=r["anchor_relaxed"], anchor_slack_present=r["anchor_slack_present"],
                            pricing_source=r["pricing_source"], time_s=r["time_s"], mip_time=r["mip"]["time_s"],
                            mip=dict(r["mip"]), sced=dict(r["sced"]),
                            regulation_allocation=r["mip"].get("regulation_allocation", {}),
                            stage_diagnostics=r.get("stage_diagnostics", {}),
-                           plan_idx=len(out.plans) - 1))
+                           plan_idx=len(out.plans) - 1,
+                           reference_source=r.get("reference_source", "day_ahead"),
+                           reference_metadata=r.get("reference_metadata", {}),
+                           hydro_reference_delta=r.get("hydro_reference_delta", {}),
+                           thermal_reference_u=r.get("thermal_reference_u", {}),
+                           handoff_config=r.get("handoff_config", {})))
         state = advance(state, r["snap"], cfg)
         out.time_s = dict(intraday=t_id, realtime=t_rt)
         if progress_callback:
@@ -645,12 +1039,15 @@ def intraday_tables(da_res, rr: RollingResult) -> dict:
     sto = pd.DataFrame(srow)
     if not rr.id_rounds:
         cols = ["round", "tau", "period", "unit", "type", "P_mw", "on"]
-        return dict(plans=pd.DataFrame(columns=cols), prices=pd.DataFrame(columns=["round", "tau", "period", "bus", "lmp"]),
+        return dict(plans=pd.DataFrame(columns=cols), prices=pd.DataFrame(columns=["round", "tau", "period", "bus", "lmp", "load_mw", "fixed_load_mw"]),
                     storage=pd.DataFrame(columns=["round", "tau", "period", "unit", "P_dis", "P_ch", "u_dis", "u_ch", "E_mwh"]),
-                    summary=pd.DataFrame(columns=["round", "tau", "window"]))
+                    summary=pd.DataFrame(columns=["round", "tau", "window", "mip_s", "gap", "obj", "repriced", "lmp_avg_first_hour", "termination", "gap_target", "gap_target_met"]))
     summ = pd.DataFrame([dict(round=f"{r['tau']//4:02d}:{(r['tau']%4)*15:02d}", tau=r["tau"], window=f"{r['tau']}-{cfg.T-1}",
                               mip_s=r["mip"]["time_s"], gap=r["mip"]["gap"], obj=r["mip"]["objective"],
                               repriced=r["repriced"], **{k: v for k, v in r["slack"].items()},
+                              termination=r.get("solution_quality", {}).get("termination", r["mip"].get("termination")),
+                              gap_target=r.get("solution_quality", {}).get("target_gap"),
+                              gap_target_met=r.get("solution_quality", {}).get("gap_target_met"),
                               lmp_avg_first_hour=float(r["prices"]["lmp_clamped"][:, :4].mean()))
                          for r in rr.id_rounds])
     return dict(plans=plans, prices=prices, storage=sto, summary=summ)
@@ -737,6 +1134,7 @@ def rt_tables(da_res, rr: RollingResult) -> dict:
                            energy_price=pr["energy"][0], reserve_up_price=pr["reserve_up_price"][0], reserve_dn_price=pr["reserve_dn_price"][0], repriced=r["repriced"], anchor_relaxed=r["anchor_relaxed"],
                            anchor_slack_present=bool(r["slack"]["anchor_slack_max_mwh"] > 1e-6),
                            pricing_source=r.get("pricing_source", "standard_sced"), solve_s=r["time_s"],
+                           fallback=bool(r.get("fallback")),
                            **{f"{k}_win": v for k, v in r["slack"].items()}))
     units = pd.DataFrame(urows)
     units["curtail_mw"] = np.where(units.type.isin(["wind", "pv"]), units.get("avail_mw", 0) - units.P_mw, 0.0)

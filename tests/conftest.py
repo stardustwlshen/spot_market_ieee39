@@ -20,6 +20,8 @@ def da_result():
     cfg.base["forecast"] = {"model": "legacy_v1"}  # explicit historical curve golden; current v2 tested separately
     cfg.units["renewable"] = [u for u in cfg.units["renewable"] if u["id"] not in {"PV2", "PV3"}]  # pre-expansion asset golden
     cfg.mode["realtime"]["storage"]["anchor"] = "hourly_eq"  # explicit historical soft-anchor fixture
+    cfg.mode["realtime"]["storage"]["mode"] = "sced_anchor"  # 第二轮：默认改为价值法，历史夹具显式保留旧锚点模式
+    cfg.mode["realtime"]["hydro"] = "window_end_da"           # 历史夹具：水电窗口末硬目标（tracking_policy 已移除）
     cfg.mode["startup_cost_mode"] = "state_dependent"  # historical detailed-startup regression
     # Explicit historical regression fixture: retain its exact prior safety/price
     # policy rather than accidentally testing new defaults under old assertions.

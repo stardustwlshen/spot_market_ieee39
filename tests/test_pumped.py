@@ -224,3 +224,22 @@ def test_run_of_river_default_bid_planned():
     cfg.units["hydro"] = filter_enabled(raw)["hydro"]
     b = default_bids(cfg)
     assert b["units"]["H2"]["mode"] == "planned" and b["units"]["H1"]["mode"] == "price_quantity"
+
+
+def test_window_end_pct_day_end_exact():
+    """K 验证发现：window_end_pct 窗口覆盖日末时须收为日前日末值（不再 ±x 漂移），储能与抽蓄同规则。"""
+    from smm.config import load_config
+    from smm.rolling import pumped_anchors, storage_anchors
+    cfg = load_config()
+    cfg.mode["realtime"]["storage"]["anchor"] = "window_end_pct"
+    T = cfg.T
+    pid = cfg.units["pumped"][0]["id"]
+    a = pumped_anchors(cfg, {pid: np.full(T, 300.0)}, T - 4, T)[pid]
+    assert len(a) == 1 and a[0][0] == 3 and a[0][1] == a[0][2] == pytest.approx(300.0)
+    E = {d["id"]: np.full(T, 0.5 * d["ecap"]) for d in cfg.units["storage"]}
+    b = storage_anchors(cfg, E, T - 4, T)
+    for d in cfg.units["storage"]:
+        assert b[d["id"]][0][1] == b[d["id"]][0][2] == pytest.approx(0.5 * d["ecap"])
+    mid = storage_anchors(cfg, E, 0, 8)  # 非日末窗口仍为 ±x
+    d0 = cfg.units["storage"][0]
+    assert mid[d0["id"]][0][2] > mid[d0["id"]][0][1]

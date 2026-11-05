@@ -36,9 +36,15 @@ except (ValueError, KeyError, TypeError, AttributeError, OSError, yaml.YAMLError
 notice = st.session_state.pop('typical_created_notice', None)
 if notice:
     st.success(notice)
-running = [m for m in sc.list_runs() if run_status(m) in ("running", "starting", "cancelling")]
+run_records = sc.list_runs()
+running = [m for m in run_records if run_status(m) in ("running", "starting", "cancelling")]
+invalid_current = [m for m in run_records if m.get('status') == 'invalid' and m.get('scenario') == name]
 needs_restart = bool(st.session_state.get('runtime_needs_restart'))
-active = bool(running) or needs_restart
+active = bool(running) or needs_restart or bool(invalid_current)
+if invalid_current:
+    st.error('当前场景有损坏的运行元数据，无法确认历史运行状态，暂不能改价或启动。请保留原文件，核对并从备份恢复下列meta.json；也可切换其他场景查看。')
+    for invalid_record in invalid_current:
+        st.caption(str(Path(invalid_record['dir']) / 'meta.json') + '：' + invalid_record['metadata_error'])
 if running:
     st.info("已有后台运行，或历史进程身份尚待核实。暂禁用改价和启动，避免重复求解。")
 elif needs_restart:
@@ -103,7 +109,7 @@ def monitor():
         m["status"] = run_status(m)
     # A timer reruns only this fragment. Refresh page-level editor/button state
     # when a background job ends (or another session starts one).
-    now_active = any(m['status'] in ('running', 'starting', 'cancelling') for m in runs) or bool(st.session_state.get('runtime_needs_restart'))
+    now_active = (any(m['status'] in ('running', 'starting', 'cancelling') or (m['status'] == 'invalid' and m['scenario'] == st.session_state.get('scenario')) for m in runs) or bool(st.session_state.get('runtime_needs_restart')))
     if now_active != active:
         st.rerun(scope='app')
     labels = {m["dir"]: run_label(m) for m in runs}
@@ -113,6 +119,11 @@ def monitor():
     sel = st.selectbox("查看运行", keys, index=idx, format_func=labels.get, key="run_sel")
     st.session_state["watch_run"] = sel
     m = next(x for x in runs if x["dir"] == sel)
+    if m.get('status') == 'invalid':
+        st.error('这条运行的元数据损坏，状态、时间与完成范围未核实；不会标记为完成或尝试自动恢复。')
+        st.caption(str(Path(sel) / 'meta.json') + '：' + m['metadata_error'])
+        st.info('请从备份核对并恢复该文件。可在“查看运行”切换其他记录；原文件未改写。')
+        return
     if m.get("demo_description"):st.info(m["demo_description"])
     st.caption(f"所看结果来自：{m['scenario']} · 报价 v{m.get('bid_version', '未记录')}。采用该次冻结输入，不随上方修改变化。")
     logp = Path(sel) / "run.log"

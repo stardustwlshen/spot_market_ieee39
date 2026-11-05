@@ -6,8 +6,17 @@ from pathlib import Path
 import pandas as pd
 import streamlit as st
 
-MAIN_SECTIONS = ['全网概览', '日前实时对比', '机组及电网运行', '结算与收益', '异常诊断']
-OPERATION_SECTIONS = ['机组出力', '储能', '水电与抽蓄', '电网拓扑', '线路负载', '弃风弃光']
+# 第二轮J项：按出清阶段分块（日前 / 日内·实时滚动 / 最终结果），各阶段子页结构一致
+MAIN_SECTIONS = ['日前', '日内/实时滚动', '最终结果']
+MAIN_SECTIONS_INTRADAY = ['日前', '日内滚动', '实时', '最终结果']
+MAIN_SECTIONS_DA_ONLY = ['日前', '最终结果']
+STAGE_SECTIONS = ['关键指标', '节点电价', '发电结构与机组出力', '储能·抽蓄·水电', '备用', '电网与阻塞', '弃风弃光', '该阶段诊断']
+RT_SECTIONS = STAGE_SECTIONS + ['窗口浏览']
+INTRADAY_SECTIONS = ['关键指标', '节点电价（指示性）', '发电结构与机组出力', '储能·抽蓄·水电', '该阶段诊断']
+FINAL_SECTIONS = ['关键指标对比', '电价对比', '中标与实际', 'SOC/库容轨迹', '价值曲线', '弃电', '阻塞线路',
+                  '两部制结算恒等式', '收入与成本', '诊断']
+DIAGNOSTIC_SECTIONS = ['未满足项与求解质量', '主体与求解阶段', '完整存档与来源']
+OPERATION_SECTIONS = STAGE_SECTIONS   # 旧名兼容
 
 
 def recorded_number(value, format_spec='.1f'):
@@ -108,6 +117,60 @@ def validate_resource_scope(result):
                 raise ValueError(f'{key}.csv 缺少主体编号，不能核实主体全集')
             if set(table[identifier]) != expected:
                 raise ValueError(f'{key}.csv 主体全集与本次保存的日前出力不一致')
+
+
+def validate_line_scope(result):
+    """Validate each archived line×period, using only this run's frozen network."""
+    root = result.get('snapshot_root')
+    branch_file = Path(root) / 'data/case39/branches.csv' if root else None
+    expected_lines = None
+    if branch_file is not None and branch_file.is_file():
+        branches = pd.read_csv(branch_file)
+        if ('branch_id' not in branches or branches.branch_id.isna().any()
+                or branches.branch_id.astype(str).str.strip().eq('').any() or branches.branch_id.duplicated().any()):
+            raise ValueError('冻结线路编号缺失或重复，不能核实全网潮流范围')
+        expected_lines = set(branches.branch_id)
+    result['line_scope_verified'] = {}
+    result['line_scope_warnings'] = []
+    for stage, key, price_key in [('da', 'da_line_flows', 'da_nodal_prices'), ('rt', 'rt_lines', 'rt_prices')]:
+        if stage == 'rt' and not result.get('full'):
+            continue
+        label = '日前' if stage == 'da' else '实时'
+        table = result.get(key)
+        result['line_scope_verified'][stage] = False
+        if table is None:
+            continue  # Optional old exports remain unavailable, never fabricated.
+        if not isinstance(table, pd.DataFrame) or table.empty:
+            raise ValueError(f'{label}线路潮流文件为空，不能视为全网无阻塞')
+        required = {'period', 'line', 'flow_mw', 'mu_plus', 'mu_minus'}
+        if not required <= set(table):
+            raise ValueError(f'{label}线路潮流缺少必要字段：' + '、'.join(sorted(required - set(table))))
+        table = table.copy()
+        periods = pd.to_numeric(table.period, errors='coerce')
+        if periods.isna().any() or not ((periods >= 0) & (periods < 96) & (periods % 1 == 0)).all():
+            raise ValueError(f'{label}线路潮流时段编号无效')
+        table['period'] = periods.astype(int)
+        if table.line.isna().any() or table.line.astype(str).str.strip().eq('').any() or table.duplicated(['line', 'period']).any():
+            raise ValueError(f'{label}线路潮流编号缺失或线路与时段记录重复')
+        required_periods = set(result[price_key].period)
+        if set(table.period) != required_periods or table.groupby('line').period.nunique().ne(len(required_periods)).any():
+            raise ValueError(f'{label}线路潮流的线路×时段记录不完整，不能按缺行算零阻塞')
+        for field in ('flow_mw', 'mu_plus', 'mu_minus'):
+            values = pd.to_numeric(table[field], errors='coerce')
+            if values.isna().any() or values.isin([float('inf'), -float('inf')]).any():
+                raise ValueError(f'{label}线路潮流 {field} 含缺失或非有限值，不能视为无阻塞')
+            table[field] = values
+        if expected_lines is not None:
+            if set(table.line) != expected_lines:
+                missing = expected_lines - set(table.line)
+                extra = set(table.line) - expected_lines
+                raise ValueError(f'{label}线路潮流与本次冻结网络的线路全集不一致' +
+                                 ('；缺少：' + '、'.join(sorted(missing)) if missing else '') +
+                                 ('；多出：' + '、'.join(sorted(extra)) if extra else ''))
+            result['line_scope_verified'][stage] = True
+        else:
+            result['line_scope_warnings'].append(f'{label}缺少本次冻结线路清单，不能核实潮流主体全集；全网阻塞时段总数保持未知，只显示保存的线路记录。')
+        result[key] = table
 
 
 def validate_display_result(result):
@@ -242,6 +305,7 @@ def validate_display_result(result):
             raise ValueError('冻结节点编号缺失或重复，不能核实全网节点范围')
         if set(result['da_nodal_prices'].bus) != set(buses.bus):
             raise ValueError('日前节点电价与本次冻结网络的节点集合不一致，不能以缺失节点冒充全网结果')
+    validate_line_scope(result)
 
 
 def comparison_frame(result):
@@ -272,20 +336,31 @@ def comparison_frame(result):
     return pd.concat(frames, axis=1).sort_index().reset_index() if frames else pd.DataFrame()
 
 
-def build_result_navigation(summary, da_summary, *, directory):
+def build_result_navigation(summary, da_summary, *, directory, full=True, intraday=False):
+    """Stage blocks: DA, (intraday,) RT rolling, final DA-vs-RT comparison with diagnostics."""
     from market_views import result_health_dashboard, result_quality_messages
     from output_browser import render_output_browser
     messages = result_quality_messages(summary, da_summary, directory=directory)
     important = [(level, text) for level, text in messages if level in ('error', 'warning')]
     if important:
         render = st.error if any(level == 'error' for level, _ in important) else st.warning
-        render('本次运行有需要注意的结果：\n\n' + '\n\n'.join('• '+text.split('。')[0]+'。' for _, text in important) + '\n\n完整检查范围与原因见“异常诊断”。')
-    st.caption('阅读顺序：先看全网概况，再比日前与实时，随后检查机组和电网，最后查看结算收益及异常原因。缺失记录不按零处理。')
-    main = st.tabs(MAIN_SECTIONS)
-    with main[2]:
-        operation = st.tabs(OPERATION_SECTIONS)
-    with main[4]:
-        diagnostic = st.tabs(['未满足项与求解质量', '主体与求解阶段', '完整存档与来源'])
+        render('本次运行有需要注意的结果：\n\n' + '\n\n'.join('• '+text.split('。')[0]+'。' for _, text in important) + '\n\n完整检查范围与原因见“最终结果 → 诊断”。')
+    st.caption('阅读顺序：先看日前，再看日内/实时滚动，最后在“最终结果”直接对比日前与实时（日前值、实时值、实时−日前）。缺失记录不按零处理。')
+    sections = (MAIN_SECTIONS_INTRADAY if intraday else MAIN_SECTIONS) if full else MAIN_SECTIONS_DA_ONLY
+    main = st.tabs(sections)
+    out = dict(main=main, sections=sections)
+    with main[0]:
+        out['da'] = st.tabs(STAGE_SECTIONS)
+    if full:
+        if intraday:
+            with main[1]:
+                out['id'] = st.tabs(INTRADAY_SECTIONS)
+        with main[sections.index('实时' if intraday else '日内/实时滚动')]:
+            out['rt'] = st.tabs(RT_SECTIONS)
+    with main[-1]:
+        out['final'] = st.tabs(FINAL_SECTIONS)
+    with out['final'][-1]:
+        diagnostic = st.tabs(DIAGNOSTIC_SECTIONS)
     with diagnostic[0]:
         result_health_dashboard(summary, da_summary, directory=directory, messages=messages)
         advanced = st.expander('高级诊断与技术记录（按需查看）', expanded=False)
@@ -296,4 +371,5 @@ def build_result_navigation(summary, da_summary, *, directory):
             st.caption('日前混合整数相对间隙：'+('未记录' if gap is None else f'{gap:.2%}'))
     with diagnostic[2]:
         render_output_browser(directory)
-    return dict(main=main, operation=operation, diagnostic=diagnostic, advanced=advanced)
+    out.update(diagnostic=diagnostic, advanced=advanced)
+    return out

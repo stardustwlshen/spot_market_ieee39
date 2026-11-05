@@ -230,9 +230,30 @@ def _validate_technical_parameters(cfg, init=None):
                     raise ValueError(f'{uid}.pondage不得超过初始库容')
 
 
+def validate_time_grid(cfg):
+    """Reject inconsistent clocks instead of rounding a different market window."""
+    dt = number(cfg.base['dt_h'], 'dt_h', positive=True)
+    rc = cfg.mode.get('realtime', {})
+    interval = number(rc.get('interval_min'), 'realtime.interval_min', positive=True)
+    if not math.isclose(interval, 60. * dt, rel_tol=0., abs_tol=1e-9):
+        raise ValueError('realtime.interval_min必须与60×dt_h一致，不能改变窗口实际时长')
+    def steps(value, label):
+        count = number(value, label, positive=True) / dt
+        if not math.isclose(count, round(count), rel_tol=0., abs_tol=1e-9) or round(count) < 1:
+            raise ValueError(f'{label}必须为dt_h的正整数倍，不能四舍五入')
+        return int(round(count))
+    steps(rc.get('lookahead_h'), 'realtime.lookahead_h')
+    binding = rc.get('binding_periods', 1)
+    if isinstance(binding, bool) or binding != 1:
+        raise ValueError('realtime.binding_periods仅支持1，每轮只执行首时段')
+    ic = cfg.mode.get('intraday', {})
+    if ic.get('enabled', False):
+        steps(ic.get('interval_h'), 'intraday.interval_h')
+
+
 def validate_physical_inputs(cfg, init=None):
     _validate_resource_ids(cfg)
-    number(cfg.base['dt_h'], 'dt_h', positive=True)
+    validate_time_grid(cfg)
     _integer(cfg.base['periods'], 'periods', positive=True)
     _validate_hydro_topology(cfg)
     _validate_technical_parameters(cfg, init=init)
@@ -401,3 +422,10 @@ def read_input_csv(path, **kwargs):
     except csv.Error as exc:
         raise ValueError(f'{path}: CSV结构非法: {exc}') from exc
     return pd.read_csv(io.StringIO(text), **kwargs)
+
+
+def validate_requested_periods(periods):
+    """Reject malformed debug horizons before any expensive solve or write."""
+    from numbers import Integral
+    if periods is not None and (isinstance(periods, bool) or not isinstance(periods, Integral) or periods <= 0):
+        raise ValueError('periods必须为正整数或None，不能为布尔、零、负数或小数')

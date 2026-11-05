@@ -31,7 +31,7 @@ def validate_anchor_config(cfg):
     kind = sc.get('anchor', 'hourly_eq')
     if kind not in ANCHOR_KINDS:
         raise ValueError(f'未知锚点方式 {kind}')
-    if kind != 'two_hour_eq' or sc.get('mode', 'sced_anchor') != 'sced_anchor':
+    if kind != 'two_hour_eq' or sc.get('mode', 'value') != 'sced_anchor':
         return
     dt = _positive(cfg.base['dt_h'], 'dt_h')
     interval = _positive(rc['interval_min'], 'realtime.interval_min')
@@ -82,7 +82,7 @@ def exact_target(series, unit, k, lower, upper):
 
 def policy_metadata(cfg):
     storage = cfg.mode['realtime']['storage']
-    active = storage.get('mode', 'sced_anchor') == 'sced_anchor'
+    active = storage.get('mode', 'value') == 'sced_anchor'
     hard = active and storage.get('anchor', 'hourly_eq') == 'two_hour_eq'
     return dict(anchor=cfg.mode['realtime']['storage'].get('anchor', 'hourly_eq'),
                 equality=('hard' if hard else 'soft') if active else 'not_applicable', timezone='Asia/Shanghai',
@@ -92,10 +92,14 @@ def policy_metadata(cfg):
                 day_end='24:00 uses last DA end-state; no wrap to next-day index 0')
 
 
-def validate_actual_state(cfg, plan, state, t, tolerance=1e-5):
-    """No retroactive reset when a rolling window starts on an already due anchor."""
+def validate_actual_state(cfg, plan, state, t, tolerance=1e-5, *, tolerate=False):
+    """No retroactive reset when a rolling window starts on an already due anchor.
+
+    tolerate=True（第二轮C项：两小时硬锚点硬→软回退后）只记录偏差并返回列表，不抛异常、不重置实际库存。
+    """
+    deviations = []
     if cfg.mode['realtime']['storage'].get('anchor') != 'two_hour_eq':
-        return
+        return deviations
     for kind, group, actual in (('E', 'storage', state.storage), ('Vu', 'pumped', state.pumped)):
         expected = {d['id'] for d in cfg.units.get(group, [])}
         if set(actual) != expected:
@@ -107,12 +111,17 @@ def validate_actual_state(cfg, plan, state, t, tolerance=1e-5):
             if t > 0 and t % _steps(2., cfg.dt, '两小时锚点间隔') == 0:
                 target = float(plan[kind][unit][t-1])
                 if not math.isfinite(target) or abs(float(value)-target) > tolerance:
+                    if tolerate:
+                        deviations.append(dict(unit=unit, kind=kind, period=t, actual=float(value), da=target,
+                                               deviation=float(value)-target))
+                        continue
                     raise ValueError(f'两小时硬锚点起点{t*cfg.dt:02g}:00已有偏差：{unit} 实际={value}，日前={target}；不得重置实际库存')
+    return deviations
 
 
 def hard_anchor_checks(cfg, plan, rounds, tolerance=1e-5):
     """Audit detached formal windows AND their executed first-period endpoints."""
-    active = (cfg.mode['realtime']['storage'].get('mode', 'sced_anchor') == 'sced_anchor'
+    active = (cfg.mode['realtime']['storage'].get('mode', 'value') == 'sced_anchor'
               and cfg.mode['realtime']['storage'].get('anchor') == 'two_hour_eq')
     result = dict(storage_pumped_hard_anchors_active=active,
                   storage_pumped_hard_anchors_satisfied=None, hard_anchor_evidence_complete=None,

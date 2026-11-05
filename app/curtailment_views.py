@@ -172,12 +172,17 @@ def _summary_table(frame):
     return frame[[key for key in names if key in frame]].rename(columns=names)
 
 
-def curtailment_dashboard(report):
+def curtailment_dashboard(report, stage=None, key_prefix=''):
+    """stage=None 保留原阶段单选；第二轮J项结果页按阶段分块时直接传入 '日前'/'实时'。"""
     import plotly.graph_objects as go
     import streamlit as st
     from common import PALETTE, TYPE_COLOR, df_download, show_df, show_fig, style_fig
     st.subheader('风光可用量、出清量与弃电')
-    stage = st.radio('弃风弃光阶段', list(report['stages']), horizontal=True, key='curtailment_stage')
+    if stage is None:
+        stage = st.radio('弃风弃光阶段', list(report['stages']), horizontal=True, key=key_prefix+'curtailment_stage')
+    elif stage not in report['stages']:
+        st.info(f'本次结果没有{stage}阶段的风光弃电记录。')
+        return
     data = report['stages'][stage]
     dt = report['dt_h']
     st.caption(f"统计范围：{data['scope']}。可用量口径：{data['basis']}。")
@@ -197,7 +202,7 @@ def curtailment_dashboard(report):
         return
     show_df(_summary_table(data['stations']), '%.2f')
     selected = st.multiselect('风光场站', sorted(detail.unit.unique()), default=sorted(detail.unit.unique()),
-                              key=f'curtailment_units_{stage}')
+                              key=f'{key_prefix}curtailment_units_{stage}')
     if not selected:
         st.info('请选择至少一个风光场站。')
         return
@@ -216,16 +221,16 @@ def curtailment_dashboard(report):
         fig.add_bar(x=labels(aggregate.index), y=aggregate.values, name='弃风' if typ == 'wind' else '弃光',
                     marker_color=TYPE_COLOR[typ])
     fig.update_layout(barmode='stack')
-    show_fig(style_fig(fig, f'{stage}所选场站分时弃风弃光', '时刻' if dt else '时段序号', '弃电功率（MW）', 350), key='curtailment_by_type')
+    show_fig(style_fig(fig, f'{stage}所选场站分时弃风弃光', '时刻' if dt else '时段序号', '弃电功率（MW）', 350), key=key_prefix+'curtailment_by_type')
     fig = go.Figure()
     for index, (unit, part) in enumerate(chosen.groupby('unit')):
         color = PALETTE[index % len(PALETTE)]
         for column, label, dash in [('avail_mw', '可用', 'dot'), ('P_mw', '出清', 'solid')]:
             fig.add_scatter(x=labels(part.period), y=part[column], name=f'{unit} {label}',
                             line=dict(color=color, dash=dash), connectgaps=False)
-    show_fig(style_fig(fig, f'{stage}所选场站可用量与正式出清', '时刻' if dt else '时段序号', '功率（MW）', 380), key='curtailment_available_dispatch')
+    show_fig(style_fig(fig, f'{stage}所选场站可用量与正式出清', '时刻' if dt else '时段序号', '功率（MW）', 380), key=key_prefix+'curtailment_available_dispatch')
     chosen['time'] = labels(chosen.period)
     export = chosen[['period', 'time', 'unit', 'type', 'bus', *VALUE_COLUMNS, 'curtail_mwh', 'reason']].rename(
         columns={'curtail_mwh': '分时弃电量 MWh', 'reason': '数据说明'})
     show_df(export, '%.4f', height=320)
-    df_download(export, f'{"da" if stage == "日前" else "rt"}_curtailment.csv', label='下载所选场站分时弃电', key='curtailment_detail')
+    df_download(export, f'{"da" if stage == "日前" else "rt"}_curtailment.csv', label='下载所选场站分时弃电', key=key_prefix+'curtailment_detail')

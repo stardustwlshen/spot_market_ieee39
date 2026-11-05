@@ -96,8 +96,16 @@ def _override_anchor_costs(m, specification):
 def _remove_rt_tracking(m):
     """Remove only DA-state tracking from this RT pricing clone, never physical bounds."""
     rows, correction = [], 0
+    hydro_future = getattr(m, "hydro_terminal_lookahead", None)
+    if hydro_future is not None:
+        correction += hydro_future.cost
+        hydro_future.deactivate()
+        for h in hydro_future.H:
+            hydro_future.slack[h].fix(0.)
+        m._removed_hydro_terminal_lookahead = True
     certificate=getattr(m,'asset_reachability',None)
     if certificate is not None:
+        correction += getattr(certificate, "terminal_penalty_cost", 0.)
         certificate.deactivate()  # clone only; all remaining DA-target reachability is pricing tracking
         m._removed_asset_reachability=True
     for i, (unit, t, lower, upper, kind) in enumerate(m._anchors):
@@ -117,6 +125,20 @@ def _remove_rt_tracking(m):
         rows.append(dict(unit=unit, relative_period=int(t), kind=kind, lower=lower, upper=upper,
                          discharge_mwh_per_native_unit=conversion, removed_cost_coefficient=coefficient,
                          removed_constraint='hard_rt_da_tracking' if hard else 'soft_tracking', slack_zero_means_target_met=False))
+    for i, (kind, unit, t, lower, upper, label) in enumerate(getattr(m, "_state_bands", [])):
+        coefficient = getattr(m, "_state_band_cost_coefficients", {}).get(i,
+            m._state_band_penalty if getattr(m, "_state_band_soft", False) else 0.)
+        correction += coefficient * (m.sB_up[i] + m.sB_dn[i])
+        if hasattr(m, "_state_band_cost_coefficients"):
+            m._state_band_cost_coefficients[i] = 0.
+        if hasattr(m, "_state_band_soft_indices"):
+            m._state_band_soft_indices.discard(i)
+        m.c_band_hi[i].deactivate(); m.c_band_lo[i].deactivate()
+        m.sB_up[i].fix(0.); m.sB_dn[i].fix(0.)
+        rows.append(dict(unit=unit, relative_period=int(t), kind=kind, lower=lower, upper=upper,
+                         removed_cost_coefficient=coefficient, removed_constraint="value_state_target",
+                         discharge_mwh_per_native_unit=scuc.state_discharge_energy_factor(m._md,kind,unit),
+                         target_label=label, slack_zero_means_target_met=False))
     if hasattr(m, 'c_hydro_window_end'):
         for h, con in m.c_hydro_window_end.items():
             target = float(pyo.value(con.lower))

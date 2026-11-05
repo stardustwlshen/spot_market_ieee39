@@ -20,6 +20,7 @@ def hydro_case(T=10):
         cfg.base['solver']['threads']=int(os.environ['HYDRO_TEST_THREADS'])
     cfg.mode['regulation']['enabled']=False
     cfg.mode['realtime']['hydro']='window_end_da'
+    cfg.mode['realtime']['storage']['mode']='sced_anchor'  # 第二轮：默认价值法；历史水电滚动夹具显式保留锚点模式
     cfg.mode['realtime']['lookahead_h']=2.
     cfg.mode['reserve'].update(include_ctg=False,rho_L=0.,rho_RE=0.,rho_L_dn=0.,rho_RE_dn=0.)
     h=deepcopy(load_config().units['hydro'][0])

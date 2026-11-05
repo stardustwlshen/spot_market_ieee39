@@ -1,0 +1,90 @@
+{
+  "scope": "independent read-only final wet ID-off archived-run verification; not a fresh solve or general economic optimality proof",
+  "old_run": "outputs/full_2026-07-15_MKT_wet_v1_soft_final_id_off_20261105",
+  "new_run": "outputs/full_2026-07-15_MKT_wet_v1_hydro_final_id_off_20261105",
+  "old": {
+    "generation_mwh": 6654.4906510828505,
+    "generation_water_1e4m3": 2874.7399612677914,
+    "spill_1e4m3": 2123.781333919849,
+    "terminal_volume_1e4m3": 17839.878704812465,
+    "terminal_shortfall_1e4m3": 160.121295187535,
+    "terminal_penalty_yuan": 370651.14626744215,
+    "first_period_spill_m3s": 22916.46946680547,
+    "first_period_power_mw": 300.0,
+    "first_period_terminal_volume": 15955.51774798751,
+    "max_window_water_residual": 3.637978807091713e-12
+  },
+  "new": {
+    "generation_mwh": 6846.4568209509625,
+    "generation_water_1e4m3": 2957.669346650816,
+    "spill_1e4m3": 1880.7306533492824,
+    "terminal_volume_1e4m3": 18000.000000000007,
+    "terminal_shortfall_1e4m3": 0.0,
+    "terminal_penalty_yuan": 0.0,
+    "first_period_spill_m3s": 20249.802800138965,
+    "first_period_power_mw": 300.0,
+    "first_period_terminal_volume": 16195.517747987495,
+    "max_window_water_residual": 3.637978807091713e-12
+  },
+  "delta_new_minus_old": {
+    "generation_mwh": 191.96616986811205,
+    "generation_water_1e4m3": 82.92938538302451,
+    "spill_1e4m3": -243.05068057056678,
+    "terminal_volume_1e4m3": 160.12129518754227,
+    "terminal_shortfall_1e4m3": -160.121295187535,
+    "terminal_penalty_yuan": -370651.14626744215,
+    "first_period_spill_m3s": -2666.666666666504,
+    "first_period_power_mw": 0.0,
+    "first_period_terminal_volume": 239.99999999998545,
+    "max_window_water_residual": 0.0
+  },
+  "checks": {
+    "all_96_executed_and_forecast_water_balances": true,
+    "lookahead_rows": 88,
+    "all_88_references_match_frozen_DA_not_future_actual": true,
+    "no_lookahead_rows_at_day_end": true,
+    "max_predicted_shortage": 3.637978807091713e-12,
+    "max_predicted_cost": 0.0,
+    "original_strict_improvement_counterexample_eliminated": true,
+    "max_same_counterfactual_cost_improvement_yuan": 8.421247238638224e-09,
+    "min_retention_beyond_target_not_rewarded": true,
+    "DA_hydro_snapshot_identical": true,
+    "frozen_inputs_identical": {
+      "scenario_snapshot/config/base.yaml": true,
+      "scenario_snapshot/config/units.yaml": true,
+      "scenario_snapshot/resolved_bids.json": true,
+      "scenario_snapshot/effective_profiles.csv": true
+    },
+    "only_mode_change": [
+      {
+        "path": "/MKT/realtime/value_method/hydro_lookahead",
+        "old": "<missing>",
+        "new": "reference_continuation"
+      }
+    ],
+    "source_fingerprint_matches_final_freeze": true,
+    "relevant_current_source_matches_freeze": {
+      "src/smm/scuc.py": true,
+      "src/smm/rolling.py": true,
+      "src/smm/auxiliary_pricing.py": true,
+      "src/smm/asset_reachability.py": true,
+      "src/smm/value_outputs.py": true
+    },
+    "max_RT_MIP_gap": 0.009852611089909015,
+    "DA_MIP_gap": 0.009913726971494622,
+    "runtime_s": 245.17438544300057,
+    "summary_rules_satisfied_no_slack": true,
+    "hydro_executed_terminal_penalty_yuan": 0.0
+  },
+  "limitations": [
+    "This audit proves removal of the old positive-penalty same-dispatch less-spill counterexample in this scenario, not absence of all cost-neutral spill degeneracy.",
+    "Reference continuation costs are rolling forecast preferences, not executable future flows, feasibility certificates, cross-day water values, settlement payments, or quantities to sum over windows.",
+    "This single-reservoir ID-off evidence does not validate every cascade or ID-on scenario or prove full-day market optimality."
+  ],
+  "input_sha256": {
+    "hydro_window_evidence.json": "3c69bc23999a390210471ef7f76f1bf31dd27247b62c0e6ce3abe60ff814e8b6",
+    "hydro_terminal_lookahead_evidence.json": "889b3ede5a9250ec13032bc42ba5231d41eac3cdb18308432bd996f901d4a2f2",
+    "summary.json": "460f67d20aece32cdcdd4afed34bbca204e0e139c8bfd45c1ae569556c97eb49",
+    "scenario_snapshot/source_fingerprint.json": "35ec1473ccf221fb50ec4590fe17459221b99f4a018faa2acbead8eadf0c050e"
+  }
+}

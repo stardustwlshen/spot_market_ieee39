@@ -8,7 +8,9 @@
 from __future__ import annotations
 
 import time
+from copy import deepcopy
 from dataclasses import dataclass, field
+from numbers import Real
 
 import numpy as np
 import pandas as pd
@@ -18,6 +20,106 @@ from .bids import THERMAL_TYPES
 from .case import DACase
 
 EPS_STORAGE = 0.1  # 报量不报价储能的极小损耗成本（元/MWh，假设值）
+
+
+def state_discharge_energy_factor(md, kind, unit):
+    """Deliverable MWh per native stock unit; no timestep multiplier."""
+    factor = (float(md.storage[unit]["eta_d"]) if kind == "E" else
+              float(md.pumped[unit]["e_gen"]) if kind == "Vu" else
+              1. / (.36 * float(md.hydro[unit]["water_rate"])) if kind == "V" else None)
+    if factor is None or not np.isfinite(factor) or factor <= 0:
+        raise ValueError("状态存量的可放电能量换算系数须有限且为正")
+    return factor
+
+
+def validate_rt_terminal_policy(policy, stage):
+    """Validate explicitly supplied RT-only terminal preferences at model entry."""
+    if not isinstance(policy, dict) or policy.get("mode") not in ("hard", "soft"):
+        raise ValueError("实时日末目标策略须为 hard|soft")
+    if stage != "RT":
+        raise ValueError("实时日末软目标策略仅可用于RT，不得改变日前或日内")
+    if policy["mode"] == "soft" or policy.get("penalty_yuan_per_discharge_mwh") is not None:
+        coefficient = policy.get("penalty_yuan_per_discharge_mwh")
+        if (isinstance(coefficient, bool) or not isinstance(coefficient, Real)
+                or not np.isfinite(coefficient) or coefficient <= 0):
+            raise ValueError("日末目标罚价须为有限正数，单位元/可放电MWh")
+    return dict(policy)
+
+
+def _attach_hydro_terminal_lookahead(m):
+    """Finite RT preference under a reference continuation, never a feasibility proof.
+
+    Future reference flows have already been selected by rolling.py. No future
+    actual data or new dispatched quantities are introduced in this block.
+    """
+    spec = (m._case.terminal or {}).get("hydro_terminal_lookahead")
+    m._hydro_terminal_lookahead = {}
+    if spec is None:
+        return
+    case, md = m._case, m._md
+    policy = getattr(m, "_state_band_terminal_policy", {})
+    if case.stage != "RT" or policy.get("mode") != "soft":
+        raise ValueError("水电参考续程软目标仅可用于RT soft策略")
+    if case.t0 + md.T >= case.cfg.T:
+        raise ValueError("日末窗口不得重复附加水电参考续程成本")
+    if not isinstance(spec, dict) or set(spec) != set(md.hydro):
+        raise ValueError("水电参考续程须完整覆盖所有启用水电")
+    rows = {}
+    for h, supplied in spec.items():
+        if not isinstance(supplied, dict):
+            raise ValueError(f"水电参考续程 {h} 须为字典")
+        row = deepcopy(supplied)
+        for key in ("relative_period", "minimum_window_end_volume", "terminal_target", "reference_recovery_volume"):
+            value = row.get(key)
+            if isinstance(value, bool) or not isinstance(value, Real) or not np.isfinite(value):
+                raise ValueError(f"水电参考续程 {h}.{key} 须为有限数值")
+            row[key] = float(value)
+        if row["relative_period"] != md.T - 1:
+            raise ValueError("水电参考续程须连接当前窗口最后时段")
+        row["relative_period"] = md.T - 1
+        expected = row["terminal_target"] - row["reference_recovery_volume"]
+        if not np.isclose(row["minimum_window_end_volume"], expected, atol=1e-7, rtol=1e-10):
+            raise ValueError("水电参考续程阈值须等于日末目标减参考净回蓄量")
+        if row.get("reference_source") not in ("day_ahead", "intraday"):
+            raise ValueError("水电参考续程须明确日前或日内来源")
+        rows[h] = row
+    m._hydro_terminal_lookahead = rows
+    b = m.hydro_terminal_lookahead = pyo.Block(concrete=True)
+    b.H = pyo.Set(initialize=list(rows))
+    b.slack = pyo.Var(b.H, domain=pyo.NonNegativeReals)
+    b._energy_factors = {h: state_discharge_energy_factor(md, "V", h) for h in b.H}
+    b._cost_coefficients = {h: float(policy["penalty_yuan_per_discharge_mwh"]) * b._energy_factors[h] for h in b.H}
+    # Do not clip this reference threshold to physical bounds: an unattainable
+    # target must yield finite, honestly reported shortage, not a hard failure.
+    b.c_lower = pyo.Constraint(b.H, rule=lambda b, h:
+        m.V[h, rows[h]["relative_period"]] + b.slack[h] >= rows[h]["minimum_window_end_volume"])
+    b.cost = pyo.Expression(expr=sum(b._cost_coefficients[h] * b.slack[h] for h in b.H))
+
+
+def hydro_terminal_lookahead_diagnostics(m):
+    """Forecast preference only; do not sum rolling forecasts as realized costs."""
+    b = getattr(m, "hydro_terminal_lookahead", None)
+    if b is None:
+        return []
+    rows = []
+    for h, inputs in m._hydro_terminal_lookahead.items():
+        row = deepcopy(inputs)
+        state = float(pyo.value(m.V[h, inputs["relative_period"]]))
+        slack = float(pyo.value(b.slack[h]))
+        factor = b._energy_factors[h]
+        projected = state + inputs["reference_recovery_volume"]
+        row.update(unit=h, kind="V", state=state, projected_terminal_volume=projected,
+                   projected_terminal_shortfall=slack, actual_projected_shortfall=max(inputs["terminal_target"] - projected, 0.),
+                   factor=factor, discharge_mwh_per_native_unit=factor,
+                   projected_terminal_shortfall_mwh=slack * factor,
+                   penalty_yuan_per_native_unit=b._cost_coefficients[h],
+                   penalty_yuan_per_discharge_mwh=b._cost_coefficients[h] / factor,
+                   penalty_cost=slack * b._cost_coefficients[h] if b.active else 0.,
+                   native_unit="1e4m3", forecast_only=True, active=bool(b.active),
+                   slack_zero_means_target_met=bool(b.active),
+                   scope="reference_continuation_terminal_preference_not_feasibility_proof")
+        rows.append(row)
+    return rows
 
 
 @dataclass
@@ -124,11 +226,11 @@ def prepare(case: DACase) -> ModelData:
             Ld, cd, Lc, cc = [s["pmax"]], [EPS_STORAGE], [s["pmax"]], [0.0]
         md.storage[s["id"]] = dict(s, mode=mode, Ld=Ld, cd=cd, Lc=Lc, cc=cc,
                                    soc_min=b.get("soc_min", s["soc_min"]), soc_max=b.get("soc_max", s["soc_max"]),
-                                   soc_end=b.get("soc_end"), sched=b.get("self_schedule"))   # 申报期末 SOC；None = 未申报，由出清决定
+                                   soc_end=b.get("soc_end"), sched=b.get("self_schedule"))   # 申报期末 SOC；None = 未申报，日前回到日初 SOC
         if case.init and s["id"] in case.init.get("storage", {}):
             md.storage[s["id"]]["soc0"] = float(case.init["storage"][s["id"]]) / s["ecap"]
     # 抽蓄市场规则同储能（MKT.pumped.rules = storage）：报价方式取报价文件 mode（price_quantity / quantity_only），
-    # 日末上库库容按申报值硬约束（同储能申报期末 SOC），未申报由出清决定。
+    # 日末上库库容按申报值硬约束（同储能申报期末 SOC），未申报时回到日初上库库容。
     for p in cfg.units.get("pumped", []):
         b = bids.get(p["id"]) or {}
         mode = b.get("mode", "price_quantity")
@@ -463,8 +565,8 @@ def build_model(case: DACase, penalties: dict | None = None) -> pyo.ConcreteMode
     # 日电量约束（川V4.0 附件8 约束(16)、7.4.10）：仅库容型；径流式按来水发电
     m.c_eday = pyo.Constraint(m.HS, rule=lambda m, h: sum(m.Ph[j, t] for j in md.hydro[h]["units"] for t in range(T)) * dt <= md.hydro[h]["e_day"] + 1e-6
                               if md.hydro[h].get("e_day") is not None else pyo.Constraint.Skip)
-    m.c_edaymin = pyo.Constraint(m.HS, rule=lambda m, h: sum(m.Ph[j, t] for j in md.hydro[h]["units"] for t in range(T)) * dt >= float(md.hydro[h]["e_day_min"]) - 1e-6
-                                 if (term is None and md.hydro[h].get("e_day_min")) else pyo.Constraint.Skip)
+    # The hard daily lower bound is attached below with actual executed energy
+    # and, for early RT windows, a hydro-only physical continuation witness.
 
     # ---------------- 抽水蓄能（全厂级，闭式上下库）
     m.c_pgseg = pyo.Constraint(m.PGK, m.T, rule=lambda m, p, k, t: m.pg[p, k, t] <= md.pumped[p]["Lg"][k])
@@ -543,9 +645,13 @@ def build_model(case: DACase, penalties: dict | None = None) -> pyo.ConcreteMode
         return m.Vu[p, t] == Vp + (m.Pp[p, t] / d["e_pump"] - m.Pg[p, t] / d["e_gen"]) * dt
     m.c_pres = pyo.Constraint(m.PS, m.T, rule=pres)            # 上库库容平衡（万m3；电量/库容转换系数）
     m.c_pvlim = pyo.Constraint(m.PS, m.T, rule=lambda m, p, t: pyo.inequality(md.pumped[p]["v_lo"], m.Vu[p, t], md.pumped[p]["v_hi"]))
-    if term is None:   # 日前：同储能申报期末 SOC —— 申报了日末上库库容即硬约束，未申报由出清决定
-        P_end = [p for p in m.PS if md.pumped[p]["v_end"] is not None]
-        m.c_pvend = pyo.Constraint(P_end, rule=lambda m, p: m.Vu[p, T - 1] == md.pumped[p]["v_end"])
+    if term is None:   # 日前：申报了日末上库库容即硬约束；未申报时 Vu_T = Vu_0（第二轮B项：保持日前跨日一致，假设值见docs）
+        def pumped_end_target(p):
+            d = md.pumped[p]
+            target = d["init"]["V"] if d["v_end"] is None else d["v_end"]
+            return min(max(float(target), d["v_lo"]), d["v_hi"])
+        m._pumped_end_target = {p: pumped_end_target(p) for p in m.PS}
+        m.c_pvend = pyo.Constraint(m.PS, rule=lambda m, p: m.Vu[p, T - 1] == m._pumped_end_target[p])
 
     # ---------------- 储能
     # 分段上限直接乘状态变量（逐段 big-M = 段长，比只约束总功率更紧）
@@ -564,14 +670,19 @@ def build_model(case: DACase, penalties: dict | None = None) -> pyo.ConcreteMode
     m.c_soc = pyo.Constraint(m.S, m.T, rule=soc)
     m.c_elim = pyo.Constraint(m.S, m.T, rule=lambda m, s, t: pyo.inequality(md.storage[s]["soc_min"] * md.storage[s]["ecap"], m.E[s, t], md.storage[s]["soc_max"] * md.storage[s]["ecap"]))
     # 期末 SOC：
-    #   日前：储能申报了运行日末期望 SOC → 硬约束 E[T−1] = soc_end·ecap（川V4.0 7.7.4、附件8 式(20)）；未申报 → 不约束，由出清决定。
+    #   日前：储能申报了运行日末期望 SOC → 硬约束 E[T−1] = soc_end·ecap（川V4.0 7.7.4、附件8 式(20)）；未申报 → 回到日初 SOC（研究设定）。
     #   two_hour_eq：电池/抽蓄以c_anc_eq硬等式执行，sA固定0；水电软跟踪不受影响。
     #   历史实时（甘V3.2 运营细则附录5 第9项）：窗口内锚点时段 lo ≤ E ≤ hi（带显式松弛与罚项的软锚点），lo/hi 由 rolling 按日前 SOC 计算：
     #     window_end_pct：窗口末时段 (1−x)E_DA ≤ E_RT ≤ (1+x)E_DA；hourly_eq：窗口内各整点 E_RT = E_DA（广东）。
     #   sA_up/sA_dn 为软锚点松弛（罚 anchor_penalty）；标准流程不再放宽边界或重定价，直接使用同次SCED对偶。
+    #   第二轮B项：日前未申报期末SOC时取 E_T = E_0（假设值：日前不允许跨日搬移电量），并夹在SOC技术边界内。
     if term is None:
-        S_end = [s for s in m.S if md.storage[s]["soc_end"] is not None]
-        m.c_eend = pyo.Constraint(S_end, rule=lambda m, s: m.E[s, T - 1] == float(md.storage[s]["soc_end"]) * md.storage[s]["ecap"])
+        def storage_end_target(s):
+            d = md.storage[s]
+            soc = d["soc0"] if d["soc_end"] is None else float(d["soc_end"])
+            return min(max(soc, d["soc_min"]), d["soc_max"]) * d["ecap"]
+        m._storage_end_target = {s: storage_end_target(s) for s in m.S}
+        m.c_eend = pyo.Constraint(m.S, rule=lambda m, s: m.E[s, T - 1] == m._storage_end_target[s])
     # 锚点：储能 E（MWh）与抽蓄上库库容 Vu（万m3），规则相同（realtime.storage.anchor）
     tracking = (term or {}).get("tracking_policy")
     if tracking is not None:
@@ -621,6 +732,60 @@ def build_model(case: DACase, penalties: dict | None = None) -> pyo.ConcreteMode
     m.c_anc_eq = pyo.Constraint(sorted(hard), rule=lambda m, i: getattr(m, anchors[i][4])[anchors[i][0], anchors[i][1]] == m.A_lo[i])
     m.c_anc_hi = pyo.Constraint(m.A, rule=lambda m, i: getattr(m, anchors[i][4])[anchors[i][0], anchors[i][1]] <= m.A_hi[i] + m.sA_up[i])
     m.c_anc_lo = pyo.Constraint(m.A, rule=lambda m, i: getattr(m, anchors[i][4])[anchors[i][0], anchors[i][1]] >= m.A_lo[i] - m.sA_dn[i])
+
+    # ---------------- 第二轮C/D项：价值法（窗口末状态价值 + 偏差带 + 日末约束）
+    # state_value: [(kind, unit, t_rel, v)]，目标函数加 −v·X[unit, t_rel]；v 单位：E 元/MWh(存量)，Vu/V 元/万m³。
+    # state_band:  [(kind, unit, t_rel, lo, hi)]，lo ≤ X ≤ hi；硬约束时松弛固定为0，回退(soft)时以 state_band_penalty
+    #              （元/原生单位，假设值）计罚。日末约束同样以 lo=hi（储能/抽蓄）或 lo=v_end（水电）的带表达，便于统一回退。
+    kinds = {"E": (m.S, "E"), "Vu": (m.PS, "Vu"), "V": (m.HS, "V")}
+    values = []
+    for kind, unit, t_rel, v in (term or {}).get("state_value", []):
+        if kind not in kinds or unit not in kinds[kind][0] or not 0 <= int(t_rel) < T or not np.isfinite(float(v)):
+            raise ValueError(f"非法状态价值项 {(kind, unit, t_rel, v)}")
+        values.append((kind, unit, int(t_rel), float(v)))
+    m._state_values = values
+    bands = []
+    for kind, unit, t_rel, lo, hi, *label in (term or {}).get("state_band", []):
+        if (kind not in kinds or unit not in kinds[kind][0] or not 0 <= int(t_rel) < T
+                or not np.isfinite([float(lo), float(hi)]).all() or float(lo) > float(hi) + 1e-9):
+            raise ValueError(f"非法状态偏差带 {(kind, unit, t_rel, lo, hi)}")
+        bands.append((kind, unit, int(t_rel), float(lo), max(float(lo), float(hi)), label[0] if label else "band"))
+    m._state_bands = bands
+    m.B = pyo.Set(initialize=list(range(len(bands))))
+    m.sB_up = pyo.Var(m.B, domain=pyo.NonNegativeReals)
+    m.sB_dn = pyo.Var(m.B, domain=pyo.NonNegativeReals)
+    m._state_band_soft = bool((term or {}).get("state_band_soft", False))
+    m._state_band_penalty = float((term or {}).get("state_band_penalty", 1.0e5))
+    terminal_policy = (term or {}).get("state_band_terminal_policy")
+    m._state_band_terminal_policy = (validate_rt_terminal_policy(terminal_policy, case.stage)
+                                     if terminal_policy is not None else {})
+    planned_soft = m._state_band_terminal_policy.get("mode") == "soft"
+    m._state_band_soft_indices = set()
+    m._state_band_cost_coefficients = {}
+    m._state_band_energy_factors = {}
+    for i, (kind, unit, t_rel, lo, hi, label) in enumerate(bands):
+        day_end = label == "day_end"
+        if planned_soft and day_end and (t_rel != T - 1 or case.t0 + t_rel != cfg.T - 1):
+            raise ValueError("RT日末软目标必须位于运行日最后时段")
+        factor = state_discharge_energy_factor(md, kind, unit) if day_end else None
+        m._state_band_energy_factors[i] = factor
+        normal_soft = planned_soft and day_end
+        coefficient = (float(m._state_band_terminal_policy["penalty_yuan_per_discharge_mwh"]) * factor
+                       if normal_soft else m._state_band_penalty if m._state_band_soft else 0.)
+        m._state_band_cost_coefficients[i] = coefficient
+        if normal_soft or m._state_band_soft:
+            m._state_band_soft_indices.add(i)
+            # The reservoir target is a minimum only. Its upper bound remains
+            # physical, and no reward or penalty is added for extra retained water.
+            if normal_soft and kind == "V":
+                m.sB_up[i].fix(0.)
+        else:
+            m.sB_up[i].fix(0.)
+            m.sB_dn[i].fix(0.)
+    m.c_band_hi = pyo.Constraint(m.B, rule=lambda m, i: getattr(m, bands[i][0])[bands[i][1], bands[i][2]] <= bands[i][4] + m.sB_up[i])
+    m.c_band_lo = pyo.Constraint(m.B, rule=lambda m, i: getattr(m, bands[i][0])[bands[i][1], bands[i][2]] >= bands[i][3] - m.sB_dn[i])
+
+    _attach_hydro_terminal_lookahead(m)
 
     def sched(m, s, t):
         d = md.storage[s]
@@ -707,11 +872,10 @@ def build_model(case: DACase, penalties: dict | None = None) -> pyo.ConcreteMode
         def storage_available(s, t, upper=False):
             d = md.storage[s]
             bound = d["soc_max" if upper else "soc_min"] * d["ecap"]
-            stock = d["soc0"] * d["ecap"] if t == 0 else m.E[s, t-1]
-            available = bound - stock if upper else stock - bound
-            # Initial SOC can lie outside the declared operating band and recover
-            # within the first period. Do not make zero reserve infeasible there.
-            return max(0., available) if t == 0 else available
+            # 第二轮F项：备用可用电量按时段末存量 E[t]（同时段已扣除能量计划的充放电），
+            # E[t] 受 c_elim 约束始终在 [Emin, Emax] 内，故 available ≥ 0 恒成立。
+            stock = m.E[s, t]
+            return bound - stock if upper else stock - bound
         m.c_rsup_soc = pyo.Constraint(m.S, m.T, rule=lambda m, s, t:
             Tdur * m.rs_up[s, t] / md.storage[s]["eta_d"] <= storage_available(s, t))
         m.c_rsdn_soc = pyo.Constraint(m.S, m.T, rule=lambda m, s, t:
@@ -726,9 +890,8 @@ def build_model(case: DACase, penalties: dict | None = None) -> pyo.ConcreteMode
         # Effective reservoir bounds already account for both reservoirs.
         def pumped_available(p, t, upper=False):
             d = md.pumped[p]
-            stock = d["init"]["V"] if t == 0 else m.Vu[p, t-1]
-            available = d["v_hi"] - stock if upper else stock - d["v_lo"]
-            return max(0., available) if t == 0 else available
+            stock = m.Vu[p, t]   # 第二轮F项：时段末上库库容
+            return d["v_hi"] - stock if upper else stock - d["v_lo"]
         m.c_rpup_volume = pyo.Constraint(m.PS, m.T, rule=lambda m, p, t:
             Tdur * m.rp_up[p, t] / md.pumped[p]["e_gen"] <= pumped_available(p, t))
         m.c_rpdn_volume = pyo.Constraint(m.PS, m.T, rule=lambda m, p, t:
@@ -772,6 +935,8 @@ def build_model(case: DACase, penalties: dict | None = None) -> pyo.ConcreteMode
     # Asset-only suffix keeps remaining hard anchors reachable without extending market clearing.
     from .asset_reachability import attach as attach_reachability
     attach_reachability(m)
+    from .hydro_daily_energy import attach as attach_daily_energy
+    attach_daily_energy(m)
 
     # ---------------- 目标
     m.obj = pyo.Objective(expr=_objective_expr(m), sense=pyo.minimize)
@@ -779,6 +944,73 @@ def build_model(case: DACase, penalties: dict | None = None) -> pyo.ConcreteMode
 
 
 INT_VARS = ("u", "v", "w", "delta", "u_ch", "u_dis", "xg", "xp", "ngen", "npump")  # w 为连续变量，固定时一并取整；储能充放状态与启停一起固定
+
+
+class InfeasibleModelError(RuntimeError):
+    """The solver explicitly proved infeasibility, not a timeout or solve failure."""
+
+    def __init__(self, message, *, phase=None, solver_status=None, primal_solution_available=None):
+        super().__init__(message)
+        self.phase = phase
+        self.solver_status = solver_status
+        self.primal_solution_available = primal_solution_available
+
+
+class SolverBudgetExceededError(RuntimeError):
+    """The shared solver-call budget is exhausted; never a softening trigger."""
+
+
+def _confirmed_infeasible(status) -> bool:
+    # Exact statuses only. Infeasible-or-unbounded is not an infeasibility proof.
+    return str(status).lower() in {
+        "infeasible", "terminationcondition.infeasible",
+        "kinfeasible", "highsmodelstatus.kinfeasible",
+    }
+
+
+def _native_solver_status(opt):
+    native = getattr(opt, "_solver_model", None)
+    try:
+        return native.getModelStatus() if native is not None else None
+    except Exception:
+        return None  # Status inspection must not hide the original solver error.
+
+
+def _native_primal_available(opt):
+    native = getattr(opt, "_solver_model", None)
+    try:
+        return bool(native.getSolution().value_valid) if native is not None else None
+    except Exception:
+        return None  # Unknown availability is not evidence of a missing primal.
+
+
+def _infeasible_model_error(opt, phase, status):
+    primal = _native_primal_available(opt)
+    return InfeasibleModelError(
+        f"{phase}: solver proved infeasible ({status}); primal_solution_available={primal}",
+        phase=phase, solver_status=str(status), primal_solution_available=primal)
+
+
+def _solve_and_classify(m, opt, *, tee, warmstart, phase):
+    previous_native = getattr(opt, "_solver_model", None)
+    previous_status = _native_solver_status(opt)
+    try:
+        result = opt.solve(m, tee=tee, warmstart=warmstart)
+    except SolverBudgetExceededError:
+        raise
+    except RuntimeError as exc:
+        # appsi-HiGHS raises when it cannot load a primal solution. Only its
+        # explicit native infeasible status permits classification as infeasible.
+        status = _native_solver_status(opt)
+        stale_infeasible = (previous_native is getattr(opt, "_solver_model", None)
+                            and _confirmed_infeasible(previous_status))
+        if _confirmed_infeasible(status) and not stale_infeasible:
+            raise _infeasible_model_error(opt, phase, status) from exc
+        raise
+    status = getattr(getattr(result, "solver", None), "termination_condition", None)
+    if _confirmed_infeasible(status):
+        raise _infeasible_model_error(opt, phase, status)
+    return result
 
 
 @dataclass
@@ -792,7 +1024,7 @@ class SolverBudget:
     def allowance(self, reserve_s=0.):
         available = self.total_s - self.used_s - reserve_s
         if not np.isfinite(available) or available <= 0:
-            raise RuntimeError("RT shared solver budget exhausted; no dispatch/price fallback permitted")
+            raise SolverBudgetExceededError("RT shared solver budget exhausted; no dispatch/price fallback permitted")
         return available
 
     def report(self):
@@ -804,21 +1036,21 @@ class SolverBudget:
 def _solve_with_budget(m, opt, *, tee=False, warmstart=False, phase="sced", reserve_lp=False):
     budget = getattr(m, "_solver_budget", None)
     if budget is None:
-        return opt.solve(m, tee=tee, warmstart=warmstart)
+        return _solve_and_classify(m, opt, tee=tee, warmstart=warmstart, phase=phase)
     limit = budget.allowance(budget.reserve_lp_s if reserve_lp else 0.)
     limit = min(limit, float(opt.highs_options.get("time_limit", limit)))
     opt.highs_options["time_limit"] = limit
     start = time.perf_counter()
     success = False
     try:
-        result = opt.solve(m, tee=tee, warmstart=warmstart)
+        result = _solve_and_classify(m, opt, tee=tee, warmstart=warmstart, phase=phase)
         success = True
     finally:
         elapsed = max(0., time.perf_counter()-start)
         budget.used_s += elapsed
         budget.calls.append(dict(phase=phase, time_limit_s=limit, elapsed_s=elapsed, returned=success))
-    if budget.used_s > budget.total_s:
-        raise RuntimeError("RT shared solver budget exhausted during solver call; results not executable")
+        if budget.used_s > budget.total_s:
+            raise SolverBudgetExceededError("RT shared solver budget exhausted during solver call; results not executable")
     return result
 
 
@@ -899,10 +1131,11 @@ def solve_scuc(m: pyo.ConcreteModel, log=lambda *a: None):
     try:
         res = _solve_with_budget(m, opt, tee=bool(cfg.base["solver"].get("log", False)),
                                  warmstart=bool(ws and ws["ok"]), phase="scuc", reserve_lp=True)
+    except (InfeasibleModelError, SolverBudgetExceededError):
+        raise
     except RuntimeError as exc:
-        native=getattr(opt,"_solver_model",None)
-        status=str(native.getModelStatus()) if native is not None else "unavailable"
-        primal=bool(native.getSolution().value_valid) if native is not None else None
+        status=str(_native_solver_status(opt))
+        primal=_native_primal_available(opt)
         raise RuntimeError(f"SCUC失败：highs_model_status={status}, primal_solution_available={primal}；{exc}") from exc
     el = time.perf_counter() - t0
     tc = str(res.solver.termination_condition)
@@ -921,6 +1154,10 @@ def integer_components(m):
     if block is not None:
         for name in block._integer_names:
             yield 'asset_reachability.'+name, getattr(block,name)
+    block = getattr(m, 'hydro_daily_energy_suffix', None)
+    if block is not None:
+        for name in block._integer_names:
+            yield 'hydro_daily_energy_suffix.'+name, getattr(block, name)
 
 
 def fix_integers(m):
@@ -970,8 +1207,18 @@ def _objective_expr(m):
     tp = 0
     if term is not None and len(m.A):
         tp = sum(m._anchor_cost_coefficients[i] * (m.sA_up[i] + m.sA_dn[i]) for i in m.A)
+    # 第二轮C/D项：窗口末状态价值 −v·X（v 来自日前最终SCED对偶，见 state_values）；回退时偏差带松弛计罚。
+    vt = -sum(v * getattr(m, kind)[unit, t] for kind, unit, t, v in getattr(m, "_state_values", []))
+    vt += sum(m._state_band_cost_coefficients[i] * (m.sB_up[i] + m.sB_dn[i])
+              for i in getattr(m, "_state_band_soft_indices", ()))
+    certificate = getattr(m, "asset_reachability", None)
+    if certificate is not None and certificate.active:
+        vt += certificate.terminal_penalty_cost
+    hydro_lookahead = getattr(m, "hydro_terminal_lookahead", None)
+    if hydro_lookahead is not None and hydro_lookahead.active:
+        vt += hydro_lookahead.cost
     from . import regulation
-    return th + nl + su + rw + hy + st + ps + pn + tp + regulation.objective_term(m)
+    return th + nl + su + rw + hy + st + ps + pn + tp + vt + regulation.objective_term(m)
 
 
 def solve_sced(m):
@@ -1016,6 +1263,7 @@ def slack_summary(m) -> dict:
         storage_anchor_slack_max_mwh=max((v for i, v in anchor_values.items() if m._anchors[i][4] == "E"), default=0.0),
         hydro_anchor_slack_max_1e4m3=max((v for i, v in anchor_values.items() if m._anchors[i][4] == "V"), default=0.0),
         pumped_anchor_slack_max_1e4m3=max((v for i, v in anchor_values.items() if m._anchors[i][4] == "Vu"), default=0.0),
+        state_band_slack_max=max((pyo.value(m.sB_up[i]) + pyo.value(m.sB_dn[i]) for i in getattr(m, "B", [])), default=0.0),
     )
 
 
@@ -1065,3 +1313,71 @@ def extract_prices(m) -> dict:
             if down_enabled else [None] * T)
     return dict(lmp=pi, lmp_decomp=lmp_dec, energy=energy, congestion=cong, mu_plus=mu_p, mu_minus=mu_m,
                 reserve_up_price=r_up, reserve_dn_price=r_dn, reserve_down_enabled=down_enabled, regulation=regulation.prices(m))
+
+
+def _terminal_target_dual(m, kind, unit, end_name, factor):
+    """Diagnostic derivative of a terminal target, never a continuation reward.
+
+    DA targets are direct constraints. ID storage/pumped targets use a pair of
+    equal day-end bounds: moving the target moves both bounds, so sum their
+    duals. A reservoir's minimum terminal target moves only its lower bound.
+    Missing targets/duals are unavailable (None), not a fabricated zero price.
+    """
+    native_unit = "元/MWh" if kind == "E" else "元/万m³"
+    constraints = []
+    end = getattr(m, end_name, None)
+    if end is not None and unit in end and end[unit].active:
+        constraints = [end[unit]]
+    else:
+        matches = [(i, band) for i, band in enumerate(getattr(m, "_state_bands", []))
+                   if band[0] == kind and band[1] == unit and band[2] == m._md.T - 1
+                   and len(band) > 5 and band[5] == "day_end"]
+        if len(matches) == 1:
+            i, band = matches[0]
+            if kind in ("E", "Vu") and abs(band[3] - band[4]) <= 1e-9:
+                constraints = [m.c_band_lo[i], m.c_band_hi[i]]
+            elif kind == "V":
+                constraints = [m.c_band_lo[i]]
+    duals = [m.dual.get(c) for c in constraints]
+    available = bool(constraints) and all(c.active for c in constraints) and all(
+        d is not None and np.isfinite(float(d)) for d in duals)
+    value = sum(float(d) for d in duals) if available else None
+    return dict(constraint=" + ".join(c.name for c in constraints) or None,
+                value_native=value, value_yuan_per_mwh=None if value is None else value * factor,
+                native_unit=native_unit, available=available)
+
+
+def state_values(m) -> dict:
+    """Fixed-integer SCED continuation values and separate terminal-target prices.
+
+    The balance constraints put end-of-period stock on the left:
+      E[t]  == E[t-1]  + (eta_c*Pc - Pd/eta_d)*dt                 (MWh)
+      Vu[t] == Vu[t-1] + (Pp/e_pump - Pg/e_gen)*dt                (10^4 m3)
+      V[t]  == V[t-1]  + (inflow + upstream - generation - spill)*dt*.36
+    For t < T-1, v[t] = -dual(c_X[t+1]): adding stock to that next balance
+    reduces the remaining bid objective by v per native stock unit locally.
+    This signed marginal value includes storage bids and may be negative.
+
+    No cross-day salvage value is specified, so v[T-1] is zero. The terminal
+    target's own dual measures the cost of raising that target, not the benefit
+    of inventory beyond this horizon. It is retained in terminal_target_dual
+    for diagnostics only, including ID targets represented by day-end bands.
+    dual_raw retains every original stock-balance dual without shifting.
+    """
+    md = m._md
+    T = md.T
+    out = {"E": {}, "Vu": {}, "V": {}}
+    for kind, units, con, end in (("E", m.S, m.c_soc, "c_eend"), ("Vu", m.PS, m.c_pres, "c_pvend"), ("V", m.HS, m.c_water, "c_vend")):
+        for u in units:
+            raw = np.array([float(m.dual[con[u, t]]) for t in range(T)])
+            v = np.r_[-raw[1:], 0.0] if T > 1 else np.array([0.0])
+            if kind == "E":
+                factor = 1.0
+            elif kind == "Vu":
+                factor = 1.0 / float(md.pumped[u]["e_gen"])
+            else:
+                factor = .36 * float(md.hydro[u]["water_rate"])
+            out[kind][u] = dict(value_native=v, value_yuan_per_mwh=v * factor, dual_raw=raw,
+                                native_unit="元/MWh" if kind == "E" else "元/万m³",
+                                terminal_target_dual=_terminal_target_dual(m, kind, u, end, factor))
+    return out

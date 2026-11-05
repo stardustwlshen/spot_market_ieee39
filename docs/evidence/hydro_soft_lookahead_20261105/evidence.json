@@ -1,0 +1,84 @@
+{
+  "scope": "independent read-only counterfactual and miniature models; not a new full IEEE39 run",
+  "source": "/workspace/scratch/42c5fe32dad0/market_implementation_20261105/repo/outputs/full_2026-07-15_MKT_wet_v1_soft_final_id_off_20261105",
+  "source_sha256": {
+    "hydro_window_evidence.json": "cbb9d77523c66f015c6d202b9f6c1904e4465031a41d68b6d8838b4b43ef8340",
+    "rt_value_windows.csv": "0919b5fe648780812b6cfd66170a34e8ef0731f28aaf08a1a2073f1b882e9ef4"
+  },
+  "counterfactual": {
+    "retain_native_volume": 160.121295187535,
+    "reduce_first_spill_m3s": 1779.1255020837223,
+    "original_first_spill_m3s": 22916.46946680547,
+    "revised_first_spill_m3s": 21137.343964721746,
+    "all_96_window_water_balance_and_bounds_verified": true,
+    "first_88_window_energy_objective_delta_yuan": 0.0,
+    "day_end_penalty_avoided_once_yuan": 370651.14626744215,
+    "intermediate_min_upper_band_margin": 319.878704812465,
+    "global_forecast_max_volume": 18000.0,
+    "unchanged": "all generation, commitments, power balances, line flows, asset states, energy budgets, reserve/AGC variables; only H1 initial/current volumes and first spill/outflow change",
+    "qualification": "constructive deterministic hindsight dominance certificate for this isolated H1 model, not a claim an online method knows future realized prices"
+  },
+  "first_window_with_positive_soft_tail_proxy": {
+    "t": 71,
+    "tau": 78,
+    "recovery": 306.0,
+    "minimum_window_end": 17694.0,
+    "original_forecast_end": 17683.314001103736,
+    "original_forecast_shortage_lower_bound": 10.68599889626421,
+    "lower_bound_cost": 24736.10855616715
+  },
+  "reference_continuation": {
+    "first_window": {
+      "t": 0,
+      "tau": 7,
+      "reference_recovery": 1610.4422520125042,
+      "minimum_window_end": 16389.557747987496,
+      "reference_plan_volume": 16389.55774798751,
+      "original_cost": 555555.5555555219,
+      "counterfactual_cost": 184904.40928807974,
+      "cost_reduction": 370651.14626744215
+    },
+    "min_cost_reduction_all_88_pre_end_windows": 370651.14626744203,
+    "exact_equals_reference_state_in_this_DA_single_reservoir_case": true
+  },
+  "toy_results": [
+    {
+      "price": 300,
+      "lookahead": false,
+      "hydro_mwh": 2.0,
+      "thermal_mwh": 0.0,
+      "terminal_volume": 99.13599999999997,
+      "true_terminal_penalty": 2000.0000000000757,
+      "optimized_objective": -0.0
+    },
+    {
+      "price": 300,
+      "lookahead": true,
+      "hydro_mwh": 0.0,
+      "thermal_mwh": 2.0,
+      "terminal_volume": 100.0,
+      "true_terminal_penalty": 0.0,
+      "optimized_objective": 600.0
+    },
+    {
+      "price": 1500,
+      "lookahead": true,
+      "hydro_mwh": 2.0,
+      "thermal_mwh": 0.0,
+      "terminal_volume": 99.13599999999997,
+      "true_terminal_penalty": 2000.0000000000757,
+      "optimized_objective": 2000.0000000000757
+    }
+  ],
+  "finite_difference": {
+    "native_coefficient": 2314.814814814815,
+    "measured_slope": -2314.814815297723,
+    "no_dt": true
+  },
+  "limitations": [
+    "Constant future reference upstream inflow is not an upper bound in a cascade.",
+    "qmin envelope may understate shortage when ramps, intermediate capacity, future outflow caps or joint water constraints bind.",
+    "Adding a tail preference to DA/ID local values is a policy approximation, not an exact remaining-day market value function.",
+    "No repository edits, scenario reruns or forecasts changed."
+  ]
+}

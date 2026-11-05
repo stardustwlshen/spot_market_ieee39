@@ -20,6 +20,8 @@ from test_hydro_rolling import hydro_case
 def config():
     cfg=load_config()
     assert cfg.mode['realtime']['storage']['anchor']=='two_hour_eq'
+    assert cfg.mode['realtime']['storage']['mode']=='value'  # 第二轮默认：价值法
+    cfg.mode['realtime']['storage']['mode']='sced_anchor'     # 本文件检验可选的两小时硬锚点开关
     return cfg
 
 
@@ -145,12 +147,17 @@ def test_hard_audit_fails_closed_and_startpoint_never_reset(combined_run):
     da,rr=combined_run;cfg=da.case.cfg;plan=rolling.snapshot(da.model)
     rounds=deepcopy(rr.rt);rounds[0]['snap']['anchors']=[]
     assert not hard_anchor_checks(cfg,plan,rounds)['storage_pumped_hard_anchors_satisfied']
-    state=rolling.state_from_plan(cfg,plan,8);state.storage['ES1']+=1.
-    with pytest.raises(ValueError,match='不得重置'):rolling.run_rt_period(da.case,plan,plan,cfg,state,8)
+    # 第二轮C项：起点已偏离锚点时只记录偏差，不抛异常、不重置实际库存
+    state=rolling.state_from_plan(cfg,plan,8);state.storage['ES1']+=1.;start=state.storage['ES1']
+    r=rolling.run_rt_period(da.case,plan,plan,cfg,state,8)
+    dev=[d for d in r['state_deviations'] if d['unit']=='ES1']
+    assert dev and abs(dev[0]['actual']-start)<1e-9 and abs(dev[0]['deviation']-1.)<1e-6
+    # 第二轮C项：硬锚点不可达时硬→软回退并记录，不中断滚动
     state=rolling.state_from_plan(cfg,plan,7);state.storage['ES1']=20.
     plan=deepcopy(plan);plan['E']['ES1'][7]=180.
-    with pytest.raises(RuntimeError,match='储能/抽蓄锚点=.*硬锚点不自动放松'):
-        rolling.run_rt_period(da.case,plan,plan,cfg,state,7)
+    r=rolling.run_rt_period(da.case,plan,plan,cfg,state,7)
+    assert r['fallback'] is not None and 'two_hour_eq' in r['fallback']['softened']
+    assert r['fallback']['anchor_slack_max']>0
 
 
 def test_legacy_migration_explicit_and_hydro_untouched():

@@ -348,14 +348,15 @@ def render_input_network(cfg, prefix):
         st.warning(f'拓扑暂不能读取：{exc}。未替换为默认网络。')
 
 
-def render_result_network(result, prefix='result_network'):
+def render_result_network(result, prefix='result_network', stages=None):
+    """stages 限定可选阶段（第二轮J项：日前块只看 da，实时块只看 rt）。"""
     root = Path(result['snapshot_root']) if result.get('snapshot_root') else None
     if root is None or not (root / 'data/case39/buses.csv').is_file() or not (root / 'data/case39/branches.csv').is_file():
         st.info('本次结果缺少冻结网络，无法核实历史连接关系；不使用当前场景冒充该次拓扑。')
         return
     try:
         data = network_data(root)
-        options = [stage for stage in ('da', 'rt') if recorded_periods(stage_tables(result, stage))]
+        options = [stage for stage in (stages or ('da', 'rt')) if recorded_periods(stage_tables(result, stage))]
         if not options:
             st.info('尚无保存的DA计划或RT已执行时段。')
             return

@@ -220,7 +220,10 @@ def test_empty_history_renders_unknown_without_exception():
 def test_result_page_mounts_visible_overview_and_dedicated_tab():
     text = (ROOT / 'app/pages/3_结果.py').read_text()
     assert 'curtailment_overview(curtailment)' in text
-    from result_navigation import OPERATION_SECTIONS
-    index = OPERATION_SECTIONS.index('弃风弃光')
-    assert f'with operation_tabs[{index}]:\n    curtailment_dashboard(curtailment)' in text
+    # 第二轮J项：每个阶段（日前/实时）都有“弃风弃光”子页，按 STAGE_SECTIONS 顺序由 STAGE_PAGES 填充
+    from result_navigation import STAGE_SECTIONS
+    index = STAGE_SECTIONS.index('弃风弃光')
+    pages = text.split('STAGE_PAGES = [', 1)[1].split(']', 1)[0].replace(' ', '').split(',')
+    assert pages[index] == 'page_curtailment'
+    assert "curtailment_dashboard(curtailment, stage=SNAME[k]" in text
     assert 'DS.get(\'curtailment_mwh\', 0)' not in text

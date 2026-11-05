@@ -12,10 +12,15 @@ from smm.live_runner import RunCancelled
 
 @pytest.fixture
 def mocked_flow(monkeypatch):
-    cfg = SimpleNamespace(T=3, dt=.25, mode={'intraday':{'enabled':False,'interval_h':1}})
-    da = SimpleNamespace(case=SimpleNamespace(cfg=cfg))
+    cfg = SimpleNamespace(T=3, dt=.25, base={'dt_h':.25}, units={'thermal': []},
+        mode={'intraday':{'enabled':False,'interval_h':1},
+              'realtime':{'interval_min':15,'lookahead_h':2.,'binding_periods':1}})
+    da = SimpleNamespace(case=SimpleNamespace(cfg=cfg), model=object())
+    # This fixture isolates lifecycle ordering, not DA model physics.
+    # The optional lower-bound audit is inactive with no hydro resources.
+    monkeypatch.setattr(rolling, 'snapshot', lambda _: {})
     calls = []
-    def solve(case, da_plan, plan, cfg, state, t):
+    def solve(case, da_plan, plan, cfg, state, t, **kw):
         calls.append(t)
         return dict(snap={'future':[t,t+1]}, prices={'lmp_clamped':np.array([[100.]])},
                     dispatch_prices={'lmp_clamped':np.array([[100.]])},pricing_info=None,repriced_meaning='disabled',

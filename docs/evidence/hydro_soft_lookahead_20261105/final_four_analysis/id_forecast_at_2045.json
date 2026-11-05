@@ -1,0 +1,18 @@
+{
+  "period": 83,
+  "ID_round": 80,
+  "forecast_issue": 79,
+  "ID_load": 3926.57,
+  "ID_renewable": 946.175656592887,
+  "actual_load": 3932.1950292556267,
+  "actual_renewable": 878.9005166506727,
+  "ID_reserve_req": 1077.4146656592886,
+  "actual_reserve_req": 1070.8559025427362,
+  "net_load_error": 72.90016919784057,
+  "fixed_online_power_capacity_mw": 3077,
+  "fixed_tie_mw": 1003.75,
+  "ID_conditional_reserve_power_upper": 1100.3556565928866,
+  "ID_conditional_power_margin": 22.94099093359796,
+  "actual_requirement_minus_ID": -6.558763116552427,
+  "reconstructed_actual_shortfall": 43.40041514769018
+}

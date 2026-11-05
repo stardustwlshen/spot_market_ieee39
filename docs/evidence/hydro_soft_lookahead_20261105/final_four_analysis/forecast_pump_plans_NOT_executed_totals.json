@@ -1,0 +1,666 @@
+[
+  {
+    "scenario": "wet_on",
+    "window_start": 88,
+    "planned_end": 200.0,
+    "planned_shortfall": 0.0,
+    "planned_cost": 0.0,
+    "executed_pump": 0.0,
+    "planned_pump_slots": [
+      {
+        "period": 91,
+        "pump_mw": 300.0
+      },
+      {
+        "period": 92,
+        "pump_mw": 300.0
+      }
+    ]
+  },
+  {
+    "scenario": "wet_on",
+    "window_start": 89,
+    "planned_end": 200.0,
+    "planned_shortfall": -0.0,
+    "planned_cost": 0.0,
+    "executed_pump": -0.0,
+    "planned_pump_slots": [
+      {
+        "period": 94,
+        "pump_mw": 300.0
+      },
+      {
+        "period": 95,
+        "pump_mw": 300.0
+      }
+    ]
+  },
+  {
+    "scenario": "wet_on",
+    "window_start": 90,
+    "planned_end": 200.0,
+    "planned_shortfall": 0.0,
+    "planned_cost": 0.0,
+    "executed_pump": 0.0,
+    "planned_pump_slots": [
+      {
+        "period": 94,
+        "pump_mw": 300.0
+      },
+      {
+        "period": 95,
+        "pump_mw": 300.0
+      }
+    ]
+  },
+  {
+    "scenario": "wet_on",
+    "window_start": 91,
+    "planned_end": 200.0,
+    "planned_shortfall": 0.0,
+    "planned_cost": 0.0,
+    "executed_pump": 0.0,
+    "planned_pump_slots": [
+      {
+        "period": 94,
+        "pump_mw": 300.0
+      },
+      {
+        "period": 95,
+        "pump_mw": 300.0
+      }
+    ]
+  },
+  {
+    "scenario": "wet_on",
+    "window_start": 92,
+    "planned_end": 200.0,
+    "planned_shortfall": 0.0,
+    "planned_cost": 0.0,
+    "executed_pump": 0.0,
+    "planned_pump_slots": [
+      {
+        "period": 94,
+        "pump_mw": 300.0
+      },
+      {
+        "period": 95,
+        "pump_mw": 300.0
+      }
+    ]
+  },
+  {
+    "scenario": "wet_on",
+    "window_start": 93,
+    "planned_end": 200.0,
+    "planned_shortfall": 0.0,
+    "planned_cost": 0.0,
+    "executed_pump": 0.0,
+    "planned_pump_slots": [
+      {
+        "period": 94,
+        "pump_mw": 300.0
+      },
+      {
+        "period": 95,
+        "pump_mw": 300.0
+      }
+    ]
+  },
+  {
+    "scenario": "wet_on",
+    "window_start": 94,
+    "planned_end": 200.0,
+    "planned_shortfall": 0.0,
+    "planned_cost": 0.0,
+    "executed_pump": 300.0,
+    "planned_pump_slots": [
+      {
+        "period": 94,
+        "pump_mw": 300.0
+      },
+      {
+        "period": 95,
+        "pump_mw": 300.0
+      }
+    ]
+  },
+  {
+    "scenario": "wet_on",
+    "window_start": 95,
+    "planned_end": 200.0,
+    "planned_shortfall": 0.0,
+    "planned_cost": 0.0,
+    "executed_pump": 300.0,
+    "planned_pump_slots": [
+      {
+        "period": 95,
+        "pump_mw": 300.0
+      }
+    ]
+  },
+  {
+    "scenario": "wet_off",
+    "window_start": 88,
+    "planned_end": 200.0,
+    "planned_shortfall": 0.0,
+    "planned_cost": 0.0,
+    "executed_pump": 0.0,
+    "planned_pump_slots": [
+      {
+        "period": 92,
+        "pump_mw": 300.0
+      },
+      {
+        "period": 93,
+        "pump_mw": 300.0
+      },
+      {
+        "period": 94,
+        "pump_mw": 300.0
+      },
+      {
+        "period": 95,
+        "pump_mw": 300.0
+      }
+    ]
+  },
+  {
+    "scenario": "wet_off",
+    "window_start": 89,
+    "planned_end": 200.0,
+    "planned_shortfall": 0.0,
+    "planned_cost": 0.0,
+    "executed_pump": 0.0,
+    "planned_pump_slots": [
+      {
+        "period": 92,
+        "pump_mw": 300.0
+      },
+      {
+        "period": 93,
+        "pump_mw": 300.0
+      },
+      {
+        "period": 94,
+        "pump_mw": 300.0
+      },
+      {
+        "period": 95,
+        "pump_mw": 300.0
+      }
+    ]
+  },
+  {
+    "scenario": "wet_off",
+    "window_start": 90,
+    "planned_end": 200.0,
+    "planned_shortfall": 0.0,
+    "planned_cost": 0.0,
+    "executed_pump": 0.0,
+    "planned_pump_slots": [
+      {
+        "period": 92,
+        "pump_mw": 300.0
+      },
+      {
+        "period": 93,
+        "pump_mw": 300.0
+      },
+      {
+        "period": 94,
+        "pump_mw": 300.0
+      },
+      {
+        "period": 95,
+        "pump_mw": 300.0
+      }
+    ]
+  },
+  {
+    "scenario": "wet_off",
+    "window_start": 91,
+    "planned_end": 200.0,
+    "planned_shortfall": 0.0,
+    "planned_cost": 0.0,
+    "executed_pump": 0.0,
+    "planned_pump_slots": [
+      {
+        "period": 92,
+        "pump_mw": 300.0
+      },
+      {
+        "period": 93,
+        "pump_mw": 300.0
+      },
+      {
+        "period": 94,
+        "pump_mw": 300.0
+      },
+      {
+        "period": 95,
+        "pump_mw": 300.0
+      }
+    ]
+  },
+  {
+    "scenario": "wet_off",
+    "window_start": 92,
+    "planned_end": 199.99999999999997,
+    "planned_shortfall": 0.0,
+    "planned_cost": 0.0,
+    "executed_pump": 0.0,
+    "planned_pump_slots": [
+      {
+        "period": 93,
+        "pump_mw": 300.0
+      },
+      {
+        "period": 94,
+        "pump_mw": 300.0
+      },
+      {
+        "period": 95,
+        "pump_mw": 600.0
+      }
+    ]
+  },
+  {
+    "scenario": "wet_off",
+    "window_start": 93,
+    "planned_end": 199.99999999999997,
+    "planned_shortfall": 0.0,
+    "planned_cost": 0.0,
+    "executed_pump": 300.0,
+    "planned_pump_slots": [
+      {
+        "period": 93,
+        "pump_mw": 300.0
+      },
+      {
+        "period": 94,
+        "pump_mw": 300.0
+      },
+      {
+        "period": 95,
+        "pump_mw": 600.0
+      }
+    ]
+  },
+  {
+    "scenario": "wet_off",
+    "window_start": 94,
+    "planned_end": 199.99999999999997,
+    "planned_shortfall": 0.0,
+    "planned_cost": 0.0,
+    "executed_pump": 300.0,
+    "planned_pump_slots": [
+      {
+        "period": 94,
+        "pump_mw": 300.0
+      },
+      {
+        "period": 95,
+        "pump_mw": 600.0
+      }
+    ]
+  },
+  {
+    "scenario": "wet_off",
+    "window_start": 95,
+    "planned_end": 199.99999999999997,
+    "planned_shortfall": 0.0,
+    "planned_cost": 0.0,
+    "executed_pump": 600.0,
+    "planned_pump_slots": [
+      {
+        "period": 95,
+        "pump_mw": 600.0
+      }
+    ]
+  },
+  {
+    "scenario": "dry_on",
+    "window_start": 88,
+    "planned_end": 200.00000000000003,
+    "planned_shortfall": 0.0,
+    "planned_cost": 0.0,
+    "executed_pump": 0.0,
+    "planned_pump_slots": [
+      {
+        "period": 90,
+        "pump_mw": 300.0
+      },
+      {
+        "period": 91,
+        "pump_mw": 300.0
+      },
+      {
+        "period": 92,
+        "pump_mw": 300.0
+      },
+      {
+        "period": 93,
+        "pump_mw": 300.0
+      },
+      {
+        "period": 94,
+        "pump_mw": 300.0
+      },
+      {
+        "period": 95,
+        "pump_mw": 300.0
+      }
+    ]
+  },
+  {
+    "scenario": "dry_on",
+    "window_start": 89,
+    "planned_end": 194.04761904761907,
+    "planned_shortfall": 5.952380952380935,
+    "planned_cost": 57142.85714285697,
+    "executed_pump": -0.0,
+    "planned_pump_slots": [
+      {
+        "period": 90,
+        "pump_mw": 300.0
+      },
+      {
+        "period": 91,
+        "pump_mw": 300.0
+      },
+      {
+        "period": 93,
+        "pump_mw": 300.0
+      },
+      {
+        "period": 94,
+        "pump_mw": 300.0
+      },
+      {
+        "period": 95,
+        "pump_mw": 300.0
+      }
+    ]
+  },
+  {
+    "scenario": "dry_on",
+    "window_start": 90,
+    "planned_end": 188.0952380952381,
+    "planned_shortfall": 11.904761904761898,
+    "planned_cost": 114285.71428571422,
+    "executed_pump": -0.0,
+    "planned_pump_slots": [
+      {
+        "period": 91,
+        "pump_mw": 300.0
+      },
+      {
+        "period": 93,
+        "pump_mw": 300.0
+      },
+      {
+        "period": 94,
+        "pump_mw": 300.0
+      },
+      {
+        "period": 95,
+        "pump_mw": 300.0
+      }
+    ]
+  },
+  {
+    "scenario": "dry_on",
+    "window_start": 91,
+    "planned_end": 182.14285714285714,
+    "planned_shortfall": 17.85714285714286,
+    "planned_cost": 171428.57142857148,
+    "executed_pump": -0.0,
+    "planned_pump_slots": [
+      {
+        "period": 93,
+        "pump_mw": 300.0
+      },
+      {
+        "period": 94,
+        "pump_mw": 300.0
+      },
+      {
+        "period": 95,
+        "pump_mw": 300.0
+      }
+    ]
+  },
+  {
+    "scenario": "dry_on",
+    "window_start": 92,
+    "planned_end": 194.047619047619,
+    "planned_shortfall": 5.952380952380992,
+    "planned_cost": 57142.85714285752,
+    "executed_pump": -0.0,
+    "planned_pump_slots": [
+      {
+        "period": 93,
+        "pump_mw": 300.0
+      },
+      {
+        "period": 94,
+        "pump_mw": 600.0
+      },
+      {
+        "period": 95,
+        "pump_mw": 600.0
+      }
+    ]
+  },
+  {
+    "scenario": "dry_on",
+    "window_start": 93,
+    "planned_end": 182.1428571428571,
+    "planned_shortfall": 17.85714285714289,
+    "planned_cost": 171428.57142857174,
+    "executed_pump": -0.0,
+    "planned_pump_slots": [
+      {
+        "period": 94,
+        "pump_mw": 300.0
+      },
+      {
+        "period": 95,
+        "pump_mw": 600.0
+      }
+    ]
+  },
+  {
+    "scenario": "dry_on",
+    "window_start": 94,
+    "planned_end": 182.1428571428571,
+    "planned_shortfall": 17.85714285714289,
+    "planned_cost": 171428.57142857174,
+    "executed_pump": 300.0,
+    "planned_pump_slots": [
+      {
+        "period": 94,
+        "pump_mw": 300.0
+      },
+      {
+        "period": 95,
+        "pump_mw": 600.0
+      }
+    ]
+  },
+  {
+    "scenario": "dry_on",
+    "window_start": 95,
+    "planned_end": 182.1428571428571,
+    "planned_shortfall": 17.85714285714289,
+    "planned_cost": 171428.57142857174,
+    "executed_pump": 600.0,
+    "planned_pump_slots": [
+      {
+        "period": 95,
+        "pump_mw": 600.0
+      }
+    ]
+  },
+  {
+    "scenario": "dry_off",
+    "window_start": 88,
+    "planned_end": 200.0,
+    "planned_shortfall": 0.0,
+    "planned_cost": 0.0,
+    "executed_pump": 0.0,
+    "planned_pump_slots": [
+      {
+        "period": 93,
+        "pump_mw": 300.0
+      },
+      {
+        "period": 94,
+        "pump_mw": 300.0
+      },
+      {
+        "period": 95,
+        "pump_mw": 300.0
+      }
+    ]
+  },
+  {
+    "scenario": "dry_off",
+    "window_start": 89,
+    "planned_end": 200.0,
+    "planned_shortfall": 0.0,
+    "planned_cost": 0.0,
+    "executed_pump": 0.0,
+    "planned_pump_slots": [
+      {
+        "period": 93,
+        "pump_mw": 300.0
+      },
+      {
+        "period": 94,
+        "pump_mw": 300.0
+      },
+      {
+        "period": 95,
+        "pump_mw": 300.0
+      }
+    ]
+  },
+  {
+    "scenario": "dry_off",
+    "window_start": 90,
+    "planned_end": 200.0,
+    "planned_shortfall": 0.0,
+    "planned_cost": 0.0,
+    "executed_pump": 0.0,
+    "planned_pump_slots": [
+      {
+        "period": 93,
+        "pump_mw": 300.0
+      },
+      {
+        "period": 94,
+        "pump_mw": 300.0
+      },
+      {
+        "period": 95,
+        "pump_mw": 300.0
+      }
+    ]
+  },
+  {
+    "scenario": "dry_off",
+    "window_start": 91,
+    "planned_end": 200.0,
+    "planned_shortfall": 0.0,
+    "planned_cost": 0.0,
+    "executed_pump": 0.0,
+    "planned_pump_slots": [
+      {
+        "period": 93,
+        "pump_mw": 300.0
+      },
+      {
+        "period": 94,
+        "pump_mw": 300.0
+      },
+      {
+        "period": 95,
+        "pump_mw": 300.0
+      }
+    ]
+  },
+  {
+    "scenario": "dry_off",
+    "window_start": 92,
+    "planned_end": 200.0,
+    "planned_shortfall": 0.0,
+    "planned_cost": 0.0,
+    "executed_pump": 0.0,
+    "planned_pump_slots": [
+      {
+        "period": 93,
+        "pump_mw": 300.0
+      },
+      {
+        "period": 94,
+        "pump_mw": 300.0
+      },
+      {
+        "period": 95,
+        "pump_mw": 300.0
+      }
+    ]
+  },
+  {
+    "scenario": "dry_off",
+    "window_start": 93,
+    "planned_end": 199.99999999999997,
+    "planned_shortfall": 0.0,
+    "planned_cost": 0.0,
+    "executed_pump": 0.0,
+    "planned_pump_slots": [
+      {
+        "period": 94,
+        "pump_mw": 300.0
+      },
+      {
+        "period": 95,
+        "pump_mw": 600.0
+      }
+    ]
+  },
+  {
+    "scenario": "dry_off",
+    "window_start": 94,
+    "planned_end": 199.99999999999997,
+    "planned_shortfall": 0.0,
+    "planned_cost": 0.0,
+    "executed_pump": 300.0,
+    "planned_pump_slots": [
+      {
+        "period": 94,
+        "pump_mw": 300.0
+      },
+      {
+        "period": 95,
+        "pump_mw": 600.0
+      }
+    ]
+  },
+  {
+    "scenario": "dry_off",
+    "window_start": 95,
+    "planned_end": 194.04761904761904,
+    "planned_shortfall": 5.952380952380963,
+    "planned_cost": 57142.85714285725,
+    "executed_pump": 300.0,
+    "planned_pump_slots": [
+      {
+        "period": 95,
+        "pump_mw": 300.0
+      }
+    ]
+  }
+]

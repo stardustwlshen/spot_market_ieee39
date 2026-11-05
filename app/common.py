@@ -29,8 +29,8 @@ TYPE_CN = {"coal": "燃煤", "gas_ccgt": "燃气联合循环", "gas_gt": "燃气
 TYPE_COLOR = {"coal": "#5b5b5b", "gas_ccgt": "#e07b39", "gas_gt": "#f2b134", "hydro": "#2f7ed8", "wind": "#3cb371",
               "pv": "#ffd700", "tie": "#9b59b6", "storage": "#e74c3c", "storage_dis": "#e74c3c", "storage_ch": "#f1948a",
               "pumped": "#0e7c86", "pumped_gen": "#0e7c86", "pumped_pump": "#7fc8cf"}
-MODE_CN = {"da": "仅日前", "full": "全流程"}
-STATUS_CN = {"running": "运行中", "done": "完成", "failed": "失败", "stopped": "已停止", "starting": "准备中", "cancelling": "取消等待中"}
+MODE_CN = {"da": "仅日前", "full": "全流程", "unknown": "未核实"}
+STATUS_CN = {"running": "运行中", "done": "完成", "failed": "失败", "stopped": "已停止", "starting": "准备中", "cancelling": "取消等待中", "invalid": "元数据损坏（未核实）"}
 
 
 # ----------------------------------------------------------------------------- 统一视觉风格
@@ -265,7 +265,12 @@ def start_run(scenario: str, mode: str, bid_version: int | None, periods: int | 
         stage = "取得启动锁"
         with file_lock(sc.RUNS_DIR / ".launch.lock"):
             stage = "检查已有运行"
-            if any(run_status(m) in ("running", "starting", "cancelling") for m in sc.list_runs()):
+            records = sc.list_runs()
+            invalid = [m for m in records if m.get('status') == 'invalid' and m.get('scenario') == scenario]
+            if invalid:
+                raise RuntimeError('当前场景的运行元数据损坏，不能确认历史运行状态；请核对并从备份恢复这些meta.json后再启动：' +
+                                   '、'.join(str(Path(m['dir']) / 'meta.json') for m in invalid))
+            if any(run_status(m) in ("running", "starting", "cancelling") for m in records):
                 raise RuntimeError("已有运行或取消请求正在处理，或历史进程身份尚无法确认；请核对运行记录，避免重复求解。")
             stage = "建立运行记录"
             d = sc.new_run_dir(scenario, mode)
@@ -385,6 +390,8 @@ def run_progress(m: dict, log: str) -> float:
 
 def run_label(m: dict) -> str:
     tag = Path(m["dir"]).name
+    if m.get('status') == 'invalid':
+        return f"{m.get('scenario', '?')} / {tag}（元数据损坏，运行状态未核实）"
     st_ = STATUS_CN.get(m.get("status", ""), m.get("status", ""))
     v = f"v{m['bid_version']}" if m.get("bid_version") else "最新报价"
     extra = f"，前 {m['periods']} 时段" if m.get("periods") else ""
@@ -417,7 +424,12 @@ def load_result(d: str, mtime) -> dict:  # mtime/fingerprint 只用于缓存失�
     R: dict = {"dir": str(d)}
 
     def rd(p: Path):
-        return pd.read_csv(p) if p.exists() else None
+        if not p.exists():
+            return None
+        try:
+            return pd.read_csv(p)
+        except pd.errors.EmptyDataError:  # 例如未启用日内滚动时的空明细文件
+            return pd.DataFrame()
 
     for k in ("da_unit_awards", "da_nodal_prices", "da_storage", "da_line_flows", "da_system", "da_hydro", "da_pumped"):
         R[k] = rd(da_dir / f"{k}.csv")
@@ -425,7 +437,11 @@ def load_result(d: str, mtime) -> dict:  # mtime/fingerprint 只用于缓存失�
             R[k] = rd(d / f"{k}.csv")
     for k in ("rt_units", "rt_prices", "rt_lines", "rt_storage", "rt_system", "rt_pumped", "rt_hydro", "settlement_detail", "settlement_by_entity",
               "settlement_by_type", "settlement_line_rent", "settlement_reconciliation", "rt_regulation", "rt_regulation_system", "da_regulation_indicative", "da_regulation_system_indicative",
-              "operating_profit_by_unit", "operating_profit_by_period", "operating_profit_by_type"):
+              "operating_profit_by_unit", "operating_profit_by_period", "operating_profit_by_type",
+              # 第二轮H项：价值法输出、备用与日内滚动明细（旧结果没有这些文件时为 None）
+              "da_value_curves", "rt_value_windows", "rt_hydro_terminal_lookahead", "rt_fallbacks", "rt_value_price_setting", "price_aux_vs_dual",
+              "da_reserve_system", "rt_reserve_system", "da_reserve", "rt_reserve",
+              "id_plans", "id_rounds_summary", "id_storage", "id_prices_indicative"):
         R[k] = rd(d / f"{k}.csv")
     sp = d / "summary.json"
     R["summary"] = json.loads(sp.read_text(encoding="utf-8")) if sp.exists() else {}
@@ -450,7 +466,15 @@ def get_result(m: dict) -> dict:
     # Include every file we read, including DA subdirectory and frozen inputs.
     # Repairs/removals of CSVs must invalidate a cached view even when summary
     # JSON is unchanged. Names also distinguish missing/replaced files.
-    fingerprint = tuple(sorted((str(p.relative_to(d)), p.stat().st_mtime_ns, p.stat().st_ctime_ns, p.stat().st_size)
+    # 第二轮G项：加内容哈希。同一时钟粒度内改写等长文件时 mtime/ctime/size 可能完全相同（原 flaky 测试根因）。
+    import hashlib
+    def digest(p):
+        h = hashlib.blake2b(digest_size=16)
+        with open(p, 'rb') as fh:
+            for chunk in iter(lambda: fh.read(1 << 20), b''):
+                h.update(chunk)
+        return h.hexdigest()
+    fingerprint = tuple(sorted((str(p.relative_to(d)), p.stat().st_mtime_ns, p.stat().st_ctime_ns, p.stat().st_size, digest(p))
                                for p in d.rglob('*') if p.is_file() and
                                p.suffix.lower() in ('.csv', '.json', '.yaml', '.yml')))
     result = load_result(str(d), fingerprint)
@@ -506,7 +530,17 @@ def line_loading(R: dict, stage: str) -> pd.DataFrame | None:
     df["loading"] = df.flow_mw.abs() / df.rate_eff
     df["mu"] = df.mu_plus.abs() + df.mu_minus.abs()
     df["congested"] = (df.loading >= 0.999) | (df.mu > 1e-6)
+    df.attrs['network_scope_verified'] = bool((R.get('line_scope_verified') or {}).get(stage))
     return df
+
+
+def congestion_period_count(loading):
+    """A partial/unverifiable network cannot become zero all-network congestion."""
+    if (loading is None or not loading.attrs.get('network_scope_verified', False)
+            or not {'loading', 'mu'} <= set(loading)
+            or not np.isfinite(loading[['loading', 'mu']].to_numpy(dtype=float)).all()):
+        return float('nan')
+    return int(loading.groupby('period').congested.any().sum())
 
 
 def lmp_pivot(df: pd.DataFrame) -> pd.DataFrame:

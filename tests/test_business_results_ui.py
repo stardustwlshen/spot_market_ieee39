@@ -15,7 +15,15 @@ def test_actual_results_business_first_and_technical_collapsed(monkeypatch):
         monkeypatch.setattr(common,"all_results",lambda:[dict(dir=supplied,scenario="验收只读存档",mode="full",status="done")])
     catalog=common.all_results()
     if not catalog:pytest.skip('real saved run unavailable')
-    full=next((m for m in catalog if Path(m['dir']).joinpath('rt_prices.csv').exists()),None)
+    import json
+    def _aux(m):  # 只选记录了辅助定价来源的完整存档（早期存档缺该字段，不能据此断言说明文字）
+        try:return json.loads(Path(m['dir']).joinpath('summary.json').read_text()).get('da_summary',{}).get('pricing_source')=='bounded_auxiliary_pricing'
+        except Exception:return False
+    # 开日内的存档按“日前/日内/实时/最终结果”分块（result_navigation 设计如此），本用例断言的是无日内存档的标签集
+    def _intraday(m):  # 同 3_结果.py 的 INTRADAY 判定
+        try:return bool((json.loads(Path(m['dir']).joinpath('summary.json').read_text()).get('intraday') or {}).get('enabled'))
+        except Exception:return False
+    full=next((m for m in catalog if Path(m['dir']).joinpath('rt_prices.csv').exists() and _aux(m) and not _intraday(m)),None)
     if full is None:pytest.skip('full saved result unavailable')
     prices=pd.read_csv(Path(full['dir'])/'da_nodal_prices.csv')
     before=prices.copy(deep=True)
@@ -23,8 +31,11 @@ def test_actual_results_business_first_and_technical_collapsed(monkeypatch):
     at.session_state['result_sel']=full['dir']
     at.switch_page('pages/3_结果.py').run()
     assert not at.exception
-    assert all(label in [t.label for t in at.tabs] for label in ['全网概览','日前实时对比','机组及电网运行','结算与收益','异常诊断'])
-    assert '诊断' not in [t.label for t in at.tabs]
+    # 第二轮J项：按阶段分块，每阶段同一组子页；最终结果以日前/实时直接对比为核心
+    labels=[t.label for t in at.tabs]
+    assert all(label in labels for label in ['日前','日内/实时滚动','最终结果','关键指标','节点电价','窗口浏览','电价对比','两部制结算恒等式','收入与成本'])
+    assert labels.count('弃风弃光')==2 and labels.count('该阶段诊断')==2
+    assert labels.index('诊断')>labels.index('最终结果')  # 诊断放在“最终结果”最后一个子页
     advanced=next(e for e in at.expander if e.label=='高级诊断与技术记录（按需查看）')
     assert advanced.proto.expanded is False
     assert any('混合整数相对间隙' in c.value for c in advanced.caption)
@@ -39,7 +50,8 @@ def test_actual_results_business_first_and_technical_collapsed(monkeypatch):
     saved_profit=pd.read_csv(Path(full['dir'])/'operating_profit_by_unit.csv')
     pd.testing.assert_series_equal(profit_table['模拟运营利润 元'].reset_index(drop=True),saved_profit.simulated_operating_profit_yuan,check_names=False)
     assert (profit_table['模拟运营利润 元']<0).sum()==(saved_profit.simulated_operating_profit_yuan<0).sum()
-    assert '线路负载' in [t.label for t in at.tabs]
+    # J项：线路负载/拓扑并入各阶段“电网与阻塞”子页（以小标题区分），不再单设页签
+    assert '电网与阻塞' in [t.label for t in at.tabs]
     assert '主体与求解阶段' in [t.label for t in at.tabs]
     assert '电能量结算' in [t.label for t in at.tabs] and '成本与利润' in [t.label for t in at.tabs]
-    assert '电网拓扑' in [t.label for t in at.tabs]
+    assert any('电网拓扑' in s.value for s in at.subheader)

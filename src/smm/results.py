@@ -53,7 +53,7 @@ def unit_results(m, prices) -> pd.DataFrame:
     df = pd.DataFrame(rows)
     reserve_rows=reserve_snapshot(m)["resources"]
     eligibility={(x["unit"],x["relative_period"]):x["reserve_eligible"] for x in reserve_rows}
-    df["reserve_formulation"]="incremental_current_stock"
+    df["reserve_formulation"]="period_end_stock"
     df["reserve_eligible"]=[bool(eligibility.get((r.unit,r.period),False)) for r in df.itertuples()]
     df["time"] = df.period.map(dict(enumerate(_times(T, dt))))
     df["lmp"] = [lmp[bidx[b], t] for b, t in zip(df.bus, df.period)]
@@ -115,7 +115,7 @@ def storage_results(m) -> pd.DataFrame:
             rows.append(dict(period=t, unit=s, bus=d["bus"], P_dis=V(m.Pd[s, t]), P_ch=V(m.Pc[s, t]),
                              u_ch=int(round(V(m.u_ch[s, t]))), u_dis=int(round(V(m.u_dis[s, t]))),
                              E_start=float(d["soc0"] * d["ecap"]) if t == 0 else V(m.E[s,t-1]), E_mwh=V(m.E[s, t]),
-                             soc=V(m.E[s, t]) / d["ecap"],reserve_formulation="incremental_current_stock"))
+                             soc=V(m.E[s, t]) / d["ecap"],reserve_formulation="period_end_stock"))
     return pd.DataFrame(rows, columns=["period", "unit", "bus", "P_dis", "P_ch", "u_ch", "u_dis", "E_start", "E_mwh", "soc", "reserve_formulation"])
 
 
@@ -130,7 +130,7 @@ def pumped_results(m) -> pd.DataFrame:
             rows.append(dict(period=t, unit=p, bus=d["bus"], P_gen=V(m.Pg[p, t]), P_pump=V(m.Pp[p, t]),
                              n_gen=int(round(V(m.ngen[p, t]))), n_pump=int(round(V(m.npump[p, t]))),
                              mode="发电" if xg else ("抽水" if xp else "停机"), V_start=float(d["init"]["V"]) if t == 0 else V(m.Vu[p,t-1]), V_up=Vu, V_dn=float(d["v_total"]) - Vu,
-                             E_equiv_mwh=(Vu - d["v_lo"]) * d["e_gen"],reserve_formulation="incremental_current_stock"))
+                             E_equiv_mwh=(Vu - d["v_lo"]) * d["e_gen"],reserve_formulation="period_end_stock"))
     return pd.DataFrame(rows, columns=["period", "unit", "bus", "P_gen", "P_pump", "n_gen", "n_pump", "mode", "V_start", "V_up", "V_dn", "E_equiv_mwh", "reserve_formulation"])
 
 
@@ -237,7 +237,7 @@ def reserve_snapshot(m) -> dict:
     """Detached full-window reserve evidence; no activation or extra payment.
 
     Battery activation may cross zero/idle; inverter response is idealized. Both
-    current start-of-period stock bounds the incremental reserve energy for H.
+    period-end stock E[t]/Vu[t] bounds the incremental reserve energy for H (round-2 item F).
     This is NOT a baseline-plus-activation delivery guarantee.
     Pumped reserve is generation-only. Reported margins are independently auditable.
     """
@@ -246,7 +246,7 @@ def reserve_snapshot(m) -> dict:
     H=float(rc['T_dur_h']) if enabled else None; providers=set(rc['providers']); rows=[]; systems=[]
     def row(uid,typ,t,up,dn,power,eligible,pmin,pmax,mode):
         return dict(period=case.t0+int(t),relative_period=int(t),unit=uid,type=typ,
-                    reserve_formulation='incremental_current_stock',reserve_eligible=bool(eligible),reserve_qualified=None,reserve_down_enabled=down_enabled,r_up=float(up),r_dn=float(dn),P_mw=float(power),
+                    reserve_formulation='period_end_stock',reserve_eligible=bool(eligible),reserve_qualified=None,reserve_down_enabled=down_enabled,r_up=float(up),r_dn=float(dn),P_mw=float(power),
                     pmin_mw=float(pmin),pmax_mw=float(pmax),mode=mode,T_dur_h=H,
                     reserve_power_up_margin_mw=float(pmax-power-up) if eligible else None,
                     reserve_power_down_margin_mw=float(power-pmin-dn) if eligible else None,
@@ -273,8 +273,8 @@ def reserve_snapshot(m) -> dict:
             # Compatibility field: derived eligibility, not a decision variable.
             r['reserve_qualified']=int(enabled)
             if enabled:
-                r['reserve_duration_up_margin_mwh']=float(max(0.,e0-emin)-H*up/d['eta_d'])
-                r['reserve_duration_down_margin_mwh']=float(max(0.,emax-e0)-H*dn*d['eta_c']) if down_enabled else None
+                r['reserve_duration_up_margin_mwh']=float(e1-emin-H*up/d['eta_d'])   # 第二轮F项：时段末库存E[t]
+                r['reserve_duration_down_margin_mwh']=float(emax-e1-H*dn*d['eta_c']) if down_enabled else None
                 r['full_activation_up_margin_mwh']=float(min(e0,e1)-emin-H*(p+up)/d['eta_d'])
                 r['full_activation_upper_margin_mwh']=float(emax-max(e0,e1)+H*d['eta_c']*(p-dn if down_enabled else p+up))
             r['reserve_duration_lower_margin_mwh']=r['reserve_duration_up_margin_mwh']
@@ -290,8 +290,8 @@ def reserve_snapshot(m) -> dict:
                      V_start_1e4m3=float(v0),V_end_1e4m3=float(v1),V_min_1e4m3=float(d['v_lo']),V_max_1e4m3=float(d['v_hi']),e_gen_mwh_per_1e4m3=float(d['e_gen']))
             r['reserve_qualified']=int(eligible)
             if eligible:
-                r['reserve_duration_up_margin_1e4m3']=float(max(0.,v0-d['v_lo'])-H*up/d['e_gen'])
-                r['reserve_duration_down_margin_1e4m3']=float(max(0.,d['v_hi']-v0)-H*dn/d['e_gen']) if down_enabled else None
+                r['reserve_duration_up_margin_1e4m3']=float(v1-d['v_lo']-H*up/d['e_gen'])   # 第二轮F项：时段末上库库容Vu[t]
+                r['reserve_duration_down_margin_1e4m3']=float(d['v_hi']-v1-H*dn/d['e_gen']) if down_enabled else None
                 r['full_activation_up_margin_1e4m3']=float(min(v0,v1)-d['v_lo']-H*(pg+up)/d['e_gen'])
                 r['full_activation_upper_margin_1e4m3']=float(d['v_hi']-max(v0,v1)+H*(pg-dn if down_enabled else pg+up)/d['e_gen'])
             r['reserve_duration_lower_margin_1e4m3']=r['reserve_duration_up_margin_1e4m3']
@@ -307,8 +307,8 @@ def reserve_snapshot(m) -> dict:
                             R_up_balance_mw=float(up+V(m.sR_up[t])-case.R_up[t]),R_dn_balance_mw=float(dn+V(m.sR_dn[t])-case.R_dn[t])))
     return dict(storage_reserve_enabled=enabled,down_enabled=down_enabled,T_dur_h=H,window_start=case.t0,periods=md.T,resources=rows,system=systems,
                 resource_catalog=sorted({r['unit'] for r in rows}),providers=sorted(providers),contingency_mw=case.reserve_info.get('R_ctg'),
-                formulation='incremental_current_stock',qualification_semantics='derived_eligibility_not_decision_variable',
-                scope='capacity_constraint_only_no_reserve_payment;incremental_reserve_energy_from_current_start_stock;not_full_baseline_plus_activation_delivery_guarantee',
+                formulation='period_end_stock',qualification_semantics='derived_eligibility_not_decision_variable',
+                scope='capacity_constraint_only_no_reserve_payment;incremental_reserve_energy_from_period_end_stock;not_full_baseline_plus_activation_delivery_guarantee',
                 battery_response_assumption='ideal_inverter_activation_can_cross_zero_and_idle;not_certified_response',
                 reserve_requirement_parameters={k:rc[k] for k in ('rho_L','rho_RE','rho_L_dn','rho_RE_dn','include_ctg','mu_RE')})
 

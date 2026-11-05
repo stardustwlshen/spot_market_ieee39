@@ -1,0 +1,44 @@
+[
+  {
+    "t": 91,
+    "V_source": "intraday@88",
+    "Vu_source": "intraday@88",
+    "GT_source": "intraday@88"
+  },
+  {
+    "t": 92,
+    "V_source": "day_ahead",
+    "Vu_source": "day_ahead",
+    "GT_source": "day_ahead",
+    "max_thermal_DA_error": 0.0,
+    "max_delta_DA_error": 0.0,
+    "max_value_window_DA_reference_error": 0.0
+  },
+  {
+    "t": 93,
+    "V_source": "day_ahead",
+    "Vu_source": "day_ahead",
+    "GT_source": "day_ahead",
+    "max_thermal_DA_error": 0.0,
+    "max_delta_DA_error": 0.0,
+    "max_value_window_DA_reference_error": 0.0
+  },
+  {
+    "t": 94,
+    "V_source": "day_ahead",
+    "Vu_source": "day_ahead",
+    "GT_source": "day_ahead",
+    "max_thermal_DA_error": 0.0,
+    "max_delta_DA_error": 0.0,
+    "max_value_window_DA_reference_error": 0.0
+  },
+  {
+    "t": 95,
+    "V_source": "day_ahead",
+    "Vu_source": "day_ahead",
+    "GT_source": "day_ahead",
+    "max_thermal_DA_error": 0.0,
+    "max_delta_DA_error": 0.0,
+    "max_value_window_DA_reference_error": 0.0
+  }
+]

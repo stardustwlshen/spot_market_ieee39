@@ -1,0 +1,219 @@
+[
+  {
+    "scenario": "wet_on",
+    "periods": 96,
+    "actual_reserve_short_mwh": 0.0,
+    "actual_short_periods": [],
+    "ID_success": 24,
+    "ID_failed": 0,
+    "emergency_fallback": 0,
+    "PS_volume_at_22": 196.09375,
+    "PS_actual_end": 200.0,
+    "PS_target": 200,
+    "PS_actual_shortfall": 0.0,
+    "PS_actual_shortfall_discharge_mwh": 0.0,
+    "executed_terminal_records": [
+      {
+        "kind": "E",
+        "unit": "ES1",
+        "deviation_native": 0.0,
+        "deviation_discharge_mwh": 0.0,
+        "penalty_cost": 0.0
+      },
+      {
+        "kind": "E",
+        "unit": "ES2",
+        "deviation_native": 0.0,
+        "deviation_discharge_mwh": 0.0,
+        "penalty_cost": 0.0
+      },
+      {
+        "kind": "E",
+        "unit": "ES3",
+        "deviation_native": 0.0,
+        "deviation_discharge_mwh": 0.0,
+        "penalty_cost": 0.0
+      },
+      {
+        "kind": "Vu",
+        "unit": "PS1",
+        "deviation_native": 0.0,
+        "deviation_discharge_mwh": 0.0,
+        "penalty_cost": 0.0
+      },
+      {
+        "kind": "V",
+        "unit": "H1",
+        "deviation_native": 0.0,
+        "deviation_discharge_mwh": 0.0,
+        "penalty_cost": 0.0
+      }
+    ],
+    "physical_checked": true,
+    "terminal_policy_compliant": true
+  },
+  {
+    "scenario": "wet_off",
+    "periods": 96,
+    "actual_reserve_short_mwh": 0.0,
+    "actual_short_periods": [],
+    "ID_success": 0,
+    "ID_failed": 0,
+    "emergency_fallback": 0,
+    "PS_volume_at_22": 176.19047619047615,
+    "PS_actual_end": 199.99999999999997,
+    "PS_target": 200,
+    "PS_actual_shortfall": 2.842170943040401e-14,
+    "PS_actual_shortfall_discharge_mwh": 2.7284841053187846e-13,
+    "executed_terminal_records": [
+      {
+        "kind": "E",
+        "unit": "ES1",
+        "deviation_native": 0.0,
+        "deviation_discharge_mwh": 0.0,
+        "penalty_cost": 0.0
+      },
+      {
+        "kind": "E",
+        "unit": "ES2",
+        "deviation_native": 0.0,
+        "deviation_discharge_mwh": 0.0,
+        "penalty_cost": 0.0
+      },
+      {
+        "kind": "E",
+        "unit": "ES3",
+        "deviation_native": 0.0,
+        "deviation_discharge_mwh": 0.0,
+        "penalty_cost": 0.0
+      },
+      {
+        "kind": "Vu",
+        "unit": "PS1",
+        "deviation_native": 2.842170943040401e-14,
+        "deviation_discharge_mwh": 2.7284841053187846e-13,
+        "penalty_cost": 2.7284841053187847e-10
+      },
+      {
+        "kind": "V",
+        "unit": "H1",
+        "deviation_native": 0.0,
+        "deviation_discharge_mwh": 0.0,
+        "penalty_cost": 0.0
+      }
+    ],
+    "physical_checked": true,
+    "terminal_policy_compliant": true
+  },
+  {
+    "scenario": "dry_on",
+    "periods": 96,
+    "actual_reserve_short_mwh": 10.850103786922631,
+    "actual_short_periods": [
+      {
+        "period": 83,
+        "mw": 43.400415147690524
+      }
+    ],
+    "ID_success": 24,
+    "ID_failed": 0,
+    "emergency_fallback": 0,
+    "PS_volume_at_22": 164.28571428571425,
+    "PS_actual_end": 182.1428571428571,
+    "PS_target": 200,
+    "PS_actual_shortfall": 17.85714285714289,
+    "PS_actual_shortfall_discharge_mwh": 171.42857142857173,
+    "executed_terminal_records": [
+      {
+        "kind": "E",
+        "unit": "ES1",
+        "deviation_native": 0.0,
+        "deviation_discharge_mwh": 0.0,
+        "penalty_cost": 0.0
+      },
+      {
+        "kind": "E",
+        "unit": "ES2",
+        "deviation_native": 0.0,
+        "deviation_discharge_mwh": 0.0,
+        "penalty_cost": 0.0
+      },
+      {
+        "kind": "E",
+        "unit": "ES3",
+        "deviation_native": 0.0,
+        "deviation_discharge_mwh": 0.0,
+        "penalty_cost": 0.0
+      },
+      {
+        "kind": "Vu",
+        "unit": "PS1",
+        "deviation_native": 17.85714285714289,
+        "deviation_discharge_mwh": 171.42857142857173,
+        "penalty_cost": 171428.57142857174
+      },
+      {
+        "kind": "V",
+        "unit": "H1",
+        "deviation_native": 0.0,
+        "deviation_discharge_mwh": 0.0,
+        "penalty_cost": 0.0
+      }
+    ],
+    "physical_checked": true,
+    "terminal_policy_compliant": true
+  },
+  {
+    "scenario": "dry_off",
+    "periods": 96,
+    "actual_reserve_short_mwh": 0.0,
+    "actual_short_periods": [],
+    "ID_success": 0,
+    "ID_failed": 0,
+    "emergency_fallback": 0,
+    "PS_volume_at_22": 182.1428571428571,
+    "PS_actual_end": 194.04761904761904,
+    "PS_target": 200,
+    "PS_actual_shortfall": 5.952380952380963,
+    "PS_actual_shortfall_discharge_mwh": 57.142857142857245,
+    "executed_terminal_records": [
+      {
+        "kind": "E",
+        "unit": "ES1",
+        "deviation_native": 0.0,
+        "deviation_discharge_mwh": 0.0,
+        "penalty_cost": 0.0
+      },
+      {
+        "kind": "E",
+        "unit": "ES2",
+        "deviation_native": 0.0,
+        "deviation_discharge_mwh": 0.0,
+        "penalty_cost": 0.0
+      },
+      {
+        "kind": "E",
+        "unit": "ES3",
+        "deviation_native": 0.0,
+        "deviation_discharge_mwh": 0.0,
+        "penalty_cost": 0.0
+      },
+      {
+        "kind": "Vu",
+        "unit": "PS1",
+        "deviation_native": 5.952380952380963,
+        "deviation_discharge_mwh": 57.142857142857245,
+        "penalty_cost": 57142.85714285725
+      },
+      {
+        "kind": "V",
+        "unit": "H1",
+        "deviation_native": 0.0,
+        "deviation_discharge_mwh": 0.0,
+        "penalty_cost": 0.0
+      }
+    ],
+    "physical_checked": true,
+    "terminal_policy_compliant": true
+  }
+]

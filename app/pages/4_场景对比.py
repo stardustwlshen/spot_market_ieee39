@@ -1,4 +1,4 @@
-"""两个结果对比：指标、均价曲线、节点电价差、出力结构、结算。"""
+"""两个结果对比：指标、均价曲线、节点电价差、出力结构、价值曲线（第二轮J项）、结算。"""
 import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
@@ -33,6 +33,9 @@ except (OSError, ValueError, TypeError, KeyError, AttributeError) as exc:
     with st.expander('读取失败详情'):
         st.code(str(exc))
     st.stop()
+for result, name in ((RA, '方案甲'), (RB, '方案乙')):
+    for line_warning in result.get('line_scope_warnings', []):
+        st.warning(name + '：' + line_warning)
 if any(bus is None for bus in price_buses):
     st.warning('部分结果缺少冻结节点记录；只用已保存的负荷权重，缺失时均价曲线留空，不借用当前网络或等权均价。')
 lbl = period_labels(96)
@@ -86,6 +89,10 @@ show_fig(style_fig(fig, "日前分类型电量", "资源类型", "电量（MWh�
 with st.expander("分类型电量表（MWh）"):
     show_df(e.reset_index(names="类型"), "%.1f")
 
+st.subheader("价值曲线（储能 / 抽蓄 / 水电）")
+from value_views import render_value_compare
+render_value_compare(RA, RB, lbl, 'cmp_value')
+
 if RA["full"] and RB["full"] and not same_rt_periods:
     st.warning("两次运行的已执行时段范围不同（可能包含调试前缀）；上表总量不具同范围可比性，不计算结算总额差。")
 if same_rt_periods:
@@ -102,14 +109,10 @@ if same_rt_periods:
     show_df(t.reset_index(names="类型"), "%.2f")
     df_download(t.reset_index(names="类型"), "compare_settlement_by_type.csv", key="dl_cs")
     st.markdown("**储能：日前与实时 末时段电量（MWh）**")
-    rows = []
-    for R, n in ((RA, "方案甲"), (RB, "方案乙")):
-        if R.get('rt_storage') is None or R['rt_storage'].empty:
-            continue
-        for un, g in R["rt_storage"].groupby("unit"):
-            d = R["da_storage"][R["da_storage"].unit == un]
-            T = int(g.period.max())
-            rows.append({"结果": n, "储能": un, "日前电量@末时段": float(d[d.period == T].E_mwh.iloc[0]), "实时电量@末时段": float(g[g.period == T].E_mwh.iloc[0])})
+    from result_policy_notes import storage_endpoint_rows
+    rows = storage_endpoint_rows(RA, '方案甲') + storage_endpoint_rows(RB, '方案乙')
+    if any(pd.isna(row['日前电量@末时段']) for row in rows):
+        st.info('部分方案未保存相应日前储能末态，参照值留空；不补零，也不以当前配置代替。')
     show_df(pd.DataFrame(rows), "%.2f")
 else:
     st.caption("两个方案均为全流程且执行范围一致时显示结算对比。")

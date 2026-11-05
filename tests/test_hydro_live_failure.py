@@ -50,7 +50,10 @@ def test_hydro_worker_failure_or_cancel_allows_new_run(tmp_path, monkeypatch, te
             injected.append(True)
         return result
     monkeypatch.setattr(rolling,'advance',depleted_actual_state)
-    out=scenario.new_run_dir(name,'full')
+    # Explicit CLI paths must be new; pre-existing folders require a live UI reservation.
+    # Keep the real hydro solve/failure/cancel behavior, without bypassing admission.
+    out=scenario.RUNS_DIR/name/'explicit_cli_worker'
+    assert not out.exists()
     monkeypatch.setattr(sys,'argv',['run_scenario.py','--scenario',name,'--mode','full','--periods','4','--run-dir',str(out)])
     if termination=='infeasible':
         with pytest.raises(SystemExit) as stop:

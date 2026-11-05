@@ -1,8 +1,9 @@
 """Remaining-day asset feasibility witness, not an extended market-clearing horizon.
 
 The formal rolling window still clears only its configured forecast horizon.
-This zero-cost suffix connects its final stocks AND pumped integer state to every
-remaining hard DA clock target, including 24:00. It certifies asset feasibility
+This suffix connects final stocks AND pumped integer state to every remaining
+hard DA clock target, or only 24:00 under the value/day_end policy. The day_end_soft
+policy instead charges a finite terminal-stock deviation cost. It certifies asset feasibility
 conditional on future power being deliverable; it is NOT a future network,
 thermal, hydro, reserve or forecast-uncertainty certificate. No suffix quantity
 is dispatched, settled or fed into the next state.
@@ -14,6 +15,7 @@ import pyomo.environ as pyo
 
 INTEGER_NAMES = ('u_ch','u_dis','xg','xp','ngen','npump')
 SCOPE = 'battery_and_pumped_assets_only;remaining_day_hard_targets;not_future_network_or_reserve'
+SOFT_SCOPE = 'battery_and_pumped_assets_only;finite_cost_day_end_targets;not_future_network_energy_cost_or_reserve'
 
 
 def attach(m):
@@ -24,8 +26,11 @@ def attach(m):
     md=m._md;case=m._case;T=md.T;dt=md.dt
     if md.storage and not case.cfg.base['solver'].get('storage_binary',True):
         raise ValueError('资产整数可达性保护要求storage_binary=true；LP松弛对照请使用历史策略')
-    if case.stage!='RT' or not term.get('storage_anchor_hard'):
-        raise ValueError('资产可达性后缀仅用于实时两小时硬锚点')
+    policy=spec.get('target_policy','two_hour_eq')
+    if policy not in ('two_hour_eq','day_end','day_end_soft'):
+        raise ValueError('资产可达性目标策略须为 two_hour_eq|day_end|day_end_soft')
+    if case.stage!='RT' or (policy=='two_hour_eq' and not term.get('storage_anchor_hard')):
+        raise ValueError('资产可达性后缀仅用于实时两小时硬锚点或价值法日末目标')
     if spec.get('start_period')!=case.t0+T or spec.get('end_period_exclusive')!=case.cfg.T:
         raise ValueError('资产可达性后缀须从当前窗口末连续延伸到运行日末')
     end=case.cfg.T-case.t0
@@ -33,6 +38,12 @@ def attach(m):
         raise ValueError('资产可达性后缀必须非空；日末窗口无需额外后缀')
     b=m.asset_reachability=pyo.Block(concrete=True)
     b._integer_names=INTEGER_NAMES
+    b._target_policy=policy
+    b._soft_target=policy=='day_end_soft'
+    from .scuc import state_discharge_energy_factor, validate_rt_terminal_policy
+    b._terminal_policy=(validate_rt_terminal_policy(dict(mode='soft',
+        penalty_yuan_per_discharge_mwh=spec.get('penalty_yuan_per_discharge_mwh')),case.stage)
+        if b._soft_target else {})
     b.F=pyo.Set(initialize=range(T,end),ordered=True)
     b.E=pyo.Var(m.S,b.F,domain=pyo.NonNegativeReals)
     b.Pd=pyo.Var(m.S,b.F,domain=pyo.NonNegativeReals)
@@ -98,18 +109,34 @@ def attach(m):
         targets=spec.get(key,{})
         if set(targets)!=set(units):raise ValueError(f'资产可达性后缀缺少完整{kind}目标')
         stride=int(round(2./dt))
-        expected={t-T for t in b.F if (case.t0+t+1)%stride==0}
+        expected=({end-1-T} if policy in ('day_end','day_end_soft') else {t-T for t in b.F if (case.t0+t+1)%stride==0})
         for unit,rows in targets.items():
             actual=[int(row[0]) for row in rows]
             if set(actual)!=expected or len(actual)!=len(expected):
-                raise ValueError('资产可达性后缀必须完整覆盖每个剩余两小时硬锚点')
+                raise ValueError('资产可达性后缀必须仅完整覆盖日末目标' if policy in ('day_end','day_end_soft') else '资产可达性后缀必须完整覆盖每个剩余两小时硬锚点')
             for relative,lo,hi in rows:
                 t=T+int(relative)
                 if t not in b.F or lo!=hi or not math.isfinite(float(lo)):
-                    raise ValueError('资产可达性后缀目标时标/硬等式非法')
-                b.anchors.add(getattr(b,kind)[unit,t]==float(lo))
+                    raise ValueError('资产可达性后缀目标时标/单点参考非法')
                 b._targets.append((kind,unit,t,float(lo)))
-    b._scope=SCOPE
+    b.target_indices=pyo.Set(initialize=range(len(b._targets)))
+    b.target_up=pyo.Var(b.target_indices,domain=pyo.NonNegativeReals)
+    b.target_dn=pyo.Var(b.target_indices,domain=pyo.NonNegativeReals)
+    b._target_energy_factors={}
+    b._target_cost_coefficients={}
+    for i,(kind,unit,t,target) in enumerate(b._targets):
+        factor=state_discharge_energy_factor(md,kind,unit)
+        b._target_energy_factors[i]=factor
+        coefficient=(float(b._terminal_policy['penalty_yuan_per_discharge_mwh'])*factor if b._soft_target else 0.)
+        b._target_cost_coefficients[i]=coefficient
+        if b._soft_target:
+            b.anchors.add(getattr(b,kind)[unit,t]==target+b.target_up[i]-b.target_dn[i])
+        else:
+            b.target_up[i].fix(0.);b.target_dn[i].fix(0.)
+            b.anchors.add(getattr(b,kind)[unit,t]==target)
+    b.terminal_penalty_cost=pyo.Expression(expr=sum(b._target_cost_coefficients[i]*(b.target_up[i]+b.target_dn[i])
+                                                   for i in b.target_indices if b._soft_target))
+    b._scope=SOFT_SCOPE if b._soft_target else SCOPE
 
 
 def diagnostics(m):
@@ -117,15 +144,27 @@ def diagnostics(m):
     if b is None:return dict(enabled=False,scope=SCOPE,reason='no_remaining_suffix_or_legacy_policy')
     val=lambda x:float(pyo.value(x))
     rows=[]
-    for kind,unit,t,target in b._targets:
+    for i,(kind,unit,t,target) in enumerate(b._targets):
         actual=val(getattr(b,kind)[unit,t])
+        factor=b._target_energy_factors[i]
+        up,dn=val(b.target_up[i]),val(b.target_dn[i])
         rows.append(dict(kind=kind,unit=unit,period=m._case.t0+t,state_end_hour=(m._case.t0+t+1)*m._md.dt,
-                         target=target,witness=actual,error=actual-target))
+                         target=target,witness=actual,error=actual-target,soft_target=b._soft_target,
+                         native_unit='MWh' if kind=='E' else '1e4m3',
+                         discharge_mwh_per_native_unit=factor,error_discharge_mwh=(actual-target)*factor,
+                         deviation_up_native=up,deviation_dn_native=dn,
+                         deviation_up_discharge_mwh=up*factor,deviation_dn_discharge_mwh=dn*factor,
+                         penalty_yuan_per_native_unit=b._target_cost_coefficients[i],
+                         penalty_yuan_per_discharge_mwh=b._terminal_policy.get('penalty_yuan_per_discharge_mwh'),
+                         terminal_penalty_cost=b._target_cost_coefficients[i]*(up+dn)))
     budgets={p:{kind:dict(remaining=m._pumped_remaining_starts[p][kind],
                     window=val(sum(getattr(m,var)[p,t] for t in m.T)),
                     suffix=val(sum(getattr(b,var)[p,t] for t in b.F)))
                 for var,kind in (('sg','gen'),('sp','pump'))} for p in m.PS}
-    return dict(enabled=bool(b.active),scope=SCOPE,quantities_execute=False,zero_objective_weight=True,
+    return dict(enabled=bool(b.active),scope=b._scope,target_policy=b._target_policy,quantities_execute=False,
+                zero_objective_weight=not b._soft_target,soft_target=b._soft_target,
+                terminal_penalty_cost=val(b.terminal_penalty_cost),
+                cost_scope='terminal_deviation_only_no_future_energy_bid_cost',
                 suffix_start=m._case.t0+m._md.T,suffix_end_exclusive=m._case.cfg.T,
-                future_anchor_targets=rows,pumped_start_budget=budgets,
+                future_anchor_targets=rows,future_targets=rows,pumped_start_budget=budgets,
                 max_target_error=max((abs(r['error']) for r in rows),default=0.))

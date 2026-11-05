@@ -162,25 +162,53 @@ def _write_yaml_unlocked(name, which, data):
 
 
 # ----------------------------------------------------------------------------- 运行目录
+def _read_run_record(directory: Path, scenario: str) -> dict:
+    """Quarantine one unreadable record in memory; never rewrite its evidence."""
+    try:
+        record = json.loads((directory / "meta.json").read_text(encoding="utf-8"))
+        if not isinstance(record, dict):
+            raise ValueError("meta.json 顶层应为对象记录")
+        for key in ("scenario", "mode", "status"):
+            if not isinstance(record.get(key), str) or not record[key]:
+                raise ValueError(f"meta.json {key} 缺失或不是文本")
+        if record['mode'] not in ('da', 'full'):
+            raise ValueError("meta.json 运行模式未识别")
+        # Terminal batch statuses can appear in imported historical records, but
+        # none is promoted to a completed market result. Unknown states stay unsafe.
+        known_statuses = {'starting', 'running', 'cancelling', 'done', 'failed', 'stopped',
+                          'launch_failed', 'cancelled_before_start', 'process_succeeded', 'process_failed'}
+        if record['status'] not in known_statuses:
+            raise ValueError("meta.json 运行状态未识别")
+        started = record.get('started', '')
+        if not isinstance(started, str):
+            raise ValueError("meta.json started 不是时间文本")
+        if started:
+            _dt.datetime.fromisoformat(started.replace('Z', '+00:00'))
+        for key in ('stage', 'display_label', 'demo_description'):
+            if key in record and record[key] is not None and not isinstance(record[key], str):
+                raise ValueError(f"meta.json {key} 不是文本")
+        periods = record.get('periods')
+        if periods is not None and (isinstance(periods, bool) or not isinstance(periods, int) or periods <= 0):
+            raise ValueError("meta.json periods 不是正整数或空值")
+        return {**record, 'dir': str(directory), 'started': started}
+    except (OSError, ValueError, UnicodeError) as exc:
+        return dict(dir=str(directory), scenario=scenario, mode='unknown', status='invalid',
+                    started='', stage='运行元数据损坏', metadata_error=str(exc))
+
+
 def list_runs(scenario: str | None = None) -> list[dict]:
-    """按时间倒序返回运行记录（读取 meta.json）。"""
+    """Read saved runs newest first, retaining explicitly invalid records safely."""
     out = []
     if not RUNS_DIR.exists():
         return out
     dirs = [RUNS_DIR / scenario] if scenario else [p for p in RUNS_DIR.iterdir() if p.is_dir()]
     for sd in dirs:
-        if not sd.exists():
+        if not sd.is_dir():
             continue
         for rd in sd.iterdir():
-            mp = rd / "meta.json"
-            if mp.exists():
-                try:
-                    m = json.loads(mp.read_text(encoding="utf-8"))
-                except json.JSONDecodeError:
-                    continue
-                m["dir"] = str(rd)
-                out.append(m)
-    return sorted(out, key=lambda m: m.get("started", ""), reverse=True)
+            if rd.is_dir() and (rd / 'meta.json').exists():
+                out.append(_read_run_record(rd, sd.name))
+    return sorted(out, key=lambda m: (m['status'] != 'invalid', m['started']), reverse=True)
 
 
 def new_run_dir(scenario: str, mode: str) -> Path:

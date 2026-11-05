@@ -54,6 +54,7 @@ def _load_config_unlocked(rule_set=None, season=None, overrides=None, root=None)
     mode = modes[base["rule_set"]]
     validate_auxiliary_pricing(mode)
     validate_tracking_policy(mode)
+    rt_terminal_policy(mode)
     cfg = Config(base=base, units=units, mode=mode, root=root)
     from .fixed_load import tie_mode
     tie_mode(cfg)
@@ -61,6 +62,8 @@ def _load_config_unlocked(rule_set=None, season=None, overrides=None, root=None)
     validate_anchor_config(cfg)
     from .input_validation import validate_physical_inputs
     validate_physical_inputs(cfg)
+    from .handoff import configuration
+    configuration(cfg)
     return cfg
 
 
@@ -111,8 +114,28 @@ def validate_auxiliary_pricing(mode: dict) -> None:
         raise ValueError("辅助锚点罚须为有限非负数，单位元/可放电等价MWh")
 
 
+def validate_value_method(mode: dict) -> None:
+    """第二轮C/D项：实时价值法参数（偏差带比例、回退罚因子，均为假设值）。"""
+    rc = mode.get("realtime", {})
+    if rc.get("storage", {}).get("mode", "value") not in ("value", "sced_anchor", "fixed_da"):
+        raise ValueError("realtime.storage.mode须为value/sced_anchor/fixed_da")
+    if rc.get("hydro", "value") not in ("value", "window_end_da", "fixed_da", "sced"):
+        raise ValueError("realtime.hydro须为value/window_end_da/fixed_da/sced")
+    spec = rc.get("value_method", {}) or {}
+    for key in ("band_fraction", "hydro_band_fraction"):
+        value = spec.get(key, 0.02)
+        if isinstance(value, bool) or not isinstance(value, Real) or not math.isfinite(value) or not 0 <= value <= 1:
+            raise ValueError(f"value_method.{key}须为[0,1]内有限数")
+    if spec.get("hydro_lookahead", "off") not in ("off", "reference_continuation"):
+        raise ValueError("value_method.hydro_lookahead须为off/reference_continuation")
+    value = spec.get("fallback_penalty", 1e5)
+    if isinstance(value, bool) or not isinstance(value, Real) or not math.isfinite(value) or value <= 0:
+        raise ValueError("value_method.fallback_penalty须为有限正数")
+
+
 def validate_tracking_policy(mode: dict) -> None:
     """Explicit optional RT tracking migration; absent means historical policy."""
+    validate_value_method(mode)
     spec = mode.get("realtime", {}).get("tracking_policy")
     if spec is None:
         return
@@ -121,3 +144,21 @@ def validate_tracking_policy(mode: dict) -> None:
     value = spec.get("penalty_yuan_per_discharge_mwh")
     if isinstance(value, bool) or not isinstance(value, Real) or not math.isfinite(value) or value <= 0:
         raise ValueError("RT跟踪罚须为有限正数，单位元/可放电等价MWh")
+
+
+def rt_terminal_policy(mode: dict) -> dict:
+    """Explicit new RT policy; absent blocks preserve historical hard targets."""
+    spec = mode.get("realtime", {}).get("value_method", {}).get("terminal_policy")
+    if spec is None:
+        return {"mode": "hard", "penalty_yuan_per_discharge_mwh": None}
+    if not isinstance(spec, dict) or set(spec) - {"mode", "penalty_yuan_per_discharge_mwh"}:
+        raise ValueError("realtime.value_method.terminal_policy 只能配置 mode 和 penalty_yuan_per_discharge_mwh")
+    policy = spec.get("mode")
+    if policy not in ("hard", "soft"):
+        raise ValueError("实时终态 mode 须为 hard|soft")
+    penalty = spec.get("penalty_yuan_per_discharge_mwh")
+    if policy == "soft" or penalty is not None:
+        if isinstance(penalty, bool) or not isinstance(penalty, Real) or not math.isfinite(penalty) or penalty <= 0:
+            raise ValueError("实时软终态罚价必须为有限正数，单位元/可放电MWh")
+        penalty = float(penalty)
+    return {"mode": policy, "penalty_yuan_per_discharge_mwh": penalty}

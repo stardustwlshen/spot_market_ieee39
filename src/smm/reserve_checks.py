@@ -49,7 +49,8 @@ def audit(payload,tol=1e-5):
                     if eligible:
                         margin(number(r['pmax_mw'])-P-ru,label+'/power_up');margin(P-number(r['pmin_mw'])-rd,label+'/power_down')
                     continue
-                if e.get('formulation')=='incremental_current_stock':
+                if e.get('formulation') in ('incremental_current_stock','period_end_stock'):
+                    end_stock=e.get('formulation')=='period_end_stock'
                     equal(r['reserve_qualified'],int(eligible),label+'/derived_eligibility')
                     if eligible:out['qualified_resource_periods']+=1
                     if not enabled:
@@ -60,12 +61,12 @@ def audit(payload,tol=1e-5):
                         if not 0<eta_c<=1 or not 0<eta_d<=1:raise ValueError('Efficiency outside (0,1]')
                         equal(P,number(r['P_dis_mw'])-number(r['P_ch_mw']),label+'/net_power')
                         margin(cap-P-ru,label+'/power_up');margin(cap+P-rd,label+'/power_down')
-                        lo=number(r['E_min_mwh']);hi=number(r['E_max_mwh']);stock=number(r['E_start_mwh'])
+                        lo=number(r['E_min_mwh']);hi=number(r['E_max_mwh']);stock=number(r['E_end_mwh' if end_stock else 'E_start_mwh'])
                         for endpoint in (('end',) if t==0 else ('start','end')):
                             v=number(r[f'E_{endpoint}_mwh']);margin(v-lo,label+'/stock_lower');margin(hi-v,label+'/stock_upper')
                         u=max(0.,stock-lo)-H*ru/eta_d;d=max(0.,hi-stock)-H*rd*eta_c;unit='mwh'
-                        end=number(r['E_end_mwh']);fu=min(stock,end)-lo-H*(P+ru)/eta_d
-                        fd=hi-max(stock,end)+H*eta_c*(P-rd if down_enabled else P+ru)
+                        s0=number(r['E_start_mwh']);end=number(r['E_end_mwh']);fu=min(s0,end)-lo-H*(P+ru)/eta_d  # 全激活风险始终用起止两端
+                        fd=hi-max(s0,end)+H*eta_c*(P-rd if down_enabled else P+ru)
                     else:
                         pg,pp=number(r['P_gen_mw']),number(r['P_pump_mw']);n=number(r['n_gen'])
                         pmax,pmin=number(r['unit_gen_max_mw']),number(r['unit_gen_min_mw']);eg=number(r['e_gen_mwh_per_1e4m3'])
@@ -73,12 +74,12 @@ def audit(payload,tol=1e-5):
                         equal(P,pg-pp,label+'/net_power')
                         margin(n*pmax-pg-ru,label+'/power_up');margin(pg-n*pmin-rd,label+'/power_down')
                         if not eligible:equal(ru+rd,0.,label+'/non_generating_zero')
-                        lo=number(r['V_min_1e4m3']);hi=number(r['V_max_1e4m3']);stock=number(r['V_start_1e4m3'])
+                        lo=number(r['V_min_1e4m3']);hi=number(r['V_max_1e4m3']);stock=number(r['V_end_1e4m3' if end_stock else 'V_start_1e4m3'])
                         for endpoint in (('end',) if t==0 else ('start','end')):
                             v=number(r[f'V_{endpoint}_1e4m3']);margin(v-lo,label+'/stock_lower');margin(hi-v,label+'/stock_upper')
                         u=max(0.,stock-lo)-H*ru/eg;d=max(0.,hi-stock)-H*rd/eg;unit='1e4m3'
-                        end=number(r['V_end_1e4m3']);fu=min(stock,end)-lo-H*(pg+ru)/eg
-                        fd=hi-max(stock,end)+H*(pg-rd if down_enabled else pg+ru)/eg
+                        s0=number(r['V_start_1e4m3']);end=number(r['V_end_1e4m3']);fu=min(s0,end)-lo-H*(pg+ru)/eg
+                        fd=hi-max(s0,end)+H*(pg-rd if down_enabled else pg+ru)/eg
                     margin(u,label+'/incremental_up')
                     if down_enabled:margin(d,label+'/incremental_down')
                     if eligible:

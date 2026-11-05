@@ -10,6 +10,7 @@ from test_da_stages import tiny_case
 
 def uniform_case(hours=1.,dt=.25):
     c=tiny_case(reserve=0);c.cfg.mode['startup_cost_mode']='uniform_per_unit';c.cfg.base['dt_h']=dt
+    c.cfg.mode['realtime']['interval_min']=60*dt  # Preserve the intended startup-cost/dt comparison on a valid clock.
     for unit,cost in zip(c.cfg.units['thermal'],[100.,175.]):
         unit.update(ut=dt,dt=dt)
         unit['init'].update(online=False,p0=0.,hours=hours)

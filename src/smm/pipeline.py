@@ -2,10 +2,11 @@
 from __future__ import annotations
 
 import json
+import copy
 from pathlib import Path
 
 from . import plots
-from .bids import bid_dir, bids_to_csv, default_bids, load_bids, raise_on_errors, save_bids, validate_bids
+from .bids import bid_dir, bids_to_csv, default_bids, fill_missing_bids, load_bids, raise_on_errors, save_bids, validate_bids
 from .case import build_da_case
 from .config import Config
 from .da import DAResult, run_da, summarize
@@ -24,36 +25,54 @@ def ensure_default_bids(cfg: Config) -> Path:
     return sorted(d.glob("bids_v*.json"), key=lambda p: int(p.stem.split("_v")[-1]))[-1]
 
 
-def prepare(cfg: Config, bid_version: int | None = None, verbose=True, *, read_only=False):
-    """Prepare an in-memory case; frozen runs must not write generated inputs."""
-    net = build_network(cfg)
-    prof = apply_profile_overrides(cfg, generate_profiles(cfg, cfg.base["seed"]))   # 无覆盖文件时不变
-    from .forecast_settings import generation_metadata
-    prof.attrs["generation_metadata"] = generation_metadata(cfg)
-    if not read_only:
-        save_profiles(cfg, prof)
-        ensure_default_bids(cfg)
-    if read_only and not list(bid_dir(cfg).glob("bids_v*.json")):
-        # Same default v1 as the writable path, but archive resolved_bids outside
-        # the frozen tree. An explicitly missing later version must still fail.
+_UNSET_BID_DATA = object()
+
+
+def prepare(cfg: Config, bid_version: int | None = None, verbose=True, *, read_only=False,
+            bid_data=_UNSET_BID_DATA):
+    """Prepare a detached case; explicit bids never depend on the bid directory.
+
+    ``bid_data`` is a supplied JSON object, not a replacement global loader.
+    Even explicit None is invalid rather than a request to fall back to defaults.
+    """
+    from .input_validation import validate_time_grid
+    validate_time_grid(cfg)
+    if bid_data is not _UNSET_BID_DATA:
+        bids = copy.deepcopy(bid_data)
+        raise_on_errors(validate_bids(cfg, bids))
+        version = bids.get("version")
+        if isinstance(version, bool) or not isinstance(version, int) or version < 1:
+            raise ValueError("显式报价version必须是正整数，不能回退默认报价")
+        if bid_version is not None and bid_version != version:
+            raise ValueError(f"显式报价版本{version}与请求bid_version={bid_version}冲突")
+        bids = fill_missing_bids(cfg, bids)
+    elif read_only and not list(bid_dir(cfg).glob("bids_v*.json")):
         if bid_version not in (None, 1):
             raise FileNotFoundError(f"No frozen bid version {bid_version}")
         bids = default_bids(cfg)
     else:
+        if not read_only:
+            ensure_default_bids(cfg)
         bids = load_bids(cfg, bid_version)
     issues = validate_bids(cfg, bids)
+    raise_on_errors(issues)
     if verbose:
         print(f"[报价] {cfg.rule_set} v{bids['version']}：校验 {len(issues)} 条提示")
         for i in issues:
             print("   ", i)
-    raise_on_errors(issues)
+    net = build_network(cfg)
+    prof = apply_profile_overrides(cfg, generate_profiles(cfg, cfg.base["seed"]))
+    from .forecast_settings import generation_metadata
+    prof.attrs["generation_metadata"] = generation_metadata(cfg)
+    if not read_only:
+        save_profiles(cfg, prof)
     from .bids import effective_bids
     return build_da_case(cfg, net, prof, effective_bids(cfg, bids))
 
 
 def out_dir(cfg: Config, bids_version: int, tag: str = "") -> Path:
     d = cfg.root / "outputs" / f"da_{cfg.base['date']}_{cfg.rule_set}_{cfg.base['season']}_v{bids_version}{tag}"
-    d.mkdir(parents=True, exist_ok=True)
+    d.mkdir(parents=True, exist_ok=False)
     return d
 
 

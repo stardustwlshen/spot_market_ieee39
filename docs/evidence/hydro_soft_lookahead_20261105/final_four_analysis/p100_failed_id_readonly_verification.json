@@ -1,0 +1,465 @@
+{
+  "path": "/workspace/scratch/42c5fe32dad0/market_implementation_20261105/repo/outputs/full_2026-07-15_MKT_dry_v1_hydro_p100_id_on_20261105",
+  "intraday": {
+    "enabled": true,
+    "interval_h": 1,
+    "rounds": 23,
+    "lock_types": [
+      "coal",
+      "gas_ccgt"
+    ],
+    "failed_rounds": [
+      {
+        "tau": 92,
+        "phase": "scuc",
+        "solver_status": "HighsModelStatus.kInfeasible",
+        "reason": "scuc: solver proved infeasible (HighsModelStatus.kInfeasible); primal_solution_available=False",
+        "fallback": "day_ahead",
+        "status": "failed_physical_infeasible"
+      }
+    ],
+    "failure_count": 1,
+    "attempted_rounds": 24
+  },
+  "acceptance": {
+    "流程未中断": true,
+    "功率平衡": true,
+    "松弛为0": false,
+    "无同时充放": true,
+    "SOC库容边界": true,
+    "日末约束": false,
+    "价格限值": true,
+    "两部制恒等式<1元": true,
+    "价值曲线=−对偶(符号自洽)": true,
+    "备用复核通过": true,
+    "证据完整": true,
+    "验收通过": true,
+    "终态政策": "soft",
+    "配置来源": "scenario_snapshot/config",
+    "价格下限": -50.0,
+    "价格上限": 800.0,
+    "功率平衡误差MW": 1.3642420526593924e-12,
+    "上备用缺额最大MW": 43.4004,
+    "储能状态带最大松弛MWh": 0.0,
+    "抽蓄状态带最大松弛万m3": 29.5634,
+    "水电状态带最大松弛万m3": 37.1467,
+    "执行时段最大松弛": 0.0,
+    "最大松弛口径": "窗口松弛分类诊断最大值；不同单位不能相加或作为单一物理量",
+    "非计划松弛为0": true,
+    "日末目标零偏差": false,
+    "终态政策合规": true,
+    "已执行终态优化罚金元": 33179.6275,
+    "终态罚金口径": "仅实际日末；优化成本，不是结算付款；不累加前瞻窗口或后缀",
+    "日前负价时段数": 0,
+    "实时负价时段数": 0,
+    "对账残差元": 0.0,
+    "主体合计恒等式误差元": 0.019508167504682206,
+    "价值曲线负值点数": 285,
+    "价值曲线负值主体": "ES1,ES2,ES3",
+    "回退次数": 0,
+    "备用复核违例数": 0,
+    "备用复核最大违例": 2.2737367544323206e-13,
+    "日内失败回退合规": true,
+    "日内失败轮数": 1,
+    "水电参考续程证据合规": true,
+    "水电参考续程已核记录数": 88,
+    "水电单条预测短缺最大万m3": 7.275957614183426e-12,
+    "说明": "存在价值法状态带/日末目标松弛，不能声明全部目标满足；PS1 实际日末存在目标偏差；H1 实际日末存在目标偏差；水电参考续程只核对预测成本，不累加为实际罚金或宣称全局可达"
+  },
+  "post_failure_sources": [
+    {
+      "t": 92,
+      "reference_metadata": {
+        "E": {
+          "ES1": {
+            "trajectory_source": "day_ahead",
+            "value_source": "day_ahead",
+            "round": null,
+            "attempted_round": 92,
+            "fallback_reason": "intraday_physical_infeasible@92: scuc: solver proved infeasible (HighsModelStatus.kInfeasible); primal_solution_available=False"
+          },
+          "ES2": {
+            "trajectory_source": "day_ahead",
+            "value_source": "day_ahead",
+            "round": null,
+            "attempted_round": 92,
+            "fallback_reason": "intraday_physical_infeasible@92: scuc: solver proved infeasible (HighsModelStatus.kInfeasible); primal_solution_available=False"
+          },
+          "ES3": {
+            "trajectory_source": "day_ahead",
+            "value_source": "day_ahead",
+            "round": null,
+            "attempted_round": 92,
+            "fallback_reason": "intraday_physical_infeasible@92: scuc: solver proved infeasible (HighsModelStatus.kInfeasible); primal_solution_available=False"
+          }
+        },
+        "Vu": {
+          "PS1": {
+            "trajectory_source": "day_ahead",
+            "value_source": "day_ahead",
+            "round": null,
+            "attempted_round": 92,
+            "fallback_reason": "intraday_physical_infeasible@92: scuc: solver proved infeasible (HighsModelStatus.kInfeasible); primal_solution_available=False"
+          }
+        },
+        "V": {
+          "H1": {
+            "trajectory_source": "day_ahead",
+            "value_source": "day_ahead",
+            "round": null,
+            "attempted_round": 92,
+            "fallback_reason": "intraday_physical_infeasible@92: scuc: solver proved infeasible (HighsModelStatus.kInfeasible); primal_solution_available=False"
+          }
+        },
+        "u": {
+          "C1": {
+            "source": "day_ahead",
+            "round": null,
+            "fallback_reason": null
+          },
+          "C2": {
+            "source": "day_ahead",
+            "round": null,
+            "fallback_reason": null
+          },
+          "C3": {
+            "source": "day_ahead",
+            "round": null,
+            "fallback_reason": null
+          },
+          "CCGT": {
+            "source": "day_ahead",
+            "round": null,
+            "fallback_reason": null
+          },
+          "GT": {
+            "source": "day_ahead",
+            "round": null,
+            "attempted_round": 92,
+            "fallback_reason": "intraday_physical_infeasible@92: scuc: solver proved infeasible (HighsModelStatus.kInfeasible); primal_solution_available=False"
+          }
+        }
+      },
+      "thermal_reference_u": {
+        "C1": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "C2": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "C3": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "CCGT": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "GT": [
+          0,
+          0,
+          0,
+          0
+        ]
+      }
+    },
+    {
+      "t": 93,
+      "reference_metadata": {
+        "E": {
+          "ES1": {
+            "trajectory_source": "day_ahead",
+            "value_source": "day_ahead",
+            "round": null,
+            "attempted_round": 92,
+            "fallback_reason": "intraday_physical_infeasible@92: scuc: solver proved infeasible (HighsModelStatus.kInfeasible); primal_solution_available=False"
+          },
+          "ES2": {
+            "trajectory_source": "day_ahead",
+            "value_source": "day_ahead",
+            "round": null,
+            "attempted_round": 92,
+            "fallback_reason": "intraday_physical_infeasible@92: scuc: solver proved infeasible (HighsModelStatus.kInfeasible); primal_solution_available=False"
+          },
+          "ES3": {
+            "trajectory_source": "day_ahead",
+            "value_source": "day_ahead",
+            "round": null,
+            "attempted_round": 92,
+            "fallback_reason": "intraday_physical_infeasible@92: scuc: solver proved infeasible (HighsModelStatus.kInfeasible); primal_solution_available=False"
+          }
+        },
+        "Vu": {
+          "PS1": {
+            "trajectory_source": "day_ahead",
+            "value_source": "day_ahead",
+            "round": null,
+            "attempted_round": 92,
+            "fallback_reason": "intraday_physical_infeasible@92: scuc: solver proved infeasible (HighsModelStatus.kInfeasible); primal_solution_available=False"
+          }
+        },
+        "V": {
+          "H1": {
+            "trajectory_source": "day_ahead",
+            "value_source": "day_ahead",
+            "round": null,
+            "attempted_round": 92,
+            "fallback_reason": "intraday_physical_infeasible@92: scuc: solver proved infeasible (HighsModelStatus.kInfeasible); primal_solution_available=False"
+          }
+        },
+        "u": {
+          "C1": {
+            "source": "day_ahead",
+            "round": null,
+            "fallback_reason": null
+          },
+          "C2": {
+            "source": "day_ahead",
+            "round": null,
+            "fallback_reason": null
+          },
+          "C3": {
+            "source": "day_ahead",
+            "round": null,
+            "fallback_reason": null
+          },
+          "CCGT": {
+            "source": "day_ahead",
+            "round": null,
+            "fallback_reason": null
+          },
+          "GT": {
+            "source": "day_ahead",
+            "round": null,
+            "attempted_round": 92,
+            "fallback_reason": "intraday_physical_infeasible@92: scuc: solver proved infeasible (HighsModelStatus.kInfeasible); primal_solution_available=False"
+          }
+        }
+      },
+      "thermal_reference_u": {
+        "C1": [
+          1,
+          1,
+          1
+        ],
+        "C2": [
+          1,
+          1,
+          1
+        ],
+        "C3": [
+          1,
+          1,
+          1
+        ],
+        "CCGT": [
+          0,
+          0,
+          0
+        ],
+        "GT": [
+          0,
+          0,
+          0
+        ]
+      }
+    },
+    {
+      "t": 94,
+      "reference_metadata": {
+        "E": {
+          "ES1": {
+            "trajectory_source": "day_ahead",
+            "value_source": "day_ahead",
+            "round": null,
+            "attempted_round": 92,
+            "fallback_reason": "intraday_physical_infeasible@92: scuc: solver proved infeasible (HighsModelStatus.kInfeasible); primal_solution_available=False"
+          },
+          "ES2": {
+            "trajectory_source": "day_ahead",
+            "value_source": "day_ahead",
+            "round": null,
+            "attempted_round": 92,
+            "fallback_reason": "intraday_physical_infeasible@92: scuc: solver proved infeasible (HighsModelStatus.kInfeasible); primal_solution_available=False"
+          },
+          "ES3": {
+            "trajectory_source": "day_ahead",
+            "value_source": "day_ahead",
+            "round": null,
+            "attempted_round": 92,
+            "fallback_reason": "intraday_physical_infeasible@92: scuc: solver proved infeasible (HighsModelStatus.kInfeasible); primal_solution_available=False"
+          }
+        },
+        "Vu": {
+          "PS1": {
+            "trajectory_source": "day_ahead",
+            "value_source": "day_ahead",
+            "round": null,
+            "attempted_round": 92,
+            "fallback_reason": "intraday_physical_infeasible@92: scuc: solver proved infeasible (HighsModelStatus.kInfeasible); primal_solution_available=False"
+          }
+        },
+        "V": {
+          "H1": {
+            "trajectory_source": "day_ahead",
+            "value_source": "day_ahead",
+            "round": null,
+            "attempted_round": 92,
+            "fallback_reason": "intraday_physical_infeasible@92: scuc: solver proved infeasible (HighsModelStatus.kInfeasible); primal_solution_available=False"
+          }
+        },
+        "u": {
+          "C1": {
+            "source": "day_ahead",
+            "round": null,
+            "fallback_reason": null
+          },
+          "C2": {
+            "source": "day_ahead",
+            "round": null,
+            "fallback_reason": null
+          },
+          "C3": {
+            "source": "day_ahead",
+            "round": null,
+            "fallback_reason": null
+          },
+          "CCGT": {
+            "source": "day_ahead",
+            "round": null,
+            "fallback_reason": null
+          },
+          "GT": {
+            "source": "day_ahead",
+            "round": null,
+            "attempted_round": 92,
+            "fallback_reason": "intraday_physical_infeasible@92: scuc: solver proved infeasible (HighsModelStatus.kInfeasible); primal_solution_available=False"
+          }
+        }
+      },
+      "thermal_reference_u": {
+        "C1": [
+          1,
+          1
+        ],
+        "C2": [
+          1,
+          1
+        ],
+        "C3": [
+          1,
+          1
+        ],
+        "CCGT": [
+          0,
+          0
+        ],
+        "GT": [
+          0,
+          0
+        ]
+      }
+    },
+    {
+      "t": 95,
+      "reference_metadata": {
+        "E": {
+          "ES1": {
+            "trajectory_source": "day_ahead",
+            "value_source": "day_ahead",
+            "round": null,
+            "attempted_round": 92,
+            "fallback_reason": "intraday_physical_infeasible@92: scuc: solver proved infeasible (HighsModelStatus.kInfeasible); primal_solution_available=False"
+          },
+          "ES2": {
+            "trajectory_source": "day_ahead",
+            "value_source": "day_ahead",
+            "round": null,
+            "attempted_round": 92,
+            "fallback_reason": "intraday_physical_infeasible@92: scuc: solver proved infeasible (HighsModelStatus.kInfeasible); primal_solution_available=False"
+          },
+          "ES3": {
+            "trajectory_source": "day_ahead",
+            "value_source": "day_ahead",
+            "round": null,
+            "attempted_round": 92,
+            "fallback_reason": "intraday_physical_infeasible@92: scuc: solver proved infeasible (HighsModelStatus.kInfeasible); primal_solution_available=False"
+          }
+        },
+        "Vu": {
+          "PS1": {
+            "trajectory_source": "day_ahead",
+            "value_source": "day_ahead",
+            "round": null,
+            "attempted_round": 92,
+            "fallback_reason": "intraday_physical_infeasible@92: scuc: solver proved infeasible (HighsModelStatus.kInfeasible); primal_solution_available=False"
+          }
+        },
+        "V": {
+          "H1": {
+            "trajectory_source": "day_ahead",
+            "value_source": "day_ahead",
+            "round": null,
+            "attempted_round": 92,
+            "fallback_reason": "intraday_physical_infeasible@92: scuc: solver proved infeasible (HighsModelStatus.kInfeasible); primal_solution_available=False"
+          }
+        },
+        "u": {
+          "C1": {
+            "source": "day_ahead",
+            "round": null,
+            "fallback_reason": null
+          },
+          "C2": {
+            "source": "day_ahead",
+            "round": null,
+            "fallback_reason": null
+          },
+          "C3": {
+            "source": "day_ahead",
+            "round": null,
+            "fallback_reason": null
+          },
+          "CCGT": {
+            "source": "day_ahead",
+            "round": null,
+            "fallback_reason": null
+          },
+          "GT": {
+            "source": "day_ahead",
+            "round": null,
+            "attempted_round": 92,
+            "fallback_reason": "intraday_physical_infeasible@92: scuc: solver proved infeasible (HighsModelStatus.kInfeasible); primal_solution_available=False"
+          }
+        }
+      },
+      "thermal_reference_u": {
+        "C1": [
+          1
+        ],
+        "C2": [
+          1
+        ],
+        "C3": [
+          1
+        ],
+        "CCGT": [
+          0
+        ],
+        "GT": [
+          0
+        ]
+      }
+    }
+  ]
+}

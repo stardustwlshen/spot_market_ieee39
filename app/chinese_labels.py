@@ -57,7 +57,8 @@ for side,word in [('up','向上'),('down','向下'),('lower','下界'),('upper',
   COLUMNS[f'reserve_duration_{side}_margin_{suffix}']=f'持续激活{word}余量 {unit}'
 VALUES={
  'hard_equality':'硬等式','soft_target':'带罚软目标',
- 'incremental_current_stock':'当前时段初库存增量筛选',
+ 'incremental_current_stock':'当前时段初库存增量筛选（旧结果）',
+ 'period_end_stock':'时段末库存增量筛选',
  'coal':'燃煤','gas_ccgt':'燃气联合循环','gas_gt':'燃气轮机','hydro':'水电','wind':'风电','pv':'光伏','storage':'储能','pumped':'抽水蓄能','fixed_load':'原联络线固定负荷','tie':'区外联络线','load':'负荷','slack':'平衡松弛',
  'storage_dis':'储能放电','storage_ch':'储能充电','pumped_gen':'抽蓄发电','pumped_pump':'抽蓄抽水',
  'standard_sced':'正式调度边际定价','dispatch_sced':'正式调度边际定价','bounded_auxiliary_pricing':'辅助定价（数量不执行）',

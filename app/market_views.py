@@ -11,7 +11,7 @@ from chinese_labels import value_label
 
 def frozen_bids(directory):
     d=Path(directory)
-    for filename in ('resolved_bids.json','submitted_bids.json'):
+    for filename in ('resolved_bids.json', 'submitted_bids.json', 'scenario_snapshot/resolved_bids.json'):
         if (d/filename).exists():return json.loads((d/filename).read_text())
     files=list((d/'scenario_snapshot/bids').rglob('bids_v*.json'))
     if not files:return None
@@ -234,12 +234,14 @@ def reserve_dashboard(tables, *, prefix='reserve', indicative=False):
         st.info('该主体上/下备用未记录；不能从能量出力或装机容量反推实际备用。')
         return
     incremental=('reserve_formulation' in selected and selected.reserve_formulation.notna().all()
-                 and selected.reserve_formulation.eq('incremental_current_stock').all())
+                 and selected.reserve_formulation.isin(['incremental_current_stock','period_end_stock']).all())
     display=selected[[c for c in ('period','unit','type','P_mw','on','reserve_formulation','reserve_eligible','reserve_qualified',*columns) if c in selected]].copy()
     st.plotly_chart(localize_figure(px.line(display,x='period',y=columns,title=f'{uid} 安排的备用容量 MW')),width='stretch',key=prefix+':unitplot')
     st.caption(('本场景仅展示r_up上备用；r_dn已停用。' if down_disabled else '')+'上备用／下备用是优化安排的预留容量，不代表已发生备用激活。设计资格为工况允许参与；记录的资格不等于供给容量。缺失值保持空缺，备用未设独立采购成本，供给约束为≥需求，可能存在超配/退化；不自动证明全网络可交付。')
     if incremental:
-        st.caption('本结果采用当前时段初 SOC/库容（首段为实际初态）及功率余量的增量备用筛选，不新增备用资格整数；记录的参与资格仅由配置与工况推导，不是决策变量。此筛选不代表基准出力＋备用在全持续时长内可交付。')
+        stock_basis=('时段末 SOC/库容（第二轮F项）' if selected.reserve_formulation.eq('period_end_stock').all()
+                     else '当前时段初 SOC/库容（首段为实际初态）')
+        st.caption(f'本结果采用{stock_basis}及功率余量的增量备用筛选，不新增备用资格整数；记录的参与资格仅由配置与工况推导，不是决策变量。此筛选不代表基准出力＋备用在全持续时长内可交付。')
     else:
         st.caption('历史或未标明口径的结果按保存字段展示，不套用当前增量筛选解释。历史资格为1也可能分配0 MW，不能当作供给。')
     if incremental:
@@ -294,7 +296,7 @@ def reserve_dashboard(tables, *, prefix='reserve', indicative=False):
                 for c in ability if c.startswith('reserve_duration_')}
         ability=ability.rename(columns={**labels,'T_dur_h':'增量备用筛选时长 小时',
                                         'reserve_qualified':'由配置与工况推导的备用资格'})
-        st.caption('增量库存余量只核验当前时段初库存对新增备用的支撑；不包含基准出力在全持续时长内的库存消耗，不保证基准出力＋备用持续可交付。')
+        st.caption(f'增量库存余量只核验{"时段末" if selected.reserve_formulation.eq("period_end_stock").all() else "当前时段初"}库存对新增备用的支撑；不包含基准出力在全持续时长内的库存消耗，不保证基准出力＋备用持续可交付。')
     else:
         st.caption('历史资格为0时持续能力约束未参与，显示未记录（表中空值）；历史下界／上界字段保留其原有激活口径。')
     st.caption('筛选时长单位小时；功率余量单位 MW；电池能量余量 MWh、抽蓄库容余量万m³，不混合相加。空值表示未启用或未记录，并非0；非负余量只验证所列能力约束，不证明全网络或动态可交付。')
@@ -487,6 +489,66 @@ def result_quality_messages(summary, da_summary, *, directory, live=None):
     if tracking:add('info','另列窗口软跟踪偏差：'+ '；'.join(tracking)+'。这些是窗口计划软目标的偏差，软目标偏差不等于物理违规，不与线路越限或备用缺额合并；不同单位不相加。')
     elif checks.get('rules_satisfied_no_slack') is False:
         add('info','存在调度松弛或软跟踪偏差记录；软目标偏差不等于物理违规。具体类型或分单位幅度未完整记录，请查看原始诊断。')
+    # Value-method bands are separate from the legacy anchor variables. Their
+    # native units must never be added or reported as one MW/MWh quantity.
+    rt_meta = summary.get('realtime') or {}
+    value_active = (checks.get('state_band_checks_active') is True
+                    or rt_meta.get('storage_mode') == 'value' or rt_meta.get('hydro') == 'value'
+                    or (mode.get('realtime') or {}).get('hydro') == 'value'
+                    or ((mode.get('realtime') or {}).get('storage') or {}).get('mode') == 'value')
+    planned_soft = checks.get('terminal_policy_mode',rt_meta.get('terminal_policy_mode')) == 'soft'
+    policy_ok = checks.get('terminal_policy_compliant',rt_meta.get('terminal_policy_compliant'))
+    if planned_soft:
+        add('info','实时日末采用计划软目标：允许与日前末SOC/库容存在偏差，按可放电能量计入优化目标成本，不是市场结算付款，也不等于应急带软化。')
+        if policy_ok is not True:
+            add('warning','计划软终态政策的换算、罚金或约束证据未通过完整校核，不能以允许偏差替代验证。')
+    band_messages = []
+    for label, prefix, unit in [('电池','storage','MWh'),('抽蓄','pumped','万m³'),('水电','hydro','万m³')]:
+        suffix = 'mwh' if prefix == 'storage' else '1e4m3'
+        value = _quality_number(checks.get(f'{prefix}_state_band_slack_max_{suffix}',
+                                         rt_meta.get(f'{prefix}_state_band_slack_max_{suffix}')))
+        if value is not None and value > tol:
+            band_messages.append(f'{label} {value:.4f} {unit}')
+        actual = _quality_number(checks.get(f'{prefix}_executed_day_end_deviation_{suffix}',
+                                          rt_meta.get(f'{prefix}_executed_day_end_deviation_{suffix}')))
+        if actual is not None and actual > tol:
+            if planned_soft and policy_ok is True:
+                add('info',f'{label}已执行日末目标偏差 {actual:.4f} {unit}，属于计划软目标偏差；政策合规不等于目标零偏差。')
+            else:
+                add('warning',f'{label}已执行日末目标偏差 {actual:.4f} {unit}，日末目标未满足。软化后求解完成不等于原日末约束满足；这与已检查的物理边界分别判断。')
+    if band_messages:
+        add('info' if planned_soft and policy_ok is True else 'warning',
+            ('价值法窗口偏差（包含计划软终态）：' if planned_soft else '价值法窗口状态带松弛：')+
+            '；'.join(band_messages)+'。不能声明全部窗口零偏差；窗口终点是前瞻计划，不累计为实际执行，软目标偏差不等于物理违规。')
+    elif (_quality_number(checks.get('state_band_slack_max', rt_meta.get('state_band_slack_max'))) or 0.) > tol:
+        add('warning','价值法状态带存在非零松弛；分资源单位证据未完整记录，不能声明全部窗口无松弛，也不能把混合诊断值当作MWh。请查看状态带明细。')
+    if value_active and checks.get('state_band_checks_available',rt_meta.get('state_band_checks_available')) is not True:
+        # Read old saved detail only to expose an omission, never certify missing
+        # resource/time coverage from a partial CSV or today's configuration.
+        windows = _saved_csv(d/'rt_value_windows.csv')
+        if not band_messages and {'kind','band_slack'} <= set(windows):
+            for kind,label,unit in [('E','电池','MWh'),('Vu','抽蓄','万m³'),('V','水电','万m³')]:
+                values = pd.to_numeric(windows.loc[windows.kind == kind,'band_slack'],errors='coerce')
+                value = _quality_number(values.max())
+                if value is not None and value > tol:
+                    add('warning',f'已保存价值法明细含{label}窗口松弛 {value:.4f} {unit}；旧汇总的无松弛标记不能覆盖这项偏差。')
+        add('info','价值法状态带与日末目标的完整校核证据未记录，不能将缺失检查视为全部满足。')
+    if checks.get('hydro_reference_evidence_complete') is False:
+        add('warning','水电实际选定参考来源证据不完整，无法确认实时稳定区台数是否正确继承；不能用日前计划替代缺失的日内来源。')
+    if checks.get('thermal_reference_evidence_complete') is False:
+        add('warning','火电实际锁定来源证据不完整，不能认证全部日前/日内启停交接。')
+    emergency = checks.get('emergency_band_fallback_count',rt_meta.get('emergency_band_fallback_count'))
+    if emergency:
+        add('warning',f'紧急状态带回退 {emergency} 个窗口，单独记录，不能归为计划软终态。')
+    penalty = _quality_number(checks.get('executed_terminal_penalty_cost',rt_meta.get('executed_terminal_penalty_cost')))
+    if penalty is not None:
+        add('caption',f'仅已执行日末的目标偏差优化成本：{penalty:.2f} 元；未累加前瞻窗口或后缀，不是结算付款。')
+    id_meta = summary.get('intraday') or {}
+    failed = id_meta.get('failure_count')
+    if failed:
+        add('warning',f'日内尝试 {id_meta.get("attempted_rounds", "未记录")} 轮：成功 {id_meta.get("rounds", "未记录")} 轮、失败 {failed} 轮；失败轮不算成功，随后参考回退日前，实际库存不重置。详见 id_failed_rounds.csv。')
+    if checks.get('intraday_failed_reference_evidence_complete') is False or checks.get('intraday_failure_records_valid') is False:
+        add('warning','日内失败记录或失败后的日前参考来源审计未通过，不能认证回退正确。')
     return messages
 
 

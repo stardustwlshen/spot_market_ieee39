@@ -68,13 +68,25 @@ def execution_safety_checks(da_res, rt_tab, tolerance_mw=1e-5) -> dict:
 
 
 
-def slack_policy_checks(da_slack, rt_rounds, tolerance=1e-6) -> dict:
+def _finite_number(value):
+    try:
+        return isinstance(value, (int, float, np.number)) and not isinstance(value, (bool, np.bool_)) and np.isfinite(float(value))
+    except (TypeError, ValueError, OverflowError):
+        return False
+
+
+def slack_policy_checks(da_slack, rt_rounds, tolerance=1e-6, *, state_band_required=False) -> dict:
     """Window maxima are not executed-period violations; report them separately."""
     keys = ("shed_mwh", "surplus_mwh", "line_slack_max", "reserve_up_short_max",
             "reserve_dn_short_max", "anchor_slack_max_mwh")
     summaries = [da_slack] + [r["slack"] for r in rt_rounds]
+    # Legacy callers without value-method evidence retain their explicitly scoped
+    # check. Current value-mode calls require the new field, never infer zero.
+    state_band_present = any("state_band_slack_max" in summary for summary in summaries)
+    if state_band_required or state_band_present:
+        keys += ("state_band_slack_max",)
     complete = bool(rt_rounds) and all(
-        all(k in summary and np.isfinite(summary[k]) for k in keys) for summary in summaries)
+        all(k in summary and _finite_number(summary[k]) for k in keys) for summary in summaries)
     split = {}
     for kind, key in (("storage", "storage_anchor_slack_max_mwh"), ("pumped", "pumped_anchor_slack_max_1e4m3"), ("hydro", "hydro_anchor_slack_max_1e4m3")):
         available = bool(rt_rounds) and all(key in r["slack"] and np.isfinite(r["slack"][key]) for r in rt_rounds)
@@ -85,10 +97,387 @@ def slack_policy_checks(da_slack, rt_rounds, tolerance=1e-6) -> dict:
         "anchor_slack_max_mwh_legacy_note": "DEPRECATED:mixed_numeric_max_of_storage_MWh_and_pumped_or_hydro_1e4m3;not_an_energy_quantity;use_split_fields",
         "anchor_slack_periods": int(sum(r["slack"].get("anchor_slack_max_mwh", 0.0) > tolerance for r in rt_rounds)),
         "slack_summary_data_valid": bool(complete),
+        "state_band_slack_summary_available": bool(all(
+            "state_band_slack_max" in summary and _finite_number(summary["state_band_slack_max"])
+            for summary in summaries)),
+        "state_band_slack_max": (float(max(summary["state_band_slack_max"] for summary in summaries))
+                                 if all("state_band_slack_max" in summary and _finite_number(summary["state_band_slack_max"])
+                                        for summary in summaries) else None),
+        "state_band_slack_max_note": "Mixed native-unit diagnostic maximum, not an energy quantity; use typed state-band fields.",
         "rules_satisfied_no_slack": bool(complete and all(
             abs(summary[k]) <= tolerance for summary in summaries for k in keys)),
-        "no_slack_scope": "DA_entire_horizon_and_each_RT_lookahead_window:shed,surplus,line,reserve_up,reserve_down,anchor;not_a_full_model_or_uncertainty_certificate",
+        "no_slack_scope": "DA_entire_horizon_and_each_RT_lookahead_window:shed,surplus,line,reserve_up,reserve_down,anchor,state_band_when_required_or_recorded;not_a_full_model_or_uncertainty_certificate",
     }
+
+
+def _terminal_policy(cfg):
+    policy = cfg.mode.get("realtime", {}).get("value_method", {}).get("terminal_policy", {})
+    mode = policy.get("mode", "hard")
+    coefficient = policy.get("penalty_yuan_per_discharge_mwh")
+    if mode not in ("hard", "soft") or (mode == "soft" and (
+            not _finite_number(coefficient) or float(coefficient) <= 0)):
+        raise ValueError("invalid frozen terminal policy")
+    return mode, float(coefficient) if mode == "soft" else None
+
+
+def _discharge_factor(cfg, kind, unit):
+    family = {"E": "storage", "Vu": "pumped", "V": "hydro"}[kind]
+    spec = next(d for d in cfg.units[family] if d["id"] == unit)
+    factor = spec["eta_d"] if kind == "E" else (spec["e_gen"] if kind == "Vu" else 1./(.36*spec["water_rate"]))
+    if not _finite_number(factor) or factor <= 0:
+        raise ValueError("invalid discharge-energy conversion")
+    return float(factor)
+
+
+def intraday_failure_checks(cfg, rr, da_plan, tolerance=1e-6):
+    """A failed ID attempt is neither a success nor permission to reuse stale ID."""
+    failures = getattr(rr, "id_failures", [])
+    successes = getattr(rr, "id_rounds", [])
+    valid = isinstance(failures, list)
+    fs = [r for r in failures if isinstance(r, dict)] if valid else []
+    valid = valid and len(fs) == len(failures)
+    times = [r.get("tau") for r in fs]
+    successful = [r.get("tau") for r in successes]
+    statuses = {"infeasible", "terminationcondition.infeasible", "kinfeasible", "highsmodelstatus.kinfeasible"}
+    for r in fs:
+        tau = r.get("tau")
+        valid = valid and (isinstance(tau, (int, np.integer)) and not isinstance(tau, bool)
+            and 0 <= tau < cfg.T and r.get("phase") in ("scuc", "formal_sced")
+            and str(r.get("solver_status", "")).lower() in statuses and r.get("fallback") == "day_ahead"
+            and isinstance(r.get("reason"), str) and bool(r["reason"].strip()))
+    try:
+        valid = valid and len(set(times)) == len(times) and not set(times) & set(successful)
+    except TypeError:
+        valid = False
+    source_ok = bool(valid)
+    for r in rr.rt:
+        past_f = [x for x in fs if isinstance(x.get("tau"), int) and x["tau"] <= r["t"]]
+        past_s = [x for x in successes if x["tau"] <= r["t"]]
+        if not past_f or max(x["tau"] for x in past_f) < max((x["tau"] for x in past_s), default=-1):
+            continue
+        if r.get("handoff_config", {}).get("intraday_attempted") is not True:
+            source_ok = False
+        metadata = r.get("reference_metadata", {})
+        rc, ic = cfg.mode.get("realtime", {}), cfg.mode.get("intraday", {})
+        # The frozen policy determines which resources would have inherited ID.
+        # Always-DA resources legitimately have no failure reason, including
+        # base-locked thermal, disabled handoffs and non-value state policies.
+        use_id = rc.get("handoff_source", "intraday") == "intraday"
+        flags = rc.get("handoff", {})
+        for kind, key, flag in (("E", "E", "storage"), ("Vu", "Vu", "pumped"), ("V", "Vh", "hydro")):
+            relevant = (rc.get("hydro", "value") == "value" if kind == "V"
+                        else rc.get("storage", {}).get("mode", "value") == "value")
+            requires_reason = use_id and flags.get(flag, True) and relevant
+            for unit in da_plan.get(key, {}):
+                m = metadata.get(kind, {}).get(unit, {})
+                if m.get("trajectory_source") != "day_ahead" or (requires_reason and not m.get("fallback_reason")):
+                    source_ok = False
+        types = {u["id"]: u.get("type") for u in cfg.units.get("thermal", [])}
+        rt_lock = set(rc.get("lock_types", ["coal", "gas_ccgt"]))
+        inherited = set(ic.get("free_types", [])) if (use_id and flags.get("commitment", True)
+                    and rc.get("intraday_commit_rt", "inherit") == "inherit") else set()
+        for unit, m in metadata.get("u", {}).items():
+            requires_reason = types.get(unit) in inherited - rt_lock
+            if m.get("source") != "day_ahead" or (requires_reason and not m.get("fallback_reason")):
+                source_ok = False
+        for w in r.get("snap", {}).get("value_window", []):
+            try:
+                kind, unit, period = w["kind"], w["unit"], int(w["period"])
+                key = {"E":"E", "Vu":"Vu", "V":"Vh"}[kind]
+                expected = float(da_plan[key][unit][period])
+                expected_value = 0. if period == cfg.T-1 else float(da_plan["state_values"][kind][unit]["value_native"][period])
+                if (not _finite_number(w.get("reference_state")) or abs(w["reference_state"]-expected) > tolerance
+                        or not _finite_number(w.get("value_native")) or abs(w["value_native"]-expected_value) > tolerance
+                        or metadata[kind][unit].get("value_source") != "day_ahead"):
+                    source_ok = False
+            except (KeyError, TypeError, ValueError, IndexError):
+                source_ok = False
+        selected = r.get("thermal_reference_u", {})
+        if set(selected) != set(metadata.get("u", {})):
+            source_ok = False
+        for unit, arr in selected.items():
+            expected = np.asarray(da_plan.get("u", {}).get(unit, []))[r["t"]:r["t"]+len(arr)]
+            if expected.shape != np.asarray(arr).shape or not np.array_equal(expected, arr):
+                source_ok = False
+        if cfg.mode.get("realtime", {}).get("hydro", "value") in ("value", "fixed_da", "window_end_da"):
+            if set(r.get("hydro_reference_delta", {})) != set(da_plan.get("delta", {})):
+                source_ok = False
+        for key, arr in r.get("hydro_reference_delta", {}).items():
+            expected = np.asarray(da_plan.get("delta", {}).get(key, []))[r["t"]:r["t"]+len(arr)]
+            if expected.shape != np.asarray(arr).shape or not np.array_equal(expected, arr):
+                source_ok = False
+    return dict(intraday_failure_records_valid=bool(valid),
+                intraday_failed_reference_evidence_complete=bool(source_ok))
+
+
+def hydro_terminal_lookahead_checks(cfg, rr, da_plan, tolerance=1e-6):
+    """Independently check reference-continuation forecasts, never actual costs.
+
+    Positive shortage is a finite preference cost, not a physical violation.
+    Source flows come from saved DA/ID dispatch, not the diagnostic's own arrays.
+    """
+    rc = cfg.mode.get("realtime", {})
+    mode, coefficient = _terminal_policy(cfg)
+    specs = {u["id"]: u for u in cfg.units.get("hydro", [])}
+    active = (mode == "soft" and rc.get("hydro", "value") == "value" and bool(specs)
+              and rc.get("value_method", {}).get("hydro_lookahead") == "reference_continuation")
+    H = int(round(rc.get("lookahead_h", 2.) * 60 / rc.get("interval_min", 15)))
+    errors, expected_count, checked_count, shortages, costs = [], 0, 0, [], []
+    successes, failures = getattr(rr, "id_rounds", []), getattr(rr, "id_failures", [])
+    rounds = {r["t"]: r for r in rr.rt}
+    if active and (not rr.rt or len(rounds) != len(rr.rt)):
+        errors.append("missing or duplicate RT windows")
+
+    def number(value):
+        if not _finite_number(value):
+            raise ValueError("nonfinite or nonnumeric field")
+        return float(value)
+
+    def equal(value, expected, label):
+        if not np.isclose(number(value), number(expected), atol=tolerance, rtol=1e-9):
+            raise ValueError(label)
+
+    def source_flow(r, unit, periods):
+        meta = r["reference_metadata"]["V"][unit]
+        label = meta["trajectory_source"]
+        live = max((x for x in successes if x["tau"] <= r["t"]), key=lambda x:x["tau"], default=None)
+        last_failure = max((x["tau"] for x in failures if x["tau"] <= r["t"]), default=-1)
+        use_id = (cfg.mode.get("intraday", {}).get("enabled", False)
+                  and rc.get("handoff_source", "intraday") == "intraday"
+                  and rc.get("handoff", {}).get("hydro", True))
+        if label == "day_ahead":
+            if meta.get("round") is not None:
+                raise ValueError("DA source has ID round")
+            if use_id and (live is not None or last_failure >= 0) and not meta.get("fallback_reason"):
+                raise ValueError("missing per-resource DA fallback reason")
+            array, offset = da_plan["Qout"][unit], 0
+        else:
+            if (not use_id or live is None or live["tau"] <= last_failure
+                    or label != f"intraday@{live['tau']}" or meta.get("round") != live["tau"]):
+                raise ValueError("stale or invalid ID source")
+            array, offset = live["snap"]["Qout"][unit], live["tau"]
+        values = np.asarray([number(array[k-offset]) for k in periods])
+        if (values < 0).any():
+            raise ValueError("negative source outflow")
+        return values, meta
+
+    for r in rr.rt:
+        t, t1 = r["t"], min(cfg.T, r["t"] + H)
+        expected = set(specs) if active and t1 < cfg.T else set()
+        expected_count += len(expected)
+        rows = r.get("snap", {}).get("hydro_terminal_lookahead")
+        if rows is None and not expected:
+            rows = []  # Historical hard/last-day windows have no such term.
+        if (not isinstance(rows, list) or any(not isinstance(w, dict) for w in rows)
+                or len(rows) != len(expected) or {w.get("unit") for w in rows} != expected):
+            errors.append(f"window {t}: missing/duplicate/unexpected hydro forecast rows")
+            continue
+        for w in rows:
+            unit = w["unit"]
+            try:
+                spec = specs[unit];season = spec["seasons"][cfg.base["season"]]
+                future = list(range(t1,cfg.T))
+                if w["future_periods"] != future:
+                    raise ValueError("future time grid")
+                equal(w["relative_period"],t1-t-1,"relative period")
+                for key, value in (("window_start",t),("tau",t1-1)):
+                    if key in w:equal(w[key],value,key)
+                if (w.get("kind") != "V" or w.get("native_unit") != "1e4m3"
+                        or w.get("forecast_only") is not True or w.get("active") is not True
+                        or w.get("slack_zero_means_target_met") is not True
+                        or w.get("scope") != "reference_continuation_terminal_preference_not_feasibility_proof"):
+                    raise ValueError("forecast scope/activation")
+                outflow, meta = source_flow(r,unit,future)
+                expected_label = meta["trajectory_source"]
+                if (w.get("reference_source_label") != expected_label
+                        or w.get("reference_source") != ("day_ahead" if expected_label == "day_ahead" else "intraday")
+                        or w.get("reference_round") != meta.get("round")
+                        or w.get("reference_fallback_reason") != meta.get("fallback_reason")):
+                    raise ValueError("source metadata")
+                equal(w["dt_h"],cfg.dt,"dt")
+                equal(w["natural_inflow_m3s"],season["qin"],"natural inflow")
+                for key in ("reference_outflows_m3s","upstream_arrivals_m3s","upstream_arrival_sources"):
+                    if len(w[key]) != len(future):raise ValueError("future array length")
+                for actual, ref in zip(w["reference_outflows_m3s"],outflow):equal(actual,ref,"reference Qout")
+                arrivals=[];upstream=spec.get("upstream")
+                for i,k in enumerate(future):
+                    shifted=k-int(spec.get("lag_periods",0))
+                    if not upstream:
+                        arrival,source=0.,"none_or_before_day"
+                    elif shifted<0:
+                        initial=specs[upstream]
+                        arrival=number(initial["water_rate"])*number(initial["init_units_on"])*number(initial["init_p_unit"])
+                        source="pre_day_initial_outflow"
+                    elif shifted<t:
+                        # Use independently stored executed first-period flow,
+                        # not a forecast or the supplied arrival array.
+                        arrival=rounds[shifted]["snap"]["Qout"][upstream][0]
+                        source="executed_history"
+                    else:
+                        arrival=source_flow(r,upstream,[shifted])[0][0]
+                        source="selected_reference"
+                    equal(w["upstream_arrivals_m3s"][i],arrival,"upstream arrival")
+                    if w["upstream_arrival_sources"][i] != source:raise ValueError("upstream arrival source")
+                    arrivals.append(arrival)
+                upstream_meta = r["reference_metadata"]["V"].get(upstream) if upstream else None
+                if w.get("upstream_reference_metadata") != upstream_meta:raise ValueError("upstream metadata")
+                recovery=float(np.sum(float(season["qin"])+np.asarray(arrivals)-outflow))*cfg.dt*.36
+                target=season["v0"] if spec.get("regulation")=="run_of_river" else season["v_end"]
+                state=r["snap"]["Vh"][unit][t1-t-1]
+                projected=state+recovery;shortage=max(target-projected,0.)
+                factor=1./(.36*spec["water_rate"])
+                expected_values={"terminal_target":target,"reference_recovery_volume":recovery,
+                    "minimum_window_end_volume":target-recovery,"state":state,
+                    "projected_terminal_volume":projected,"projected_terminal_shortfall":shortage,
+                    "actual_projected_shortfall":shortage,"factor":factor,"discharge_mwh_per_native_unit":factor,
+                    "projected_terminal_shortfall_mwh":shortage*factor,
+                    "penalty_yuan_per_native_unit":coefficient*factor,
+                    "penalty_yuan_per_discharge_mwh":coefficient,"penalty_cost":shortage*factor*coefficient}
+                for key,value in expected_values.items():equal(w[key],value,key)
+                checked_count+=1;shortages.append(shortage);costs.append(shortage*factor*coefficient)
+            except (KeyError,IndexError,TypeError,ValueError,ZeroDivisionError) as exc:
+                errors.append(f"window {t} {unit}: {exc}")
+    complete=not errors and checked_count==expected_count
+    return dict(hydro_terminal_lookahead_checks_active=active,
+        hydro_terminal_lookahead_evidence_complete=bool(complete),
+        hydro_terminal_lookahead_expected_records=expected_count,
+        hydro_terminal_lookahead_checked_records=checked_count,
+        hydro_terminal_lookahead_errors=errors[:20],
+        hydro_terminal_lookahead_max_forecast_shortfall_1e4m3=max(shortages,default=0.) if complete else None,
+        hydro_terminal_lookahead_max_forecast_cost_yuan=max(costs,default=0.) if complete else None,
+        hydro_terminal_lookahead_scope="reference_continuation_forecast_not_executed_cost_or_feasibility_proof")
+
+
+def state_band_policy_checks(cfg, rounds, tolerance=1e-6, *, day_end_targets=None) -> dict:
+    """Check detached value-band evidence, preserving units and execution scope.
+
+    A feasible softened equation does not mean the original target was met.
+    Window endpoints are forecasts; only the final executed first period is an
+    actual day-end result. Missing evidence is unknown, never an implied zero.
+    """
+    rc = cfg.mode["realtime"]
+    groups = [("E", "storage", "storage", "mwh"),
+              ("Vu", "pumped", "pumped", "1e4m3"),
+              ("V", "hydro", "hydro", "1e4m3")]
+    expected = {(kind, d["id"]) for kind, group, _, _ in groups
+                if (rc.get("hydro", "value") == "value" if kind == "V"
+                    else rc.get("storage", {}).get("mode", "value") == "value")
+                for d in cfg.units.get(group, [])}
+    active = bool(expected)
+    complete = not active or bool(rounds)
+    try:
+        terminal_mode, terminal_coefficient = _terminal_policy(cfg)
+    except (ValueError, TypeError):
+        terminal_mode, terminal_coefficient, complete = "invalid", None, False
+    emergency_max = 0.
+    executed_terminal_records = []
+    equation_error = 0.
+    maxima = {kind: 0. for kind, _, _, _ in groups}
+    counts = {kind: 0 for kind, _, _, _ in groups}
+    day_end = {kind: 0. for kind, _, _, _ in groups}
+    executed_day_end = {kind: None for kind, _, _, _ in groups}
+    records = []
+    for r in rounds:
+        rows = r.get("snap", {}).get("value_window")
+        if rows is None:
+            if active:
+                complete = False
+            continue
+        if not isinstance(rows, list) or any(not isinstance(w, dict) for w in rows):
+            complete = False
+            continue
+        keys = [(w.get("kind"), w.get("unit")) for w in rows]
+        if len(keys) != len(set(keys)) or set(keys) != expected:
+            complete = False
+        round_max = 0.
+        touched = set()
+        for w in rows:
+            kind, unit = w.get("kind"), w.get("unit")
+            if (kind, unit) not in expected:
+                complete = False
+                continue
+            try:
+                actual = np.asarray(r["snap"][{"E": "E", "Vu": "Vu", "V": "Vh"}[kind]][unit], float)
+                local, period = int(w["relative_period"]), int(w["period"])
+                values = np.asarray([w[k] for k in ("state", "lower", "upper", "slack_up", "slack_dn")], float)
+                if (not len(actual) or not np.isfinite(actual).all() or not np.isfinite(values).all()
+                        or local != len(actual)-1 or local != w["relative_period"]
+                        or period != w["period"] or period != int(r["t"])+local
+                        or values[1] > values[2]+tolerance or min(values[3:]) < -tolerance
+                        or not isinstance(w["soft"], (bool, np.bool_))):
+                    raise ValueError("invalid state-band evidence")
+                state, lo, hi, up, down = values
+                is_day_end = period == cfg.T-1
+                if w.get("label") != ("day_end" if is_day_end else "band"):
+                    raise ValueError("incorrect endpoint label")
+                if is_day_end and day_end_targets is not None:
+                    expected_lo, expected_hi = day_end_targets[kind, unit]
+                    if abs(lo-expected_lo) > tolerance or abs(hi-expected_hi) > tolerance:
+                        raise ValueError("day-end band differs from actual DA/declared target")
+                planned = is_day_end and terminal_mode == "soft"
+                if terminal_mode == "soft" or "terminal_policy" in w:
+                    if (w.get("terminal_policy") != terminal_mode
+                            or w.get("planned_terminal_soft") is not planned):
+                        raise ValueError("terminal policy evidence disagrees with frozen policy")
+                residual = max(lo-state, state-hi, 0.)
+                slack = up+down
+                error = max(abs(state-actual[local]), abs(up-max(state-hi, 0.)), abs(down-max(lo-state, 0.)))
+                if planned:
+                    factor = _discharge_factor(cfg, kind, unit)
+                    for name, expected_value in (("terminal_penalty_yuan_per_discharge_mwh", terminal_coefficient),
+                            ("discharge_energy_factor", factor), ("deviation_discharge_mwh", residual*factor),
+                            ("terminal_penalty_cost", residual*factor*terminal_coefficient)):
+                        if not _finite_number(w.get(name)) or not np.isclose(w[name], expected_value, atol=tolerance, rtol=1e-9):
+                            raise ValueError("terminal conversion/cost evidence mismatch")
+                    if local == 0:
+                        executed_terminal_records.append(dict(kind=kind, unit=unit, deviation_native=float(residual),
+                            deviation_discharge_mwh=residual*factor, penalty_cost=residual*factor*terminal_coefficient))
+                else:
+                    emergency_max = max(emergency_max, slack)
+                if not w["soft"] and not planned:
+                    error = max(error, slack, residual)
+                equation_error = max(equation_error, error)
+                maxima[kind] = max(maxima[kind], slack)
+                round_max = max(round_max, slack)
+                if slack > tolerance:
+                    touched.add(kind)
+                if is_day_end:
+                    day_end[kind] = max(day_end[kind], residual)
+                    if local == 0:
+                        executed_day_end[kind] = max(executed_day_end[kind] or 0., residual)
+                records.append(dict(window_start=int(r["t"]), period=period, kind=kind, unit=unit,
+                                    label=w["label"], deviation_native=float(residual), slack_native=float(slack),
+                                    executed=local == 0, soft=bool(w["soft"]), planned_terminal_soft=planned))
+            except (KeyError, TypeError, ValueError, IndexError, OverflowError):
+                complete = False
+        for kind in touched:
+            counts[kind] += 1
+        scalar = r.get("slack", {}).get("state_band_slack_max")
+        if active and (not _finite_number(scalar) or abs(float(scalar)-round_max) > tolerance):
+            complete = False
+    out = dict(state_band_checks_active=active, state_band_checks_available=bool(complete),
+               state_band_constraints_satisfied=bool(complete and equation_error <= tolerance),
+               state_band_targets_satisfied=bool(complete and equation_error <= tolerance
+                                                 and max(maxima.values()) <= tolerance),
+               state_band_equation_max_error=float(equation_error), state_band_records=records,
+               state_band_check_scope="formal_RT_window_endpoints;executed_day_end_only_when_relative_period_zero;native_units_not_summed")
+    out.update(terminal_policy_mode=terminal_mode,
+        terminal_policy_compliant=bool(complete and equation_error <= tolerance
+            and (terminal_mode == "soft" or max(day_end.values()) <= tolerance)),
+        planned_terminal_deviation_records=[x for x in records if x["planned_terminal_soft"]],
+        executed_terminal_deviation_records=executed_terminal_records,
+        executed_terminal_penalty_cost=(sum(x["penalty_cost"] for x in executed_terminal_records)
+            if complete and executed_terminal_records else None),
+        executed_terminal_targets_zero_deviation=(all(x is not None and x <= tolerance for kind,x in executed_day_end.items()
+            if any(k == kind for k,u in expected)) if complete and any(x is not None for x in executed_day_end.values()) else None),
+        emergency_state_band_slack_max=emergency_max if complete else None,
+        emergency_band_fallback_count=sum(bool(r.get("fallback")) for r in rounds))
+    for kind, _, label, unit in groups:
+        out[f"{label}_state_band_slack_max_{unit}"] = maxima[kind] if complete else None
+        out[f"{label}_state_band_slack_periods"] = counts[kind] if complete else None
+        out[f"{label}_day_end_window_deviation_max_{unit}"] = day_end[kind] if complete else None
+        out[f"{label}_executed_day_end_deviation_{unit}"] = executed_day_end[kind] if complete else None
+    return out
 
 
 def hydro_window_checks(da_res, rr, tolerance=1e-5) -> dict:
@@ -109,13 +498,16 @@ def hydro_window_checks(da_res, rr, tolerance=1e-5) -> dict:
                hydro_state_power_continuity_max_err_mw=0., hydro_energy_budget_excess_max_mwh=0.,
                hydro_volume_bound_excess_max_1e4m3=0., hydro_ecological_shortage_max_m3s=0.,
                hydro_outflow_limit_excess_max_m3s=0., hydro_da_zone_count_mismatch=0,
+               hydro_reference_zone_count_mismatch=0, hydro_reference_evidence_complete=True,
+               hydro_unit_count_violation_max=0., hydro_stable_zone_power_excess_max_mw=0.,
                hydro_window_records=[])
-    soft_tracking = cfg.mode["realtime"].get("tracking_policy", {}).get("mode") == "soft_deliverable_energy"
+    soft_tracking = (cfg.mode["realtime"].get("tracking_policy", {}).get("mode") == "soft_deliverable_energy"
+                     and cfg.mode["realtime"].get("hydro", "value") == "window_end_da")   # 旧软跟踪仅 window_end_da
     specs = {h["id"]: h for h in cfg.units["hydro"]}
     da_sn = rolling.snapshot(da_res.model)
     if len(rr.states) not in (len(rr.rt),len(rr.rt)+1) or [r["t"] for r in rr.rt] != list(range(len(rr.rt))):
         out["hydro_window_checks_available"] = False
-    def check_snapshot(sn, stage, start, state=None):
+    def check_snapshot(sn, stage, start, state=None, round_result=None):
         metadata = sn.get("hydro_constraints", {})
         if set(metadata) != set(specs):
             out["hydro_window_checks_available"] = False
@@ -173,6 +565,21 @@ def hydro_window_checks(da_res, rr, tolerance=1e-5) -> dict:
             if budget is not None:
                 out["hydro_energy_budget_excess_max_mwh"] = max(out["hydro_energy_budget_excess_max_mwh"], float(power.sum()*cfg.dt-budget),0.)
             spec=specs[h]; season=spec["seasons"][cfg.base["season"]]
+            # Independent aggregate physical checks, regardless of selected plan.
+            if "n_units" in spec and "zones" in spec:
+                expected_zone_keys = {(h, z) for z in range(len(spec["zones"]))}
+                actual_zone_keys = {key for key in sn["delta"] if key[0] == h}
+                if actual_zone_keys != expected_zone_keys:
+                    out["hydro_window_checks_available"] = False
+                else:
+                    counts = np.array([sn["delta"][h,z] for z in range(len(spec["zones"]))], float)
+                    out["hydro_unit_count_violation_max"] = max(out["hydro_unit_count_violation_max"],
+                        float(np.abs(counts-np.round(counts)).max()), float(np.maximum(-counts, 0.).max()),
+                        float(np.maximum(counts.sum(axis=0)-spec["n_units"], 0.).max()))
+                    minimum = np.array([z[0] for z in spec["zones"]]) @ counts
+                    maximum = np.array([z[1] for z in spec["zones"]]) @ counts
+                    out["hydro_stable_zone_power_excess_max_mw"] = max(out["hydro_stable_zone_power_excess_max_mw"],
+                        float(np.maximum(minimum-power, 0.).max()), float(np.maximum(power-maximum, 0.).max()))
             vmin,vmax=float(season["vmin"]),float(season["vmax"])
             if spec.get("regulation")=="run_of_river":
                 vmax=float(season["v0"]);vmin=vmax-float(spec.get("pondage",0) or 0)
@@ -184,12 +591,32 @@ def hydro_window_checks(da_res, rr, tolerance=1e-5) -> dict:
             if stage=="RT":
                 out["hydro_state_volume_continuity_max_err_1e4m3"] = max(out["hydro_state_volume_continuity_max_err_1e4m3"],abs(float(meta["v_start_1e4m3"])-state.hydro[h]))
                 out["hydro_state_power_continuity_max_err_mw"] = max(out["hydro_state_power_continuity_max_err_mw"],abs(float(meta["p_start_mw"])-state.hydro_p[h]))
-                if cfg.mode["realtime"].get("hydro") in ("fixed_da","window_end_da"):
-                    for (uid,z),arr in sn["delta"].items():
-                        if uid==h:
-                            expected=da_sn["delta"][(uid,z)][start:start+len(arr)]
-                            out["hydro_da_zone_count_mismatch"] += int(np.count_nonzero(np.asarray(arr)!=expected))
+                reference_source = "not_locked"
+                if cfg.mode["realtime"].get("hydro", "value") in ("value","fixed_da","window_end_da"):
+                    selected = (round_result or {}).get("hydro_reference_delta")
+                    sources = (round_result or {}).get("reference_metadata", {}).get("V", {})
+                    reference_source = sources.get(h, {}).get("trajectory_source", "day_ahead_legacy" if selected is None else "unknown")
+                    if selected is not None and reference_source == "unknown":
+                        out["hydro_reference_evidence_complete"] = False
+                    if selected is None:
+                        selected = {key: a[start:start+len(power)] for key,a in da_sn["delta"].items()}
+                        if (cfg.mode.get("intraday", {}).get("enabled", False)
+                                and cfg.mode["realtime"].get("hydro", "value") == "value"):
+                            out["hydro_reference_evidence_complete"] = False
+                    for key, arr in sn["delta"].items():
+                        if key[0] != h:
+                            continue
+                        expected = np.asarray(selected.get(key, []), float)
+                        if (expected.shape != np.asarray(arr).shape or not np.isfinite(expected).all()
+                                or not np.equal(expected, np.round(expected)).all()):
+                            out["hydro_reference_evidence_complete"] = False
+                            continue
+                        mismatch = int(np.count_nonzero(np.asarray(arr) != expected))
+                        out["hydro_reference_zone_count_mismatch"] += mismatch
+                        if reference_source in ("day_ahead", "day_ahead_legacy"):
+                            out["hydro_da_zone_count_mismatch"] += mismatch
                 out["hydro_window_records"].append(dict(window_start=start,window_end_exclusive=start+len(power),station=h,
+                    reference_source=reference_source,
                     start_volume_1e4m3=float(meta["v_start_1e4m3"]),start_power_mw=float(meta["p_start_mw"]),
                     terminal_target_1e4m3=target,terminal_actual_1e4m3=float(volume[-1]),terminal_error_1e4m3=terminal_error,terminal_kind=meta.get("terminal_kind"),
                     tracking_equation_error_1e4m3=tracking_equation_error,
@@ -197,10 +624,10 @@ def hydro_window_checks(da_res, rr, tolerance=1e-5) -> dict:
                     remaining_energy_budget_mwh=budget,window_generation_mwh=float(power.sum()*cfg.dt)))
     check_snapshot(da_sn,"DA",0)
     for r,state in zip(rr.rt,rr.states):
-        check_snapshot(r["snap"],"RT",r["t"],state)
-    numeric = [v for k,v in out.items() if k not in ("hydro_window_checks_available","hydro_window_records","hydro_tracking_target_deviation_max_1e4m3")]
-    out["hydro_window_constraints_satisfied"] = bool(out["hydro_window_checks_available"] and all(np.isfinite(v) and v<=tolerance for v in numeric))
-    out["hydro_check_scope"] = "DA_and_RT_station_aggregate_ramp,water,volume,eco,outflow,budget;RT_actual_state,DA_zone_count,hard_window_terminal_or_soft_tracking_slack_consistency_as_configured;soft_target_deviation_is_not_physical_infeasibility;not_individual_turbine_ramp"
+        check_snapshot(r["snap"],"RT",r["t"],state,r)
+    numeric = [v for k,v in out.items() if k not in ("hydro_window_checks_available","hydro_window_records","hydro_tracking_target_deviation_max_1e4m3","hydro_reference_evidence_complete")]
+    out["hydro_window_constraints_satisfied"] = bool(out["hydro_window_checks_available"] and out["hydro_reference_evidence_complete"] and all(np.isfinite(v) and v<=tolerance for v in numeric))
+    out["hydro_check_scope"] = "DA_and_RT_station_aggregate_ramp,water,volume,eco,outflow,budget;RT_actual_state,selected_reference_zone_count,independent_unit_count_and_zone_power,hard_window_terminal_or_soft_tracking_slack_consistency_as_configured;soft_target_deviation_is_not_physical_infeasibility;not_individual_turbine_ramp"
     return out
 
 
@@ -224,33 +651,85 @@ def checks(da_res, rr, rt_tab) -> dict:
         out["storage_simultaneous"] += int(((d.P_ch > 1e-6) & (d.P_dis > 1e-6)).sum())
     out["soc_continuity_err_mwh"] = err_cont
     out["soc_equation_err_mwh"] = err_eq
-    # 机组组合连续：锁定类型（煤电/CCGT）在日内各轮与实时均等于日前
+    # 日内、实时分别按本阶段锁定类型校核；日内自由类仍可在实时按日前锁定。
+    lock_id = set(cfg.mode.get("intraday", {}).get("lock_types", ["coal", "gas_ccgt"]))
     lock = set(cfg.mode["realtime"]["lock_types"])
     da_u = da_res.tables["units"].set_index(["unit", "period"]).on
     mism_id = mism_rt = 0
     ru = rt_tab["units"]
     for u in cfg.units["thermal"]:
-        if u["type"] not in lock:
-            continue
-        for r in rr.id_rounds:
-            arr = r["snap"]["u"][u["id"]]
-            mism_id += int(sum(int(arr[k]) != int(da_u[(u["id"], r["tau"] + k)]) for k in range(len(arr))))
-        d = ru[ru.unit == u["id"]]
-        mism_rt += int(sum(int(o) != int(da_u[(u["id"], p)]) for o, p in zip(d.on, d.period)))
+        if u["type"] in lock_id:
+            for r in rr.id_rounds:
+                arr = r["snap"]["u"][u["id"]]
+                mism_id += int(sum(int(arr[k]) != int(da_u[(u["id"], r["tau"] + k)]) for k in range(len(arr))))
+        if u["type"] in lock:
+            d = ru[ru.unit == u["id"]]
+            mism_rt += int(sum(int(o) != int(da_u[(u["id"], p)]) for o, p in zip(d.on, d.period)))
     out["locked_commitment_mismatch_id"] = mism_id
     out["locked_commitment_mismatch_rt"] = mism_rt
     # 实时锁定机组开机状态 = 执行时所用参考计划（无日内时即日前）
     mism = 0
+    thermal_reference_complete = True
     types = {u["id"]: u["type"] for u in cfg.units["thermal"]}
     for r in rr.rt:
-        plan = rr.plans[r["plan_idx"]]
-        for g, arr in r["snap"]["u"].items():
-            if types[g] in lock:
-                mism += int(arr[0] != plan["u"][g][r["t"]])
+        selected = r.get("thermal_reference_u")
+        if selected is not None:
+            required_locked = {g for g, typ in types.items() if typ in lock}
+            metadata = r.get("reference_metadata", {}).get("u")
+            ho = r.get("handoff_config", {})
+            active_rounds = [x for x in getattr(rr, "id_rounds", []) if x["tau"] <= r["t"]]
+            if (ho.get("intraday_attempted", bool(active_rounds)) and ho.get("source") == "intraday" and ho.get("commitment") is True
+                    and ho.get("commit_rt") == "inherit"):
+                free = set(ho.get("levels", {}).get("intraday", {}).get("free_types", []))
+                required_locked |= {g for g, typ in types.items() if typ in free}
+            if (set(selected) != required_locked or metadata is None or set(selected) != set(metadata)):
+                thermal_reference_complete = False
+            for g, expected in selected.items():
+                actual = np.asarray(r["snap"].get("u", {}).get(g, []), float)
+                expected = np.asarray(expected, float)
+                if (g not in types or not len(actual) or expected.shape != actual.shape
+                        or not np.isfinite(expected).all() or not np.isin(expected, [0, 1]).all()):
+                    thermal_reference_complete = False
+                    continue
+                mism += int(np.count_nonzero(actual != expected))
+                source = (metadata or {}).get(g, {})
+                if source.get("source") == "day_ahead":
+                    try:
+                        baseline = np.array([da_u[(g, r["t"]+k)] for k in range(len(actual))], float)
+                        mism += int(np.count_nonzero(expected != baseline))
+                    except (KeyError, TypeError, ValueError):
+                        thermal_reference_complete = False
+                elif source.get("round") is not None:
+                    history = next((x for x in active_rounds if x["tau"] == source["round"]), None)
+                    baseline = np.asarray((history or {}).get("snap", {}).get("u", {}).get(g, []), float)
+                    offset = r["t"]-int(source["round"])
+                    baseline = baseline[offset:offset+len(actual)]
+                    if baseline.shape != expected.shape or not np.isfinite(baseline).all():
+                        thermal_reference_complete = False
+                    else:
+                        mism += int(np.count_nonzero(expected != baseline))
+                else:
+                    thermal_reference_complete = False
+        else:
+            # Old outputs carry only the reference plan. Do not reinterpret them
+            # using new handoff semantics, and never silently certify inherited GT.
+            plan = rr.plans[r["plan_idx"]]
+            for g, arr in r["snap"]["u"].items():
+                if types[g] in lock:
+                    mism += int(arr[0] != plan["u"][g][r["t"]])
+            if cfg.mode.get("intraday", {}).get("enabled", False):
+                thermal_reference_complete = False
     out["rt_vs_plan_commitment_mismatch"] = mism
+    out["thermal_reference_evidence_complete"] = thermal_reference_complete
+    if getattr(rr, "id_failures", []):
+        out.update(intraday_failure_checks(cfg, rr, rolling._da_plan_arrays(da_res)))
+        thermal_reference_complete &= out["intraday_failed_reference_evidence_complete"]
+        out["thermal_reference_evidence_complete"] = thermal_reference_complete
+    else:
+        out.update(intraday_failure_records_valid=True, intraday_failed_reference_evidence_complete=True)
     # 水电执行日前曲线
     rc = cfg.mode["realtime"]
-    if rc.get("hydro", "fixed_da") == "fixed_da":
+    if rc.get("hydro", "value") == "fixed_da":
         dah = da_res.tables["units"].set_index(["unit", "period"]).P_mw
         dh = ru[ru.type == "hydro"]
         out["hydro_vs_da_err_mw"] = float(max([abs(p - dah[(u, t)]) for u, t, p in zip(dh.unit, dh.period, dh.P_mw)] or [0.0]))
@@ -285,7 +764,23 @@ def checks(da_res, rr, rt_tab) -> dict:
         out["pumped_vs_da_dev_mw"] = float(dev)
     out["anchor_relaxed_periods"] = int(sum(1 for r in rr.rt if r.get("anchor_relaxed", 0)))
     out["anchor_slack_max_mwh"] = float(max(r["slack"].get("anchor_slack_max_mwh", 0.0) for r in rr.rt))
-    out.update(slack_policy_checks(da_res.slack, rr.rt))
+    day_end_targets = {}
+    for kind, group, table, column in (("E","storage","storage","E_mwh"), ("Vu","pumped","pumped","V_up")):
+        for unit in cfg.units.get(group, []):
+            rows = da_res.tables[table]
+            target = float(rows[rows.unit == unit["id"]].sort_values("period")[column].iloc[-1])
+            day_end_targets[kind,unit["id"]] = (target,target)
+    for unit in cfg.units.get("hydro", []):
+        season = unit["seasons"][cfg.base["season"]]
+        day_end_targets["V",unit["id"]] = ((season["v0"],season["v0"]) if unit.get("regulation") == "run_of_river"
+            else (season["v_end"],season["vmax"]))
+    band_checks = state_band_policy_checks(cfg, rr.rt, day_end_targets=day_end_targets)
+    out.update(band_checks)
+    out.update(hydro_terminal_lookahead_checks(cfg, rr, rolling._da_plan_arrays(da_res)))
+    out.update(slack_policy_checks(da_res.slack, rr.rt,
+                                   state_band_required=band_checks["state_band_checks_active"]))
+    out["rules_satisfied_no_slack"] = (out["rules_satisfied_no_slack"]
+                                        and out["state_band_targets_satisfied"])
     from .regulation import snapshot as regulation_snapshot
     agc_states = [regulation_snapshot(da_res.model)] + [r["snap"].get("regulation", {}) for r in rr.rt]
     agc_short = [float(v) for sn in agc_states if sn.get("enabled") for v in sn["shortage_mw"]]
@@ -321,6 +816,8 @@ def checks(da_res, rr, rt_tab) -> dict:
     out["rt_injection_sum_err_mw"] = float(np.abs(inj).max())
     out.update(execution_safety_checks(da_res, rt_tab))
     out.update(hydro_window_checks(da_res, rr))
+    from .hydro_daily_energy import audit as audit_daily_energy
+    out.update(audit_daily_energy(cfg, rolling.snapshot(da_res.model), rr, bids=getattr(da_res.case, "bids", None)))
     from .storage_anchors import hard_anchor_checks
     out.update(hard_anchor_checks(cfg, rolling.snapshot(da_res.model), rr.rt))
     tol = out["safety_tolerance_mw"]
@@ -331,7 +828,7 @@ def checks(da_res, rr, rt_tab) -> dict:
     violations = ("storage_simultaneous", "pumped_simultaneous", "min_updown_violations",
                   "locked_commitment_mismatch_rt", "rt_vs_plan_commitment_mismatch")
     out["physical_feasible_checked_constraints"] = bool(
-        out["network_feasible"] and all(out.get(k, 0.0) <= tol for k in residuals)
+        out["network_feasible"] and thermal_reference_complete and all(out.get(k, 0.0) <= tol for k in residuals)
         and all(out.get(k, 0) == 0 for k in violations)
         and float(sysd.shed_mw.max()) <= tol and float(sysd.surplus_mw.max()) <= tol)
     out["physical_feasibility_scope"] = "DA:network_limits_only;RT:network_limits,balance,SOC_and_pumped_continuity,exclusivity,commitment,min_updown_completed_interior_runs_only,no_shed_or_surplus;not_all_model_constraints"
@@ -339,6 +836,8 @@ def checks(da_res, rr, rt_tab) -> dict:
 
 
 def run_full(cfg, case, log=print, periods: int | None = None, *, progress_callback=None, should_cancel=None) -> dict:
+    from .input_validation import validate_requested_periods
+    validate_requested_periods(periods)
     t0 = time.perf_counter()
     if should_cancel and should_cancel():
         from .live_runner import RunCancelled
@@ -353,6 +852,14 @@ def run_full(cfg, case, log=print, periods: int | None = None, *, progress_callb
         if progress_callback:
             progress_callback(dict(event, da=da))
     rr = rolling.run_rolling(da, periods=periods, log=log, progress_callback=emit, should_cancel=should_cancel)
+    from .hydro_daily_energy import audit as audit_daily_energy
+    daily_check = audit_daily_energy(cfg, rolling.snapshot(da.model), rr, bids=getattr(da.case, "bids", None))
+    if daily_check["hydro_daily_minimum_active"] and (not daily_check["hydro_daily_minimum_evidence_valid"]
+            or daily_check.get("hydro_daily_minimum_final_satisfied") is False):
+        error = RuntimeError("水电硬日电量下限验收失败；保留已执行前缀，不生成成功结算："
+                             + "; ".join(daily_check["hydro_daily_minimum_errors"]))
+        error.daily_energy_evidence = daily_check
+        raise error
     if should_cancel and should_cancel():
         from .live_runner import RunCancelled
         raise RunCancelled("Cancelled before settlement")
@@ -365,6 +872,19 @@ def run_full(cfg, case, log=print, periods: int | None = None, *, progress_callb
     return dict(**completion_metadata(cfg.T,len(rr.rt)),da=da, rr=rr, rt=rt_tab, id=id_tab, settle=st, checks=checks(da, rr, rt_tab),
                 time_s=dict(da=t_da, intraday=rr.time_s["intraday"], realtime=rr.time_s["realtime"], settlement=t_set,
                             total=time.perf_counter() - t0))
+
+
+def intraday_run_summary(cfg, rr):
+    failures = getattr(rr, "id_failures", [])
+    return dict(enabled=bool(cfg.mode["intraday"].get("enabled", False)),
+        interval_h=cfg.mode["intraday"]["interval_h"], rounds=len(rr.id_rounds),
+        lock_types=cfg.mode["intraday"]["lock_types"], failed_rounds=failures,
+        failure_count=len(failures), attempted_rounds=len(rr.id_rounds)+len(failures))
+
+
+def write_intraday_failures(rr, directory):
+    pd.DataFrame(getattr(rr, "id_failures", []), columns=["tau","phase","solver_status","reason","fallback"]).to_csv(
+        directory / "id_failed_rounds.csv", index=False)
 
 
 def summarize_full(res) -> dict:
@@ -383,13 +903,29 @@ def summarize_full(res) -> dict:
     from .live_runner import completion_metadata
     scope = completion_metadata(cfg.T, T)
     s = dict(
+        hydro_daily_minimum={key.removeprefix("hydro_daily_minimum_"): value
+            for key, value in res["checks"].items() if key.startswith("hydro_daily_minimum_")},
+        hydro_terminal_lookahead={key.removeprefix("hydro_terminal_lookahead_"):value
+            for key,value in res["checks"].items() if key.startswith("hydro_terminal_lookahead_")},
         **scope,
         rule_set=cfg.rule_set, rule_name=cfg.mode["name"], date=cfg.base["date"], season=cfg.base["season"], periods=T,
-        intraday=dict(enabled=bool(cfg.mode["intraday"].get("enabled", False)), interval_h=cfg.mode["intraday"]["interval_h"], rounds=len(res["rr"].id_rounds),
-                      lock_types=cfg.mode["intraday"]["lock_types"]),
+        intraday=intraday_run_summary(cfg, res["rr"]),
         realtime=dict(interval_min=cfg.mode["realtime"]["interval_min"], lookahead_h=cfg.mode["realtime"]["lookahead_h"],
                       storage_mode=cfg.mode["realtime"]["storage"]["mode"], anchor=cfg.mode["realtime"]["storage"]["anchor"],
-                      x=cfg.mode["realtime"]["storage"]["x"], hydro=cfg.mode["realtime"].get("hydro", "fixed_da"),
+                      x=cfg.mode["realtime"]["storage"]["x"], hydro=cfg.mode["realtime"].get("hydro", "value"),
+                      value_method=cfg.mode["realtime"].get("value_method"),
+                      state_band_checks_available=res["checks"].get("state_band_checks_available"),
+                      state_band_targets_satisfied=res["checks"].get("state_band_targets_satisfied"),
+                      **{key: res["checks"].get(key) for key in ("terminal_policy_mode", "terminal_policy_compliant",
+                          "executed_terminal_targets_zero_deviation", "executed_terminal_deviation_records",
+                          "executed_terminal_penalty_cost", "emergency_state_band_slack_max", "emergency_band_fallback_count")},
+                      state_band_slack_max=res["checks"].get("state_band_slack_max"),
+                      **{key: value for key, value in res["checks"].items()
+                         if key != "emergency_state_band_slack_max" and ("_state_band_slack_" in key
+                         or "_day_end_window_deviation_" in key or "_executed_day_end_deviation_" in key)},
+                      fallback_count=int(sum(1 for r in res["rr"].rt if r.get("fallback"))),
+                      fallback_periods=[int(r["t"]) for r in res["rr"].rt if r.get("fallback")],
+                      state_deviation_count=int(sum(len(r.get("state_deviations") or []) for r in res["rr"].rt)),
                       anchor_relaxed_periods=res["checks"]["anchor_relaxed_periods"],
                       anchor_slack_periods=res["checks"]["anchor_slack_periods"],
                       anchor_slack_max_mwh=res["checks"]["anchor_slack_max_mwh"],
@@ -401,7 +937,9 @@ def summarize_full(res) -> dict:
                       hydro_anchor_slack_max_1e4m3=res["checks"]["hydro_anchor_slack_max_1e4m3"],
                       hydro_anchor_slack_periods=res["checks"]["hydro_anchor_slack_periods"],
                       storage_anchor_policy=rolling.policy_metadata(cfg),
-                      tracking_policy=cfg.mode["realtime"].get("tracking_policy"),
+                      tracking_policy=(cfg.mode["realtime"].get("tracking_policy")
+                                       if cfg.mode["realtime"].get("hydro") == "window_end_da"
+                                       else dict(mode="not_applicable", reason=f"hydro={cfg.mode['realtime'].get('hydro')}")),
                       repriced_periods=int(rt["system"].repriced.sum()),
                       shed_mwh=float(rt["system"].shed_mw.sum() * cfg.dt), surplus_mwh=float(rt["system"].surplus_mw.sum() * cfg.dt),
                       curtail_mwh=float(rt["system"].curtail_mw.sum() * cfg.dt)),
@@ -450,7 +988,7 @@ def pumped_full_summary(res) -> dict:
         rps = rt["pumped"][rt["pumped"].unit == pid]
         stc = cfg.mode["realtime"]["storage"]
         o = dict(bus=p["bus"], rules="storage", da_mode=(da.case.bids["units"].get(pid) or {}).get("mode", "price_quantity"),
-                 rt_mode=stc.get("mode", "sced_anchor") + ("/" + stc.get("anchor", "hourly_eq") if stc.get("mode", "sced_anchor") == "sced_anchor" else ""))
+                 rt_mode=stc.get("mode", "value") + ("/" + stc.get("anchor", "hourly_eq") if stc.get("mode", "value") == "sced_anchor" else ""))
         for tag, d in (("da", dps), ("rt", rps)):
             eg, ep = float(d.P_gen.sum() * dt), float(d.P_pump.sum() * dt)
             o[tag] = dict(gen_mwh=eg, pump_mwh=ep, cycle_eff=eg / ep if ep > 1e-6 else None,
@@ -580,22 +1118,34 @@ def write_full_outputs(res, d: Path, make_plots=True) -> dict:
     tracking_rows = [dict(window_start=r["t"], **row) for r in res["rr"].rt for row in r["snap"].get("tracking", [])]
     (d / "rt_tracking_window_evidence.json").write_text(json.dumps(tracking_rows, ensure_ascii=False), encoding="utf-8")
     pd.DataFrame(tracking_rows).to_csv(d / "rt_tracking_windows.csv", index=False)
+    from .value_outputs import write_value_outputs   # 第二轮H项：价值曲线、窗口末偏差、偏差带/回退、价值定价时段、辅助vs对偶价差
+    write_value_outputs(da, res["rr"], d)
     from .results import reserve_snapshot
     reserve_evidence={"da":reserve_snapshot(da.model),"rt_windows":[r["snap"]["reserve"] for r in res["rr"].rt]}
     (d / "reserve_window_evidence.json").write_text(json.dumps(reserve_evidence,ensure_ascii=False),encoding="utf-8")
     # Full-precision window evidence for independent hydro state/lag/target audits.
     def hydro_evidence(sn):
         data = {key: {h: np.asarray(a).tolist() for h,a in sn.get(key, {}).items()}
-                for key in ("Ph", "Vh", "Qout")}
+                for key in ("Ph", "Vh", "Qout", "u", "E", "Vu")}
         data["delta"] = [{"station": h, "zone": int(z), "values": np.asarray(a).tolist()}
                          for (h,z),a in sn.get("delta", {}).items()]
         data["constraints"] = sn.get("hydro_constraints", {})
+        data["hydro_daily_energy"] = sn.get("hydro_daily_energy", {})
         return data
+    from .hydro_daily_energy import id_state_values
     evidence = dict(dt_h=cfg.dt, season=cfg.base["season"], hydro_mode=cfg.mode["realtime"].get("hydro"),
                     tracking_policy=cfg.mode["realtime"].get("tracking_policy"),
-                    specifications=cfg.units["hydro"], da=hydro_evidence(rolling.snapshot(da.model)), rt_windows=[])
+                    specifications=cfg.units["hydro"], da=hydro_evidence(rolling.snapshot(da.model)), rt_windows=[],
+                    id_rounds=[dict(tau=r["tau"],snapshot=hydro_evidence(r["snap"]),state_values=id_state_values(r)) for r in res["rr"].id_rounds],
+                    id_failures=getattr(res['rr'],'id_failures',[]))
     for r,state in zip(res["rr"].rt,res["rr"].states):
         evidence["rt_windows"].append(dict(t=r["t"], snapshot=hydro_evidence(r["snap"]),
+            handoff_config=r.get("handoff_config", {}), thermal_reference_u=r.get("thermal_reference_u", {}),
+            value_window=r["snap"].get("value_window", []),
+            reference_metadata=r.get("reference_metadata"),
+            hydro_reference_delta=([{ "station": h, "zone": int(z), "values": np.asarray(a).tolist() }
+                                    for (h,z),a in r["hydro_reference_delta"].items()]
+                                   if "hydro_reference_delta" in r else None),
             state=dict(volume=state.hydro, power=getattr(state,"hydro_p",{}), online=getattr(state,"hydro_online",{}),
                        energy_used_mwh=state.hydro_used,
                        outflow_history={h:np.asarray(a[:state.t]).tolist() for h,a in state.hydro_hist.items()})))
@@ -605,6 +1155,7 @@ def write_full_outputs(res, d: Path, make_plots=True) -> dict:
     from .output_catalog import write_da_tables, write_catalog, write_profile_evidence
     write_da_tables(da, d)
     write_profile_evidence(da.case, d)
+    write_intraday_failures(res["rr"], d)
     idt["summary"].to_csv(d / "id_rounds_summary.csv", **f)
     idt["plans"].to_csv(d / "id_plans.csv", **f)
     idt["prices"].to_csv(d / "id_prices_indicative.csv", **f)
@@ -635,6 +1186,8 @@ def write_full_outputs(res, d: Path, make_plots=True) -> dict:
     else:
         s["provenance"]=dict(available=False,reason="run-start provenance not captured; later source is not substituted")
     s["da_summary"] = summarize(da)
+    # 第二轮J项：结果页顶部规则行读取本次实际限价（川2026总体方案 五（二）2：申报/出清下限−50），不借用当前配置
+    s["price_limits"] = {k: float(v) for k, v in da.case.cfg.mode["price_limits"].items() if isinstance(v, (int, float))}
     from .reserve_checks import audit as audit_reserve_evidence
     s["reserve"] = audit_reserve_evidence(reserve_evidence)
     s["reserve"].update(storage_reserve_enabled=reserve_evidence["da"]["storage_reserve_enabled"],

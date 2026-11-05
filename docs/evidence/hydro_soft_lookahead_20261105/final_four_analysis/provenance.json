@@ -1,0 +1,53 @@
+{
+  "same_source_hashes_all_four": true,
+  "wet": {
+    "config/base.yaml": [],
+    "config/modes.yaml": [
+      [
+        ".MKT.intraday.enabled",
+        true,
+        false
+      ]
+    ],
+    "config/units.yaml": [],
+    "effective_profiles.csv": {
+      "on": "f425fd75e14d8a2bec205e67bda66c0ba9c5964780e6ea6d2dc3af3afe280bd7",
+      "off": "f425fd75e14d8a2bec205e67bda66c0ba9c5964780e6ea6d2dc3af3afe280bd7"
+    },
+    "resolved_bids.json": {
+      "on": "f806d74ee7f441c8ffaa1491accdea1f412f2ab789051ab81a418f264b928cc3",
+      "off": "f806d74ee7f441c8ffaa1491accdea1f412f2ab789051ab81a418f264b928cc3"
+    },
+    "DA_tables_exactly_equal": {
+      "da_unit_awards.csv": true,
+      "da_hydro.csv": true,
+      "da_storage.csv": true,
+      "da_pumped.csv": true
+    }
+  },
+  "dry": {
+    "config/base.yaml": [],
+    "config/modes.yaml": [
+      [
+        ".MKT.intraday.enabled",
+        true,
+        false
+      ]
+    ],
+    "config/units.yaml": [],
+    "effective_profiles.csv": {
+      "on": "f425fd75e14d8a2bec205e67bda66c0ba9c5964780e6ea6d2dc3af3afe280bd7",
+      "off": "f425fd75e14d8a2bec205e67bda66c0ba9c5964780e6ea6d2dc3af3afe280bd7"
+    },
+    "resolved_bids.json": {
+      "on": "f806d74ee7f441c8ffaa1491accdea1f412f2ab789051ab81a418f264b928cc3",
+      "off": "f806d74ee7f441c8ffaa1491accdea1f412f2ab789051ab81a418f264b928cc3"
+    },
+    "DA_tables_exactly_equal": {
+      "da_unit_awards.csv": true,
+      "da_hydro.csv": true,
+      "da_storage.csv": true,
+      "da_pumped.csv": true
+    }
+  }
+}

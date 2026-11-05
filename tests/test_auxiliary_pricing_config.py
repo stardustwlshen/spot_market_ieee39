@@ -6,8 +6,7 @@ from smm.config import load_config, validate_auxiliary_pricing
 def test_approved_current_policy_defaults():
     cfg = load_config()
     assert cfg.mode['auxiliary_pricing'] == {
-        'enabled': True,
-        'rt_tracking_policy': 'remove',
+        'enabled': True,  # 第二轮E项：不再移除实时跟踪/价值约束（缺省 preserve）
         'penalties_yuan_per_mwh': {'balance': 10000, 'line': 1000, 'reserve': 2500},
         'dispatch_band': {'relative_to_dispatch': .03, 'minimum_mw': 1.0},
     }

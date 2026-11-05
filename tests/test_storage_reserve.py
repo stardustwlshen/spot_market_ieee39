@@ -1,4 +1,7 @@
-"""Incremental current-stock battery/pumped reserve limits, without full-day solves."""
+"""Incremental battery/pumped reserve limits, without full-day solves.
+
+第二轮F项：备用可用电量/库容改按时段末存量 E[t]/Vu[t]（已扣除同时段能量计划的充放电/发电），
+替代原“时段初存量”口径；以下期望值按时段末存量重算。"""
 from copy import deepcopy
 
 import numpy as np
@@ -68,7 +71,7 @@ def solve(c, modify=None):
 
 def expected_battery(m):
     d = m._md.storage['ES1']; p = pyo.value(m.Pd['ES1',0]-m.Pc['ES1',0])
-    e = d['soc0']*d['ecap']
+    e = pyo.value(m.E['ES1',0])  # 第二轮F项：时段末存量
     H = m._case.cfg.mode['reserve']['T_dur_h']
     up = min(d['pmax']-p, (e-d['soc_min']*d['ecap'])*d['eta_d']/H)
     down = min(d['pmax']+p, (d['soc_max']*d['ecap']-e)/d['eta_c']/H)
@@ -128,7 +131,7 @@ def test_pumped_actual_initial_low_volume_limits_incremental_reserve():
     # Original 15 min baseline can run at 40 MW from V102; 1h qualification cannot.
     m=solve(pumped_case(initial_volume=102.))
     assert pyo.value(m.Vu['PS1',0])==pytest.approx(101)
-    assert pyo.value(m.rp_up['PS1',0])==pytest.approx(20)
+    assert pyo.value(m.rp_up['PS1',0])==pytest.approx(10)  # 第二轮F项：(V_end101-v_lo100)*e_gen10/1h
     assert pyo.value(m.rp_dn['PS1',0])==pytest.approx(20)
 
 
@@ -189,7 +192,7 @@ def test_down_enabled_flag_requires_boolean():
 ])
 def test_incremental_limit_is_not_full_baseline_plus_activation_guarantee(factory,upvar,stock,lo,conversion):
     m=solve(factory());uid=next(iter(m.S if stock=='E' else m.PS))
-    R=pyo.value(getattr(m,upvar)[uid,0]);available=((m._md.storage[uid]['soc0']*m._md.storage[uid]['ecap']) if stock=='E' else m._md.pumped[uid]['init']['V'])
+    R=pyo.value(getattr(m,upvar)[uid,0]);available=pyo.value(getattr(m,stock)[uid,0])  # 第二轮F项：时段末存量
     available=(available-lo)*conversion
     baseline=pyo.value(m.Pd[uid,0] if stock=='E' else m.Pg[uid,0])
     assert R<=available+1e-6
@@ -198,7 +201,8 @@ def test_incremental_limit_is_not_full_baseline_plus_activation_guarantee(factor
 
 def test_pumped_upper_bound_limits_down_incremental_reserve():
     m=solve(pumped_case(initial_volume=280.))
-    assert pyo.value(m.rp_dn['PS1',0])==pytest.approx(0.)  # V_start=280, no incremental upper headroom
+    assert pyo.value(m.Vu['PS1',0])==pytest.approx(279.)
+    assert pyo.value(m.rp_dn['PS1',0])==pytest.approx(10.)  # 第二轮F项：V_end=279，上库余量1×e_gen10/1h
 
 
 def test_duration_scaling_and_no_added_integers():
@@ -214,26 +218,27 @@ def test_initial_below_operating_band_can_recover_with_zero_up_reserve():
     c.bids['units']['ES1']['soc_min']=.11  # declared Emin22, technical Emin20
     m=solve(c)
     assert pyo.value(m.E['ES1',0])==pytest.approx(24.)
-    assert pyo.value(m.rs_up['ES1',0])==0.
+    assert pyo.value(m.rs_up['ES1',0])==pytest.approx((24.-22.)*.9)  # 第二轮F项：时段末存量高于申报Emin的部分
 
 
-def test_cannot_use_not_yet_charged_energy_for_current_reserve():
+def test_period_end_stock_counts_same_period_planned_charge():
+    # 第二轮F项（已知简化）：同时段计划充入的电量计入时段末存量，可用于该时段上备用
     m=solve(battery_case('ch',20.,initial_energy=20.))
     assert pyo.value(m.E['ES1',0])==pytest.approx(24.)
-    assert pyo.value(m.rs_up['ES1',0])==0.
+    assert pyo.value(m.rs_up['ES1',0])==pytest.approx((24.-20.)*.9)
 
 
 @pytest.mark.parametrize('factory, constraint, stockvar', [
     (battery_case, 'c_rsup_soc', 'E'), (pumped_case, 'c_rpup_volume', 'Vu')])
-def test_later_period_uses_previous_end_stock_not_future_stock(factory, constraint, stockvar):
+def test_later_period_uses_own_period_end_stock(factory, constraint, stockvar):
     from pyomo.core.expr.visitor import identify_variables
     c=factory();c.cfg.base['periods']=2
     c.load_bus={k:np.repeat(v,2) for k,v in c.load_bus.items()}
     c.R_up=np.repeat(c.R_up,2);c.R_dn=np.repeat(c.R_dn,2)
     m=scuc.build_model(c);uid=next(iter(m.S if stockvar=='E' else m.PS))
     names={v.name for v in identify_variables(getattr(m,constraint)[uid,1].body)}
-    assert getattr(m,stockvar)[uid,0].name in names
-    assert getattr(m,stockvar)[uid,1].name not in names
+    assert getattr(m,stockvar)[uid,1].name in names      # 第二轮F项：时段末存量
+    assert getattr(m,stockvar)[uid,0].name not in names
 
 
 @pytest.mark.parametrize('mode,power,initial,lo,hi,expected', [
@@ -249,7 +254,7 @@ def test_first_period_power_tightening_uses_actual_initial_state(mode,power,init
 
 @pytest.mark.parametrize('factory,variable,expected', [
     (lambda: battery_case(initial_energy=25.), 'rs_up',18.),
-    (lambda: pumped_case(initial_volume=101.), 'rp_up',40.),
+    (lambda: pumped_case(initial_volume=101.), 'rp_up',0.),  # 第二轮F项：V_end=100=v_lo
 ])
 def test_fifteen_minute_incremental_energy_conversion(factory,variable,expected):
     c=factory();c.cfg.mode['reserve']['T_dur_h']=.25

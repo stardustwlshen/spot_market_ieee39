@@ -62,11 +62,13 @@ def test_incremental_low_soc_does_not_claim_full_delivery():
     c=battery_case('dis',80.,initial_energy=45.)
     c.cfg.mode['reserve']['down_enabled']=False;c.R_dn=np.zeros(1)
     m=solve(c);e=reserve_snapshot(m);r=next(x for x in e['resources'] if x['type']=='storage')
-    assert e['formulation']=='incremental_current_stock'
+    assert e['formulation']=='period_end_stock'  # 第二轮F项
     assert 'not_full_baseline_plus_activation_delivery_guarantee' in e['scope']
     assert r['reserve_eligible'] is True and r['reserve_qualified']==1
-    assert r['r_up']==pytest.approx(20.,abs=1e-6)
-    assert r['reserve_duration_lower_margin_mwh']==pytest.approx(25.-20./.9,abs=1e-6)
+    end=45.-80.*.25/.9
+    assert r['E_end_mwh']==pytest.approx(end)
+    assert r['r_up']==pytest.approx((end-20.)*.9,abs=1e-6)
+    assert r['reserve_duration_lower_margin_mwh']==pytest.approx(0.,abs=1e-6)
     assert r['reserve_duration_upper_margin_mwh'] is None
     assert r['full_activation_up_margin_mwh']<0
     assert independent_auditor()({'da':e,'rt_windows':[]})['passed']
@@ -93,7 +95,7 @@ def test_only_up_incremental_margin_and_tamper_detection():
     e=reserve_snapshot(solve(c));r=next(x for x in e['resources'] if x['type']=='storage')
     assert r['reserve_qualified']==1
     assert r['r_dn']==0 and r['reserve_down_enabled'] is False
-    expected=r['E_start_mwh']-r['E_min_mwh']-r['T_dur_h']*r['r_up']/r['eta_d']
+    expected=r['E_end_mwh']-r['E_min_mwh']-r['T_dur_h']*r['r_up']/r['eta_d']  # 第二轮F项：时段末存量
     assert r['reserve_duration_lower_margin_mwh']==pytest.approx(expected)
     assert r['reserve_duration_upper_margin_mwh'] is None
     assert independent_auditor()({'da':e,'rt_windows':[]})['passed']
@@ -124,14 +126,17 @@ def test_pumped_pumping_never_qualified_and_down_price_disabled():
 
 
 @pytest.mark.parametrize('mode,power,initial,zero_direction', [('ch',80.,20.,'up'),('dis',80.,180.,'down')])
-def test_initial_stock_recovery_does_not_fake_incremental_capacity(mode,power,initial,zero_direction):
+def test_initial_stock_recovery_counts_only_period_end_stock(mode,power,initial,zero_direction):
+    # 第二轮F项：起点越出申报区间时，只有时段末回到区间内的部分可支撑增量备用
     from test_storage_reserve import battery_case,solve
     c=battery_case(mode,power,initial_energy=initial)
     c.bids['units']['ES1'].update(soc_min=.15,soc_max=.85)
     e=reserve_snapshot(solve(c))
     r=next(x for x in e['resources'] if x['type']=='storage')
-    assert r['r_up' if zero_direction=='up' else 'r_dn']==pytest.approx(0.)
-    assert r['reserve_duration_'+zero_direction+'_margin_mwh']==pytest.approx(0.)
+    end=r['E_end_mwh']
+    want=(end-30.)*.9 if zero_direction=='up' else (170.-end)/.8
+    assert r['r_up' if zero_direction=='up' else 'r_dn']==pytest.approx(max(0.,want))
+    assert r['reserve_duration_'+zero_direction+'_margin_mwh']==pytest.approx(0.,abs=1e-6)
     assert independent_auditor()({'da':e,'rt_windows':[]})['passed']
 
 

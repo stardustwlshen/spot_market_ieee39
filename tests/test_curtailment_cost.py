@@ -14,6 +14,7 @@ from test_hydro_rolling import hydro_case
 def case_with_re(dt=.25):
     case = hydro_case(T=1)
     case.cfg.base['dt_h'] = dt
+    case.cfg.mode['realtime']['interval_min'] = 60 * dt  # Keep the test clock consistent; energy-unit assertions unchanged.
     re = deepcopy(load_config().units['renewable'][0])
     re.update(id='W', bus=2, cap=100.)
     case.cfg.units['renewable'] = [re]
