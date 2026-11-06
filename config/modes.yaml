@@ -49,6 +49,7 @@ MKT:
     storage_reserve: true            # 当前研究：电池与发电工况抽蓄提供上备用
     down_enabled: false              # 研究设定（与基本规则第四十六条“设正负备用”不同）：当前只采购上备用；下备用需求、供给及缺额固定0
     T_dur_h: 0.25                    # 假设值（研究设定）：备用能量按时段末库存E[t]/Vu[t]（第二轮F项）折算15min（0.25h）持续；不保证基准加备用全程持续，不是响应速度认证
+    # 常规水电上备用另按末库容减物理下界的可用水量筛查同一T_dur_h；不预支未来来水/已弃水。
     providers: [coal, gas_ccgt, gas_gt, hydro]
   # 假设值（研究设定，Wls指定）：线路10000 < 备用1e5 < 平衡1e6，不宣称任何省现行出清规则。
   penalties: {balance: 1.0e+6, line: 10000, reserve: 1.0e+5}
@@ -98,7 +99,7 @@ MKT:
     lock_types: [coal, gas_ccgt]     # 启停沿用日前（甘V3.2 第十八条：煤电启停日前确定）
     free_types: [gas_gt]             # 无日内交接或显式free时GT在实时MIP内决策；有日内默认继承其启停（研究设定）
     hydro: value                     # 默认价值法：固定选定DA/ID参考台数，实际V起步，Ph可调；日末软目标仅罚低于v_end（物理vmin仍硬），无额外残值
-                                     # 研究设定：水电Ph在价值法下可调（替代原罚1000软跟踪）；实时来水无预测误差（假设值）
+                                     # 研究设定：水电Ph在价值法下可调（替代原罚1000软跟踪）；旧legacy/v2按季节常数来水、无预测误差；显式causal_physical_v3按发布预测取分时天然来水，执行首段已知均值是另列研究假设
                                      # 可选 window_end_da（旧：窗口末V软跟踪DA，罚tracking_policy）/ fixed_da（固定DA出力）/ sced
                                      # 甘肃2026 V3.2第64(四)/73允许经安全校核的自调度申报结合最新能力参与实时优化
     storage:

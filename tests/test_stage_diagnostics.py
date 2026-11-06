@@ -54,7 +54,7 @@ def test_capture_does_not_mutate_any_variable_constraint_or_objective(stage_resu
     assert _model_fingerprint(m)==before  # numeric evidence is detached
 
 
-def test_capture_all_resource_families_and_null_noneligible_values():
+def test_capture_all_resource_families_and_null_noneligible_values(monkeypatch):
     md=SimpleNamespace(thermal={'G':{'type':'coal'}},ren={'W':{'type':'wind'}},
                        hydro_units={'H':{}},storage={'S':{}},pumped={'PS':{}})
     m=SimpleNamespace(_md=md,_case=SimpleNamespace(t0=12),_agc={'enabled':True},T=[0],AGC={'G'},
@@ -72,6 +72,10 @@ def test_capture_all_resource_families_and_null_noneligible_values():
         for index,value in values.items():
             var = pyo.Var(initialize=value); var.construct(); variables[index] = var
         setattr(m,name,variables)
+    import numpy as np
+    m._case.cfg=SimpleNamespace(dt=.25,mode={'price_limits':{'clear_min':-50,'clear_max':1500}})
+    m._case.net=SimpleNamespace(buses=[1]);md.hydro={}
+    monkeypatch.setattr(scuc,'extract_prices',lambda model:{'lmp':np.array([[300.]])})
     diagnostic=capture(m,'energy_sced')
     assert {row['variable'] for row in diagnostic['integer_values']} == {name for name in scuc.INT_VARS if len(getattr(m,name))}
     rows={r['unit']:r for r in diagnostic['units']}

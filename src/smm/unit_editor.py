@@ -30,10 +30,18 @@ def unit_template(kind, uid, bus, capacity=100., *, n_units=1, energy=200.):
         ratio = {'coal': .4, 'gas_ccgt': .4, 'gas_gt': .25}[kind]
         minimum = capacity * ratio
         hours = {'coal': 8, 'gas_ccgt': 4, 'gas_gt': 1}[kind]
+        from .research_defaults import thermal_research_parameters
+        costs = thermal_research_parameters(kind, capacity)
+        hot = costs['fixed_startup_cost_yuan_per_start']
+        # Type-specific historical research temperature ratios, not market rules.
+        cold, warm, very_hot = {'coal': (2.4, 1.6, .6),
+                               'gas_ccgt': (2., 22/15, 2/3),
+                               'gas_gt': (1.5, 1.25, .75)}[kind]
         return dict(common, type=kind, pmax=capacity, pmin=minimum,
                     ramp=capacity * (.02 if kind == 'coal' else .10), ut=hours, dt=hours,
-                    noload=capacity * 10, startup=dict(cold=capacity*1000, warm=capacity*700,
-                    hot=capacity*400, very_hot=capacity*250), init=dict(online=False, p0=0., hours=24.))
+                    noload=costs['fixed_online_cost_yuan_per_h'],
+                    startup=dict(cold=hot*cold, warm=hot*warm, hot=hot, very_hot=hot*very_hot),
+                    init=dict(online=False, p0=0., hours=24.))
     if kind in ('wind', 'pv'):
         return dict(common, type=kind, cap=capacity, profile='wind_a' if kind == 'wind' else 'pv')
     if kind == 'storage':
@@ -45,12 +53,15 @@ def unit_template(kind, uid, bus, capacity=100., *, n_units=1, energy=200.):
         def season(factor):
             return dict(qin=capacity*1.2*factor, v0=1000., vmin=0. if reservoir else 1000.,
                         vmax=2000. if reservoir else 1000., v_end=1000., qeco=0., e_day=capacity*24.)
-        return dict(common, regulation='reservoir' if reservoir else 'run_of_river',
+        result = dict(common, regulation='reservoir' if reservoir else 'run_of_river',
                     n_units=n_units, unit_pmax=unit, zones=[[unit*.2, unit]], ramp=unit,
                     ut=1., dt=1., water_rate=1.2, init_units_on=0, init_p_unit=0.,
                     seasons=dict(wet=season(.6), dry=season(.35)), e_day_min=None, qout_max=None,
                     upstream=None, lag_periods=0,
                     **({} if reservoir else dict(pondage=0.)))
+        from .hydro_commitment import research_initial
+        result['commitment'] = research_initial(result)
+        return result
     # Six hours usable generation; conversion factors imply 76.2% round-trip efficiency.
     usable = capacity * 6 / 9.6
     low, high = usable*.1, usable*1.1
@@ -250,14 +261,25 @@ def prepare_unit_edit(root, family, unit, *, original_id=None, reset_bid=False, 
             cfg = load_config(root=stage)
             uid = unit['id']
             generated = _cost_update(stage, cfg, uid, refresh=refresh_cost) if unit.get('enabled', True) else False
-            from .bids import default_bids, validate_bids, raise_on_errors
+            # New resource creation explicitly initializes its independent spot cost;
+            # editing existing capacity never rewrites a saved cost assumption.
+            if original_id is None and unit.get('enabled',True):
+                from . import spot_costs
+                spot=spot_costs.clean_profile(spot_costs.load_profile(cfg))
+                if uid not in spot['units']:
+                    defaults,_=spot_costs.research_defaults(cfg)
+                    if uid in defaults['units']:
+                        spot['units'][uid]=defaults['units'][uid]
+                        spot_costs.validate_profile(spot)
+                        (stage/'config'/spot_costs.FILENAME).write_text(yaml.safe_dump(spot,allow_unicode=True,sort_keys=False))
+            from .bids import legacy_default_bids, validate_bids, raise_on_errors
             previous = copy.deepcopy(record['draft'])
             replacing = reset_bid or uid not in record['draft']['units']
             if not unit.get('enabled', True):
                 for key in ('draft', 'baseline', 'initial_latest'):
                     record.get(key, {}).get('units', {}).pop(uid, None)
             elif replacing:
-                new_bid = default_bids(cfg)['units'][uid]
+                new_bid = legacy_default_bids(cfg)['units'][uid]
                 record['draft']['units'][uid] = copy.deepcopy(new_bid)
                 # Cost-driven synthetic offers only for new/reset unit, never other bids.
                 from .bid_simulation import research_cost_bid_preview
@@ -285,6 +307,8 @@ def prepare_unit_edit(root, family, unit, *, original_id=None, reset_bid=False, 
             cost_path = stage / 'config/generated_research_costs.json'
             if cost_path.exists():
                 replacements['config/generated_research_costs.json'] = cost_path.read_bytes()
+            spot_path=stage/'config/spot_market_costs.yaml'
+            if spot_path.exists():replacements['config/spot_market_costs.yaml']=spot_path.read_bytes()
             if scene_fingerprint(root) != before:
                 raise RuntimeError('预览期间场景已变化，请重新核对，未保存。')
             return dict(root=str(root), before=before, family=family, unit=copy.deepcopy(unit),

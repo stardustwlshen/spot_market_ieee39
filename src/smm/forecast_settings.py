@@ -53,8 +53,8 @@ def prepare_model_change(root, model):
             actual, forecast = frame[f"{uid}_actual"], frame[f"{uid}_da"]
             rows.append({"机组": uid, "曲线": version,
                          "日前nRMSE（装机比例）": float(np.sqrt(np.mean((actual - forecast) ** 2)) / cap),
-                         "日前平均15分钟变化（MW）": float(abs(np.diff(forecast)).mean()) if len(forecast) > 1 else 0.,
-                         "实际平均15分钟变化（MW）": float(abs(np.diff(actual)).mean()) if len(actual) > 1 else 0.})
+                         f"日前平均{cfg.dt * 60:g}分钟变化（MW）": float(abs(np.diff(forecast)).mean()) if len(forecast) > 1 else 0.,
+                         f"实际平均{cfg.dt * 60:g}分钟变化（MW）": float(abs(np.diff(actual)).mean()) if len(actual) > 1 else 0.})
     override = root / "data/profile_overrides.csv"
     explicit = list(pd.read_csv(override, nrows=0).columns) if override.exists() else []
     return {"root": str(root.resolve()), "model": model, "previous_model": model_name(cfg),

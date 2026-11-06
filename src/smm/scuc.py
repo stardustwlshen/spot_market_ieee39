@@ -18,6 +18,7 @@ import pyomo.environ as pyo
 
 from .bids import THERMAL_TYPES
 from .case import DACase
+from .natural_inflow import model_natural
 
 EPS_STORAGE = 0.1  # 报量不报价储能的极小损耗成本（元/MWh，假设值）
 
@@ -189,9 +190,21 @@ def prepare(case: DACase) -> ModelData:
             v0s = float(hd["v0"])
             hd["vmin"], hd["vmax"], hd["v_end"] = v0s - float(h.get("pondage", 0) or 0), v0s, v0s
             hd["e_day"], hd["e_day_min"] = None, None
+        from .natural_inflow import case_natural_values, is_causal
+        if is_causal(cfg):
+            hd['qin_series']=case_natural_values(case,h['id'],range(case.t0,cfg.T))
+            hd['qin']=None  # fail loudly if an unconverted consumer attempts scalar fallback
+        # Legacy independent absolute-clock windows retain their constant scalar.
         md.hydro[h["id"]] = hd
         if case.init and h["id"] in case.init.get("hydro", {}):
             md.hydro[h["id"]]["v0"] = float(case.init["hydro"][h["id"]])
+            if hd['regulation'] == 'run_of_river':
+                day_initial = (case.init.get('day_initial_hydro') or case.init.get('continuation', {}).get('day_initial_hydro'))
+                if day_initial:
+                    hd['v_end'] = float(day_initial[h['id']])
+                elif case.stage == 'DA' and case.t0 == 0:
+                    hd['v_end'] = float(case.init['hydro'][h['id']])
+                # Legacy rolling callers without a day-start record keep the declared daily target.
         if case.hydro_e_budget and h["id"] in case.hydro_e_budget and hd.get("e_day") is not None:
             remaining = float(case.hydro_e_budget[h["id"]])
             if not np.isfinite(remaining) or remaining < -1e-6:
@@ -250,7 +263,7 @@ def prepare(case: DACase) -> ModelData:
         if "vup_end" in b:                       # 报价申报的日末上库库容（None = 不申报）
             vend = b["vup_end"]
         else:                                    # 报价未含该字段（旧报价）：用 units.yaml 的 vup_end_bid 作为缺省申报
-            vend = p.get("vup_end", p.get("vup_end_bid", p["vup0"]))
+            vend = p.get("vup_end", p.get("vup_end_bid"))
         md.pumped[p["id"]] = dict(p, mode=mode, N=N, Lg=Lg, cg=cg, Lp=Lp, cp=cp, init=st0,
                                   v_lo=max(float(p["vup_min"]), float(p["v_total"]) - float(p["vdn_max"])),
                                   v_hi=min(float(p["vup_max"]), float(p["v_total"]) - float(p["vdn_min"])),
@@ -373,6 +386,7 @@ def build_model(case: DACase, penalties: dict | None = None) -> pyo.ConcreteMode
     m.V = pyo.Var(m.HS, m.T, domain=pyo.NonNegativeReals)
     m.Qspill = pyo.Var(m.HS, m.T, domain=pyo.NonNegativeReals)
     sto_bin = bool(cfg.base["solver"].get("storage_binary", True))
+    m._storage_binary = sto_bin  # Record the built domain; later config edits cannot redefine it.
     sdom = pyo.Binary if sto_bin else pyo.UnitInterval   # 默认 0-1；false 仅用于对比试验（LP 松弛）
     m.u_ch = pyo.Var(m.S, m.T, domain=sdom)              # 1=充电状态
     m.u_dis = pyo.Var(m.S, m.T, domain=sdom)             # 1=放电状态
@@ -432,6 +446,7 @@ def build_model(case: DACase, penalties: dict | None = None) -> pyo.ConcreteMode
         return md.thermal[g]["init"]["p0"] if t == 0 else m.P[g, t - 1]
 
     m.c_logic = pyo.Constraint(m.G, m.T, rule=lambda m, g, t: m.u[g, t] - u_prev(g, t) == m.v[g, t] - m.w[g, t])
+    m.c_start_stop_exclusive = pyo.Constraint(m.G, m.T, rule=lambda m, g, t: m.v[g, t] + m.w[g, t] <= 1)
 
     def min_up(m, g, t):
         UT = int(np.ceil(md.thermal[g]["ut"] / dt - 1e-10))
@@ -536,13 +551,13 @@ def build_model(case: DACase, penalties: dict | None = None) -> pyo.ConcreteMode
             return float(hh[a])
         # Only pre-day water travel is represented by the explicit equipment
         # initial-outflow assumption; within-day missing history must fail closed.
-        u = next(x for x in cfg.units["hydro"] if x["id"] == up)
-        return float(u["water_rate"] * u["init_units_on"] * u["init_p_unit"])
+        from .state_bridge import hydro_before
+        return hydro_before(cfg, case.init or {}, up, a)
 
     def water(m, h, t):
         d = md.hydro[h]
         Vp = d["v0"] if t == 0 else m.V[h, t - 1]
-        return m.V[h, t] == Vp + (d["qin"] + upstream_out(h, t) - qgen(h, t) - m.Qspill[h, t]) * dt * 0.36
+        return m.V[h, t] == Vp + (model_natural(md, h, t) + upstream_out(h, t) - qgen(h, t) - m.Qspill[h, t]) * dt * 0.36
     m._upstream_out = upstream_out
     m.c_water = pyo.Constraint(m.HS, m.T, rule=water)          # 水量平衡（川V4.0 附件8 约束(17)）
     m.c_vlim = pyo.Constraint(m.HS, m.T, rule=lambda m, h, t: pyo.inequality(md.hydro[h]["vmin"], m.V[h, t], md.hydro[h]["vmax"]))
@@ -596,7 +611,8 @@ def build_model(case: DACase, penalties: dict | None = None) -> pyo.ConcreteMode
             return md.pumped[p]["init"][key]
         if absolute < 0:
             # Explicit research pre-day assumption: declared init mode held before day start.
-            return int(md.pumped[p].get("init_mode", "idle") == ("gen" if key == "xg" else "pump"))
+            from .state_bridge import pumped_before
+            return pumped_before(cfg, case.init or {}, p, key, absolute)
         history = (case.init or {}).get("pumped_hist", {}).get(p, {}).get(key, [])
         if absolute >= len(history) or not np.isfinite(float(history[absolute])) or float(history[absolute]) not in (0., 1.):
             raise ValueError(f"抽蓄 {p} 缺少已执行工况历史 {key}[{absolute}]")
@@ -827,6 +843,7 @@ def build_model(case: DACase, penalties: dict | None = None) -> pyo.ConcreteMode
     # ---------------- 备用 (12)–(13)
     prov = set(rcfg["providers"])
     G_res = [g for g, d in md.thermal.items() if d["type"] in prov]
+    hyd_ok = "hydro" in prov
     tight = bool(cfg.base["solver"].get("tighten", False))
 
     def rup_cap(m, g, t):
@@ -845,6 +862,30 @@ def build_model(case: DACase, penalties: dict | None = None) -> pyo.ConcreteMode
     m.c_rhup_cap = pyo.Constraint(m.J, m.T, rule=lambda m, j, t: m.rh_up[j, t] <= zhi(j, t) - m.Ph[j, t])
     m.c_rhdn_cap = pyo.Constraint(m.J, m.T, rule=lambda m, j, t: m.rh_dn[j, t] <= m.Ph[j, t] - zlo(j, t))
     use_sto = bool(rcfg.get("storage_reserve"))
+    use_hydro_water = hyd_ok and bool(md.hydro)
+    Tdur = None
+    if use_sto or use_hydro_water:
+        from .input_validation import number
+        Tdur = number(rcfg.get("T_dur_h"), "reserve.T_dur_h", positive=True)
+    m._reserve_duration_h = Tdur
+    m._hydro_reserve_water_enabled = use_hydro_water
+    # Incremental extra generation for H hours, from stock AFTER baseline water
+    # dynamics. Do not subtract baseline generation again, credit departed spill,
+    # future natural inflow, or upstream reserve activation not yet received.
+    # 0.36 = 3600 seconds/hour / 10000 m3/native volume unit. No extra dt factor.
+    m.c_rhup_water = pyo.Constraint(m.HS, m.T, rule=lambda m, h, t:
+        .36 * md.hydro[h]["water_rate"] * Tdur
+        * sum(m.rh_up[j, t] for j in md.hydro[h]["units"])
+        <= m.V[h, t] - md.hydro[h]["vmin"] if use_hydro_water else pyo.Constraint.Skip)
+
+    # Necessary instantaneous hydraulic limit. Existing spill can be reduced:
+    # Qout_activation = max(Qout_baseline, water_rate * (P + R_up)).
+    # Baseline ecology/outflow bounds already apply to Qout_baseline. This is
+    # not a full response trajectory, and never credits spill recovery to stock.
+    m.c_rhup_qout = pyo.Constraint(m.HS, m.T, rule=lambda m, h, t:
+        md.hydro[h]["water_rate"] * sum(m.Ph[j, t] + m.rh_up[j, t] for j in md.hydro[h]["units"])
+        <= md.hydro[h]["qout_max"]
+        if use_hydro_water and md.hydro[h].get("qout_max") is not None else pyo.Constraint.Skip)
 
     def sto_res_up(m, s, t):
         d = md.storage[s]
@@ -860,15 +901,9 @@ def build_model(case: DACase, penalties: dict | None = None) -> pyo.ConcreteMode
     m.c_rsup = pyo.Constraint(m.S, m.T, rule=sto_res_up)
     m.c_rsdn = pyo.Constraint(m.S, m.T, rule=sto_res_dn)
     if use_sto:
-        # Simplified incremental reserve energy only, using current period-start
-        # stock (actual initial state at t=0, otherwise E[t-1]). No extra qualification binaries or big-M. Baseline modes
-        # and stock dynamics are unchanged; this is NOT a full H-hour delivery
-        # guarantee for the baseline plus activation trajectory.
-        raw_duration = rcfg.get("T_dur_h")
-        if (isinstance(raw_duration, bool) or not isinstance(raw_duration, (int, float))
-                or not np.isfinite(raw_duration) or raw_duration <= 0):
-            raise ValueError("启用储能/抽蓄备用须显式设置有限正数reserve.T_dur_h（小时）")
-        Tdur = float(raw_duration)
+        # Incremental reserve energy from period-END stock (baseline already
+        # deducted). No added qualification binaries and no full baseline-plus-
+        # activation trajectory guarantee. Shared H is validated above.
         def storage_available(s, t, upper=False):
             d = md.storage[s]
             bound = d["soc_max" if upper else "soc_min"] * d["ecap"]
@@ -897,7 +932,6 @@ def build_model(case: DACase, penalties: dict | None = None) -> pyo.ConcreteMode
         m.c_rpdn_volume = pyo.Constraint(m.PS, m.T, rule=lambda m, p, t:
             Tdur * m.rp_dn[p, t] / md.pumped[p]["e_gen"] <= pumped_available(p, t, upper=True))
     mu = float(rcfg.get("mu_RE", 0.0))
-    hyd_ok = "hydro" in prov
     m.c_Rup = pyo.Constraint(m.T, rule=lambda m, t: sum(m.r_up[g, t] for g in G_res) + (sum(m.rh_up[j, t] for j in md.hydro_units) if hyd_ok else 0)
                              + sum(m.rs_up[s, t] for s in md.storage) + sum(m.rp_up[p, t] for p in md.pumped) + mu * sum(float(md.ren[w]["fc"][t]) - m.Pw[w, t] for w in md.ren)
                              + m.sR_up[t] >= float(case.R_up[t]))
@@ -937,6 +971,8 @@ def build_model(case: DACase, penalties: dict | None = None) -> pyo.ConcreteMode
     attach_reachability(m)
     from .hydro_daily_energy import attach as attach_daily_energy
     attach_daily_energy(m)
+    from .hydro_commitment import attach as attach_hydro_commitment
+    attach_hydro_commitment(m)
 
     # ---------------- 目标
     m.obj = pyo.Objective(expr=_objective_expr(m), sense=pyo.minimize)
@@ -1142,12 +1178,17 @@ def solve_scuc(m: pyo.ConcreteModel, log=lambda *a: None):
     if "optimal" not in tc.lower() and not ("maxtime" in tc.lower() or "time" in tc.lower()):
         raise RuntimeError(f"SCUC 未得到可行解：{tc}")
     info = dict(time_s=el, termination=tc, objective=pyo.value(m.obj), warm_start=ws,
+                storage_relaxation_comparison=not getattr(m, "_storage_binary", True),
                 best_bound=res.problem.lower_bound,
                 gap=(pyo.value(m.obj) - res.problem.lower_bound) / max(1.0, abs(pyo.value(m.obj))))
     return info
 
 
 def integer_components(m):
+    block = getattr(m, 'hydro_commitment', None)
+    if block is not None:
+        for name in block._integer_names:
+            yield 'hydro_commitment.' + name, getattr(block, name)
     for name in INT_VARS:
         yield name, getattr(m, name)
     block=getattr(m,'asset_reachability',None)
@@ -1163,9 +1204,18 @@ def integer_components(m):
 def fix_integers(m):
     for name, var in integer_components(m):
         for idx in var:
-            val = round(pyo.value(var[idx]))
-            if name in ("u_ch", "u_dis") and not var[idx].is_binary():   # 仅对比试验的松弛模式：按实际功率确定状态
-                val = 1 if pyo.value((m.Pc if name == "u_ch" else m.Pd)[idx]) > 1e-6 else 0
+            value = float(pyo.value(var[idx]))
+            if name in ("u_ch", "u_dis") and not getattr(m, "_storage_binary", True):
+                # Explicit LP comparison: preserve its fractional state exactly.
+                # Rounding each positive power to 1 invents u_ch=u_dis=1 and
+                # makes an otherwise feasible relaxation fail the SCED stage.
+                if not np.isfinite(value) or not -1e-6 <= value <= 1. + 1e-6:
+                    raise ValueError(f"Invalid relaxed storage state {var[idx].name}")
+                val = value
+            else:
+                if not np.isfinite(value) or abs(value-round(value)) > 1e-5:
+                    raise ValueError(f'Cannot fix non-integral decision {var[idx].name}')
+                val = round(value)
             var[idx].domain = pyo.Reals  # 放松整数域，使 HiGHS 按 LP 求解并给出对偶
             var[idx].fix(val)
 
@@ -1347,7 +1397,7 @@ def _terminal_target_dual(m, kind, unit, end_name, factor):
                 native_unit=native_unit, available=available)
 
 
-def state_values(m) -> dict:
+def state_values(m, *, errors=None) -> dict:
     """Fixed-integer SCED continuation values and separate terminal-target prices.
 
     The balance constraints put end-of-period stock on the left:
@@ -1363,13 +1413,25 @@ def state_values(m) -> dict:
     of inventory beyond this horizon. It is retained in terminal_target_dual
     for diagnostics only, including ID targets represented by day-end bands.
     dual_raw retains every original stock-balance dual without shifting.
+
+    The default remains strict. ID handoff may pass an errors dictionary to
+    collect invalid balance duals per (kind, unit), preserving other resources.
+    Invalid records are omitted, never replaced with zero or old ID values.
     """
     md = m._md
     T = md.T
     out = {"E": {}, "Vu": {}, "V": {}}
     for kind, units, con, end in (("E", m.S, m.c_soc, "c_eend"), ("Vu", m.PS, m.c_pres, "c_pvend"), ("V", m.HS, m.c_water, "c_vend")):
         for u in units:
-            raw = np.array([float(m.dual[con[u, t]]) for t in range(T)])
+            try:
+                raw = np.array([float(m.dual[con[u, t]]) for t in range(T)])
+                if not np.isfinite(raw).all():
+                    raise ValueError("nonfinite balance dual")
+            except (KeyError, TypeError, ValueError) as exc:
+                if errors is None:
+                    raise
+                errors[(kind, u)] = f"intraday_SCED_dual_invalid:{kind}.{u}: {type(exc).__name__}: {exc}"
+                continue
             v = np.r_[-raw[1:], 0.0] if T > 1 else np.array([0.0])
             if kind == "E":
                 factor = 1.0

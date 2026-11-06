@@ -4,7 +4,10 @@ from copy import deepcopy
 import yaml
 import pandas as pd
 import pytest
-from smm.profit import analyze,load_fixed_cost_profile,validate_profile
+from smm.profit import analyze as _analyze,load_fixed_cost_profile,validate_profile
+
+def analyze(res):
+    return _analyze(res,policy="legacy_cash_operating_v1")
 
 
 def sample(tmp_path,write=True):

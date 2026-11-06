@@ -41,7 +41,13 @@ def stage_evidence(monkeypatch):
              reference_metadata={'u': reference},
              handoff_config=dict(source='intraday', commitment=True, commit_rt='inherit',
                                  levels={'intraday': ic, 'realtime': rc}))
-    rr = NS(id_rounds=[{'tau': 0, 'snap': {'u': id_u}}], rt=[r])
+    # This probe audits only the execution slice starting at period 1. Supply
+    # its actual entry state; do not invent a terminal state or claim a full day.
+    initial = full.rolling.SysState(t=1,
+        thermal={u['id']:dict(online=True, p0=0., hours=2.) for u in units},
+        storage={}, hydro={}, hydro_used={}, pumped={}, hydro_hist={},
+        hydro_p={}, hydro_online={}, pumped_used={}, pumped_hist={})
+    rr = NS(id_rounds=[{'tau': 0, 'snap': {'u': id_u}}], rt=[r], states=[initial])
     rt = dict(storage=empty_storage,
               units=pd.DataFrame([dict(unit=u['id'], type=u['type'], period=1,
                                        on=rt_u[u['id']][0], P_mw=0.) for u in units]),
@@ -87,3 +93,21 @@ def test_original_same_lock_sets_remain_strict(stage_evidence):
     result = full.checks(da, rr, rt)
     assert result['locked_commitment_mismatch_id'] == 2
     assert result['locked_commitment_mismatch_rt'] == 0
+
+
+def test_stage_probe_does_not_invent_terminal_state(stage_evidence):
+    da, rr, rt = stage_evidence
+    result = full.checks(da, rr, rt)
+    assert result['terminal_pending_obligations'] is None
+
+
+def test_stage_duration_audit_uses_explicit_slice_initial_state(stage_evidence):
+    da, rr, rt = stage_evidence
+    gt = next(u for u in da.case.cfg.units['thermal'] if u['id']=='T')
+    gt['ut'] = 3.  # cfg history stays 2h; the actual audited slice can differ.
+    rr.states[0].thermal['T']['hours'] = 4.
+    assert full.checks(da, rr, rt)['min_updown_violations'] == 0
+    rr.states[0].thermal['T']['hours'] = 1.
+    result = full.checks(da, rr, rt)
+    assert result['min_updown_violations'] == 1
+    assert not result['physical_feasible_checked_constraints']

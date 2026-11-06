@@ -40,6 +40,15 @@ hydro:   # 水电（库容型/径流式）。依据与约束对照见 docs/开�
     water_rate: 1.2                      # 耗水率 m3/s 每 MW（固定，忽略水头变化）
     init_units_on: 2
     init_p_unit: 100
+    commitment:                        # 明确研究初态，非设备实测；时长不随ut/dt修改自动改变
+      schema_version: 1
+      mode: unit_duration_v1
+      initial_source: research_assumption
+      initial_units:
+        - {unit_id: H1_U01, online: true, elapsed_h: 1.0, elapsed_kind: exact}
+        - {unit_id: H1_U02, online: true, elapsed_h: 1.0, elapsed_kind: exact}
+        - {unit_id: H1_U03, online: false, elapsed_h: 1.0, elapsed_kind: exact}
+        - {unit_id: H1_U04, online: false, elapsed_h: 1.0, elapsed_kind: exact}
     seasons:
       wet: {qin: 560, v0: 18000, vmin: 8000, vmax: 20000, v_end: 18000, qeco: 80, e_day: 12000}
       dry: {qin: 220, v0: 15000, vmin: 8000, vmax: 24000, v_end: 15000, qeco: 60, e_day: 5000}
@@ -61,6 +70,13 @@ hydro:   # 水电（库容型/径流式）。依据与约束对照见 docs/开�
     pondage: 0                           # 日调节池容积 万m3；0 = 纯径流（库容不变，来水 = 发电流量 + 弃水）
     init_units_on: 2
     init_p_unit: 40
+    commitment:                        # 明确研究初态，非设备实测；时长不随ut/dt修改自动改变
+      schema_version: 1
+      mode: unit_duration_v1
+      initial_source: research_assumption
+      initial_units:
+        - {unit_id: H2_U01, online: true, elapsed_h: 1.0, elapsed_kind: exact}
+        - {unit_id: H2_U02, online: true, elapsed_h: 1.0, elapsed_kind: exact}
     seasons:
       wet: {qin: 30, v0: 100, vmin: 100, vmax: 100, v_end: 100, qeco: 80, e_day: 2400}
       dry: {qin: 10, v0: 100, vmin: 100, vmax: 100, v_end: 100, qeco: 60, e_day: 2400}
@@ -97,3 +113,7 @@ storage:   # soc_end_bid：缺省报价中申报的运行日末期望 SOC（假�
   - {id: ES1, bus: 19, pmax: 100, ecap: 200, eta_c: 0.95, eta_d: 0.95, soc_min: 0.1, soc_max: 0.9, soc0: 0.5, soc_end_bid: 0.5}
   - {id: ES2, bus: 16, pmax: 200, ecap: 400, eta_c: 0.95, eta_d: 0.95, soc_min: 0.1, soc_max: 0.9, soc0: 0.5, soc_end_bid: 0.5}
   - {id: ES3, bus: 25, pmax: 100, ecap: 200, eta_c: 0.95, eta_d: 0.95, soc_min: 0.1, soc_max: 0.9, soc0: 0.5, soc_end_bid: 0.5}
+  # 新增电化学储能研究默认：额定能量/功率4h；SOC可用带及ηd后每站456MWh、3.04h。
+  # 保留原站及旧场景；有限候选节点筛查见 docs/默认电化学储能扩容_20261106.md。
+  - {id: ES4, bus: 4, pmax: 150, ecap: 600, eta_c: 0.95, eta_d: 0.95, soc_min: 0.1, soc_max: 0.9, soc0: 0.5, soc_end_bid: 0.5}
+  - {id: ES5, bus: 8, pmax: 150, ecap: 600, eta_c: 0.95, eta_d: 0.95, soc_min: 0.1, soc_max: 0.9, soc0: 0.5, soc_end_bid: 0.5}

@@ -11,17 +11,20 @@ from common import (DA_COLOR, DIFF_SCALE, LMP_SCALE, LOAD_SCALE, PALETTE, RT_COL
                     all_results, branches_with_rate, bus_resources, congestion_period_count, df_download, empty_state, get_result, line_loading,
                     load_weighted, metric_grid, page_setup, period_labels, result_label, show_df, show_fig, style_fig,
                     topo_layout, wan)
+from smm.time_grid import result_time_grid, result_time_axis
 
-page_setup("运行与出清结果", "按出清阶段查看：日前 → 日内/实时滚动 → 最终结果（日前与实时直接对比、结算与诊断）")
+page_setup("运行与出清结果")
 res = all_results()
 if not res:
-    empty_state("还没有完成的运行结果。", "请先到左侧 **运行** 页启动“仅日前”或“全流程”，完成后回到本页查看。")
+    empty_state("还没有完成的运行结果。", "请先运行场景。")
     st.page_link("pages/2_运行.py", label="前往运行页", icon="▶️")
     st.stop()
 from result_navigation import select_saved_result, recorded_number
 sel = select_saved_result(res)
 selected_meta=next(m for m in res if m["dir"]==sel)
 if selected_meta.get("demo_description"):st.info(selected_meta["demo_description"])
+from input_version_notice import render_input_version_notice
+render_input_version_notice(selected_meta)
 try:
     with st.spinner("读取结果文件…"):
         R = get_result(selected_meta)
@@ -45,9 +48,14 @@ if not R.get("input_provenance_known", False):
     st.warning("历史结果缺少冻结输入：仅使用已保存的限额与参数，缺失项记为未知；缺少冻结网络时不显示历史拓扑；缺少负荷权重时加权价格保留未知，不使用当前基准补齐。")
 T_da = int(R["da_nodal_prices"].period.max()) + 1
 T_rt = int(R["rt_prices"].period.max()) + 1 if FULL else 0
-lbl = period_labels(96)
-st.caption(f"结果目录：`{sel}`" + ("" if FULL else "　· 仅日前结果：实时与偏差结算内容不显示") +
-           (f"　· 实时只滚动了前 {T_rt} 个时段" if FULL and T_rt < 96 else ""))
+N, DT = result_time_grid(R)
+from forecast_error_view import render_forecast_diagnostics
+render_forecast_diagnostics(sel)
+lbl = period_labels(N, DT)
+if not FULL:
+    st.caption('仅日前计划；无实时执行与偏差结算。')
+elif T_rt < N:
+    st.caption(f'实时仅执行前 {T_rt} / {N} 个时段，不是完整日。')
 
 # ---------------------------------------------------------------------------- 本次启用的阶段与规则（顶部一行）
 def frozen_yaml(name):
@@ -68,7 +76,13 @@ UY = frozen_yaml("units.yaml")
 RTS = (S.get("realtime") or {}) if FULL else {}
 IDS = (S.get("intraday") or {}) if FULL else {}
 ID_TABLE = R.get("id_rounds_summary")
-INTRADAY = bool(FULL and IDS.get("enabled") and ID_TABLE is not None and len(ID_TABLE))
+INTRADAY = bool(FULL and (IDS.get("enabled") or IDS.get("failed_rounds") or DIAGNOSTICS.get("id_rounds") or (ID_TABLE is not None and len(ID_TABLE))))
+
+if INTRADAY and ID_TABLE is not None and 'gap_target_met' in ID_TABLE:
+    gap_misses = ID_TABLE[ID_TABLE.gap_target_met.eq(False)]
+    if not gap_misses.empty:
+        names = '、'.join(gap_misses['round'].astype(str)) if 'round' in gap_misses else '见日内逐轮记录'
+        st.warning(f'日内 {len(gap_misses)} 轮已取得可行计划，但未达到目标 MIP 精度（{names}）；不是物理不可行回退，详见“日内轮次与交接”。')
 
 
 def rules_line():
@@ -90,7 +104,7 @@ def rules_line():
             sto = {'fixed_da': '储能/抽蓄 执行日前曲线'}.get(smode, f"储能模式 {smode or '未记录'}")
         hyd = RTS.get('hydro')
         hyd_txt = f"水电 {'价值法 δ0='+str(vm.get('hydro_band_fraction'))+'（假设值）' if hyd == 'value' else (hyd or '未记录')}"
-        parts.append(f"**实时** 15 min 滚动、{RTS.get('lookahead_h', '?')} h 前瞻，{sto}，{hyd_txt}，硬→软兜底 {RTS.get('fallback_count', '未记录')} 个窗口")
+        parts.append(f"**实时** {DT * 60:g} min 滚动、{RTS.get('lookahead_h', '?')} h 前瞻，{sto}，{hyd_txt}，硬→软兜底 {RTS.get('fallback_count', '未记录')} 个窗口")
     sres = (S.get('reserve') or {}).get('storage_reserve_enabled', (MODES.get('reserve') or {}).get('storage_reserve'))
     parts.append(f"限价 {floor}" + ("（川2026总体方案 五（二）2：下限−50）" if lim.get('clear_min') == -50 else "") +
                  f"；储能/抽蓄备用 {'开' if sres else '关' if sres is not None else '未记录'}；下备用 {'开' if (S.get('reserve') or {}).get('down_enabled') else '关'}")
@@ -98,8 +112,11 @@ def rules_line():
         parts.append("结算 两部制（日前电量×日前价 + 偏差×实时价）")
     return '　|　'.join(parts)
 
-st.markdown("本次启用：" + rules_line())
-st.caption("图例：蓝色实线＝日前，莓红虚线＝实时（阶段颜色不代表盈亏）；收益图单独标明正负。功率 MW · 能量 MWh · 库容 万m³ · 流量 m³/s。")
+st.caption('规则：' + str(S.get('rule_set') or '未记录'))
+with st.expander('本次规则与方法', expanded=False):
+    st.markdown(rules_line())
+    st.caption(f'结果目录：`{sel}`')
+st.caption('蓝实线：日前；莓红虚线：实时。功率 MW · 能量 MWh · 库容 万m³ · 流量 m³/s。')
 
 
 def recorded_tracking(unit, kind):
@@ -119,10 +136,12 @@ def add_tracking_markers(fig, unit, kind, *, axis=None):
     return True
 
 PRICE = "结算电价（元/MWh）"
-TIME = "时刻（每15分钟）"
+TIME = result_time_axis(R)
 from curtailment_views import curtailment_report, curtailment_overview, curtailment_dashboard
 curtailment = curtailment_report(R)
 from result_navigation import build_result_navigation, comparison_frame
+from unit_overview import render_unit_overview
+render_unit_overview(R, diagnostics=DIAGNOSTICS, prefix='unit_overview:' + sel)
 navigation = build_result_navigation(S, DS, directory=sel, full=FULL, intraday=INTRADAY)
 with navigation['diagnostic'][0]:
     from hydro_daily_energy_views import render_hydro_daily_energy
@@ -140,6 +159,7 @@ def stage_tables(k):
             'storage': R.get('rt_storage') if rt else R.get('da_storage'),
             'pumped': R.get('rt_pumped') if rt else R.get('da_pumped'),
             'hydro': R.get('rt_hydro') if rt else R.get('da_hydro'),
+            'reserve': R.get('rt_reserve') if rt else R.get('da_reserve'),
             'regulation': R.get('rt_regulation') if rt else R.get('da_regulation_indicative'),
             'regulation_system': R.get('rt_regulation_system') if rt else R.get('da_regulation_system_indicative'),
             'system': R.get('rt_system') if rt else R.get('da_system')}
@@ -194,7 +214,7 @@ def page_kpi(k):
         ('日前 / 实时负荷电量加权价 · 元/MWh',' / '.join(recorded_number(sp.get(x)) for x in ('da_lw_avg','rt_lw_avg'))),
         ('日前 / 已执行实际负荷峰值 · MW',peak_label(da_peak)+' / '+peak_label(rt_peak)),
         ('实时执行范围',f"{T_rt} / {S.get('expected_periods', '未记录')} 段",None,'完整日' if complete_day else '仅已保存范围，不外推为全天'),
-        ("逐时价差算术均值（元/MWh）", recorded_number(sp.get('lw_spread_mean'), '+.1f'), "绝对均值 " + recorded_number(sp.get('lw_spread_abs_mean')), "每15分钟先算节点负荷加权价差（实时−日前），再按时段等权平均；不等于两阶段负荷电量加权均价相减。delta 为逐时价差绝对值的算术均值"),
+        ("逐时价差算术均值（元/MWh）", recorded_number(sp.get('lw_spread_mean'), '+.1f'), "绝对均值 " + recorded_number(sp.get('lw_spread_abs_mean')), "每个时段先算节点负荷加权价差（实时−日前），再按时段等权平均；不等于两阶段负荷电量加权均价相减。delta 为逐时价差绝对值的算术均值"),
     ], per_row=4)
     st.caption('两阶段电量加权均价均按本次已执行实时对应范围统计，不将截短运行当成全天。')
     with st.expander('实时完整运行指标', expanded=False):
@@ -282,7 +302,7 @@ def page_generation(k):
     if system is not None:
         fig.add_scatter(x=[lbl[t] for t in system.period], y=system.load_mw, name="负荷" if k == 'da' else "实际负荷", line=dict(color="#111", width=2))
     show_fig(style_fig(fig, f"{name}分类型出力堆叠（储能充电、抽蓄抽水为负）", TIME, "出力（MW）", 460, legend="资源类型"), key=f'{k}_stack')
-    e = (u.groupby("typ").P_mw.sum() * 0.25).reindex(order).dropna()
+    e = (u.groupby("typ").P_mw.sum() * DT).reindex(order).dropna()
     st.caption("分类型电量（MWh）：" + "　".join(f"{TYPE_CN.get(t, t)} {v:,.0f}" for t, v in e.items()))
     usel = st.multiselect(f"{name}单机出力曲线" + ("（细灰线 = 日前参照）" if k == 'rt' else ""), sorted(ua.unit.unique()),
                           default=[x for x in ["C1", "CCGT", "GT", "W1"] if x in set(ua.unit)], key=f'{k}_units')
@@ -299,7 +319,7 @@ def page_generation(k):
     else:
         empty_state("请选择至少一台机组。", icon="👆")
     from dispatch_detail import dispatch_detail_table
-    dispatch_detail_table(u, name, result_key=sel)
+    dispatch_detail_table(u, name, result_key=sel, period_hours=DT)
 
 
 # ============================================================================ 4 储能·抽蓄·水电
@@ -311,7 +331,7 @@ def page_storage(k):
     smode = RTS.get("storage_mode") if FULL else None
     xx = RTS.get("x", 0.05) if FULL else 0
     ecap = {u["id"]: u for u in (UY.get("storage") or [])}
-    st.caption("横轴标示15分钟时段起点；电量/库容曲线是相应时段结束状态，功率为该时段值。")
+    st.caption("横轴标示本次冻结步长的时段起点；电量/库容曲线是相应时段结束状态，功率为该时段值。")
     if rt:
         tracking = RTS.get("tracking_policy") or {}
         if RTS.get('hydro') == 'window_end_da' and tracking.get("mode") == "soft_deliverable_energy":
@@ -349,7 +369,7 @@ def page_storage(k):
             show_fig(style_fig(fig, f"{un} {name}电量与充放电", TIME, "电量（MWh）", 320), key=f"{k}_st_{un}")
 
     st.subheader(f"{name}抽水蓄能")
-    st.caption("库容为各15分钟时段结束值；横轴为该时段起点。23:45对应24:00终态，不回绕至00:00初态。")
+    st.caption("库容为各时段结束值；横轴为该时段起点。最后一段对应日末终态，不回绕至初态。")
     pcfg = {u["id"]: u for u in (UY.get("pumped") or []) if u.get("enabled", True)}
     pdd = R.get("rt_pumped") if rt else R.get("da_pumped")
     if pdd is None or not len(pdd):
@@ -467,7 +487,7 @@ def page_reserve(k):
             show_fig(style_fig(fig, f'{SNAME[k]}系统向上备用', TIME, 'MW', 320), key=f'{k}_res_sys')
         if short:
             n = int((system[short] > 1e-6).sum())
-            st.caption(f"备用缺额：{n} 个时段，合计 {system[short].clip(lower=0).sum() * 0.25:.2f} MWh。罚因子以本次冻结配置为准，不是备用结算付款。")
+            st.caption(f"备用缺额：{n} 个时段，合计 {system[short].clip(lower=0).sum() * DT:.2f} MWh。罚因子以本次冻结配置为准，不是备用结算付款。")
         with st.expander('系统备用原始表'):
             show_df(system[['period'] + [c for c in cols if c != 'period']], '%.2f', height=260)
     reserve_dashboard(stage_tables(k), prefix='result_reserve:' + sel + k, indicative=not rt)
@@ -477,6 +497,9 @@ def page_reserve(k):
 def page_network(k):
     from network_view import render_result_network
     name = SNAME[k]
+    st.subheader(f'{name}系统接线图')
+    render_result_network(R, prefix=f'result_network:{k}:' + sel, stages=(k,))
+    st.subheader(f'{name}线路负载与阻塞')
     ll = ll_da if k == 'da' else ll_rt
     if ll is None:
         empty_state("该结果没有线路潮流文件。", "命令行全流程旧输出不含 da_line_flows.csv；请在网页“运行”页重新运行。")
@@ -509,8 +532,6 @@ def page_network(k):
                 fig.add_hline(y=a.rate_eff.iloc[0], line_dash="dot", line_color=col)
                 fig.add_hline(y=-a.rate_eff.iloc[0], line_dash="dot", line_color=col)
             show_fig(style_fig(fig, f"{name}线路潮流", TIME, "潮流（MW）", 360, legend="线路"), key=f'{k}_line_flows')
-    st.subheader(f'{name}电网拓扑')
-    render_result_network(R, prefix=f'result_network:{k}:' + sel, stages=(k,))
 
 
 # ============================================================================ 7 弃风弃光
@@ -540,7 +561,7 @@ def page_diagnostics(k):
     history = {str(r['t']): r['stages'] for r in diagnostics.get('rt_windows', [])} or read_live(sel).get('stage_history', {})
     if history:
         window = st.selectbox('窗口起点', list(history), key='result_window:' + sel)
-        stages_dashboard(history[window], prefix='result_stage:' + sel)
+        stages_dashboard(history[window], prefix='result_stage:' + sel, market_stage='RT', window_start=int(window))
     else:
         stages_dashboard(None, prefix='result_stage:' + sel)
 
@@ -566,7 +587,25 @@ def page_windows():
 # ============================================================================ 日内滚动（仅 --intraday）
 def page_intraday(tabs):
     summ, plans, prices, sto = (R.get(x) for x in ('id_rounds_summary', 'id_plans', 'id_prices_indicative', 'id_storage'))
+    from stage_results import intraday_inventory, intraday_state_rows
+    inventory = intraday_inventory(IDS, summ, DIAGNOSTICS)
     rounds = list(summ['round']) if summ is not None and 'round' in summ else []
+    tau = None
+    with tabs[0]:
+        if not inventory.empty:
+            st.dataframe(inventory, hide_index=True, width='stretch')
+            tau = st.selectbox('日内轮次（成功/失败均可选）', list(inventory.tau),
+                               format_func=lambda x:f'{lbl[int(x)]} · {inventory.loc[inventory.tau==x,"status"].iloc[0]}', key='id_tau')
+            chosen = inventory[inventory.tau == tau].iloc[0]
+            if not chosen['success']:
+                st.warning('所选日内轮失败，无成功计划可展示。实时回退日前参考，不能把旧日内计划冒充本轮。')
+        else:
+            st.info('未保存日内轮次详情，不能把缺记录视为成功。')
+        known_failures = int((~inventory['success']).sum()) if not inventory.empty else 0
+        if (IDS.get('failure_count') or 0) > known_failures:
+            st.warning(f'本次记录日内失败 {IDS["failure_count"]} 轮，但轮次明细缺失。')
+    selected_success = tau is not None and bool(inventory.loc[inventory.tau==tau,'success'].iloc[0])
+    rsel = (summ.loc[summ.tau == tau, 'round'].iloc[0] if selected_success and summ is not None and 'tau' in summ and any(summ.tau == tau) else None)
     with tabs[0]:
         st.caption('日内滚动为可选环节（默认关闭）：每轮锁定煤电/CCGT启停，窗口至日末；电价为指示性，不结算；正式执行仍以实时首段为准。')
         metric_grid([('日内滚动轮数', str(len(rounds))),
@@ -574,22 +613,22 @@ def page_intraday(tabs):
                      ('最大 MIP 间隙', recorded_number(summ['gap'].max() if rounds and 'gap' in summ else None, '.3%'))])
         if rounds:
             show_df(summ, '%.3f', height=300)
-    rsel = st.session_state.get('id_round', rounds[0] if rounds else None)
     with tabs[1]:
-        if prices is None or not len(prices):
+        if rsel is None or prices is None or not len(prices):
             empty_state('未保存日内指示性电价。')
         else:
-            rsel = st.selectbox('日内轮次（起点）', rounds, key='id_round')
             p = prices[prices['round'] == rsel].pivot(index='bus', columns='period', values='lmp')
             fig = px.imshow(p.values, x=[lbl[int(t)] for t in p.columns], y=[str(b) for b in p.index], aspect='auto',
                             color_continuous_scale=LMP_SCALE, labels=dict(x=TIME, y='节点编号', color='元/MWh'))
             fig.update_yaxes(dtick=1, autorange='reversed', type='category')
             show_fig(style_fig(fig, f'日内轮次 {rsel} 指示性节点电价（不结算）', TIME, '节点编号', 600), key='id_heat')
     with tabs[2]:
-        if plans is None or not len(plans):
+        if rsel is None or plans is None or not len(plans):
             empty_state('未保存日内计划。')
         else:
             a = plans[plans['round'] == rsel] if rsel is not None else plans
+            show_df(a, '%.3f', height=250)
+            df_download(a, 'id_selected_plan.csv', key='id_selected_plan')
             g = a.groupby(['period', 'type']).P_mw.sum().unstack(fill_value=0)
             fig = go.Figure()
             for t in g:
@@ -597,22 +636,40 @@ def page_intraday(tabs):
                                 mode='lines', line=dict(width=0.5, color=TYPE_COLOR.get(t)))
             show_fig(style_fig(fig, f'日内轮次 {rsel} 分类型计划出力（储能/抽蓄为净值）', TIME, '出力（MW）', 420), key='id_stack')
     with tabs[3]:
-        if sto is None or not len(sto):
+        if rsel is None or sto is None or not len(sto):
             empty_state('未保存日内储能计划。')
         else:
             fig = go.Figure()
             for i, (un, b) in enumerate(sto[sto['round'] == rsel].groupby('unit')):
                 col = PALETTE[i % len(PALETTE)]
                 fig.add_scatter(x=[lbl[int(t)] for t in b.period], y=b.E_mwh, name=f'{un} 日内', line=dict(color=col, dash='dot'))
-                d = R['da_storage'][R['da_storage'].unit == un]
+                da_sto = R.get('da_storage')
+                d = da_sto[da_sto.unit == un] if da_sto is not None else pd.DataFrame(columns=['period','E_mwh'])
                 fig.add_scatter(x=[lbl[int(t)] for t in d.period], y=d.E_mwh, name=f'{un} 日前', line=dict(color=col, width=1))
             show_fig(style_fig(fig, f'日内轮次 {rsel} 储能电量 vs 日前', TIME, '电量（MWh）', 360), key='id_sto')
-    with tabs[4]:
-        if rounds:
-            slack_cols = [c for c in summ if c not in ('round', 'tau', 'window', 'mip_s', 'gap', 'obj', 'repriced', 'lmp_avg_first_hour')]
-            show_df(summ[['round'] + slack_cols], '%.4f')
+        evidence, state_error = saved_object(Path(sel)/'hydro_window_evidence.json')
+        if state_error:st.warning(state_error)
+        state_rows = intraday_state_rows(evidence, tau) if selected_success else pd.DataFrame()
+        if not state_rows.empty:
+            st.markdown('**日内储能、抽蓄、水电状态计划（未执行）**')
+            show_df(state_rows, '%.4f', height=300)
+            df_download(state_rows, 'id_state_plan.csv', key='id_state_plan')
         else:
-            empty_state('无日内轮次记录。')
+            st.info('所选轮次未保存储能/水电/抽蓄状态证据，不补造轨迹。')
+    with tabs[4]:
+        from market_views import stages_dashboard
+        saved = next((r.get('stages') for r in DIAGNOSTICS.get('id_rounds',[]) if r.get('tau') == tau), None) if selected_success else None
+        if not selected_success:
+            saved=next((r.get('stages') for r in DIAGNOSTICS.get('id_failed_stages',[]) if r.get('tau') == tau), None)
+            if saved:st.warning('本轮失败：以下仅为失败前已完成的阶段，不是成功日内计划，不能用于执行或结算。')
+        stages_dashboard(saved, prefix='result_id_stage:'+sel, market_stage='ID', window_start=tau)
+        st.markdown('**日内到实时的交接记录**')
+        references=R.get('rt_value_windows')
+        if references is not None and not references.empty:
+            cols=[c for c in references if c in ('window_start','t','unit','kind') or 'source' in c or 'round' in c or 'fallback' in c or 'version' in c]
+            if cols:show_df(references[cols], '%.3f', height=300)
+        else:st.info('未保存逐资源交接记录，不能仅凭日内成功推断实时采用了本轮参考。')
+        st.caption('逐资源参考来源、日内轮次版本与失败回退以实时窗口原始记录为准；日内不产生独立结算。')
 
 
 # ============================================================================ 组装各阶段子页
@@ -658,7 +715,7 @@ with financial_tabs[1]:
     profit_supplement = historical_profit_recovery(R)
     from market_views import operating_profit_dashboard
     if profit_supplement:
-        st.info('以下为补算报告：保留原有冻结成本，缺项采用后来补充的研究假设；原始结果未改写。')
+        st.info('以下为单独保存的派生报告，核算口径与成本来源见上方；原始结果未改写。')
         operating_profit_dashboard(profit_supplement['by_unit'], profit_supplement['by_period'], prefix='supplement_profit:'+sel)
         with st.expander('查看原始成本记录（补算前）'):
             original_costs = R.get('operating_profit_by_unit')
@@ -739,7 +796,7 @@ if S.get('regulation',{}).get('enabled',False):
         if R.get('rt_regulation') is not None:show_df(R['rt_regulation'])
 
 with navigation['diagnostic'][1]:
-    st.caption('逐主体与逐求解阶段诊断已按阶段放在“日前 → 该阶段诊断”与“日内/实时滚动 → 该阶段诊断”；此处汇总实时窗口求解记录与兜底记录。')
+    st.caption('逐主体与逐求解阶段结果位于“日前 → SCUC/SCED与定价结果”和“日内·实时滚动 → 日内轮次与交接／实时执行与前瞻 → SCUC/SCED与定价结果”；此处汇总求解记录与兜底记录。')
     sw = R.get('solver_windows') if isinstance(R.get('solver_windows'), pd.DataFrame) else None
     if sw is None and (Path(sel) / 'solver_windows.csv').exists():
         try:

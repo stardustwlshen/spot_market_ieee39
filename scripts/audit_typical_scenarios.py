@@ -42,7 +42,7 @@ def solve_dispatch(case, directory, full=False):
     from smm.da import run_da, summarize
     if full:
         from smm.full import run_full, write_full_outputs
-        result = run_full(case.cfg, case, periods=case.cfg.T)
+        result = run_full(case.cfg, case, periods=case.cfg.T, retain_id_models=False)
         summary = write_full_outputs(result, directory, make_plots=False)
         return dict(summary=summary, da_scuc_info=result['da'].scuc_info,
                     da_sced_info=result['da'].sced_info, full_day_rt_checked=bool(len(result['rr'].rt)==case.cfg.T and np.isclose(case.cfg.T*case.cfg.dt,24.)),

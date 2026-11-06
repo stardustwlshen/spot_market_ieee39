@@ -32,6 +32,19 @@ def saved_stage_diagnostics(directory):
             not isinstance(row, dict) or not isinstance(row.get('t'), (int, float))
             or not isinstance(row.get('stages'), dict) for row in windows)):
         return {}, 'stage_diagnostics.json 实时窗口记录格式无效'
+    rounds = data.get('id_rounds')
+    if rounds is not None and (not isinstance(rounds, list) or any(
+            not isinstance(row, dict) or not isinstance(row.get('tau'), (int,float))
+            or not isinstance(row.get('stages'), dict) for row in rounds)):
+        return {k:v for k,v in data.items() if k != 'id_rounds'}, 'stage_diagnostics.json 日内阶段记录格式无效'
+    partial = data.get('id_failed_stages')
+    if partial is not None and (not isinstance(partial,list) or any(
+            not isinstance(row,dict) or not isinstance(row.get('tau'),(int,float))
+            or not isinstance(row.get('stages'),dict) for row in partial)):
+        return {k:v for k,v in data.items() if k != 'id_failed_stages'}, 'stage_diagnostics.json 日内失败前阶段记录格式无效'
+    failures = data.get('id_failures')
+    if failures is not None and (not isinstance(failures, list) or any(not isinstance(r,dict) for r in failures)):
+        return {k:v for k,v in data.items() if k != 'id_failures'}, 'stage_diagnostics.json 日内失败记录格式无效'
     return data, None
 
 

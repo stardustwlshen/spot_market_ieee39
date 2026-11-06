@@ -8,6 +8,7 @@ from smm.config import load_config
 
 def fixture_file(tmp_path, missing=False):
     cfg=replace(load_config(),root=tmp_path)
+    cfg.base["default_bid_model"]="legacy_v1"  # Historical missing-resource metadata fixture
     bids=default_bids(cfg,version=3)
     bids['_filled_default']=['PS1']  # historical inherited metadata
     bids['_default_fill_history']=['old_disabled_unit']

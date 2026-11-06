@@ -37,7 +37,7 @@ def tie_profiles(cfg, profiles, unit):
 
 
 def nodal_demand(cfg, net, profiles, distributed, *, stage='da', periods=None,
-                 issue_t=None, first_actual=False):
+                 issue_t=None, first_actual=False, selected_inputs=None):
     """Keep source curves independent; distribute both by frozen baseline weights."""
     load = {b: net.load_share[b] * np.asarray(distributed, float)
             for b in net.buses if net.load_share[b] > 0}
@@ -47,8 +47,15 @@ def nodal_demand(cfg, net, profiles, distributed, *, stage='da', periods=None,
         import pandas as pd
         for unit in cfg.units.get('tie', []):
             uid = unit['id']
-            frame = pd.DataFrame(tie_profiles(cfg, profiles, unit))
-            values = (frame[f'{uid}_{stage}'].to_numpy().copy() if issue_t is None else
+            if selected_inputs is not None:
+                # Fixed schedules are public deterministic inputs, not forecasts reconstructed from actual.
+                if any(f'{uid}_{s}' in profiles for s in STAGES):
+                    raise ValueError('v3 fixed tie demand requires an explicit public schedule, not legacy four-stage curves')
+                schedule=tie_profiles(cfg,profiles,unit)[f'{uid}_da']
+                values=schedule.copy() if periods is None else schedule[list(periods)].copy()
+            else:
+                frame = pd.DataFrame(tie_profiles(cfg, profiles, unit))
+                values = (frame[f'{uid}_{stage}'].to_numpy().copy() if issue_t is None else
                       forecast_view(frame, uid, issue_t, periods, first_actual))
             weights = allocation_weights(net)
             for bus, weight in weights.items():

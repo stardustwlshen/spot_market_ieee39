@@ -24,6 +24,7 @@ def hydro_case(T=10):
     cfg.mode['realtime']['lookahead_h']=2.
     cfg.mode['reserve'].update(include_ctg=False,rho_L=0.,rho_RE=0.,rho_L_dn=0.,rho_RE_dn=0.)
     h=deepcopy(load_config().units['hydro'][0])
+    h.pop('commitment', None)  # Historical aggregate fixture, not the new identified default.
     h.update(id='H1',bus=2,n_units=1,unit_pmax=100.,zones=[[0.,100.]],ramp=1.,
              water_rate=1.,init_units_on=1,init_p_unit=50.,qout_max=100.,spill_penalty=50.)
     h['seasons']['wet']=dict(qin=50.,v0=100.,vmin=10.,vmax=200.,v_end=100.,qeco=5.,e_day=500.)

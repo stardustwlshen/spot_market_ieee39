@@ -35,7 +35,7 @@ class DAResult:
 
 def _variable_snapshot(m) -> dict:
     """Detached numeric values: later LP solves cannot overwrite the SCUC incumbent."""
-    values = {v.local_name: {i: float(pyo.value(v[i])) for i in v}
+    values = {v.name: {i: float(pyo.value(v[i])) for i in v}
               for v in m.component_objects(pyo.Var, active=True)}
     values["flow"] = {i: float(pyo.value(m.flow[i])) for i in m.flow}
     return values
@@ -47,8 +47,9 @@ def _stage_comparison(incumbent, dispatch, info, sced) -> dict:
     delta = {name: max((abs(value - pyo.value(getattr(dispatch, name)[i]))
                         for i, value in incumbent.get(name, {}).items()), default=0.0)
              for name in names}
-    integer_mismatch = sum(abs(value - pyo.value(getattr(dispatch, name)[i])) > 1e-5
-                           for name in scuc.INT_VARS for i, value in incumbent.get(name, {}).items())
+    integer_mismatch = sum(abs(value - pyo.value(component[i])) > 1e-5
+                           for name, component in scuc.integer_components(dispatch)
+                           for i, value in incumbent.get(name, {}).items())
     objective_tolerance = max(1e-5, 1e-8 * max(abs(info["objective"]), abs(sced["objective"]), 1.0))
     return dict(integer_mismatch=int(integer_mismatch), objective_tolerance=objective_tolerance,
                 objective_nonincrease=bool(sced["objective"] <= info["objective"] + objective_tolerance),
@@ -91,7 +92,10 @@ def run_da(case: DACase, verbose: bool = True, *, stage_callback=None) -> DAResu
     if allocation is not None:
         record_stage("agc_auxiliary", m, allocation)
     sced = scuc.solve_sced(m)
+    from .hydro_spill_tiebreak import select_hydro_water
+    sced["hydro_water_selection"] = select_hydro_water(m, sced)
     log(f"[DA] SCED(LP) 用时 {sced['time_s']:.1f}s，目标 {sced['objective']:.0f}")
+    m._hydro_quantity_source = 'energy_sced'
     record_stage("energy_sced", m, sced)
     slack = scuc.slack_summary(m)
     comparison = _stage_comparison(incumbent, m, info, sced)
@@ -174,6 +178,7 @@ def summarize(res: DAResult) -> dict:
         pricing_source="bounded_auxiliary_pricing" if res.pricing_model is not None else "standard_sced",
         settlement_price_rule="clip_raw_lmp_to_clear_limits",
         stage_comparison=res.stage_comparison,
+        hydro_water_selection=res.sced_info.get("hydro_water_selection"),
         pricing_info=res.pricing_info,
         pumped=R.pumped_summary(res.tables.get("pumped"), res.tables["prices"], res.case.cfg.dt),
     )
@@ -185,4 +190,4 @@ def _lw_avg(res):
     idx = {b: i for i, b in enumerate(case.net.buses)}
     num = sum((case.load_bus[b] * lmp[idx[b]]).sum() for b in case.load_bus)
     den = sum(case.load_bus[b].sum() for b in case.load_bus)
-    return float(num / den)
+    return float(num / den) if den > 0 else None

@@ -9,8 +9,8 @@ V = pyo.value
 
 
 def _times(T, dt=.25):
-    minutes = int(round(dt * 60))
-    return [f"{(t*minutes)//60:02d}:{(t*minutes)%60:02d}" for t in range(T)]
+    from .time_grid import period_label
+    return [period_label(t, dt) for t in range(T)]
 
 
 def unit_results(m, prices) -> pd.DataFrame:
@@ -135,7 +135,9 @@ def pumped_results(m) -> pd.DataFrame:
 
 
 def hydro_results(m) -> pd.DataFrame:
+    from .natural_inflow import model_natural
     md = m._md
+    selected = getattr(getattr(m, "_case", None), "selected_inputs", None)
     rows = []
     for h, d in md.hydro.items():
         limit = d.get("qout_max")
@@ -146,13 +148,17 @@ def hydro_results(m) -> pd.DataFrame:
                              units_on=sum(round(V(m.delta[j, z, t])) for j in d["units"] for z in range(len(d["zones"]))),
                              V_start=float(d.get("v0", np.nan)) if t == 0 else V(m.V[h,t-1]), V_1e4m3=V(m.V[h, t]), Q_spill=V(m.Qspill[h, t]),
                              Q_gen=d["water_rate"] * sum(V(m.Ph[j, t]) for j in d["units"]),
-                             Q_in=float(d["qin"]) + float(V(m._upstream_out(h, t))) if hasattr(m, "_upstream_out") else float(d["qin"]),
+                             Q_in=model_natural(md,h,t) + float(V(m._upstream_out(h, t))) if hasattr(m, "_upstream_out") else model_natural(md,h,t),
+                             Q_natural=model_natural(md,h,t), Q_upstream=float(V(m._upstream_out(h,t))) if hasattr(m,'_upstream_out') else 0.,
+                             natural_input_source=(selected.sources[t] if selected is not None else 'legacy_season_constant'),
+                             natural_forecast_id=(selected.forecast_id if selected is not None else None),
+                             natural_issue_time_utc=(selected.issue_time_utc if selected is not None else None),
                              regulation=d.get("regulation", "reservoir"),
                              qout_m3s=qout, qout_max_m3s=limit,
                              qout_max_source=d.get("qout_max_source"),
                              qout_limit_active=limit is not None,
                              qout_limit_margin_m3s=None if limit is None else limit-qout))
-    return pd.DataFrame(rows, columns=["period", "station", "P_mw", "units_on", "V_start", "V_1e4m3", "Q_spill", "Q_gen", "Q_in", "regulation", "qout_m3s", "qout_max_m3s", "qout_max_source", "qout_limit_active", "qout_limit_margin_m3s"])
+    return pd.DataFrame(rows, columns=["period", "station", "P_mw", "units_on", "V_start", "V_1e4m3", "Q_spill", "Q_gen", "Q_in", "Q_natural", "Q_upstream", "natural_input_source", "natural_forecast_id", "natural_issue_time_utc", "regulation", "qout_m3s", "qout_max_m3s", "qout_max_source", "qout_limit_active", "qout_limit_margin_m3s"])
 
 
 def system_results(m, prices) -> pd.DataFrame:
@@ -211,6 +217,8 @@ def cost_breakdown(m) -> dict:
 
 
 def clamp_prices(prices: dict, lo: float, hi: float) -> dict:
+    from .input_validation import validate_clearing_limits
+    lo, hi = validate_clearing_limits(dict(clear_min=lo, clear_max=hi))
     prices = dict(prices)
     prices["lmp_clamped"] = np.clip(prices["lmp"], lo, hi)
     return prices
@@ -243,7 +251,8 @@ def reserve_snapshot(m) -> dict:
     """
     md, case = m._md, m._case
     cfg=case.cfg; rc=cfg.mode['reserve']; enabled=bool(rc.get('storage_reserve',False)); down_enabled=bool(rc.get('down_enabled',True))
-    H=float(rc['T_dur_h']) if enabled else None; providers=set(rc['providers']); rows=[]; systems=[]
+    hydro_water_enabled=bool(m._hydro_reserve_water_enabled)
+    H=m._reserve_duration_h; providers=set(rc['providers']); rows=[]; systems=[]
     def row(uid,typ,t,up,dn,power,eligible,pmin,pmax,mode):
         return dict(period=case.t0+int(t),relative_period=int(t),unit=uid,type=typ,
                     reserve_formulation='period_end_stock',reserve_eligible=bool(eligible),reserve_qualified=None,reserve_down_enabled=down_enabled,r_up=float(up),r_dn=float(dn),P_mw=float(power),
@@ -260,8 +269,38 @@ def reserve_snapshot(m) -> dict:
         for uid,d in md.hydro.items():
             low=sum(d['zones'][z][0]*V(m.delta[j,z,t]) for j in d['units'] for z in range(len(d['zones'])))
             high=sum(d['zones'][z][1]*V(m.delta[j,z,t]) for j in d['units'] for z in range(len(d['zones'])))
-            rows.append(row(uid,'hydro',t,sum(V(m.rh_up[j,t]) for j in d['units']),sum(V(m.rh_dn[j,t]) for j in d['units']),
-                            sum(V(m.Ph[j,t]) for j in d['units']),'hydro' in providers and high>0,low,high,'online' if high>0 else 'offline'))
+            up=sum(V(m.rh_up[j,t]) for j in d['units'])
+            r=row(uid,'hydro',t,up,sum(V(m.rh_dn[j,t]) for j in d['units']),
+                  sum(V(m.Ph[j,t]) for j in d['units']),'hydro' in providers and high>0,
+                  low,high,'online' if high>0 else 'offline')
+            start=d['v0'] if t==0 else V(m.V[uid,t-1]); end=V(m.V[uid,t])
+            available=end-d['vmin']
+            required=.36*d['water_rate']*H*up if hydro_water_enabled else None
+            r.update(V_start_1e4m3=float(start),V_end_1e4m3=float(end),
+                     V_min_1e4m3=float(d['vmin']),V_max_1e4m3=float(d['vmax']),
+                     water_rate_m3s_per_mw=float(d['water_rate']),
+                     hydro_regulation=d.get('regulation','reservoir'),
+                     hydro_reserve_water_checked=hydro_water_enabled,
+                     reserve_available_water_1e4m3=float(available),
+                     reserve_incremental_water_up_1e4m3=None if required is None else float(required))
+            r['reserve_duration_up_margin_1e4m3']=None if required is None else float(available-required)
+            r['reserve_duration_lower_margin_1e4m3']=r['reserve_duration_up_margin_1e4m3']
+            r['reserve_duration_upper_margin_1e4m3']=None  # No new downward-reserve water rule.
+            rate=float(d['water_rate']); spill=float(V(m.Qspill[uid,t])); qgen=rate*r['P_mw']
+            qmax=None if d.get('qout_max') is None else float(d['qout_max'])
+            checked=hydro_water_enabled and qmax is not None
+            activation_gen=qgen+rate*up; activation_spill=max(0.,spill-rate*up)
+            activation_out=activation_gen+activation_spill
+            r.update(hydro_reserve_outflow_checked=checked,
+                     hydro_reserve_outflow_status=('checked' if checked else 'not_configured' if qmax is None else 'not_participating'),
+                     qout_max_m3s=qmax,qeco_m3s=float(d['qeco']),
+                     Qgen_base_m3s=qgen,Qspill_base_m3s=spill,Qout_base_m3s=qgen+spill,
+                     reserve_up_activation_generation_m3s=activation_gen,
+                     reserve_up_activation_spill_m3s=activation_spill,
+                     reserve_up_activation_outflow_m3s=activation_out,
+                     reserve_up_outflow_margin_m3s=qmax-activation_out if checked else None,
+                     reserve_up_ecological_margin_m3s=activation_out-float(d['qeco']))
+            rows.append(r)
         for uid,d in md.storage.items():
             pc,pd=V(m.Pc[uid,t]),V(m.Pd[uid,t]);up,dn=V(m.rs_up[uid,t]),V(m.rs_dn[uid,t]);p=pd-pc
             e0=d['soc0']*d['ecap'] if t==0 else V(m.E[uid,t-1]);e1=V(m.E[uid,t])
@@ -305,7 +344,13 @@ def reserve_snapshot(m) -> dict:
                             R_up_supply=float(up),R_dn_supply=float(dn),R_up_re_credit_mw=re_credit,
                             R_up_short=float(V(m.sR_up[t])),R_dn_short=float(V(m.sR_dn[t])),
                             R_up_balance_mw=float(up+V(m.sR_up[t])-case.R_up[t]),R_dn_balance_mw=float(dn+V(m.sR_dn[t])-case.R_dn[t])))
-    return dict(storage_reserve_enabled=enabled,down_enabled=down_enabled,T_dur_h=H,window_start=case.t0,periods=md.T,resources=rows,system=systems,
+    from .natural_inflow import case_input_evidence
+    return dict(input_provenance=case_input_evidence(case),evidence_version=3,hydro_reserve_outflow_formulation='generation_flow_with_reducible_spill_v1',
+                hydro_reserve_outflow_enabled=hydro_water_enabled and any(d.get('qout_max') is not None for d in md.hydro.values()),
+                hydro_reserve_water_formulation='period_end_stock_incremental_up_water_v1',
+                hydro_reserve_water_enabled=hydro_water_enabled,
+                hydro_reserve_water_scope='incremental_end_stock_only;no_future_inflow_or_spill_recovery;not_full_activation_or_network_delivery',
+                storage_reserve_enabled=enabled,down_enabled=down_enabled,T_dur_h=H,window_start=case.t0,periods=md.T,resources=rows,system=systems,
                 resource_catalog=sorted({r['unit'] for r in rows}),providers=sorted(providers),contingency_mw=case.reserve_info.get('R_ctg'),
                 formulation='period_end_stock',qualification_semantics='derived_eligibility_not_decision_variable',
                 scope='capacity_constraint_only_no_reserve_payment;incremental_reserve_energy_from_period_end_stock;not_full_baseline_plus_activation_delivery_guarantee',

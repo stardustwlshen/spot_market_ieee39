@@ -58,7 +58,7 @@ def test_costs_are_selected_unit_only_and_source_values_are_complete(cfg, uid):
     sections = unit_information_sections(cfg, uid)
     fixed = yaml.safe_load((cfg.root / 'config/fixed_costs.yaml').read_text())
     expected = field_rows(fixed['units'][uid])
-    assert sections['独立核算成本（场景研究假设）'] == expected
+    assert sections['原成本档案（报价依据，非本次现货核算）'] == expected
     basis = yaml.safe_load((cfg.root / 'config/bid_cost_basis.yaml').read_text())
     group = next(group for group, units in cfg.units.items() if isinstance(units, list) and any(isinstance(u, dict) and u['id'] == uid for u in units))
     source_group = 'renewable_vom' if group == 'renewable' else group
@@ -81,7 +81,7 @@ def test_missing_costs_remain_unknown_never_zero(cfg, missing):
         else:
             path.write_text('[broken YAML')
     sections = unit_information_sections(cfg, 'C1')
-    for title in ('独立核算成本（场景研究假设）', '报价生成成本依据（不等于核算成本）'):
+    for title in ('原成本档案（报价依据，非本次现货核算）', '报价生成成本依据（不等于核算成本）'):
         assert all('未知' in row['数值'] for row in sections[title])
         assert not any(row['数值'] == '0' for row in sections[title])
     assert sections['技术档案费用参数（不是独立核算成本）']
@@ -149,8 +149,8 @@ def test_network_capacity_separates_disabled_and_storage_energy(network_cfg):
     hydro = [r for r in rows if r['资源类型'] == '水电']
     assert {r['状态']: r['发电/放电容量（MW）'] for r in hydro} == {'启用': 508., '未启用（不参与运行）': 100.}
     storage = next(r for r in rows if r['资源类型'] == '储能')
-    assert storage['储能额定能量（MWh）'] == 800.
-    assert storage['发电/放电容量（MW）'] == 400.
+    assert storage['储能额定能量（MWh）'] == 2000.
+    assert storage['发电/放电容量（MW）'] == 700.
     pumped = next(r for r in rows if r['资源类型'] == '抽水蓄能')
     assert pumped['发电/放电容量（MW）'] == pumped['充电/抽水容量（MW）'] == 600.
     assert pumped['抽蓄可用发电能量（MWh）'] == 3744.

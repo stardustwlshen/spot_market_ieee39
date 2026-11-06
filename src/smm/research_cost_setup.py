@@ -10,7 +10,7 @@ import tempfile
 
 import yaml
 
-from .research_defaults import (ALGORITHM_VERSION, SOURCE_KIND, generate_research_defaults,
+from .research_defaults import (ALGORITHM_VERSION, SUPPORTED_ALGORITHM_VERSIONS, SOURCE_KIND, generate_research_defaults,
     is_known_legacy_research_record, is_known_legacy_worksheet_record, research_record_hash)
 from .process_control import file_lock
 
@@ -64,7 +64,7 @@ def read_generated_costs(root):
     if not isinstance(overlay, dict):
         raise ValueError('已生成成本记录不完整；请核对其来源。')
     identity = {k: v for k, v in overlay.items() if k != 'fingerprint'}
-    if (overlay.get('version') != ALGORITHM_VERSION or
+    if (overlay.get('version') not in SUPPORTED_ALGORITHM_VERSIONS or
             overlay.get('fingerprint') != hashlib.sha256(_bytes(identity)).hexdigest()):
         raise ValueError('已生成成本记录不完整或已被修改；不会覆盖，请核对其来源。')
     try:
@@ -103,7 +103,7 @@ def merge_fixed_profile(root, original):
         if (_allowed(current, overlay['expected_fixed'][uid]) and
                 (current is None or original_origin == overlay['expected_fixed_origin'])):
             profile['units'][uid] = copy.deepcopy(record)
-            sources[uid] = dict(source_kind=SOURCE_KIND, generator_version=ALGORITHM_VERSION,
+            sources[uid] = dict(source_kind=SOURCE_KIND, generator_version=overlay['evidence'][uid].get('algorithm_version', overlay['version']),
                                 record_hash=research_record_hash(record), evidence=overlay['evidence'][uid])
             applied.append(uid)
     if applied:
@@ -138,7 +138,7 @@ def merge_cost_worksheet(root, original):
             if (_allowed(current, overlay['expected_worksheet'][group][uid]) and
                     (current is None or _origin(original, GROUPS) == overlay['expected_worksheet_origin'])):
                 records[uid] = copy.deepcopy(record)
-                sources[uid] = dict(source_kind=SOURCE_KIND, generator_version=ALGORITHM_VERSION,
+                sources[uid] = dict(source_kind=SOURCE_KIND, generator_version=overlay['worksheet_evidence'][group][uid].get('algorithm_version', overlay['version']),
                                     evidence=overlay['worksheet_evidence'][group][uid])
                 applied.append(uid)
     if applied:

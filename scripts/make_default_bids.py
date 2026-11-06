@@ -17,6 +17,6 @@ iss = validate_bids(cfg, b)
 for i in iss:
     print(i)
 raise_on_errors(iss)
-p = save_bids(cfg, b, note="缺省报价（假设值）")
+p = save_bids(cfg, b, note=b.get("note", "缺省报价（假设值）"))
 bids_to_csv(json.loads(p.read_text(encoding="utf-8")), p.with_suffix(".csv"))
 print("已保存", p, "及", p.with_suffix(".csv"))

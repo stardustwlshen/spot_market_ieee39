@@ -17,4 +17,6 @@ units:
   ES1: {type: storage, discharge_degradation_yuan_per_mwh: 25}
   ES2: {type: storage, discharge_degradation_yuan_per_mwh: 35}
   ES3: {type: storage, discharge_degradation_yuan_per_mwh: 45}
+  ES4: {type: storage, discharge_degradation_yuan_per_mwh: 25}
+  ES5: {type: storage, discharge_degradation_yuan_per_mwh: 25}
   PS1: {type: pumped, generation_vom_yuan_per_mwh: 10, gen_start_yuan_per_unit_start: 2000, pump_start_yuan_per_unit_start: 4000}

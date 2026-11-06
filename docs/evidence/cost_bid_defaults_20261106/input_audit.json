@@ -1,0 +1,808 @@
+{
+  "scope": "Read-only calculation; no market solve, no accepted default revision; all prices CNY/MWh",
+  "bid_version": 4,
+  "bid_note": "默认电化学储能扩容：保留v3全部原主体报价，仅新增ES4/4号母线、ES5/8号母线各150MW/600MWh的三段缺省报价；旧版本和旧场景不改；容量和价格均为研究假设",
+  "row_count": 17,
+  "rows": [
+    {
+      "id": "C1",
+      "type": "coal",
+      "capacity_mw": 646.0,
+      "fixed_cost": {
+        "type": "coal",
+        "scalar_marginal_cost_yuan_per_mwh": 280,
+        "fixed_online_cost_yuan_per_h": 6000,
+        "fixed_startup_cost_yuan_per_start": 250000
+      },
+      "generated_cost": {
+        "type": "coal",
+        "scalar_marginal_cost_yuan_per_mwh": 280,
+        "fixed_online_cost_yuan_per_h": 6000.0,
+        "fixed_startup_cost_yuan_per_start": 250000.0
+      },
+      "current_default_prices": {
+        "segments": [
+          0.0,
+          300.0,
+          320.0,
+          340.0,
+          370.0,
+          410.0
+        ]
+      },
+      "current_cost_preview_prices": {
+        "segments": [
+          280.0,
+          280.0,
+          285.6,
+          294.0,
+          305.2,
+          319.2
+        ]
+      },
+      "effective_startup_bid": 250000.0,
+      "noload_bid": 6000.0
+    },
+    {
+      "id": "C2",
+      "type": "coal",
+      "capacity_mw": 725.0,
+      "fixed_cost": {
+        "type": "coal",
+        "scalar_marginal_cost_yuan_per_mwh": 297,
+        "fixed_online_cost_yuan_per_h": 6500,
+        "fixed_startup_cost_yuan_per_start": 280000
+      },
+      "generated_cost": {
+        "type": "coal",
+        "scalar_marginal_cost_yuan_per_mwh": 280,
+        "fixed_online_cost_yuan_per_h": 6733.746130030961,
+        "fixed_startup_cost_yuan_per_start": 280572.7554179567
+      },
+      "current_default_prices": {
+        "segments": [
+          0.0,
+          300.0,
+          320.0,
+          340.0,
+          370.0,
+          410.0
+        ]
+      },
+      "current_cost_preview_prices": {
+        "segments": [
+          297.0,
+          297.0,
+          302.94,
+          311.85,
+          323.73,
+          338.58
+        ]
+      },
+      "effective_startup_bid": 280000.0,
+      "noload_bid": 6500.0
+    },
+    {
+      "id": "C3",
+      "type": "coal",
+      "capacity_mw": 865.0,
+      "fixed_cost": {
+        "type": "coal",
+        "scalar_marginal_cost_yuan_per_mwh": 315,
+        "fixed_online_cost_yuan_per_h": 7500,
+        "fixed_startup_cost_yuan_per_start": 320000
+      },
+      "generated_cost": {
+        "type": "coal",
+        "scalar_marginal_cost_yuan_per_mwh": 280,
+        "fixed_online_cost_yuan_per_h": 8034.055727554179,
+        "fixed_startup_cost_yuan_per_start": 334752.3219814241
+      },
+      "current_default_prices": {
+        "segments": [
+          0.0,
+          300.0,
+          320.0,
+          340.0,
+          370.0,
+          410.0
+        ]
+      },
+      "current_cost_preview_prices": {
+        "segments": [
+          315.0,
+          315.0,
+          321.3,
+          330.75,
+          343.35,
+          359.1
+        ]
+      },
+      "effective_startup_bid": 320000.0,
+      "noload_bid": 7500.0
+    },
+    {
+      "id": "CCGT",
+      "type": "gas_ccgt",
+      "capacity_mw": 687.0,
+      "fixed_cost": {
+        "type": "gas_ccgt",
+        "scalar_marginal_cost_yuan_per_mwh": 405,
+        "fixed_online_cost_yuan_per_h": 9000,
+        "fixed_startup_cost_yuan_per_start": 150000
+      },
+      "generated_cost": {
+        "type": "gas_ccgt",
+        "scalar_marginal_cost_yuan_per_mwh": 405.0,
+        "fixed_online_cost_yuan_per_h": 9000.0,
+        "fixed_startup_cost_yuan_per_start": 150000.0
+      },
+      "current_default_prices": {
+        "segments": [
+          570.0,
+          670.0,
+          690.0,
+          710.0,
+          730.0,
+          750.0
+        ]
+      },
+      "current_cost_preview_prices": {
+        "segments": [
+          405.0,
+          405.0,
+          413.1,
+          425.25,
+          441.45,
+          461.7
+        ]
+      },
+      "effective_startup_bid": 150000.0,
+      "noload_bid": 9000.0
+    },
+    {
+      "id": "GT",
+      "type": "gas_gt",
+      "capacity_mw": 300.0,
+      "fixed_cost": {
+        "type": "gas_gt",
+        "scalar_marginal_cost_yuan_per_mwh": 620,
+        "fixed_online_cost_yuan_per_h": 4000,
+        "fixed_startup_cost_yuan_per_start": 40000
+      },
+      "generated_cost": {
+        "type": "gas_gt",
+        "scalar_marginal_cost_yuan_per_mwh": 620,
+        "fixed_online_cost_yuan_per_h": 4000.0,
+        "fixed_startup_cost_yuan_per_start": 40000.0
+      },
+      "current_default_prices": {
+        "segments": [
+          550.0,
+          650.0,
+          670.0,
+          690.0,
+          720.0,
+          750.0
+        ]
+      },
+      "current_cost_preview_prices": {
+        "segments": [
+          620.0,
+          620.0,
+          632.4,
+          651.0,
+          675.8,
+          706.8
+        ]
+      },
+      "effective_startup_bid": 40000.0,
+      "noload_bid": 4000.0
+    },
+    {
+      "id": "W1",
+      "type": "wind",
+      "capacity_mw": 1040.0,
+      "fixed_cost": {
+        "type": "wind",
+        "scalar_marginal_cost_yuan_per_mwh": 8
+      },
+      "generated_cost": {
+        "type": "wind",
+        "scalar_marginal_cost_yuan_per_mwh": 8
+      },
+      "current_default_prices": {
+        "segments": [
+          0.0,
+          20.0,
+          40.0,
+          60.0,
+          80.0
+        ]
+      },
+      "current_cost_preview_prices": {
+        "segments": [
+          10.0,
+          20.0,
+          30.0,
+          40.0,
+          50.0
+        ]
+      },
+      "effective_startup_bid": null,
+      "noload_bid": null
+    },
+    {
+      "id": "W2",
+      "type": "wind",
+      "capacity_mw": 564.0,
+      "fixed_cost": {
+        "type": "wind",
+        "scalar_marginal_cost_yuan_per_mwh": 11
+      },
+      "generated_cost": {
+        "type": "wind",
+        "scalar_marginal_cost_yuan_per_mwh": 8
+      },
+      "current_default_prices": {
+        "segments": [
+          0.0,
+          20.0,
+          40.0,
+          60.0,
+          80.0
+        ]
+      },
+      "current_cost_preview_prices": {
+        "segments": [
+          10.0,
+          20.0,
+          30.0,
+          40.0,
+          50.0
+        ]
+      },
+      "effective_startup_bid": null,
+      "noload_bid": null
+    },
+    {
+      "id": "PV1",
+      "type": "pv",
+      "capacity_mw": 652.0,
+      "fixed_cost": {
+        "type": "pv",
+        "scalar_marginal_cost_yuan_per_mwh": 5
+      },
+      "generated_cost": {
+        "type": "pv",
+        "scalar_marginal_cost_yuan_per_mwh": 5
+      },
+      "current_default_prices": {
+        "segments": [
+          0.0,
+          20.0,
+          40.0,
+          60.0,
+          80.0
+        ]
+      },
+      "current_cost_preview_prices": {
+        "segments": [
+          10.0,
+          20.0,
+          30.0,
+          40.0,
+          50.0
+        ]
+      },
+      "effective_startup_bid": null,
+      "noload_bid": null
+    },
+    {
+      "id": "PV2",
+      "type": "pv",
+      "capacity_mw": 750.0,
+      "fixed_cost": {
+        "type": "pv",
+        "scalar_marginal_cost_yuan_per_mwh": 5
+      },
+      "generated_cost": {
+        "type": "pv",
+        "scalar_marginal_cost_yuan_per_mwh": 5
+      },
+      "current_default_prices": {
+        "segments": [
+          0.0,
+          20.0,
+          40.0,
+          60.0,
+          80.0
+        ]
+      },
+      "current_cost_preview_prices": {
+        "segments": [
+          10.0,
+          20.0,
+          30.0,
+          40.0,
+          50.0
+        ]
+      },
+      "effective_startup_bid": null,
+      "noload_bid": null
+    },
+    {
+      "id": "PV3",
+      "type": "pv",
+      "capacity_mw": 750.0,
+      "fixed_cost": {
+        "type": "pv",
+        "scalar_marginal_cost_yuan_per_mwh": 5
+      },
+      "generated_cost": {
+        "type": "pv",
+        "scalar_marginal_cost_yuan_per_mwh": 5
+      },
+      "current_default_prices": {
+        "segments": [
+          0.0,
+          20.0,
+          40.0,
+          60.0,
+          80.0
+        ]
+      },
+      "current_cost_preview_prices": {
+        "segments": [
+          10.0,
+          20.0,
+          30.0,
+          40.0,
+          50.0
+        ]
+      },
+      "effective_startup_bid": null,
+      "noload_bid": null
+    },
+    {
+      "id": "H1",
+      "type": "hydro",
+      "capacity_mw": 508.0,
+      "fixed_cost": {
+        "type": "hydro",
+        "scalar_marginal_cost_yuan_per_mwh": 6
+      },
+      "generated_cost": {
+        "type": "hydro",
+        "scalar_marginal_cost_yuan_per_mwh": 6
+      },
+      "current_default_prices": {
+        "segments": [
+          100.0,
+          130.0,
+          160.0,
+          200.0,
+          240.0
+        ]
+      },
+      "current_cost_preview_prices": {
+        "segments": [
+          120.0,
+          130.0,
+          150.0,
+          180.0,
+          210.0
+        ]
+      },
+      "effective_startup_bid": null,
+      "noload_bid": null
+    },
+    {
+      "id": "PS1",
+      "type": "pumped",
+      "capacity_mw": 600.0,
+      "fixed_cost": {
+        "type": "pumped",
+        "generation_vom_yuan_per_mwh": 10,
+        "gen_start_yuan_per_unit_start": 2000,
+        "pump_start_yuan_per_unit_start": 4000
+      },
+      "generated_cost": {
+        "type": "pumped",
+        "generation_vom_yuan_per_mwh": 10,
+        "gen_start_yuan_per_unit_start": 2000.0,
+        "pump_start_yuan_per_unit_start": 4000.0
+      },
+      "current_default_prices": {
+        "gen_segments": [
+          420.0,
+          450.0,
+          480.0
+        ],
+        "pump_segments": [
+          300.0
+        ]
+      },
+      "current_cost_preview_prices": {
+        "gen_segments": [
+          390.0,
+          410.0,
+          440.0
+        ],
+        "pump_segments": [
+          290.0
+        ]
+      },
+      "effective_startup_bid": null,
+      "noload_bid": null
+    },
+    {
+      "id": "ES1",
+      "type": "storage",
+      "capacity_mw": 100.0,
+      "fixed_cost": {
+        "type": "storage",
+        "discharge_degradation_yuan_per_mwh": 25
+      },
+      "generated_cost": {
+        "type": "storage",
+        "discharge_degradation_yuan_per_mwh": 25
+      },
+      "current_default_prices": {
+        "dis_segments": [
+          420.0,
+          450.0,
+          480.0
+        ],
+        "ch_segments": [
+          300.0,
+          280.0,
+          260.0
+        ]
+      },
+      "current_cost_preview_prices": {
+        "dis_segments": [
+          410.0,
+          430.0,
+          440.0
+        ],
+        "ch_segments": [
+          350.0,
+          330.0,
+          320.0
+        ]
+      },
+      "effective_startup_bid": null,
+      "noload_bid": null
+    },
+    {
+      "id": "ES2",
+      "type": "storage",
+      "capacity_mw": 200.0,
+      "fixed_cost": {
+        "type": "storage",
+        "discharge_degradation_yuan_per_mwh": 35
+      },
+      "generated_cost": {
+        "type": "storage",
+        "discharge_degradation_yuan_per_mwh": 25
+      },
+      "current_default_prices": {
+        "dis_segments": [
+          360,
+          380,
+          400
+        ],
+        "ch_segments": [
+          340,
+          320,
+          300
+        ]
+      },
+      "current_cost_preview_prices": {
+        "dis_segments": [
+          430.0,
+          440.0,
+          460.0
+        ],
+        "ch_segments": [
+          350.0,
+          340.0,
+          320.0
+        ]
+      },
+      "effective_startup_bid": null,
+      "noload_bid": null
+    },
+    {
+      "id": "ES3",
+      "type": "storage",
+      "capacity_mw": 100.0,
+      "fixed_cost": {
+        "type": "storage",
+        "discharge_degradation_yuan_per_mwh": 45
+      },
+      "generated_cost": {
+        "type": "storage",
+        "discharge_degradation_yuan_per_mwh": 25
+      },
+      "current_default_prices": {
+        "dis_segments": [
+          420.0,
+          450.0,
+          480.0
+        ],
+        "ch_segments": [
+          300.0,
+          280.0,
+          260.0
+        ]
+      },
+      "current_cost_preview_prices": {
+        "dis_segments": [
+          440.0,
+          460.0,
+          470.0
+        ],
+        "ch_segments": [
+          360.0,
+          340.0,
+          330.0
+        ]
+      },
+      "effective_startup_bid": null,
+      "noload_bid": null
+    },
+    {
+      "id": "ES4",
+      "type": "storage",
+      "capacity_mw": 150.0,
+      "fixed_cost": {
+        "type": "storage",
+        "discharge_degradation_yuan_per_mwh": 25
+      },
+      "generated_cost": {
+        "type": "storage",
+        "discharge_degradation_yuan_per_mwh": 25
+      },
+      "current_default_prices": {
+        "dis_segments": [
+          420.0,
+          450.0,
+          480.0
+        ],
+        "ch_segments": [
+          300.0,
+          280.0,
+          260.0
+        ]
+      },
+      "current_cost_preview_prices": {
+        "dis_segments": [
+          410.0,
+          430.0,
+          440.0
+        ],
+        "ch_segments": [
+          350.0,
+          330.0,
+          320.0
+        ]
+      },
+      "effective_startup_bid": null,
+      "noload_bid": null
+    },
+    {
+      "id": "ES5",
+      "type": "storage",
+      "capacity_mw": 150.0,
+      "fixed_cost": {
+        "type": "storage",
+        "discharge_degradation_yuan_per_mwh": 25
+      },
+      "generated_cost": {
+        "type": "storage",
+        "discharge_degradation_yuan_per_mwh": 25
+      },
+      "current_default_prices": {
+        "dis_segments": [
+          420.0,
+          450.0,
+          480.0
+        ],
+        "ch_segments": [
+          300.0,
+          280.0,
+          260.0
+        ]
+      },
+      "current_cost_preview_prices": {
+        "dis_segments": [
+          410.0,
+          430.0,
+          440.0
+        ],
+        "ch_segments": [
+          350.0,
+          330.0,
+          320.0
+        ]
+      },
+      "effective_startup_bid": null,
+      "noload_bid": null
+    }
+  ],
+  "new_thermal_template_capacity_matrix": [
+    {
+      "type": "coal",
+      "capacity_mw": 100.0,
+      "technical_noload": 1000.0,
+      "technical_hot_startup": 40000.0,
+      "generated_cost": {
+        "type": "coal",
+        "scalar_marginal_cost_yuan_per_mwh": 280,
+        "fixed_online_cost_yuan_per_h": 928.7925696594427,
+        "fixed_startup_cost_yuan_per_start": 38699.69040247679
+      }
+    },
+    {
+      "type": "coal",
+      "capacity_mw": 300.0,
+      "technical_noload": 3000.0,
+      "technical_hot_startup": 120000.0,
+      "generated_cost": {
+        "type": "coal",
+        "scalar_marginal_cost_yuan_per_mwh": 280,
+        "fixed_online_cost_yuan_per_h": 2786.377708978328,
+        "fixed_startup_cost_yuan_per_start": 116099.07120743033
+      }
+    },
+    {
+      "type": "coal",
+      "capacity_mw": 600.0,
+      "technical_noload": 6000.0,
+      "technical_hot_startup": 240000.0,
+      "generated_cost": {
+        "type": "coal",
+        "scalar_marginal_cost_yuan_per_mwh": 280,
+        "fixed_online_cost_yuan_per_h": 5572.755417956656,
+        "fixed_startup_cost_yuan_per_start": 232198.14241486066
+      }
+    },
+    {
+      "type": "coal",
+      "capacity_mw": 1000.0,
+      "technical_noload": 10000.0,
+      "technical_hot_startup": 400000.0,
+      "generated_cost": {
+        "type": "coal",
+        "scalar_marginal_cost_yuan_per_mwh": 280,
+        "fixed_online_cost_yuan_per_h": 9287.925696594428,
+        "fixed_startup_cost_yuan_per_start": 386996.9040247678
+      }
+    },
+    {
+      "type": "gas_ccgt",
+      "capacity_mw": 100.0,
+      "technical_noload": 1000.0,
+      "technical_hot_startup": 40000.0,
+      "generated_cost": {
+        "type": "gas_ccgt",
+        "scalar_marginal_cost_yuan_per_mwh": 405.0,
+        "fixed_online_cost_yuan_per_h": 1310.0436681222707,
+        "fixed_startup_cost_yuan_per_start": 21834.061135371176
+      }
+    },
+    {
+      "type": "gas_ccgt",
+      "capacity_mw": 300.0,
+      "technical_noload": 3000.0,
+      "technical_hot_startup": 120000.0,
+      "generated_cost": {
+        "type": "gas_ccgt",
+        "scalar_marginal_cost_yuan_per_mwh": 405.0,
+        "fixed_online_cost_yuan_per_h": 3930.1310043668122,
+        "fixed_startup_cost_yuan_per_start": 65502.18340611354
+      }
+    },
+    {
+      "type": "gas_ccgt",
+      "capacity_mw": 600.0,
+      "technical_noload": 6000.0,
+      "technical_hot_startup": 240000.0,
+      "generated_cost": {
+        "type": "gas_ccgt",
+        "scalar_marginal_cost_yuan_per_mwh": 405.0,
+        "fixed_online_cost_yuan_per_h": 7860.2620087336245,
+        "fixed_startup_cost_yuan_per_start": 131004.36681222708
+      }
+    },
+    {
+      "type": "gas_ccgt",
+      "capacity_mw": 1000.0,
+      "technical_noload": 10000.0,
+      "technical_hot_startup": 400000.0,
+      "generated_cost": {
+        "type": "gas_ccgt",
+        "scalar_marginal_cost_yuan_per_mwh": 405.0,
+        "fixed_online_cost_yuan_per_h": 13100.436681222707,
+        "fixed_startup_cost_yuan_per_start": 218340.61135371178
+      }
+    },
+    {
+      "type": "gas_gt",
+      "capacity_mw": 100.0,
+      "technical_noload": 1000.0,
+      "technical_hot_startup": 40000.0,
+      "generated_cost": {
+        "type": "gas_gt",
+        "scalar_marginal_cost_yuan_per_mwh": 620,
+        "fixed_online_cost_yuan_per_h": 1333.3333333333333,
+        "fixed_startup_cost_yuan_per_start": 13333.333333333332
+      }
+    },
+    {
+      "type": "gas_gt",
+      "capacity_mw": 300.0,
+      "technical_noload": 3000.0,
+      "technical_hot_startup": 120000.0,
+      "generated_cost": {
+        "type": "gas_gt",
+        "scalar_marginal_cost_yuan_per_mwh": 620,
+        "fixed_online_cost_yuan_per_h": 4000.0,
+        "fixed_startup_cost_yuan_per_start": 40000.0
+      }
+    },
+    {
+      "type": "gas_gt",
+      "capacity_mw": 600.0,
+      "technical_noload": 6000.0,
+      "technical_hot_startup": 240000.0,
+      "generated_cost": {
+        "type": "gas_gt",
+        "scalar_marginal_cost_yuan_per_mwh": 620,
+        "fixed_online_cost_yuan_per_h": 8000.0,
+        "fixed_startup_cost_yuan_per_start": 80000.0
+      }
+    },
+    {
+      "type": "gas_gt",
+      "capacity_mw": 1000.0,
+      "technical_noload": 10000.0,
+      "technical_hot_startup": 400000.0,
+      "generated_cost": {
+        "type": "gas_gt",
+        "scalar_marginal_cost_yuan_per_mwh": 620,
+        "fixed_online_cost_yuan_per_h": 13333.333333333334,
+        "fixed_startup_cost_yuan_per_start": 133333.33333333334
+      }
+    }
+  ],
+  "explicit_replace_known_research_plan_ids": [
+    "C1",
+    "C2",
+    "C3",
+    "CCGT",
+    "GT",
+    "W1",
+    "W2",
+    "PV1",
+    "H1",
+    "PS1",
+    "ES1",
+    "ES2",
+    "ES3"
+  ],
+  "cost_preview_validation_errors": [],
+  "id_rename_invariance_passed": true,
+  "source_sha256": {
+    "config/units.yaml": "5a1c3075bc85eb5e052521e4394a55e395fe14164d1fe8066b7e19a55040facb",
+    "config/fixed_costs.yaml": "5705d4380347cc2d72f5513e0dae0e9c29c60199d23ece50134c839cae83fd70",
+    "config/bid_cost_basis.yaml": "7219f58feea65ea8f8bc6c10469eacaf7f58596fb45ddfe931ad336f319c665d",
+    "src/smm/research_defaults.py": "73fb0325f046861c1a092c68de97b213ae852a306bbfd759578c13f7850b1071",
+    "src/smm/bids.py": "091c34c6f9435672de383b3077e3c3f7db4d533190b205ffc3ff984dd71da3e5",
+    "src/smm/bid_simulation.py": "9c599a9dc13fe6989feb194d3e1a849fee87f47b4f025aab02fc7475af70f09b",
+    "src/smm/unit_editor.py": "4c6580cd72e2aa130f8989147beb875aaba606072b9aaaf981c8c19eb21ac6a9",
+    "bids/2026-07-15/MKT/bids_v4.json": "4c530da322d495df7d4482c661339b12b27344b7736f300fea5d2e72032b6ab7"
+  }
+}

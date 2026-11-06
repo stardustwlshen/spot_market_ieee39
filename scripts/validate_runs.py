@@ -46,11 +46,18 @@ def metrics(d: Path) -> dict:
         dt = float(_snapshot(d)[2]["dt_h"])
     except (OSError, ValueError, TypeError, KeyError, yaml.YAMLError):
         dt = float("nan")  # unknown, never borrow a current or assumed timestep
+    def hourly_range(values):
+        # Undefined zero-load hourly prices remain unknown, never zero or an
+        # exception when reading a standards-compliant JSON null.
+        if not values or any(v is None for v in values):
+            return None
+        values = np.asarray(values, dtype=float)
+        return float(values.max() - values.min()) if np.isfinite(values).all() else None
     out = dict(
         日前负荷加权均价=sp.get("da_lw_avg"), 实时负荷加权均价=sp.get("rt_lw_avg"),
         价差均值_实时减日前=sp.get("lw_spread_mean"), 价差绝对均值=sp.get("lw_spread_abs_mean"),
-        日前小时价差=(max(sp["da_lw_hourly"]) - min(sp["da_lw_hourly"])) if sp.get("da_lw_hourly") else None,
-        实时小时价差=(max(sp["rt_lw_hourly"]) - min(sp["rt_lw_hourly"])) if sp.get("rt_lw_hourly") else None,
+        日前小时价差=hourly_range(sp.get("da_lw_hourly")),
+        实时小时价差=hourly_range(sp.get("rt_lw_hourly")),
         日前弃电MWh=S.get("da", {}).get("curtail_mwh"), 实时弃电MWh=rt.get("curtail_mwh"),
         实时备用缺额MWh=float(rs.R_up_short.sum() * dt) if rs is not None and "R_up_short" in rs else None,
         实时备用缺额时段=int((rs.R_up_short > 1e-6).sum()) if rs is not None and "R_up_short" in rs else None,
@@ -93,7 +100,17 @@ def _hydro_lookahead_audit(d, cfg):
         if sorted(x["tau"] for x in ids) != sorted(success.tau.tolist()):
             raise ValueError("水电前瞻ID源轮次与成功表不一致")
         failures=pd.read_csv(d/"id_failed_rounds.csv").to_dict("records")
-    result=hydro_terminal_lookahead_checks(cfg,SimpleNamespace(rt=rounds,id_rounds=ids,id_failures=failures),hydro["da"])
+    actual_path=d/'rolling_actual_states.json'
+    states=[]
+    if actual_path.exists():
+        payload=json.loads(actual_path.read_text());windows=payload.get('windows')
+        if not isinstance(windows,list) or not windows or windows[0].get('t') != 0:
+            raise ValueError('Invalid frozen actual initial state for hydro lookahead')
+        states=[SimpleNamespace(**row) for row in windows]
+    elif (d/'admission.json').exists() or (d/'actual_checkpoint.json').exists():
+        raise ValueError('Continuous-day archive lacks actual initial history')
+    result=hydro_terminal_lookahead_checks(cfg,SimpleNamespace(rt=rounds,id_rounds=ids,id_failures=failures,states=states,actual_state_required=(d/'admission.json').exists() or (d/'actual_checkpoint.json').exists()),hydro["da"],
+        input_registry=hydro.get("causal_input_registry"))
     if not result["hydro_terminal_lookahead_evidence_complete"]:
         raise ValueError("; ".join(result["hydro_terminal_lookahead_errors"]))
     csv=pd.read_csv(d/"rt_hydro_terminal_lookahead.csv")
@@ -200,13 +217,185 @@ def _csv_daily_minimum_audit(directory, cfg):
     return dict(active=True,records=records,csv_energy_rounding_tolerance_mwh=tolerance)
 
 
+def _reserve_shortage_audit(ev, rs, da_slack, mode, T, dt):
+    """Full precision shortage measures; integrate only each executed first step."""
+    down = mode.get("reserve", {}).get("down_enabled", False)
+    if type(down) is not bool:
+        raise ValueError("冻结下备用开关不是布尔值")
+    H = int(round(float(mode["realtime"]["lookahead_h"])/dt))
+    if H <= 0 or rs is None:
+        raise ValueError("备用时域或实际系统证据缺失")
+    def number(value):
+        if isinstance(value, bool) or not isinstance(value, (int,float)) or not np.isfinite(value) or value < 0:
+            raise ValueError("备用缺额必须是有限非负数")
+        return float(value)
+    def rows(window, start, length):
+        if window.get("down_enabled") is not down:
+            raise ValueError("备用窗口下备用开关与冻结配置不一致")
+        system = window.get("system")
+        if not isinstance(system,list) or len(system) != length:
+            raise ValueError("备用system缺少完整时段")
+        by_t = {}
+        for row in system:
+            t = row.get("relative_period")
+            if type(t) is not int or t not in range(length) or t in by_t or row.get("period") != start+t:
+                raise ValueError("备用system时标重复、缺失或错误")
+            values = [number(row.get("R_up_short")), number(row.get("R_dn_short"))]
+            if not down and values[1] != 0:
+                raise ValueError("禁用下备用却存在下备用缺额")
+            by_t[t] = values
+        return np.array([by_t[t] for t in range(length)])
+    da = rows(ev["da"],0,T)
+    windows = [rows(w,t,min(H,T-t)) for t,w in enumerate(ev["rt_windows"])]
+    actual = np.array([w[0] for w in windows])
+    maxima = np.array([w.max(axis=0) for w in windows])
+    result = {"备用缺额证据完整": True, "备用缺额检查范围": "正式DA、实际RT首段、RT全规划窗；不含未导出的ID备用窗口"}
+    for i, (direction, label) in enumerate((("up","上"),("dn","下"))):
+        for col, expected in ((f"R_{direction}_short", actual[:,i]),
+                              (f"reserve_{direction}_short_max_win", maxima[:,i])):
+            if col not in rs:
+                raise ValueError(f"rt_system.csv缺少{col}")
+            observed = pd.to_numeric(rs.sort_values("period")[col],errors="coerce").to_numpy()
+            if not np.isfinite(observed).all() or (observed < 0).any() or not np.allclose(observed,expected,atol=5.1e-5,rtol=0):
+                raise ValueError(f"rt_system.csv {col}与完整精度备用证据不一致")
+        saved = number(da_slack.get(f"reserve_{direction}_short_max"))
+        if not np.isclose(saved,da[:,i].max(),atol=5.1e-5,rtol=0):
+            raise ValueError("DA备用缺额汇总与完整精度证据不一致")
+        result[f"日前{label}备用缺额最大MW"] = float(da[:,i].max())
+        result[f"日前{label}备用缺额MWh"] = float(da[:,i].sum()*dt)
+        result[f"实际{label}备用缺额最大MW"] = float(actual[:,i].max())
+        result[f"实际{label}备用缺额MWh"] = float(actual[:,i].sum()*dt)
+        result[f"RT规划窗{label}备用缺额最大MW"] = float(maxima[:,i].max())
+    result["零备用缺额"] = bool(max(da.max(),maxima.max()) < 1e-6)
+    result["备用缺额能量口径"] = "DA全日计划；RT仅逐窗已执行首段；重叠规划窗不累加"
+    return result
+
+
+def _hydro_reserve_water_policy_audit(ev, summary, mode, hydro, season, audit_result):
+    """Bind new water evidence to its saved policy and frozen physical inputs.
+
+    Legacy archives keep their historical arithmetic scope, explicitly without
+    certifying the new hydro water rule. New schemas cannot downgrade evidence.
+    """
+    windows = [ev['da'], *ev.get('id_windows', []), *ev['rt_windows']]
+    saved = summary.get('reserve', {})
+    if not isinstance(saved, dict):
+        raise ValueError('summary.reserve须为对象')
+    new = 'evidence_version' in saved or any('evidence_version' in w for w in windows)
+    formulation = 'period_end_stock_incremental_up_water_v1'
+    if not new:
+        if ('hydro_reserve_water_formulation' in saved
+                or any('hydro_reserve_water_formulation' in w for w in windows)):
+            raise ValueError('水电备用水量证据缺少规则版本，不能退回历史口径')
+        return dict(水电备用水量已验证=None, 水电备用水量规则='历史容量口径，水量未核验',
+                    水电备用出库已验证=None,水电备用出库规则='历史口径，激活出库未核验')
+    expected_id = summary.get('intraday', {}).get('rounds', 0)
+    if not isinstance(ev.get('id_windows'), list) or len(ev['id_windows']) != expected_id:
+        raise ValueError('新水电备用证据缺少完整成功日内窗口')
+    starts = [w.get('window_start') for w in ev['id_windows']]
+    if len(set(starts)) != len(starts) or any(not isinstance(t, int) or isinstance(t, bool)
+            or not 0 <= t < ev['da']['periods'] for t in starts):
+        raise ValueError('日内备用窗口时标无效或重复')
+    if any(w.get('periods') != ev['da']['periods']-w['window_start'] for w in ev['id_windows']):
+        raise ValueError('日内备用窗口必须覆盖剩余运行日')
+    reserve = mode.get('reserve', {})
+    enabled = bool(hydro) and 'hydro' in reserve.get('providers', [])
+    def finite(value, label):
+        if isinstance(value, bool) or not isinstance(value, (int, float)) or not np.isfinite(value):
+            raise ValueError(f'{label}须为有限数值')
+        return float(value)
+    def same(a, b, label):
+        if abs(finite(a,label)-finite(b,label)) > 1e-7:
+            raise ValueError(f'{label}与冻结输入/规则不一致')
+    version=saved.get('evidence_version')
+    if version not in (2,3):
+        raise ValueError('未知水电备用证据版本')
+    for record in [saved, *windows]:
+        if (record.get('evidence_version') != version
+                or record.get('hydro_reserve_water_formulation') != formulation
+                or record.get('hydro_reserve_water_enabled') is not enabled):
+            raise ValueError('新水电备用水量规则版本、参与标记或逐窗证据缺失/降级')
+    required = {h['id']: h for h in hydro}
+    for window in windows:
+        if enabled:
+            same(window.get('T_dur_h'), reserve.get('T_dur_h'), '水电备用持续时间')
+        rows = [r for r in window['resources'] if r.get('unit') in required]
+        if (len(rows) != len(required)*window['periods']
+                or any(row.get('type') != 'hydro' for row in rows)):
+            raise ValueError('新水电备用证据主体/类型缺失')
+        if not enabled:
+            continue
+        for row in rows:
+            h = required[row['unit']]; d = h['seasons'][season]
+            lo, hi = (d['v0']-(h.get('pondage', 0) or 0), d['v0']) if h.get('regulation','reservoir')=='run_of_river' else (d['vmin'],d['vmax'])
+            same(row.get('water_rate_m3s_per_mw'), h['water_rate'], '水电耗水率')
+            same(row.get('V_min_1e4m3'), lo, '水电最低库容')
+            same(row.get('V_max_1e4m3'), hi, '水电最高库容')
+    verified = audit_result.get('hydro_water_check_passed')
+    if 'hydro_water_check_passed' not in saved or saved['hydro_water_check_passed'] is not verified:
+        raise ValueError('summary水电水量验收状态与独立复核不一致或缺失')
+    if enabled and verified is None:
+        raise ValueError('新水电备用参与却没有水量核验结果')
+    result=dict(水电备用水量已验证=verified, 水电备用水量规则=formulation)
+    result.update(_hydro_reserve_outflow_policy_audit(ev,summary,mode,hydro,season,audit_result))
+    return result
+
+
+def _hydro_reserve_outflow_policy_audit(ev,summary,mode,hydro,season,audit_result):
+    windows=[ev['da'],*ev.get('id_windows',[]),*ev['rt_windows']]
+    saved=summary['reserve'];version=saved['evidence_version']
+    formulation='generation_flow_with_reducible_spill_v1'
+    if version<3:
+        if any('hydro_reserve_outflow_formulation' in r or 'hydro_reserve_outflow_enabled' in r for r in [saved,*windows]):
+            raise ValueError('新增水电出库证据不能降为旧版本')
+        return dict(水电备用出库已验证=None,水电备用出库规则='历史口径，激活出库未核验')
+    enabled=('hydro' in mode.get('reserve',{}).get('providers',[])
+             and any(h.get('qout_max') is not None for h in hydro))
+    for record in [saved,*windows]:
+        if (record.get('evidence_version')!=3
+                or record.get('hydro_reserve_outflow_formulation')!=formulation
+                or record.get('hydro_reserve_outflow_enabled') is not enabled):
+            raise ValueError('水电备用出库规则、标记缺失或降级')
+    required={h['id']:h for h in hydro}
+    def same(a,b,label):
+        if a is None or b is None:
+            if a is not b:raise ValueError(f'{label}与冻结输入不一致')
+        elif (isinstance(a,bool) or isinstance(b,bool) or not isinstance(a,(int,float))
+                or not isinstance(b,(int,float)) or not np.isfinite([a,b]).all() or abs(a-b)>1e-7):
+            raise ValueError(f'{label}与冻结输入不一致或无效')
+    for w in windows:
+        for row in w['resources']:
+            if row.get('unit') not in required:continue
+            h=required[row['unit']]
+            if 'qout_max_m3s' not in row or 'qeco_m3s' not in row:
+                raise ValueError('水电出库或生态参数证据缺失')
+            same(row['qout_max_m3s'],h.get('qout_max'),'水电出库上限')
+            same(row['qeco_m3s'],h['seasons'][season]['qeco'],'水电生态下泄下限')
+    verified=audit_result.get('hydro_outflow_check_passed')
+    if 'hydro_outflow_check_passed' not in saved or saved['hydro_outflow_check_passed'] is not verified:
+        raise ValueError('summary水电出库核验状态缺失或不一致')
+    if enabled and verified is None:raise ValueError('已配置水电出库上限但没有激活出库核验')
+    scope=(formulation if enabled else '未配置出库上限，不代表无限能力'
+           if 'hydro' in mode.get('reserve',{}).get('providers',[]) and hydro else '未参与水电备用')
+    return dict(水电备用出库已验证=verified,水电备用出库规则=scope)
+
+
 def checks(d: Path) -> dict:
     """Read-only, fail-closed validation using only the run's frozen evidence."""
     S = json.loads((d / "summary.json").read_text(encoding="utf-8"))
     C = {key: False for key in ("流程未中断", "功率平衡", "松弛为0", "无同时充放",
                                 "SOC库容边界", "日末约束", "价格限值", "两部制恒等式<1元",
-                                "价值曲线=−对偶(符号自洽)", "备用复核通过", "证据完整", "验收通过")}
+                                "价值曲线=−对偶(符号自洽)", "备用复核通过", "备用缺额证据完整", "零备用缺额", "非计划松弛为0", "证据完整", "验收通过")}
+    C.update(水电备用水量已验证=None, 水电备用水量规则="未验证",
+             水电备用出库已验证=None,水电备用出库规则="未验证")
     errors, notes = [], []
+    try:
+        from smm.result_retention import audit_archive
+        id_cache = audit_archive(d, S)
+        C['ID数值缓存已验证'] = id_cache['valid']
+    except (OSError,ValueError,TypeError,KeyError,IndexError,AttributeError) as exc:
+        errors.append(f'ID数值缓存未验证：{exc}')
+        C['ID数值缓存已验证'] = False
     try:
         units, modes, base = _snapshot(d)
         mk = modes[base["rule_set"]]
@@ -508,6 +697,12 @@ def checks(d: Path) -> dict:
         A = audit(ev)
         C["备用复核违例数"], C["备用复核最大违例"] = len(A["violations"]), float(A["max_violation"])
         C["备用复核通过"] = bool(A.get("passed", not A["violations"]))
+        C.update(_hydro_reserve_water_policy_audit(ev, S, mk, groups['hydro'], base['season'], A))
+        if C['水电备用水量已验证'] is None and C['水电备用水量规则'].startswith('历史'):
+            notes.append('历史容量备用证据按原口径复核；未核验新增水电上备用水量限制')
+        if C['水电备用出库已验证'] is None:
+            notes.append(C['水电备用出库规则'])
+        C.update(_reserve_shortage_audit(ev, rs, da_slack, mk, T, dt))
     except (OSError, ValueError, TypeError, KeyError) as exc:
         errors.append(f"备用复核未验证：{exc}")
     # New runs disclose failed ID attempts separately; old hard archives without
@@ -586,6 +781,20 @@ def checks(d: Path) -> dict:
         except (OSError,KeyError,ValueError,TypeError,AttributeError,IndexError) as exc:
             errors.append(f"水电参考续程未验证：{exc}")
             C["水电参考续程证据合规"] = False
+    C["弃水去退化已验证"] = None
+    if "hydro_water_selection" in S or (d/"hydro_water_selection_evidence.json").exists():
+        try:
+            from smm.hydro_spill_tiebreak import audit_selection_evidence
+            selection=json.loads((d/"hydro_water_selection_evidence.json").read_text())
+            water=json.loads((d/"hydro_window_evidence.json").read_text())
+            stage_evidence=json.loads((d/"stage_diagnostics.json").read_text())
+            result=audit_selection_evidence(selection,water,stage_evidence,groups["hydro"],T,S.get("intraday",{}).get("rounds",0))
+            if S.get("hydro_water_selection")!=result:
+                raise ValueError("弃水去退化summary缺失或与逐窗证据不符")
+            C["弃水去退化已验证"] = True
+        except (OSError,KeyError,ValueError,TypeError,IndexError) as exc:
+            errors.append(f"弃水去退化未验证：{exc}")
+            C["弃水去退化已验证"] = False
     C["水电日电量下限合规"] = True
     configured_minima = [u for u in groups["hydro"] if u.get("regulation", "reservoir") == "reservoir" and u.get("e_day_min") is not None]
     if configured_minima:
@@ -619,6 +828,10 @@ def checks(d: Path) -> dict:
         except (OSError,KeyError,ValueError,TypeError,AttributeError,IndexError,ImportError) as exc:
             errors.append(f"水电日电量下限未验证：{exc}")
             C["水电日电量下限合规"] = False
+    C["松弛为0"] = bool(C["松弛为0"] and C["备用缺额证据完整"] and C["零备用缺额"])
+    C["非计划松弛为0"] = bool(C["非计划松弛为0"] and C["备用缺额证据完整"] and C["零备用缺额"])
+    if C["备用缺额证据完整"] and not C["零备用缺额"]:
+        notes.append("存在备用缺额；备用公式复核通过不等于零缺额，严格无松弛验收不通过")
     C["证据完整"] = not errors
     C["验收通过"] = bool(not errors and all(C[k] for k in ("流程未中断","功率平衡","非计划松弛为0","无同时充放",
                          "SOC库容边界","终态政策合规","价格限值","两部制恒等式<1元","价值曲线=−对偶(符号自洽)","备用复核通过")))
@@ -640,7 +853,8 @@ def render_check(d: Path) -> dict:
     finally:
         common.all_results = original_results
     labels = [t.label for t in at.tabs]
-    need = ["日前", "最终结果"] + (["日内滚动", "实时"] if "日内滚动" in labels else ["日内/实时滚动"])
+    from result_navigation import MAIN_SECTIONS
+    need = list(MAIN_SECTIONS)
     C = dict(渲染异常数=len(at.exception), 页签数=len(labels), 图表数=len(at.get("plotly_chart")))
     C["三大块渲染"] = not at.exception and all(x in labels for x in need)
     if at.exception:

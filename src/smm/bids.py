@@ -72,7 +72,8 @@ def effective_bids(cfg, bids):
     return out
 
 
-def default_bids(cfg: Config, version: int = 1) -> dict:
+def legacy_default_bids(cfg: Config, version: int = 1) -> dict:
+    """Historical quote shapes; retained explicitly for old scenarios and tests."""
     lim = cfg.mode["price_limits"]
     states = set(cfg.mode["startup_states"]) | {"cold"}
     units = {}
@@ -100,6 +101,31 @@ def default_bids(cfg: Config, version: int = 1) -> dict:
         units[p["id"]] = pumped_default(p)
     return dict(date=cfg.base["date"], rule_set=cfg.rule_set, version=version,
                 created=_dt.datetime.now().isoformat(timespec="seconds"), note="缺省报价（假设值）", units=units)
+
+
+def default_bids(cfg: Config, version: int = 1) -> dict:
+    """Scenario-versioned default; never migrate archives or handwritten offers.
+
+    Missing selector preserves legacy behavior. The new cost mode fails closed
+    when its independent cost archives are unavailable; it never relabels the
+    historical fixed-price shape as a cost-derived submission.
+    """
+    model = cfg.base.get('default_bid_model', 'legacy_v1')
+    if model == 'legacy_v1':
+        return legacy_default_bids(cfg, version)
+    if model != 'cost_basis_v2':
+        raise ValueError('default_bid_model须为legacy_v1或cost_basis_v2')
+    from .bid_simulation import research_cost_bid_preview
+    shaped = legacy_default_bids(cfg, version)
+    selected = [uid for uid, bid in shaped['units'].items()
+                if bid.get('mode') == 'price_quantity']
+    if selected:
+        draft = research_cost_bid_preview(cfg, selected_unit_ids=selected, base_bids=shaped)
+    else:
+        draft = shaped
+    draft['note'] = '分类型逐机组成本基准报价；成本与机会参数均为显式研究假设；非实测成本；历史及手工报价不迁移'
+    draft['default_bid_model'] = model
+    return draft
 
 
 PUMPED_GEN_PRICES = [420, 450, 480]     # 假设值：发电三段（元/MWh），高于抽水报价并覆盖晚高峰价位

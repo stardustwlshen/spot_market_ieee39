@@ -66,10 +66,18 @@ def load_fixed_cost_profile(cfg):
     return profile
 
 
-def analyze(res):
+def analyze(res, *, policy=None):
     """Only formal executed first-period quantities and signed two-settlement cash."""
     da,rr=res['da'],res['rr'];cfg=da.case.cfg;dt=cfg.dt
-    profile=load_fixed_cost_profile(cfg);detail=res['settle']['detail'];rows=[]
+    from .settlement import validate_execution_order
+    validate_execution_order(rr.rt, expected_periods=getattr(cfg, 'T', None), states=rr.states,
+                             allow_legacy=False)
+    from . import spot_costs
+    policy=spot_costs.BASIS if policy is None else policy
+    if policy not in (spot_costs.BASIS,spot_costs.LEGACY):raise ValueError('Unknown profit basis')
+    spot=policy==spot_costs.BASIS
+    profile=spot_costs.load_profile(cfg) if spot else load_fixed_cost_profile(cfg)
+    detail=res['settle']['detail'];rows=[]
     specs=[]
     for family in ('thermal','renewable','hydro','storage','pumped'):
         for spec in cfg.units.get(family,[]):
@@ -95,21 +103,47 @@ def analyze(res):
     if not set(detail.entity).issubset(resource_entities | other_entities):raise ValueError('unknown settlement entity')
     if not np.allclose(detail.total.to_numpy(dtype=float),detail.da_amount.to_numpy(dtype=float)+detail.rt_amount.to_numpy(dtype=float),atol=1e-6,rtol=1e-10):
         raise ValueError('settlement total disagrees with DA plus RT cash')
+    economic_columns = {'q_da', 'q_rt', 'lmp_da', 'lmp_rt'}
+    has_economic_evidence = bool(economic_columns & set(detail.columns))
+    if has_economic_evidence:
+        if not economic_columns <= set(detail.columns):
+            raise ValueError('incomplete settlement quantity/price evidence')
+        for name in economic_columns:
+            if not np.isfinite(pd.to_numeric(detail[name], errors='coerce').to_numpy(dtype=float)).all():
+                raise ValueError('non-finite settlement quantity/price evidence')
+        expected_da = detail.q_da * detail.lmp_da * dt
+        expected_rt = (detail.q_rt-detail.q_da) * detail.lmp_rt * dt
+        if (not np.allclose(detail.da_amount, expected_da, atol=1e-6, rtol=1e-10)
+                or not np.allclose(detail.rt_amount, expected_rt, atol=1e-6, rtol=1e-10)):
+            raise ValueError('settlement cash disagrees with quantity × price × dt')
     for uid,typ in specs:
-        params,reason=_parameters(profile,uid,typ)
+        params,reason=(spot_costs.parameters(profile,uid,typ) if spot else _parameters(profile,uid,typ))
         names=[uid] if typ not in ('storage','pumped') else ([uid+'_放电',uid+'_充电'] if typ=='storage' else [uid+'_发电',uid+'_抽水'])
         charge=uid+('_充电' if typ=='storage' else '_抽水')
         for k,r in enumerate(rr.rt):
             t=int(r['t']);sn=r['snap'];state=rr.states[k]
             cash=detail[(detail.entity.isin(names)) & (detail.period==t)]
             if cash.empty:raise ValueError(f'missing formal settlement evidence for {uid} period {t}')
-            p=0.;on=0.;starts=0.;pumpstarts=0.;start=end=None;stockunit=None
+            if has_economic_evidence:
+                if typ == 'storage':
+                    powers = {uid+'_放电': sn['Pd'][uid][0], uid+'_充电': -sn['Pc'][uid][0]}
+                elif typ == 'pumped':
+                    powers = {uid+'_发电': sn['Pg'][uid][0], uid+'_抽水': -sn['Pp'][uid][0]}
+                else:
+                    key = 'P' if typ in ('coal','gas_ccgt','gas_gt') else 'Pw' if typ in ('wind','pv') else 'Ph'
+                    powers = {uid: sn[key][uid][0]}
+                recorded = cash.set_index('entity').q_rt
+                if any(not np.isfinite(float(power)) or not np.isclose(recorded[entity], power, atol=1e-6, rtol=1e-10)
+                       for entity, power in powers.items()):
+                    raise ValueError(f'{uid}: settlement quantity disagrees with executed RT first period')
+            p=0.;on=0.;starts=0.;pumpstarts=0.;stops=0.;pumpstops=0.;start=end=None;stockunit=None
             if typ in ('coal','gas_ccgt','gas_gt'):
                 p=float(sn['P'][uid][0]);on=float(sn['u'][uid][0])
                 prior_online=state.thermal[uid]['online']
                 if not np.isfinite(float(prior_online)):
                     raise ValueError(f'non-finite actual initial online state for {uid} period {t}')
                 starts=int(on>0 and not prior_online)
+                stops=int(on==0 and prior_online)
             elif typ in ('wind','pv'):p=float(sn['Pw'][uid][0])
             elif typ=='hydro':
                 p=float(sn['Ph'][uid][0]);start=float(state.hydro[uid]);end=float(sn['Vh'][uid][0]);stockunit='1e4m3'
@@ -122,24 +156,32 @@ def analyze(res):
                     raise ValueError(f'non-finite actual pumped mode count for {uid} period {t}')
                 starts=max(float(sn['ngen'][uid][0])-state.pumped[uid]['ng'],0.)
                 pumpstarts=max(float(sn['npump'][uid][0])-state.pumped[uid]['np'],0.)
+                stops=max(state.pumped[uid]['ng']-float(sn['ngen'][uid][0]),0.)
+                pumpstops=max(state.pumped[uid]['np']-float(sn['npump'][uid][0]),0.)
             actual=[p,on,starts,pumpstarts]+([start,end] if stockunit is not None else [])
             if not np.isfinite(np.asarray(actual,dtype=float)).all():
                 raise ValueError(f'non-finite actual power/state/inventory for {uid} period {t}')
             revenue=float(cash.total.sum())
             row=dict(unit=uid,type=typ,period=t,energy_generated_or_discharged_mwh=p*dt,
-                cost_source_kind=profile.get('unit_sources',{}).get(uid,{}).get('source_kind',profile.get('source_kind','explicit_assumption_status_not_supplied')),
+                profit_basis=policy,cost_basis_version=spot_costs.VERSION if spot else 'legacy-fixed-costs-v1',
+                cost_source_kind=(params.get('source_kind','explicit_assumption_status_not_supplied') if spot and params is not None else profile.get('unit_sources',{}).get(uid,{}).get('source_kind',profile.get('source_kind','explicit_assumption_status_not_supplied'))),
                 da_cash_revenue_yuan=float(cash.da_amount.sum()),rt_deviation_cash_revenue_yuan=float(cash.rt_amount.sum()),
                 cash_revenue_yuan=revenue,charging_settlement_yuan=float(cash.loc[cash.entity==charge,'total'].sum()) if typ in ('storage','pumped') else 0.,
                 cost_available=params is not None,cost_missing_reason=reason,
-                startup_count=starts,pump_startup_count=pumpstarts,
+                startup_count=starts,pump_startup_count=pumpstarts,shutdown_count=stops,pump_shutdown_count=pumpstops,
                 inventory_start=start,inventory_end=end,inventory_change=None if start is None else end-start,inventory_unit=stockunit)
-            if params is None:row.update({key:None for key in COST_COLUMNS})
+            if params is None:
+                row.update({key:None for key in (*COST_COLUMNS,'shutdown_cost_yuan')});row['shutdown_cost_yuan']=None
             else:
-                rate=params.get('scalar_marginal_cost_yuan_per_mwh',params.get('discharge_degradation_yuan_per_mwh',params.get('generation_vom_yuan_per_mwh')))
+                rate=0. if spot else params.get('scalar_marginal_cost_yuan_per_mwh',params.get('discharge_degradation_yuan_per_mwh',params.get('generation_vom_yuan_per_mwh')))
                 variable=rate*p*dt
                 online=params.get('fixed_online_cost_yuan_per_h',0.)*on*dt
                 startup=params.get('fixed_startup_cost_yuan_per_start',params.get('gen_start_yuan_per_unit_start',0.))*starts+params.get('pump_start_yuan_per_unit_start',0.)*pumpstarts
-                total=variable+online+startup
+                shutdown=0.
+                if spot:
+                    variable,online,startup,shutdown=spot_costs.period_cost(params,p*dt,on,starts,pumpstarts,stops,pumpstops,dt)
+                row['shutdown_cost_yuan']=shutdown
+                total=variable+online+startup+shutdown
                 row.update(variable_cost_yuan=variable,fixed_online_cost_yuan=online,startup_cost_yuan=startup,cash_operating_cost_yuan=total,simulated_operating_profit_yuan=revenue-total)
             rows.append(row)
     period=pd.DataFrame(rows);units=[]
@@ -148,8 +190,8 @@ def analyze(res):
         row=dict(unit=uid,type=typ,cost_available=valid,cost_missing_reason='; '.join(sorted(set(group.cost_missing_reason)-{''})))
         kinds=set(group.cost_source_kind)
         row['cost_source_kind']=next(iter(kinds)) if len(kinds)==1 else 'mixed_explicit_and_synthetic_costs'
-        row.update({key:float(group[key].sum()) for key in (*REVENUE_COLUMNS,'energy_generated_or_discharged_mwh','startup_count','pump_startup_count')})
-        row.update({key:float(group[key].sum()) if valid else None for key in COST_COLUMNS})
+        row.update({key:float(group[key].sum()) for key in (*REVENUE_COLUMNS,'energy_generated_or_discharged_mwh','startup_count','pump_startup_count','shutdown_count','pump_shutdown_count')})
+        row.update({key:float(group[key].sum()) if valid else None for key in (*COST_COLUMNS,'shutdown_cost_yuan')})
         start,end=g.iloc[0].inventory_start,g.iloc[-1].inventory_end
         row.update(inventory_start=start,inventory_end=end,inventory_change=None if pd.isna(start) else end-start,inventory_unit=g.iloc[0].inventory_unit)
         units.append(row)
@@ -159,17 +201,19 @@ def analyze(res):
         types.append(dict(type=typ,unit_count=len(g),cost_available=valid,
             cost_source_kind=g.cost_source_kind.iloc[0] if g.cost_source_kind.nunique()==1 else 'mixed_explicit_and_synthetic_costs',
             **{key:float(g[key].sum()) for key in REVENUE_COLUMNS},
-            **{key:float(g[key].sum()) if valid else None for key in COST_COLUMNS}))
+            **{key:float(g[key].sum()) if valid else None for key in (*COST_COLUMNS,'shutdown_cost_yuan')}))
     complete=bool(len(by_unit) and by_unit.cost_available.all())
-    summary=dict(label='simulated_cash_operating_profit_not_total_project_profit',cost_profile_sha256=profile['sha256'],
+    summary=dict(profit_basis=policy,cost_basis_version=spot_costs.VERSION if spot else 'legacy-fixed-costs-v1',label='simulated_cash_operating_profit_not_total_project_profit',cost_profile_sha256=profile['sha256'],
         cost_profile_available=profile['available'],all_unit_costs_available=complete,unit_count=len(by_unit),
         cash_revenue_yuan=float(by_unit.cash_revenue_yuan.sum()),
         cash_operating_cost_yuan=float(by_unit.cash_operating_cost_yuan.sum()) if complete else None,
         simulated_operating_profit_yuan=float(by_unit.simulated_operating_profit_yuan.sum()) if complete else None,
         revenue_scope='DA + RT deviation signed net energy settlement; charging already included',
-        exclusions='CAPEX,financing,tax,capacity,AGC,compensation,operator penalties,water opportunity cost,inventory valuation',
+        exclusions=spot_costs.EXCLUSIONS if spot else 'CAPEX,financing,tax,capacity,AGC,compensation,operator penalties,water opportunity cost,inventory valuation',
         scope='actual executed RT periods only; see completed_scope for full-day status; ending inventories separately disclosed')
     by_type=pd.DataFrame(types)
     for frame in (period,by_unit,by_type):
         frame['cost_profile_sha256']=profile['sha256']
+        frame['profit_basis']=policy
+        frame['cost_basis_version']=summary['cost_basis_version']
     return dict(profile=profile,summary=summary,by_period=period,by_unit=by_unit,by_type=by_type)

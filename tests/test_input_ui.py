@@ -39,7 +39,7 @@ def test_single_unit_workspace_has_information_and_no_unrelated_editors(app):
     assert 'C1 · 燃煤' in item(at.selectbox, '模拟机组').options
     assert any(x.value == 'C1 · 机组信息' for x in at.subheader)
     assert any(x.value == '市场运行情况' for x in at.subheader)
-    assert [x.label for x in at.tabs] == ['机组与报价', '全网与其他机组']
+    assert [x.label for x in at.tabs] == ['机组与报价', '系统接线图与全网']
     assert not at.text_area  # No raw JSON editor in the everyday workflow.
     assert not any(x.label in {'负荷缩放系数（倍）', '保存机组/储能/水电参数'}
                    for x in [*at.number_input, *at.button])

@@ -31,6 +31,17 @@ def write_profile_evidence(case, directory):
     from .forecast_settings import generation_metadata
     directory = Path(directory)
     case.profiles.to_csv(directory / "profiles.csv", index=False)
+    if getattr(case,'selected_inputs',None) is not None:
+        from .natural_inflow import case_input_evidence
+        metadata=dict(model='causal_physical_v3',calibrated=False,
+            information='causal available observation prefix; explicit RT current-mean research exception',
+            input_provenance=case_input_evidence(case),
+            accuracy_scope='not_computed_from_future_actual;evaluate_issued_frames_against_executed_or_frozen_research_truth_separately')
+        pd.DataFrame(columns=['object','stage','nrmse','accuracy']).to_csv(directory/'forecast_accuracy.csv',index=False)
+        (directory/'profile_generation.json').write_text(json.dumps(metadata,ensure_ascii=False,indent=2),encoding='utf-8')
+        if case.input_provider is not None:
+            (directory/'causal_forecast_registry.json').write_text(json.dumps(case.input_provider.archive(case.day_start_utc),ensure_ascii=False,allow_nan=False),encoding='utf-8')
+        return
     accuracy = accuracy_summary(case.profiles, {r["id"]: r["cap"] for r in case.cfg.units["renewable"]})
     accuracy.reindex(columns=["object", "stage", "nrmse", "accuracy"]).to_csv(directory / "forecast_accuracy.csv", index=False)
     frozen = case.profiles.attrs.get("generation_metadata")
@@ -71,7 +82,14 @@ def write_catalog(directory, scope, *, full=False, plot_files=()):
             "rt_tracking_windows.csv", "rt_tracking_window_evidence.json", "hydro_window_targets.csv", "hydro_window_evidence.json")]
         records += [(name, "执行范围与冻结成本") for name in ("rolling_actual_states.json", "fixed_cost_profile.json", "output_scope.json", "solver_windows.csv")]
     records += [(name, "保存的实际输入曲线与预测诊断") for name in ("profiles.csv", "forecast_accuracy.csv", "profile_generation.json")]
+    if (directory/'causal_forecast_registry.json').is_file():
+        records.append(('causal_forecast_registry.json','按发布时间冻结的因果预测与正式选中输入来源；非实际执行总量'))
+    if full and (directory/'forecast_error_status.json').is_file():
+        records += [(name,'事后预测误差，仅已执行输入范围；重叠预测比较不是额外执行量') for name in
+            ('executed_input_actual.csv','forecast_error_detail.csv','forecast_error_summary.csv','forecast_error_status.json')]
     records += [(name, "实时已执行" if name.startswith("rt_") else "日前或阶段对比，按图标题") for name in plot_files]
+    if full and (directory/'id_state_value_evidence.json').is_file():
+        records.append(('id_state_value_evidence.json','正式SCED原对偶数值缓存及原回退错误；非新求解或辅助价'))
     records.append(("summary.json", "综合摘要，不等于安全认证"))
     artifacts = []
     for filename, meaning in records:
@@ -92,6 +110,8 @@ def write_catalog(directory, scope, *, full=False, plot_files=()):
                     quantity_source="formal fixed-integer SCED; RT first period only",
                     information_assumption="RT first period uses offline synthetic actual; future periods use forecast views; not an online data-availability guarantee; boundary_lead_min is not an enforced T-minus-30 forecast publication rule",
                     money_note="DA revenue is planned energy revenue; RT price valuation is not two-settlement cash; profit uses independent frozen costs. Missing costs remain unknown.")
+    if (directory/'causal_forecast_registry.json').is_file():
+        manifest['information_assumption']='causal_physical_v3: each issued frame uses available observations and released public inputs; first RT interval mean is an explicit perfect-measurement research exception; daily DA is issued at day start, not D-1'
     (directory / "output_manifest.json").write_text(json.dumps(manifest, ensure_ascii=False, indent=2), encoding="utf-8")
     lines = ["# 结果文件索引", "", f"范围：{scope['completed_scope']}；实际执行 {scope['executed_periods']} / {scope['expected_periods']} 段。", "",
              "日前为完整计划，实时仅统计每轮实际执行首段。前瞻窗口可能重叠，不得合计成全天出力、备用或利润。",

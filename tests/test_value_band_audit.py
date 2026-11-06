@@ -104,7 +104,8 @@ def test_hydro_selected_id_counts_not_compared_with_da(monkeypatch):
     da.case.cfg.mode['realtime']['hydro']='value'
     da.case.cfg.mode['intraday']={'enabled':True}
     rr.rt[0]['snap']['Vh']['H']=np.array([100.])
-    rr.rt[0]['snap']['hydro_constraints']['H']['qin_m3s']=[0.]
+    # Keep the independently declared natural inflow; release it to hold V=100.
+    rr.rt[0]['snap']['Qout']['H']=np.array([da.case.cfg.units['hydro'][0]['seasons']['wet']['qin']])
     rr.rt[0]['snap']['delta'][('H',0)]=np.array([2])
     rr.rt[0]['hydro_reference_delta']={('H',0):np.array([2])}
     rr.rt[0]['reference_metadata']={'V':{'H':{'trajectory_source':'intraday@0'}}}

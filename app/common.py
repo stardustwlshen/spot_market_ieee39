@@ -43,7 +43,8 @@ DIFF_SCALE = "RdBu_r"                               # 差值（以 0 为中心�
 TYPE_SYMBOL = {"coal": "square", "gas_ccgt": "diamond", "gas_gt": "diamond-open", "hydro": "hexagon", "wind": "triangle-up",
                "pv": "star", "tie": "pentagon", "storage": "cross",
                "pumped": "hourglass"}
-PAGES = [("pages/2_运行.py", "报价模拟", "▶️", "选择机组、改报价、运行市场"),
+PAGES = [("pages/5_出清任务.py", "出清任务", "🗓️", "单日或连续多日场景与报价"),
+         ("pages/2_运行.py", "报价模拟", "▶️", "选择机组、改报价、运行市场"),
          ("pages/3_结果.py", "结果", "📊", "完整电价、出力、约束与结算"),
          ("pages/4_场景对比.py", "场景对比", "⚖️", "对比两次报价模拟结果")]
 
@@ -211,8 +212,9 @@ def show_df(df: pd.DataFrame, fmt: str = "%.1f", overrides: dict | None = None, 
                  height=height or "auto", **kw)
 
 
-def period_labels(T: int = 96) -> list[str]:
-    return [f"{t // 4:02d}:{(t % 4) * 15:02d}" for t in range(T)]
+def period_labels(T: int = 96, dt_h: float = 0.25) -> list[str]:
+    from smm.time_grid import period_label
+    return [period_label(t, dt_h) for t in range(T)]
 
 
 # ----------------------------------------------------------------------------- 场景选择
@@ -279,7 +281,9 @@ def start_run(scenario: str, mode: str, bid_version: int | None, periods: int | 
                         launcher_identity=launcher)
             atomic_json(d / "meta.json", meta)
             stage = "冻结并校验输入"
-            freeze_inputs(sc.scenario_path(scenario), d, bids=bids, regulation=regulation)
+            from smm.input_version import run_options
+            freeze_inputs(sc.scenario_path(scenario), d, bids=bids, regulation=regulation,
+                          run_options=run_options(mode, periods, regulation), bid_version=bid_version)
             cmd = [sys.executable, "-u", str(ROOT / "scripts" / "run_scenario.py"), "--scenario", scenario,
                    "--mode", mode, "--run-dir", str(d)]
             if bid_version is not None: cmd += ["--bid-version", str(bid_version)]
@@ -377,7 +381,8 @@ def run_progress(m: dict, log: str) -> float:
     live = read_live(m["dir"])
     if live.get("executed_periods"):
         return min(0.6 + 0.4 * live["executed_periods"] / live["total_periods"], 0.99)
-    T = m.get("periods") or 96
+    from smm.time_grid import result_time_grid
+    T = m.get("periods") or result_time_grid({"snapshot_root": str(Path(m["dir"]) / "scenario_snapshot")})[0]
     if "[DA]" not in log:
         return 0.03
     if m.get("mode") == "da":
@@ -407,6 +412,8 @@ def all_results() -> list[dict]:
             if d.is_dir() and (d / "summary.json").exists() and (d.name.startswith("full_") or d.name.startswith("da_")) and "_MKT_" in d.name:
                 mode = "full" if d.name.startswith("full_") else "da"
                 out.append(dict(scenario="命令行outputs", mode=mode, status="done", dir=str(d), started=""))
+    from smm.series_ui_adapter import completed_day_metadata
+    out.extend(completed_day_metadata(ROOT / 'series_tasks'))
     return out
 
 

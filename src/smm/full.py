@@ -210,12 +210,14 @@ def intraday_failure_checks(cfg, rr, da_plan, tolerance=1e-6):
                 intraday_failed_reference_evidence_complete=bool(source_ok))
 
 
-def hydro_terminal_lookahead_checks(cfg, rr, da_plan, tolerance=1e-6):
+def hydro_terminal_lookahead_checks(cfg, rr, da_plan, tolerance=1e-6, *, input_registry=None):
     """Independently check reference-continuation forecasts, never actual costs.
 
     Positive shortage is a finite preference cost, not a physical violation.
     Source flows come from saved DA/ID dispatch, not the diagnostic's own arrays.
     """
+    if getattr(rr, 'actual_state_required', False) and not getattr(rr, 'states', None):
+        raise ValueError('Continuous-day audit requires actual initial states')
     rc = cfg.mode.get("realtime", {})
     mode, coefficient = _terminal_policy(cfg)
     specs = {u["id"]: u for u in cfg.units.get("hydro", [])}
@@ -295,7 +297,14 @@ def hydro_terminal_lookahead_checks(cfg, rr, da_plan, tolerance=1e-6):
                         or w.get("reference_fallback_reason") != meta.get("fallback_reason")):
                     raise ValueError("source metadata")
                 equal(w["dt_h"],cfg.dt,"dt")
-                equal(w["natural_inflow_m3s"],season["qin"],"natural inflow")
+                from .natural_inflow import evidence_natural_values
+                natural=evidence_natural_values(cfg,r['snap'],unit,future,source_registry=input_registry)
+                if r['snap'].get('input_provenance') is not None:
+                    claimed=np.asarray(w['natural_inflow_m3s'],float)
+                    if claimed.shape!=natural.shape or not np.allclose(claimed,natural,atol=tolerance,rtol=0):
+                        raise ValueError('natural inflow differs from selected issued source')
+                else:
+                    equal(w['natural_inflow_m3s'],season['qin'],'natural inflow')
                 for key in ("reference_outflows_m3s","upstream_arrivals_m3s","upstream_arrival_sources"):
                     if len(w[key]) != len(future):raise ValueError("future array length")
                 for actual, ref in zip(w["reference_outflows_m3s"],outflow):equal(actual,ref,"reference Qout")
@@ -305,9 +314,16 @@ def hydro_terminal_lookahead_checks(cfg, rr, da_plan, tolerance=1e-6):
                     if not upstream:
                         arrival,source=0.,"none_or_before_day"
                     elif shifted<0:
-                        initial=specs[upstream]
-                        arrival=number(initial["water_rate"])*number(initial["init_units_on"])*number(initial["init_p_unit"])
-                        source="pre_day_initial_outflow"
+                        from .state_bridge import hydro_before
+                        states = getattr(rr, 'states', None)
+                        if states:
+                            arrival=hydro_before(cfg, states[0], upstream, shifted)
+                            source="pre_day_explicit_history" if getattr(states[0], 'continuation', {}) else "pre_day_initial_outflow"
+                        else:
+                            if w['upstream_arrival_sources'][i] != 'pre_day_initial_outflow':
+                                raise ValueError('Explicit cross-day history missing from archive')
+                            arrival=hydro_before(cfg, {}, upstream, shifted)
+                            source='pre_day_initial_outflow'  # Explicit historical single-day evidence only.
                     elif shifted<t:
                         # Use independently stored executed first-period flow,
                         # not a forecast or the supplied arrival array.
@@ -321,8 +337,8 @@ def hydro_terminal_lookahead_checks(cfg, rr, da_plan, tolerance=1e-6):
                     arrivals.append(arrival)
                 upstream_meta = r["reference_metadata"]["V"].get(upstream) if upstream else None
                 if w.get("upstream_reference_metadata") != upstream_meta:raise ValueError("upstream metadata")
-                recovery=float(np.sum(float(season["qin"])+np.asarray(arrivals)-outflow))*cfg.dt*.36
-                target=season["v0"] if spec.get("regulation")=="run_of_river" else season["v_end"]
+                recovery=float(np.sum(natural+np.asarray(arrivals)-outflow))*cfg.dt*.36
+                target=((rr.states[0].hydro[unit] if getattr(rr,"states",None) else season["v0"]) if spec.get("regulation")=="run_of_river" else season["v_end"])
                 state=r["snap"]["Vh"][unit][t1-t-1]
                 projected=state+recovery;shortage=max(target-projected,0.)
                 factor=1./(.36*spec["water_rate"])
@@ -524,6 +540,15 @@ def hydro_window_checks(da_res, rr, tolerance=1e-5) -> dict:
             if not len(power) or any(len(a)!=len(power) or not np.isfinite(a).all() for a in arrays) or not np.isfinite(scalars).all():
                 out["hydro_window_checks_available"] = False
                 continue
+            try:
+                from .natural_inflow import evidence_natural_values
+                expected_natural=evidence_natural_values(cfg,sn,h,range(start,start+len(power)),
+                    source_registry=getattr(da_res.case,"input_provider",None))
+                if not np.allclose(np.asarray(meta['qin_m3s']),expected_natural,atol=tolerance,rtol=0):
+                    raise ValueError('natural flow diagnostic differs from frozen selected inputs')
+            except (ValueError,KeyError,TypeError):
+                out['hydro_window_checks_available']=False
+                continue
             prev_p = np.r_[meta["p_start_mw"], power[:-1]]
             prev_v = np.r_[meta["v_start_1e4m3"], volume[:-1]]
             delta_p = power-prev_p
@@ -623,16 +648,21 @@ def hydro_window_checks(da_res, rr, tolerance=1e-5) -> dict:
                     water_balance_max_err_1e4m3=water_error,station_ramp_excess_max_mw=ramp_excess,
                     remaining_energy_budget_mwh=budget,window_generation_mwh=float(power.sum()*cfg.dt)))
     check_snapshot(da_sn,"DA",0)
+    if getattr(da_res.case,'selected_inputs',None) is not None:
+        for r in getattr(rr,'id_rounds',[]):
+            check_snapshot(r['snap'],'ID',r['tau'])
     for r,state in zip(rr.rt,rr.states):
         check_snapshot(r["snap"],"RT",r["t"],state,r)
     numeric = [v for k,v in out.items() if k not in ("hydro_window_checks_available","hydro_window_records","hydro_tracking_target_deviation_max_1e4m3","hydro_reference_evidence_complete")]
     out["hydro_window_constraints_satisfied"] = bool(out["hydro_window_checks_available"] and out["hydro_reference_evidence_complete"] and all(np.isfinite(v) and v<=tolerance for v in numeric))
-    out["hydro_check_scope"] = "DA_and_RT_station_aggregate_ramp,water,volume,eco,outflow,budget;RT_actual_state,selected_reference_zone_count,independent_unit_count_and_zone_power,hard_window_terminal_or_soft_tracking_slack_consistency_as_configured;soft_target_deviation_is_not_physical_infeasibility;not_individual_turbine_ramp"
+    out["hydro_check_scope"] = ("DA_ID_RT_selected_issue_inflow;" if getattr(da_res.case,"selected_inputs",None) is not None else "") + "DA_and_RT_station_aggregate_ramp,water,volume,eco,outflow,budget;RT_actual_state,selected_reference_zone_count,independent_unit_count_and_zone_power,hard_window_terminal_or_soft_tracking_slack_consistency_as_configured;soft_target_deviation_is_not_physical_infeasibility;not_individual_turbine_ramp"
     return out
 
 
 def checks(da_res, rr, rt_tab) -> dict:
     """连续性与平衡性校核（测试同样使用）。"""
+    from .result_retention import validate_compact_rounds
+    validate_compact_rounds(rr)
     cfg = da_res.case.cfg
     dt = cfg.dt
     sto = {s["id"]: s for s in cfg.units["storage"]}
@@ -642,7 +672,7 @@ def checks(da_res, rr, rt_tab) -> dict:
     err_cont, err_eq = 0.0, 0.0
     for s, d in st.groupby("unit"):
         d = d.sort_values("period")
-        e0 = sto[s]["soc0"] * sto[s]["ecap"]
+        e0 = float(rr.states[0].storage[s])
         prev = np.r_[e0, d.E_mwh.to_numpy()[:-1]]
         err_cont = max(err_cont, float(np.abs(d.E_start.to_numpy() - prev).max()))
         calc = d.E_start + (sto[s]["eta_c"] * d.P_ch - d.P_dis / sto[s]["eta_d"]) * dt
@@ -737,8 +767,10 @@ def checks(da_res, rr, rt_tab) -> dict:
     sc = rc["storage"]
     da_sto = da_res.tables["storage"].set_index(["unit", "period"])
     if sc.get("mode") == "fixed_da":
-        out["storage_vs_da_err_mw"] = float(max(abs((r.P_dis - r.P_ch) - (da_sto.loc[(r.unit, r.period), "P_dis"] - da_sto.loc[(r.unit, r.period), "P_ch"]))
-                                                for r in st.itertuples()))
+        # Disabled batteries leave a valid empty comparison, including in
+        # pumped-only scenarios which use this same realtime storage policy.
+        out["storage_vs_da_err_mw"] = float(max((abs((r.P_dis - r.P_ch) - (da_sto.loc[(r.unit, r.period), "P_dis"] - da_sto.loc[(r.unit, r.period), "P_ch"]))
+                                                for r in st.itertuples()), default=0.0))
     # 抽水蓄能：上库库容连续与平衡方程、同时抽发、工况沿用日前、fixed_da 出力偏差
     pst = rt_tab.get("pumped")
     if pst is not None and len(pst):
@@ -749,7 +781,7 @@ def checks(da_res, rr, rt_tab) -> dict:
         for pid, d in pst.groupby("unit"):
             d = d.sort_values("period")
             c = pcfg[pid]
-            prev = np.r_[float(c["vup0"]), d.V_up.to_numpy()[:-1]]
+            prev = np.r_[float(rr.states[0].pumped[pid]["V"]), d.V_up.to_numpy()[:-1]]
             ec = max(ec, float(np.abs(d.V_start.to_numpy() - prev).max()))
             calc = d.V_start + (d.P_pump / c["e_pump"] - d.P_gen / c["e_gen"]) * dt
             eq = max(eq, float(np.abs(calc - d.V_up).max()))
@@ -772,11 +804,11 @@ def checks(da_res, rr, rt_tab) -> dict:
             day_end_targets[kind,unit["id"]] = (target,target)
     for unit in cfg.units.get("hydro", []):
         season = unit["seasons"][cfg.base["season"]]
-        day_end_targets["V",unit["id"]] = ((season["v0"],season["v0"]) if unit.get("regulation") == "run_of_river"
+        day_end_targets["V",unit["id"]] = ((rr.states[0].hydro[unit["id"]],rr.states[0].hydro[unit["id"]]) if unit.get("regulation") == "run_of_river"
             else (season["v_end"],season["vmax"]))
     band_checks = state_band_policy_checks(cfg, rr.rt, day_end_targets=day_end_targets)
     out.update(band_checks)
-    out.update(hydro_terminal_lookahead_checks(cfg, rr, rolling._da_plan_arrays(da_res)))
+    out.update(hydro_terminal_lookahead_checks(cfg, rr, rolling._da_plan_arrays(da_res),input_registry=getattr(da_res.case,"input_provider",None)))
     out.update(slack_policy_checks(da_res.slack, rr.rt,
                                    state_band_required=band_checks["state_band_checks_active"]))
     out["rules_satisfied_no_slack"] = (out["rules_satisfied_no_slack"]
@@ -787,23 +819,25 @@ def checks(da_res, rr, rt_tab) -> dict:
     out["regulation_shortage_max_mw_all_windows"] = max(agc_short, default=0.)
     out["regulation_demand_met_all_windows"] = max(agc_short, default=0.) <= 1e-6
     out["all_declared_market_requirements_without_slack"] = out["rules_satisfied_no_slack"] and out["regulation_demand_met_all_windows"]
-    # 最小开停机（实际执行序列）
-    viol = 0
-    for u in cfg.units["thermal"]:
-        d = ru[ru.unit == u["id"]].sort_values("period").on.to_numpy()
-        init = u["init"]
-        seq = np.r_[[1 if init["online"] else 0] * int(round(init["hours"] / dt)), d]
-        runs, cur, n = [], seq[0], 0
-        for x in seq:
-            if x == cur:
-                n += 1
-            else:
-                runs.append((cur, n)); cur, n = x, 1
-        for k, (val, n) in enumerate(runs[1:], 1):           # 中间完整段
-            need = u["ut"] if val == 1 else u["dt"]
-            if n * dt < need - 1e-9:
-                viol += 1
-    out["min_updown_violations"] = viol
+    # Exact inherited duration plus every actual transition; no rounded prehistory.
+    from .state_bridge import thermal_duration_audit, terminal_obligations
+    duration_errors = thermal_duration_audit(cfg, rr.states[0], rr.rt)
+    out['min_updown_violations'] = len(duration_errors)
+    out['min_updown_violation_details'] = duration_errors
+    out['terminal_pending_obligations'] = terminal_obligations(cfg, rr.states[-1]) if len(rr.states) == len(rr.rt)+1 else None
+    out['terminal_obligations_scope'] = 'remaining_obligations_pending_future_execution_not_verified'
+    from .state_bridge import pumped_execution_audit
+    pumped_audit = pumped_execution_audit(cfg, rr.states[0], rr.rt)
+    out['pumped_cross_day_history_and_start_budget_valid'] = pumped_audit['valid']
+    out['pumped_execution_violations'] = pumped_audit['violations']
+    from .hydro_commitment import audit_execution as audit_hydro_commitment
+    commitment_audit = audit_hydro_commitment(cfg, getattr(rr.states[0], 'hydro_commitment', {}), rr.rt)
+    out['hydro_identified_commitment_active'] = commitment_audit['active']
+    if commitment_audit['active']:
+        commitment_audit['valid'] = (commitment_audit['valid'] and len(rr.states) == len(rr.rt)+1
+            and commitment_audit['terminal_state'] == rr.states[-1].hydro_commitment)
+    out['hydro_identified_commitment_execution_valid'] = commitment_audit['valid']
+
     # 实时功率平衡
     sysd = rt_tab["system"]
     # TIE is now included in rt_units; add the independently saved fixed plan once.
@@ -817,7 +851,7 @@ def checks(da_res, rr, rt_tab) -> dict:
     out.update(execution_safety_checks(da_res, rt_tab))
     out.update(hydro_window_checks(da_res, rr))
     from .hydro_daily_energy import audit as audit_daily_energy
-    out.update(audit_daily_energy(cfg, rolling.snapshot(da_res.model), rr, bids=getattr(da_res.case, "bids", None)))
+    out.update(audit_daily_energy(cfg, rolling.snapshot(da_res.model), rr, bids=getattr(da_res.case, "bids", None),input_registry=getattr(da_res.case,"input_provider",None)))
     from .storage_anchors import hard_anchor_checks
     out.update(hard_anchor_checks(cfg, rolling.snapshot(da_res.model), rr.rt))
     tol = out["safety_tolerance_mw"]
@@ -828,17 +862,25 @@ def checks(da_res, rr, rt_tab) -> dict:
     violations = ("storage_simultaneous", "pumped_simultaneous", "min_updown_violations",
                   "locked_commitment_mismatch_rt", "rt_vs_plan_commitment_mismatch")
     out["physical_feasible_checked_constraints"] = bool(
-        out["network_feasible"] and thermal_reference_complete and all(out.get(k, 0.0) <= tol for k in residuals)
+        out["network_feasible"] and thermal_reference_complete and pumped_audit["valid"] and commitment_audit["valid"] and all(out.get(k, 0.0) <= tol for k in residuals)
         and all(out.get(k, 0) == 0 for k in violations)
         and float(sysd.shed_mw.max()) <= tol and float(sysd.surplus_mw.max()) <= tol)
-    out["physical_feasibility_scope"] = "DA:network_limits_only;RT:network_limits,balance,SOC_and_pumped_continuity,exclusivity,commitment,min_updown_completed_interior_runs_only,no_shed_or_surplus;not_all_model_constraints"
+    out["physical_feasibility_scope"] = "DA:network_limits_only;RT:network_limits,balance,SOC_and_pumped_continuity,exclusivity,commitment,min_updown_inherited_initial_and_all_executed_transitions,no_shed_or_surplus;not_all_model_constraints"
     return out
 
 
-def run_full(cfg, case, log=print, periods: int | None = None, *, progress_callback=None, should_cancel=None) -> dict:
+def run_full(cfg, case, log=print, periods: int | None = None, *, progress_callback=None, should_cancel=None, retain_id_models: bool = True, phase_callback=None) -> dict:
+    if type(retain_id_models) is not bool:
+        raise ValueError("retain_id_models must be boolean")
     from .input_validation import validate_requested_periods
     validate_requested_periods(periods)
+    if not bool(getattr(cfg, 'base', {}).get('solver', {}).get('storage_binary', True)):
+        raise ValueError('storage_binary=false仅用于日前/独立LP研究对照，不支持滚动实际执行')
+    def phase(name):
+        if phase_callback is not None:
+            phase_callback(name)
     t0 = time.perf_counter()
+    phase("DA")
     if should_cancel and should_cancel():
         from .live_runner import RunCancelled
         raise RunCancelled("Cancelled before DA")
@@ -851,9 +893,12 @@ def run_full(cfg, case, log=print, periods: int | None = None, *, progress_callb
     def emit(event):
         if progress_callback:
             progress_callback(dict(event, da=da))
-    rr = rolling.run_rolling(da, periods=periods, log=log, progress_callback=emit, should_cancel=should_cancel)
+    phase("rolling")
+    rr = rolling.run_rolling(da, periods=periods, log=log, progress_callback=emit, should_cancel=should_cancel,
+                             **({} if retain_id_models else {"retain_id_models": False}))
     from .hydro_daily_energy import audit as audit_daily_energy
-    daily_check = audit_daily_energy(cfg, rolling.snapshot(da.model), rr, bids=getattr(da.case, "bids", None))
+    phase("daily_energy_audit")
+    daily_check = audit_daily_energy(cfg, rolling.snapshot(da.model), rr, bids=getattr(da.case, "bids", None),input_registry=getattr(da.case,"input_provider",None))
     if daily_check["hydro_daily_minimum_active"] and (not daily_check["hydro_daily_minimum_evidence_valid"]
             or daily_check.get("hydro_daily_minimum_final_satisfied") is False):
         error = RuntimeError("水电硬日电量下限验收失败；保留已执行前缀，不生成成功结算："
@@ -864,12 +909,17 @@ def run_full(cfg, case, log=print, periods: int | None = None, *, progress_callb
         from .live_runner import RunCancelled
         raise RunCancelled("Cancelled before settlement")
     t1 = time.perf_counter()
+    phase("result_tables")
     rt_tab = rolling.rt_tables(da, rr)
     id_tab = rolling.intraday_tables(da, rr)
+    phase("settlement")
     st = settlement.settle(da, rr)
     t_set = time.perf_counter() - t1
     from .live_runner import completion_metadata
-    return dict(**completion_metadata(cfg.T,len(rr.rt)),da=da, rr=rr, rt=rt_tab, id=id_tab, settle=st, checks=checks(da, rr, rt_tab),
+    phase("execution_checks")
+    checked = checks(da, rr, rt_tab)
+    phase("full_complete")
+    return dict(**completion_metadata(cfg.T,len(rr.rt),dt_h=cfg.dt),da=da, rr=rr, rt=rt_tab, id=id_tab, settle=st, checks=checked,
                 time_s=dict(da=t_da, intraday=rr.time_s["intraday"], realtime=rr.time_s["realtime"], settlement=t_set,
                             total=time.perf_counter() - t0))
 
@@ -887,6 +937,26 @@ def write_intraday_failures(rr, directory):
         directory / "id_failed_rounds.csv", index=False)
 
 
+def _weighted_or_none(values, weights):
+    values, weights = np.asarray(values), np.asarray(weights)
+    valid = np.isfinite(values) & np.isfinite(weights) & (weights > 0)
+    return float(np.average(values[valid], weights=weights[valid])) if valid.any() else None
+
+
+def _finite_stat(values, reducer):
+    values = np.asarray(values)
+    finite = values[np.isfinite(values)]
+    return float(reducer(finite)) if finite.size else None
+
+
+def _hourly_means(values, dt):
+    """Preserve arithmetic-time mean, using overlap with actual complete hours."""
+    values = np.asarray(values)
+    start = np.arange(len(values)) * dt
+    return [_weighted_or_none(values, np.maximum(0., np.minimum(start + dt, h + 1.) - np.maximum(start, h)))
+            for h in range(int(np.floor(len(values) * dt + 1e-9)))]
+
+
 def summarize_full(res) -> dict:
     da, st, rt = res["da"], res["settle"], res["rt"]
     cfg = da.case.cfg
@@ -895,13 +965,15 @@ def summarize_full(res) -> dict:
     net = da.case.net
     load_da = np.array([[da.case.load_bus.get(b, np.zeros(cfg.T))[t] for t in range(T)] for b in net.buses])
     load_rt = rt["prices"].pivot(index="bus", columns="period", values="load_mw").reindex(net.buses).to_numpy()
-    wda = (pda * load_da).sum(0) / load_da.sum(0)
-    wrt = (prt * load_rt).sum(0) / load_rt.sum(0)
+    da_weights, rt_weights = load_da.sum(0), load_rt.sum(0)
+    wda = np.divide((pda * load_da).sum(0), da_weights, out=np.full(T, np.nan), where=da_weights > 0)
+    wrt = np.divide((prt * load_rt).sum(0), rt_weights, out=np.full(T, np.nan), where=rt_weights > 0)
+    tail_weights = np.maximum(0., np.arange(T) * cfg.dt + cfg.dt - np.maximum(np.arange(T) * cfg.dt, 21.))
     sp = prt - pda
     bt = st["by_type"].set_index("type")
     fe = bt.reindex(["load", "wind", "pv"]).fillna(0)
     from .live_runner import completion_metadata
-    scope = completion_metadata(cfg.T, T)
+    scope = completion_metadata(cfg.T, T,dt_h=cfg.dt)
     s = dict(
         hydro_daily_minimum={key.removeprefix("hydro_daily_minimum_"): value
             for key, value in res["checks"].items() if key.startswith("hydro_daily_minimum_")},
@@ -948,18 +1020,23 @@ def summarize_full(res) -> dict:
                 requested_mip_gap=cfg.base["solver"]["mip_rel_gap"],
                 requested_gap_met=bool(np.isfinite(da.scuc_info["gap"]) and da.scuc_info["gap"] <= cfg.base["solver"]["mip_rel_gap"]+1e-9),
                 curtail_mwh=float(da.tables["units"].curtail_mw.sum() * cfg.dt)),
-        spread=dict(da_lw_avg=float((wda * load_da.sum(0)).sum() / load_da.sum()),
-                    rt_lw_avg=float((wrt * load_rt.sum(0)).sum() / load_rt.sum()),
-                    lw_spread_mean=float((wrt - wda).mean()), lw_spread_abs_mean=float(np.abs(wrt - wda).mean()),
-                    lw_spread_max=float((wrt - wda).max()), lw_spread_min=float((wrt - wda).min()),
+        spread=dict(da_lw_avg=_weighted_or_none(wda, da_weights),
+                    rt_lw_avg=_weighted_or_none(wrt, rt_weights),
+                    lw_spread_mean=_finite_stat(wrt - wda, np.mean), lw_spread_abs_mean=_finite_stat(np.abs(wrt - wda), np.mean),
+                    lw_spread_max=_finite_stat(wrt - wda, np.max), lw_spread_min=_finite_stat(wrt - wda, np.min),
+                    lw_spread_defined_periods=int(np.isfinite(wrt - wda).sum()),
+                    lw_undefined_policy="zero_load_periods_excluded;all_undefined_is_null",
                     nodal_spread_abs_max=float(np.abs(sp).max()), nodal_spread_rms=float(np.sqrt((sp ** 2).mean())),
                     rt_lmp_min=float(prt.min()), rt_lmp_max=float(prt.max()),
                     da_lmp_min=float(pda.min()), da_lmp_max=float(pda.max()),
-                    da_lw_tail=float((wda[84:] * load_da.sum(0)[84:]).sum() / load_da.sum(0)[84:].sum()) if T > 84 else float("nan"),
-                    rt_lw_tail=float((wrt[84:] * load_rt.sum(0)[84:]).sum() / load_rt.sum(0)[84:].sum()) if T > 84 else float("nan"),
-                    rt_lw_hourly=[float(x) for x in (wrt[: T // 4 * 4].reshape(-1, 4).mean(1))],
-                    da_lw_hourly=[float(x) for x in (wda[: T // 4 * 4].reshape(-1, 4).mean(1))]),
-        settlement_by_type={k: {c: float(v) for c, v in r.items()} for k, r in bt.iterrows()},
+                    da_lw_tail=_weighted_or_none(wda, da_weights * tail_weights),
+                    rt_lw_tail=_weighted_or_none(wrt, rt_weights * tail_weights),
+                    rt_lw_hourly=_hourly_means(wrt, cfg.dt),
+                    da_lw_hourly=_hourly_means(wda, cfg.dt)),
+        # A zero-net-energy type has no defined average price. Preserve that
+        # unknown as JSON null, without masking invalid quantities or cash.
+        settlement_by_type={k: {c: (None if c == "avg_price" and not np.isfinite(v) else float(v))
+                                for c, v in r.items()} for k, r in bt.iterrows()},
         forecast_error=dict(dev_abs_mwh=float(fe.dev_abs_mwh.sum()), rt_amount=float(fe.rt_amount.sum()),
                             dev_pnl=float(fe.dev_pnl.sum()),
                             by_type={k: dict(dev_mwh=float(fe.loc[k, "dev_mwh"]), dev_abs_mwh=float(fe.loc[k, "dev_abs_mwh"]),
@@ -1066,7 +1143,7 @@ def actual_state_evidence(state) -> dict:
     return convert(raw)
 
 
-def write_pricing_evidence(da, rounds, directory: Path) -> dict:
+def write_pricing_evidence(da, rounds, directory: Path, id_rounds=()) -> dict:
     """Export clone diagnostics without ever substituting clone dispatch quantities."""
     def numeric(value):
         if isinstance(value, dict): return {str(k): numeric(v) for k,v in value.items()}
@@ -1080,9 +1157,12 @@ def write_pricing_evidence(da, rounds, directory: Path) -> dict:
         pricing_quantities_executable=False,
         raw_prices="selected_price_solve_duals",settlement_prices="selected_raw_prices_clipped_to_market_limits",
         da=getattr(da,"pricing_info",None),
-        rt_windows=[dict(window_start=r["t"],diagnostics=r.get("pricing_info")) for r in rounds])
+        rt_windows=[dict(window_start=r["t"],diagnostics=r.get("pricing_info")) for r in rounds],
+        id_windows=[dict(window_start=r["tau"],diagnostics=r.get("pricing_info")) for r in id_rounds])
     (directory/"auxiliary_pricing_evidence.json").write_text(json.dumps(numeric(evidence),ensure_ascii=False,allow_nan=False),encoding="utf-8")
-    scopes=[("DA",0,evidence["da"])]+[("RT",r["window_start"],r["diagnostics"]) for r in evidence["rt_windows"]]
+    scopes=([("DA",0,evidence["da"])]
+        +[("ID",r["window_start"],r["diagnostics"]) for r in evidence["id_windows"]]
+        +[("RT",r["window_start"],r["diagnostics"]) for r in evidence["rt_windows"]])
     for key in ("bands","slack_differences","reserve_differences","state_differences","removed_rt_tracking","anchor_costs"):
         rows=[dict(stage=stage,window_start=start,**row) for stage,start,info in scopes
               if info is not None for row in info.get(key,[])]
@@ -1094,7 +1174,11 @@ def write_full_outputs(res, d: Path, make_plots=True) -> dict:
     d.mkdir(parents=True, exist_ok=True)
     da, st, rt, idt = res["da"], res["settle"], res["rt"], res["id"]
     from .live_runner import completion_metadata, atomic_json
-    scope = completion_metadata(da.case.cfg.T, len(res["rr"].rt))
+    from .result_retention import validate_compact_rounds, archive_state_evidence
+    validate_compact_rounds(res['rr'])
+    if getattr(res['rr'], 'id_models_retained', True) is False:
+        atomic_json(d/'id_state_value_evidence.json',archive_state_evidence(res['rr']))
+    scope = completion_metadata(da.case.cfg.T, len(res["rr"].rt),dt_h=da.case.cfg.dt)
     atomic_json(d/"output_scope.json",scope)
     state_evidence=dict(scope="actual_initial_state_before_each_executed_RT_window",
         history_scope="absolute executed indices [0,t); future buffers intentionally omitted",
@@ -1102,17 +1186,25 @@ def write_full_outputs(res, d: Path, make_plots=True) -> dict:
         windows=[actual_state_evidence(state) for state in res["rr"].states[:len(res["rr"].rt)]],
         final_executed_state=actual_state_evidence(res["rr"].states[-1]) if len(res["rr"].states)==len(res["rr"].rt)+1 else None)
     (d/"rolling_actual_states.json").write_text(json.dumps(state_evidence,ensure_ascii=False,allow_nan=False),encoding="utf-8")
-    write_pricing_evidence(da, res["rr"].rt, d)
+    write_pricing_evidence(da, res["rr"].rt, d, res["rr"].id_rounds)
     solver_rows = [dict(stage="DA", window_start=0, **da.scuc_info)] + [
-        dict(stage="RT", window_start=r["t"], **r["mip"]) for r in res["rr"].rt]
+        dict(stage="RT", window_start=r["t"], **r["mip"]) for r in res["rr"].rt] + [
+        dict(stage="ID", window_start=r["tau"], **r["mip"]) for r in res["rr"].id_rounds]
     for row in solver_rows:
-        target = (da.case.cfg.base["solver"]["mip_rel_gap"] if row["stage"] == "DA" else da.case.cfg.mode["realtime"].get("mip_rel_gap", .01))
+        target = (da.case.cfg.base["solver"]["mip_rel_gap"] if row["stage"] == "DA" else
+                  da.case.cfg.mode["intraday"].get("mip_rel_gap", .005) if row["stage"] == "ID" else
+                  da.case.cfg.mode["realtime"].get("mip_rel_gap", .01))
         row["requested_mip_gap"] = target
         gap = row.get("gap")
         row["requested_gap_met"] = bool(gap is not None and np.isfinite(gap) and gap <= target+1e-9)
     pd.DataFrame(solver_rows).drop(columns=["warm_start", "regulation_allocation"], errors="ignore").to_csv(d/"solver_windows.csv",index=False)
 
     stage_data = {"da": getattr(da, "stage_diagnostics", {}), "rt_windows": [{"t": r["t"], "stages": r.get("stage_diagnostics", {})} for r in res["rr"].rt]}
+    stage_data.update(schema_version=2,
+        id_rounds=[dict(tau=r["tau"], issue_t=r.get("issue_t"), stages=r.get("stage_diagnostics", {}),
+                        solution_quality=r.get("solution_quality", {})) for r in res["rr"].id_rounds],
+        id_failures=getattr(res["rr"], "id_failures", []),
+        id_failed_stages=getattr(res["rr"], "id_failed_stages", []))
     (d / "stage_diagnostics.json").write_text(json.dumps(stage_data, ensure_ascii=False, default=float), encoding="utf-8")
     cfg = da.case.cfg
     tracking_rows = [dict(window_start=r["t"], **row) for r in res["rr"].rt for row in r["snap"].get("tracking", [])]
@@ -1121,7 +1213,8 @@ def write_full_outputs(res, d: Path, make_plots=True) -> dict:
     from .value_outputs import write_value_outputs   # 第二轮H项：价值曲线、窗口末偏差、偏差带/回退、价值定价时段、辅助vs对偶价差
     write_value_outputs(da, res["rr"], d)
     from .results import reserve_snapshot
-    reserve_evidence={"da":reserve_snapshot(da.model),"rt_windows":[r["snap"]["reserve"] for r in res["rr"].rt]}
+    reserve_evidence={"da":reserve_snapshot(da.model),"rt_windows":[r["snap"]["reserve"] for r in res["rr"].rt],
+                      "id_windows":[r["snap"]["reserve"] for r in res["rr"].id_rounds]}
     (d / "reserve_window_evidence.json").write_text(json.dumps(reserve_evidence,ensure_ascii=False),encoding="utf-8")
     # Full-precision window evidence for independent hydro state/lag/target audits.
     def hydro_evidence(sn):
@@ -1131,6 +1224,8 @@ def write_full_outputs(res, d: Path, make_plots=True) -> dict:
                          for (h,z),a in sn.get("delta", {}).items()]
         data["constraints"] = sn.get("hydro_constraints", {})
         data["hydro_daily_energy"] = sn.get("hydro_daily_energy", {})
+        if sn.get('input_provenance') is not None:
+            data['input_provenance']=sn['input_provenance']
         return data
     from .hydro_daily_energy import id_state_values
     evidence = dict(dt_h=cfg.dt, season=cfg.base["season"], hydro_mode=cfg.mode["realtime"].get("hydro"),
@@ -1149,12 +1244,22 @@ def write_full_outputs(res, d: Path, make_plots=True) -> dict:
             state=dict(volume=state.hydro, power=getattr(state,"hydro_p",{}), online=getattr(state,"hydro_online",{}),
                        energy_used_mwh=state.hydro_used,
                        outflow_history={h:np.asarray(a[:state.t]).tolist() for h,a in state.hydro_hist.items()})))
+    if da.case.input_provider is not None:
+        evidence['causal_input_registry']=da.case.input_provider.archive(da.case.day_start_utc)
+        evidence['project_timezone']=da.case.input_provider.forecaster.timezone
+        from .forecast_diagnostics import make_diagnostic_context
+        evidence['diagnostic_context']=make_diagnostic_context(da.case.cfg.base,
+            da.case.input_provider.source_manifest(),da.case.input_provider.day_summary(da.case.day_start_utc),
+            da.case.selected_inputs.content_hash)
     (d / "hydro_window_evidence.json").write_text(json.dumps(evidence,ensure_ascii=False,
         default=lambda x:x.tolist() if hasattr(x,"tolist") else float(x)),encoding="utf-8")
     f = dict(index=False, float_format="%.4f")
     from .output_catalog import write_da_tables, write_catalog, write_profile_evidence
     write_da_tables(da, d)
     write_profile_evidence(da.case, d)
+    if da.case.selected_inputs is not None:
+        from .forecast_diagnostics import write_post_execution_diagnostics
+        write_post_execution_diagnostics(evidence,d)
     write_intraday_failures(res["rr"], d)
     idt["summary"].to_csv(d / "id_rounds_summary.csv", **f)
     idt["plans"].to_csv(d / "id_plans.csv", **f)
@@ -1176,6 +1281,17 @@ def write_full_outputs(res, d: Path, make_plots=True) -> dict:
                             expected_periods=scope["expected_periods"],executed_periods=scope["executed_periods"]).to_csv(d/f"operating_profit_{key}.csv",**f)
     atomic_json(d/"fixed_cost_profile.json",profits["profile"])
     s = summarize_full(res)
+    if getattr(res['rr'], 'id_models_retained', True) is False:
+        from .result_retention import ARCHIVE_CONTRACT, conversion_parameters
+        s['id_result_retention'] = dict(ARCHIVE_CONTRACT)
+        s['id_state_value_parameters'] = conversion_parameters(cfg)
+    from .hydro_spill_tiebreak import RULE as WATER_SELECTION_RULE, audit_selection_evidence
+    selection=dict(version=1,rule=WATER_SELECTION_RULE,da=da.sced_info["hydro_water_selection"],
+        rt_windows=[dict(window_start=r["t"],certificate=r["sced"]["hydro_water_selection"]) for r in res["rr"].rt],
+        id_windows=[dict(window_start=r["tau"],certificate=r["sced"]["hydro_water_selection"]) for r in res["rr"].id_rounds])
+    (d/"hydro_water_selection_evidence.json").write_text(json.dumps(selection,ensure_ascii=False,allow_nan=False),encoding="utf-8")
+    s["hydro_water_selection"]=audit_selection_evidence(selection,evidence,
+        json.loads((d/"stage_diagnostics.json").read_text()),da.case.cfg.units["hydro"],len(res["rr"].rt),len(res["rr"].id_rounds))
     s["operating_profit"]=dict(profits["summary"],**scope)
     provenance_path=d/"run_provenance.json"
     if provenance_path.exists():
@@ -1190,9 +1306,14 @@ def write_full_outputs(res, d: Path, make_plots=True) -> dict:
     s["price_limits"] = {k: float(v) for k, v in da.case.cfg.mode["price_limits"].items() if isinstance(v, (int, float))}
     from .reserve_checks import audit as audit_reserve_evidence
     s["reserve"] = audit_reserve_evidence(reserve_evidence)
-    s["reserve"].update(storage_reserve_enabled=reserve_evidence["da"]["storage_reserve_enabled"],
+    s["reserve"].update(evidence_version=reserve_evidence["da"]["evidence_version"],
+                        hydro_reserve_outflow_formulation=reserve_evidence["da"]["hydro_reserve_outflow_formulation"],
+                        hydro_reserve_outflow_enabled=reserve_evidence["da"]["hydro_reserve_outflow_enabled"],
+                        hydro_reserve_water_formulation=reserve_evidence["da"]["hydro_reserve_water_formulation"],
+                        hydro_reserve_water_enabled=reserve_evidence["da"]["hydro_reserve_water_enabled"],
+                        storage_reserve_enabled=reserve_evidence["da"]["storage_reserve_enabled"],
                         down_enabled=reserve_evidence["da"]["down_enabled"],T_dur_h=reserve_evidence["da"]["T_dur_h"],
-                        scope="DA_and_all_RT_planning_windows;RT_shortage_max_uses_executed_first_period_only;no_activation_network_or_response_certification")
+                        scope="DA_ID_and_all_RT_planning_windows;RT_shortage_max_uses_executed_first_period_only;no_activation_network_or_response_certification")
     from . import regulation, regulation_results
     da_reg, da_reg_system = regulation_results.table_for_snapshot(regulation.snapshot(da.model), da.prices.get("regulation", {}))
     da_reg.to_csv(d / "da_regulation_indicative.csv", **f)
@@ -1218,18 +1339,19 @@ def write_full_outputs(res, d: Path, make_plots=True) -> dict:
     (d / "summary.json").write_text(json.dumps(s, ensure_ascii=False, indent=2, default=float), encoding="utf-8")
     plot_files = []
     if make_plots:
-        plot_files += plots.dispatch_plots(da.tables, d)
-        plot_files += plots.dispatch_plots(rt, d, stage="rt")
-        plots.forecast_plot(da.case.profiles, d / "forecast_vs_actual.png")
+        plot_files += plots.dispatch_plots(da.tables, d, dt_h=cfg.dt)
+        plot_files += plots.dispatch_plots(rt, d, stage="rt", dt_h=cfg.dt)
+        if da.case.selected_inputs is None:
+            plots.forecast_plot(da.case.profiles, d / "forecast_vs_actual.png", dt_h=cfg.dt)
         if any(c.endswith("_actual") and c[:-7]+"_da" in da.case.profiles for c in da.case.profiles):
             plot_files.append("forecast_vs_actual.png")
         net = da.case.net
         T = s["periods"]
-        load_da = np.array([[da.case.load_bus.get(b, np.zeros(96))[t] for t in range(T)] for b in net.buses])
+        load_da = np.array([[da.case.load_bus.get(b, np.zeros(cfg.T))[t] for t in range(T)] for b in net.buses])
         load_rt = rt["prices"].pivot(index="bus", columns="period", values="load_mw").reindex(net.buses).to_numpy()
-        plots.da_vs_rt_lmp(st["prices"]["da"], st["prices"]["rt"], load_da, load_rt, list(net.buses), d / "lmp_da_vs_rt.png")
+        plots.da_vs_rt_lmp(st["prices"]["da"], st["prices"]["rt"], load_da, load_rt, list(net.buses), d / "lmp_da_vs_rt.png", dt_h=cfg.dt)
         plots.rolling_plans(idt["plans"], idt["storage"], rt["units"], rt["storage"], da.tables["units"], da.tables["storage"],
-                            d / "rolling_plans.png", x=cfg.mode["realtime"]["storage"]["x"]
+                            d / "rolling_plans.png", dt_h=cfg.dt, x=cfg.mode["realtime"]["storage"]["x"]
                             if cfg.mode["realtime"]["storage"]["mode"] == "sced_anchor" and cfg.mode["realtime"]["storage"]["anchor"] == "window_end_pct" else None)
         plots.settlement_bars(st["by_type"], st["by_entity"], d / "settlement_bars.png")
         plot_files += ["lmp_da_vs_rt.png", "rolling_plans.png", "settlement_bars.png"]

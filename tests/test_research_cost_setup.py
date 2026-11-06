@@ -35,13 +35,13 @@ def test_explicit_generation_changes_legacy_defaults_not_original_files(scene):
     assert not (scene / 'config' / FILENAME).exists()
     apply_generated_cost_setup(plan)
     profile = load_fixed_cost_profile(cfg)
-    assert profile['units']['C2']['scalar_marginal_cost_yuan_per_mwh'] == 280
+    assert profile['units']['C2']['scalar_marginal_cost_yuan_per_mwh'] == pytest.approx(277.4619066987628)
     assert profile['units']['C2']['fixed_online_cost_yuan_per_h'] == pytest.approx(6000 * 725 / 646)
     assert profile['units']['ES1'] == profile['units']['ES3']
     assert originals(scene) == before
     assert not prepare_generated_cost_setup(cfg)['changed']
     bid = research_cost_bid_preview(cfg, selected_unit_ids=['C2'])
-    assert bid['units']['C2']['segments'][1]['price'] == 280
+    assert bid['units']['C2']['segments'][1]['price'] == 277.46
 
 
 @pytest.mark.parametrize('kind', ['modified', 'observed'])
@@ -182,7 +182,7 @@ def test_old_archive_import_cannot_shadow_effective_generated_costs(scene):
     initialize_missing_cost_defaults(scene)
     with pytest.raises(ValueError, match='页面生成流程'):
         prepare_cost_archive_import(scene, ROOT)
-    assert load_fixed_cost_profile(load_config(root=scene))['units']['C2']['scalar_marginal_cost_yuan_per_mwh'] == 280
+    assert load_fixed_cost_profile(load_config(root=scene))['units']['C2']['scalar_marginal_cost_yuan_per_mwh'] == pytest.approx(277.4619066987628)
 
 
 def test_mixed_worksheet_never_labels_generated_missing_unit_as_observed(scene):
@@ -216,7 +216,7 @@ def test_create_scene_inherits_generated_costs_or_fills_missing(scene, monkeypat
     monkeypatch.setattr(scenario, 'SCEN_DIR', scene / 'scenes')
     target = scenario.create_scenario('新场景')
     effective = load_fixed_cost_profile(load_config(root=target))
-    assert effective['units']['C2']['scalar_marginal_cost_yuan_per_mwh'] == 280
+    assert effective['units']['C2']['scalar_marginal_cost_yuan_per_mwh'] == pytest.approx(277.4619066987628)
     assert originals(scene) == before
     if existing_overlay:
         assert (target / 'config' / FILENAME).read_bytes() == (scene / 'config' / FILENAME).read_bytes()

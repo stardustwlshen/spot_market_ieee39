@@ -33,7 +33,8 @@ def _recover(root):
     if not journal.exists():
         return
     records = json.loads(journal.read_bytes())
-    allowed = {'config/units.yaml', 'config/generated_research_costs.json', 'current_quote.json'}
+    allowed = {'config/units.yaml', 'config/generated_research_costs.json', 'current_quote.json',
+               'config/base.yaml', 'config/modes.yaml', 'config/spot_market_costs.yaml'}
     if not isinstance(records, dict) or not set(records) <= allowed:
         raise ValueError('机组保存恢复记录无效，请保留场景并检查，未继续读取混合输入。')
     # Refuse to overwrite independent changes made after an interrupted commit.

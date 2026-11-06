@@ -84,11 +84,12 @@ agg["energy_delta"] = agg.energy_after - agg.energy_before
 agg["revenue_delta"] = agg.revenue_after - agg.revenue_before
 agg.to_csv(cmp_dir / "award_compare_daily.csv", float_format="%.1f")
 plots.rebid_compare(p0, p1, u0, u1, ["CCGT", "GT", "ES2"], cmp_dir / "rebid_compare.png", buses=[16, 35, 31],
-                    title=f"改报价前后对比（v{base['version']} → v{new['version']}）")
+                    title=f"改报价前后对比（v{base['version']} → v{new['version']}）", dt_h=cfg.dt)
 summary = dict(before=dict((k, s0[k]) for k in ("objective", "lmp_min", "lmp_max", "lmp_load_weighted_avg")),
                after=dict((k, s1[k]) for k in ("objective", "lmp_min", "lmp_max", "lmp_load_weighted_avg")))
 (cmp_dir / "summary.json").write_text(json.dumps(summary, ensure_ascii=False, indent=2, default=float), encoding="utf-8")
 print("\n日电量/收入变化（MWh / 元）：")
 print(agg.round(1).to_string())
-print("\n负荷加权均价：%.2f → %.2f 元/MWh" % (s0["lmp_load_weighted_avg"], s1["lmp_load_weighted_avg"]))
+from smm.pipeline import format_optional_price
+print(f"\n负荷加权均价：{format_optional_price(s0['lmp_load_weighted_avg'])} → {format_optional_price(s1['lmp_load_weighted_avg'])} 元/MWh")
 print("对比输出：", cmp_dir)

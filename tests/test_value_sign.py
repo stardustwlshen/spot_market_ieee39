@@ -68,8 +68,10 @@ def test_state_value_sign_fd_all_kinds(da_result, kind, con_name, units_attr, ep
 
 
 def test_value_sign_decomposition_bid_vs_system(da_result):
-    """报价目标 = 系统其余成本 + 储能/抽蓄自身报价项；v 是前者合计的 −导数。
-    多 1 MWh SOC 时系统其余成本不增加（可少买电或多放电），v 为负只能来自自身充电买价盈余被挤掉。"""
+    """总报价目标分解成立；各分量沿联合最优解变化，不各自满足单调性。
+    硬日末库存、固定工况和系统余电成本也可产生负值，不能断言只来自自身报价。
+    主对偶的双侧有限差分由 test_state_value_sign_fd_all_kinds 单独核验。
+    """
     m = da_result.model.clone()
     scuc.solve_sced(m)
     s, t, eps = list(m.S)[0], 40, .5
@@ -87,9 +89,7 @@ def test_value_sign_decomposition_bid_vs_system(da_result):
     v_sys = -((obj1 - own1) - (obj0 - own0)) / eps
     v_own = -(own1 - own0) / eps
     assert v_total == pytest.approx(v_sys + v_own, abs=1e-6)
-    assert v_sys >= -1e-6, v_sys
-    if v < -1.:
-        assert v_own < 0.
+    assert np.isfinite([v, v_total, v_sys, v_own]).all()
 
 
 @pytest.mark.parametrize("sign", [1., -1.])

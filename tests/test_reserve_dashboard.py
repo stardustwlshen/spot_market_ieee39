@@ -139,3 +139,45 @@ def test_incremental_pumped_down_margin_and_nulls_preserved():
     assert capability['增量上备用库存余量 万m³'].isna().all()
     assert capability['增量下备用库存余量 万m³'].iloc[0]==3.
     assert any('定速抽水及空闲不计备用' in x.value for x in at.caption)
+
+
+def test_hydro_water_screen_uses_saved_native_units_and_scope():
+    at=render({'units':[{'period':0,'unit':'H1','type':'hydro','P_mw':20.,'r_up':10.,'r_dn':0.}],
+               'reserve':[{'period':0,'unit':'H1','hydro_reserve_water_checked':True,'T_dur_h':.25,
+                   'V_end_1e4m3':10.9,'V_min_1e4m3':10.,'water_rate_m3s_per_mw':1.,
+                   'reserve_available_water_1e4m3':.9,'reserve_incremental_water_up_1e4m3':.9,
+                   'reserve_duration_up_margin_1e4m3':0.}]})
+    assert not at.exception
+    assert at.dataframe[-1].value['上备用增量耗水 万m³'].iloc[0]==.9
+    assert at.dataframe[-1].value['备用持续时长 h'].iloc[0]==.25
+    assert any('不预支未来来水' in x.value for x in at.caption)
+
+
+def test_historical_hydro_does_not_claim_new_water_screen():
+    at=render({'units':[{'period':0,'unit':'H1','type':'hydro','P_mw':20.,'r_up':80.,'r_dn':0.}]})
+    assert not at.exception
+    assert any('水量筛查未记录' in x.value for x in at.info)
+
+
+def test_hydro_outflow_screen_labels_theoretical_not_executed_flows():
+    at=render({'units':[{'period':0,'unit':'H1','type':'hydro','P_mw':20.,'r_up':60.,'r_dn':0.}],
+               'reserve':[{'period':0,'unit':'H1','hydro_reserve_water_checked':True,'T_dur_h':.25,
+                   'hydro_reserve_outflow_checked':True,'qout_max_m3s':80.,'qeco_m3s':80.,
+                   'Qout_base_m3s':80.,'Qspill_base_m3s':60.,
+                   'reserve_up_activation_generation_m3s':80.,'reserve_up_activation_spill_m3s':0.,
+                   'reserve_up_activation_outflow_m3s':80.,'reserve_up_outflow_margin_m3s':0.,
+                   'reserve_up_ecological_margin_m3s':0.}]})
+    assert not at.exception
+    assert at.dataframe[-1].value['理论激活总出库 m³/s'].iloc[0]==80.
+    assert any('不是实际执行轨迹' in x.value for x in at.caption)
+    assert any('库存筛查仍按全额备用耗水' in x.value for x in at.caption)
+
+
+def test_unconfigured_hydro_outflow_is_not_shown_as_unlimited_or_zero_margin():
+    at=render({'units':[{'period':0,'unit':'H1','type':'hydro','P_mw':20.,'r_up':10.,'r_dn':0.}],
+               'reserve':[{'period':0,'unit':'H1','hydro_reserve_water_checked':True,'T_dur_h':.25,
+                   'hydro_reserve_outflow_checked':False,'hydro_reserve_outflow_status':'not_configured',
+                   'qout_max_m3s':None,'reserve_up_outflow_margin_m3s':None}]})
+    assert not at.exception
+    assert any('不展示虚构的无限能力' in x.value for x in at.info)
+    assert not any('激活出库余量 m³/s' in x.value for x in at.dataframe)

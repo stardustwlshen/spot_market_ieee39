@@ -12,6 +12,8 @@ from smm.config import load_config
 @pytest.fixture
 def context():
     cfg = load_config()
+    for h in cfg.units['hydro']:
+        h.pop('commitment', None)  # Synthetic aggregate plans have no identified execution history.
     T = cfg.T
     a = lambda x: np.full(T, float(x))
     plan = dict(u={u["id"]: a(1) for u in cfg.units["thermal"]}, E={}, Vu={}, Vh={}, delta={}, Qout={}, Ph={}, state_values={})
@@ -106,9 +108,19 @@ def test_invalid_da_never_becomes_zero_value(context):
         handoff.selected_reference(cfg, da, None, False)
 
 
+def da_case_probe(cfg):
+    # Mirrors DACase's optional source fields for this legacy synthetic-plan
+    # probe. No future physical trajectory or real window builder is fabricated.
+    from smm.natural_inflow import is_causal
+    assert not is_causal(cfg)
+    return SimpleNamespace(cfg=cfg, day_start_utc=None, input_provider=None,
+                           selected_inputs=None, actual_state_required=False)
+
+
 def install_window_probe(monkeypatch, clear=None):
     seen = {}
-    def case(da_case, cfg, t, t1, issue, first, state, fixed, term, stage):
+    def case(da_case, cfg, t, t1, issue, first, state, fixed, term, stage, *, selected_inputs=None):
+        assert selected_inputs is None  # Explicitly legacy probe, not a causal mock.
         seen.update(fixed=fixed, terminal=term)
         return SimpleNamespace(cfg=cfg, terminal=term, stage=stage)
     def success(case, **kwargs):
@@ -127,7 +139,7 @@ def test_da_lock_never_reads_latest_id_and_gt_semantics_retained(context, monkey
         a[:] = 0
     ref = handoff.merge_intraday(da, da, r, cfg.T, vals, cfg=cfg)
     seen = install_window_probe(monkeypatch)
-    result = rolling.run_rt_period(SimpleNamespace(cfg=cfg), da, ref, cfg, rolling.initial_state(cfg), 0, ref=ref, id_active=True)
+    result = rolling.run_rt_period(da_case_probe(cfg), da, ref, cfg, rolling.initial_state(cfg), 0, ref=ref, id_active=True)
     for u in cfg.units["thermal"]:
         g = u["id"]
         if u["type"] in cfg.mode["realtime"]["lock_types"]:
@@ -148,7 +160,7 @@ def test_resource_switch_provenance_and_missing_gt_fallback(context, monkeypatch
     del r["snap"]["u"][gt]
     ref = handoff.merge_intraday(da, da, r, cfg.T, vals, cfg=cfg)
     seen = install_window_probe(monkeypatch)
-    result = rolling.run_rt_period(SimpleNamespace(cfg=cfg), da, ref, cfg, rolling.initial_state(cfg), 0, ref=ref, id_active=True)
+    result = rolling.run_rt_period(da_case_probe(cfg), da, ref, cfg, rolling.initial_state(cfg), 0, ref=ref, id_active=True)
     assert seen["fixed"]["u"][gt, 0] == 1
     assert result["reference_metadata"]["u"][gt]["fallback_reason"]
     assert all(m["trajectory_source"] == "day_ahead" for m in result["reference_metadata"]["E"].values())
@@ -177,7 +189,7 @@ def test_non_infeasible_errors_never_soften(context, monkeypatch, error):
         raise error
     install_window_probe(monkeypatch, fail)
     with pytest.raises(RuntimeError, match=str(error)):
-        rolling.run_rt_period(SimpleNamespace(cfg=cfg), da, da, cfg, rolling.initial_state(cfg), 0)
+        rolling.run_rt_period(da_case_probe(cfg), da, da, cfg, rolling.initial_state(cfg), 0)
     assert len(calls) == 1
 
 
@@ -189,7 +201,7 @@ def test_export_uses_resource_source_not_global_label(context, monkeypatch):
              reference_state=da["E"][unit][7], label="band", state=da["E"][unit][7], lower=0., upper=1000.,
              lower_binding=False, upper_binding=False, slack_up=0., slack_dn=0., soft=False)
     rr = SimpleNamespace(rt=[dict(t=0, snap={"value_window": [w]}, reference_source="intraday@0", plan_idx=0)], plans=[da])
-    table = value_outputs.rt_value_windows(SimpleNamespace(case=SimpleNamespace(cfg=cfg), model=None), rr)
+    table = value_outputs.rt_value_windows(SimpleNamespace(case=da_case_probe(cfg), model=None), rr)
     assert table.iloc[0].reference_source == "day_ahead"
     assert table.iloc[0].state_id is None
 
@@ -206,7 +218,7 @@ def test_hard_infeasible_retry_shares_remaining_budget(context, monkeypatch):
         assert solver_budget.used_s == 12
         return dict(snap={"hydro_constraints": {}, "value_window": []}, slack={"state_band_slack_max": 2})
     install_window_probe(monkeypatch, clear)
-    result = rolling.run_rt_period(SimpleNamespace(cfg=cfg), da, da, cfg, rolling.initial_state(cfg), 0)
+    result = rolling.run_rt_period(da_case_probe(cfg), da, da, cfg, rolling.initial_state(cfg), 0)
     assert softness == [False, True] and budgets[0] is budgets[1]
     assert result["fallback"]["band_slack_max"] == 2
 
@@ -220,7 +232,7 @@ def test_other_stage_infeasible_never_softens(context, monkeypatch, phase):
         raise scuc.InfeasibleModelError("other stage", phase=phase)
     install_window_probe(monkeypatch, clear)
     with pytest.raises(RuntimeError, match="other stage"):
-        rolling.run_rt_period(SimpleNamespace(cfg=cfg), da, da, cfg, rolling.initial_state(cfg), 0)
+        rolling.run_rt_period(da_case_probe(cfg), da, da, cfg, rolling.initial_state(cfg), 0)
     assert len(calls) == 1
 
 
@@ -233,7 +245,7 @@ def test_no_fresh_budget_after_infeasible_exhausts_first_attempt(context, monkey
         raise scuc.InfeasibleModelError("hard infeasible", phase="scuc")
     install_window_probe(monkeypatch, clear)
     with pytest.raises(scuc.SolverBudgetExceededError):
-        rolling.run_rt_period(SimpleNamespace(cfg=cfg), da, da, cfg, rolling.initial_state(cfg), 0)
+        rolling.run_rt_period(da_case_probe(cfg), da, da, cfg, rolling.initial_state(cfg), 0)
     assert len(calls) == 1
 
 
@@ -246,7 +258,7 @@ def test_cancel_keeps_type_and_never_softens(context, monkeypatch):
         raise RunCancelled("cancelled")
     install_window_probe(monkeypatch, clear)
     with pytest.raises(RunCancelled):
-        rolling.run_rt_period(SimpleNamespace(cfg=cfg), da, da, cfg, rolling.initial_state(cfg), 0)
+        rolling.run_rt_period(da_case_probe(cfg), da, da, cfg, rolling.initial_state(cfg), 0)
     assert len(calls) == 1
 
 
@@ -257,7 +269,7 @@ def test_near_integral_commitment_uses_the_validated_rounded_value(context, monk
     r["snap"]["u"][gt][:] = 1 - 5e-8
     ref = handoff.merge_intraday(da, da, r, cfg.T, vals, cfg=cfg)
     seen = install_window_probe(monkeypatch)
-    result = rolling.run_rt_period(SimpleNamespace(cfg=cfg), da, ref, cfg, rolling.initial_state(cfg), 0, ref=ref, id_active=True)
+    result = rolling.run_rt_period(da_case_probe(cfg), da, ref, cfg, rolling.initial_state(cfg), 0, ref=ref, id_active=True)
     assert seen["fixed"]["u"][gt, 0] == 1
     assert result["thermal_reference_u"][gt][0] == 1
     np.testing.assert_array_equal(ref["u"][gt], np.ones(cfg.T))
@@ -296,7 +308,7 @@ def test_value_soft_retry_keeps_future_day_end_asset_proof(context, monkeypatch,
             raise scuc.InfeasibleModelError('hard band',phase='scuc')
         return dict(snap={'hydro_constraints':{},'value_window':[]},slack={})
     install_window_probe(monkeypatch,clear)
-    rolling.run_rt_period(SimpleNamespace(cfg=cfg),da,da,cfg,rolling.initial_state(cfg),0)
+    rolling.run_rt_period(da_case_probe(cfg),da,da,cfg,rolling.initial_state(cfg),0)
     assert len(terms)==2 and terms[1]['state_band_soft']
     assert terms[0]['asset_reachability']==terms[1]['asset_reachability']
     assert terms[0]['asset_reachability']['target_policy']==('day_end_soft' if policy=='soft' else 'day_end')

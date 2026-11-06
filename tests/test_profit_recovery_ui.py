@@ -5,7 +5,13 @@ import sys
 
 from streamlit.testing.v1 import AppTest
 
-from test_profit_recalculation import fixture_run, hashes
+from test_profit_recalculation import fixture_run as legacy_fixture_run, hashes
+from test_spot_costs import save, record
+
+def fixture_run(path):
+    run,source=legacy_fixture_run(path)
+    save(source,{"C1":record("coal",fuel_cost_yuan_per_mwh=8,online_cost_yuan_per_h=4,startup_cost_yuan_per_start=20),"ES1":record("storage")})
+    return run,source
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -41,8 +47,8 @@ def test_one_click_recovery_keeps_originals_and_survives_new_session(tmp_path, m
     assert any('非实测' in c.value and '原始结果' in c.value for c in at.caption)
     at.button[0].click().run()
     assert not at.exception and not at.error
-    assert next(m for m in at.metric if m.label == '补算成本').value == '130.0'
-    assert next(m for m in at.metric if m.label == '补算利润').value == '110.0'
+    assert next(m for m in at.metric if m.label == '补算成本').value == '102.0'
+    assert next(m for m in at.metric if m.label == '补算利润').value == '138.0'
     assert any('2/4' in m.value for m in at.success)
     assert not any('全天' in m.value for m in at.success)
     assert hashes(run) == before
@@ -50,7 +56,9 @@ def test_one_click_recovery_keeps_originals_and_survives_new_session(tmp_path, m
     assert len(reports) == 1
     new = open_app([run])
     assert not new.exception and new.success
-    assert not any(b.label == '补算本次成本与利润' for b in new.button)
+    assert any(b.label == '按现货口径重算本次利润' for b in new.button)
+    new.button[0].click().run()
+    assert not new.exception
     assert len(list((run / 'cost_recalculations').glob('*/manifest.json'))) == 1
     assert hashes(run) == before
 
@@ -67,7 +75,7 @@ def test_switching_run_does_not_reuse_other_run_supplement(tmp_path, monkeypatch
     assert not at.exception
     assert not at.success
     assert not (second / 'cost_recalculations').exists()
-    assert any(b.label == '补算本次成本与利润' for b in at.button)
+    assert any(b.label == '按现货口径重算本次利润' for b in at.button)
 
 
 def test_frozen_supplement_survives_later_cost_source_change(tmp_path, monkeypatch):
@@ -77,13 +85,13 @@ def test_frozen_supplement_survives_later_cost_source_change(tmp_path, monkeypat
     at = open_app([run])
     at.button[0].click().run()
     assert not at.exception
-    (source / 'config/fixed_costs.yaml').unlink()
+    (source / 'config/spot_market_costs.yaml').unlink()
     new = open_app([run])
     assert not new.exception and new.success
-    assert next(m for m in new.metric if m.label == '补算利润').value == '110.0'
+    assert next(m for m in new.metric if m.label == '补算利润').value == '138.0'
 
 
-def test_complete_original_does_not_offer_replacement(tmp_path, monkeypatch):
+def test_complete_legacy_original_offers_separate_new_policy(tmp_path, monkeypatch):
     from smm import config
     run, source = fixture_run(tmp_path)
     monkeypatch.setattr(config, 'ROOT', source)
@@ -93,7 +101,7 @@ def test_complete_original_does_not_offer_replacement(tmp_path, monkeypatch):
         cash_operating_cost_yuan=10, simulated_operating_profit_yuan=20)
     path.write_text(json.dumps(summary))
     at = open_app([run])
-    assert not at.exception and not at.button and not at.metric
+    assert not at.exception and any(b.label=='按现货口径重算本次利润' for b in at.button) and not at.metric
     assert not (run / 'cost_recalculations').exists()
 
 
@@ -108,7 +116,7 @@ def test_missing_evidence_has_clear_failure_and_no_fake_cost(tmp_path, monkeypat
     before = hashes(run)
     at = open_app([run])
     assert not at.exception
-    assert any('不足以安全补算' in x.value for x in at.error)
+    assert any('不足以安全重算' in x.value for x in at.error)
     assert not at.metric and not at.button
     assert not (run / 'cost_recalculations').exists()
     assert hashes(run) == before

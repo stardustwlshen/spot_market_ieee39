@@ -12,9 +12,12 @@ def _summary(cfg) -> str:
     renewable = cfg.units.get('renewable', [])
     pv = sum(float(u['cap']) for u in renewable if u.get('type') == 'pv')
     wind = sum(float(u['cap']) for u in renewable if u.get('type') == 'wind')
+    storage = cfg.units.get('storage', [])
+    battery_mw = sum(float(u['pmax']) for u in storage)
+    battery_mwh = sum(float(u['ecap']) for u in storage)
     forecast = cfg.base.get('forecast', {}).get('model', 'legacy_v1')
     tie = '区外来电注入' if cfg.base.get('tie_line_mode', 'supply') == 'supply' else '原联络线转负荷'
-    return f'光伏 {pv:g} MW · 风电 {wind:g} MW · {forecast} · {tie}'
+    return f'光伏 {pv:g} MW · 风电 {wind:g} MW · 电池 {battery_mw:g} MW / {battery_mwh:g} MWh · {forecast} · {tie}'
 
 
 def render_new_default_scene(current_name: str, *, key: str) -> None:

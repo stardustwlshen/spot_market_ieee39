@@ -110,7 +110,7 @@ def _hydro_arrays(cfg, plan, unit, size, label):
     return out
 
 
-def merge_intraday(da_plan, previous, id_round, total, values, *, cfg=None, value_error=None):
+def merge_intraday(da_plan, previous, id_round, total, values, *, cfg=None, value_error=None, resource_errors=None):
     _require_da_subjects(cfg, da_plan)
     tau = id_round.get("tau")
     if isinstance(tau, bool) or not isinstance(tau, (int, np.integer)) or not 0 <= tau < total:
@@ -145,8 +145,9 @@ def merge_intraday(da_plan, previous, id_round, total, values, *, cfg=None, valu
             reason, updates, rec = None, {}, {}
             try:
                 updates[(key, unit)] = _array(snap.get(key, {}).get(unit), size, f"{key}.{unit}", bounds=_bounds(cfg, kind, unit))
-                if value_error:
-                    raise ValueError(value_error)
+                error = value_error or (resource_errors or {}).get((kind, unit))
+                if error:
+                    raise ValueError(error)
                 rec = values.get(kind, {}).get(unit, {})
                 vals = {field: _array(rec.get(field), size, f"state_values.{kind}.{unit}.{field}")
                         for field in ("value_native", "value_yuan_per_mwh", "dual_raw")}

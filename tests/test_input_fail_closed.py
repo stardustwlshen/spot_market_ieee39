@@ -35,8 +35,13 @@ def test_efficiency_invalid(value):
 
 def test_missing_rolling_states_rejected():
     c=load_config()
-    with pytest.raises(ValueError,match='storage'):validate_physical_inputs(c,{'thermal':{g['id']:deepcopy(g['init']) for g in c.units['thermal']}})
-    state={'thermal':{g['id']:deepcopy(g['init']) for g in c.units['thermal']},'storage':{s['id']:s['ecap']*s['soc0'] for s in c.units['storage']}}
+    # Isolate missing inventory families, not the independent hydro-power gate.
+    state={'thermal':{g['id']:deepcopy(g['init']) for g in c.units['thermal']},
+           'hydro_p':{h['id']:h['init_units_on']*h['init_p_unit'] for h in c.units['hydro']},
+           'hydro_online':{h['id']:h['init_units_on'] for h in c.units['hydro']}}
+    with pytest.raises(ValueError,match='storage'):
+        validate_physical_inputs(c,state)
+    state['storage']={s['id']:s['ecap']*s['soc0'] for s in c.units['storage']}
     with pytest.raises(ValueError,match='pumped'):validate_physical_inputs(c,state)
 
 

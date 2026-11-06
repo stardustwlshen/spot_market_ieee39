@@ -27,6 +27,7 @@ def _errs(cfg, b):
 
 def test_rules_catch_errors():
     cfg = load_config()
+    cfg.base["default_bid_model"] = "legacy_v1"  # Explicit old price-grid fixture
     cfg.mode["startup_cost_mode"] = "state_dependent"  # legacy per-state cap contract
     # Preserve regression coverage of the legacy research step/strictness rules.
     cfg.mode["bid_rules"] = {"profile": "generic"}

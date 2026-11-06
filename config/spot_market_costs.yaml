@@ -1,0 +1,304 @@
+version: spot-market-costs-v1
+profit_basis: spot_energy_cash_v2
+source: Independent spot-energy cash cost assumptions; not offers
+units:
+  C1:
+    type: coal
+    source_kind: research_assumption_not_observed_plant_data
+    source: Explicit new spot-energy research assumption; excludes O&M/degradation.
+      Shutdown rates assumed zero; not observed plant costs. Online amount is a NEW
+      explicitly declared non-O&M running-cost assumption, not a verified decomposition
+      of an ambiguous old online amount.
+    fuel_cost_yuan_per_mwh: 270.0
+    online_cost_yuan_per_h: 6000
+    online_cost_basis: online_operation_excluding_om
+    startup_cost_yuan_per_start: 250000
+    shutdown_cost_yuan_per_stop: 0.0
+    derivation:
+      original_record:
+        type: coal
+        scalar_marginal_cost_yuan_per_mwh: 280
+        fixed_online_cost_yuan_per_h: 6000
+        fixed_startup_cost_yuan_per_start: 250000
+      original_record_hash: 82540e629a678292a97fde1c0a85c34527a6ac754f3020f775138e2a1a122337
+      classification: exact_known_legacy_research
+      original_profile_sha256: 5705d4380347cc2d72f5513e0dae0e9c29c60199d23ece50134c839cae83fd70
+      excluded: O&M and cycle degradation only; electricity purchase remains signed
+        settlement
+  C2:
+    type: coal
+    source_kind: research_assumption_not_observed_plant_data
+    source: Explicit new spot-energy research assumption; excludes O&M/degradation.
+      Shutdown rates assumed zero; not observed plant costs. Online amount is a NEW
+      explicitly declared non-O&M running-cost assumption, not a verified decomposition
+      of an ambiguous old online amount.
+    fuel_cost_yuan_per_mwh: 285.0
+    online_cost_yuan_per_h: 6500
+    online_cost_basis: online_operation_excluding_om
+    startup_cost_yuan_per_start: 280000
+    shutdown_cost_yuan_per_stop: 0.0
+    derivation:
+      original_record:
+        type: coal
+        scalar_marginal_cost_yuan_per_mwh: 297
+        fixed_online_cost_yuan_per_h: 6500
+        fixed_startup_cost_yuan_per_start: 280000
+      original_record_hash: e07e370702b08b925460b9a2324104ad979c5969ad288d70699153ffad92e4b5
+      classification: exact_known_legacy_research
+      original_profile_sha256: 5705d4380347cc2d72f5513e0dae0e9c29c60199d23ece50134c839cae83fd70
+      excluded: O&M and cycle degradation only; electricity purchase remains signed
+        settlement
+  C3:
+    type: coal
+    source_kind: research_assumption_not_observed_plant_data
+    source: Explicit new spot-energy research assumption; excludes O&M/degradation.
+      Shutdown rates assumed zero; not observed plant costs. Online amount is a NEW
+      explicitly declared non-O&M running-cost assumption, not a verified decomposition
+      of an ambiguous old online amount.
+    fuel_cost_yuan_per_mwh: 300.0
+    online_cost_yuan_per_h: 7500
+    online_cost_basis: online_operation_excluding_om
+    startup_cost_yuan_per_start: 320000
+    shutdown_cost_yuan_per_stop: 0.0
+    derivation:
+      original_record:
+        type: coal
+        scalar_marginal_cost_yuan_per_mwh: 315
+        fixed_online_cost_yuan_per_h: 7500
+        fixed_startup_cost_yuan_per_start: 320000
+      original_record_hash: 75dada7136dcf8e762bef4044b04349144a596219ea22840780643e6d0c01616
+      classification: exact_known_legacy_research
+      original_profile_sha256: 5705d4380347cc2d72f5513e0dae0e9c29c60199d23ece50134c839cae83fd70
+      excluded: O&M and cycle degradation only; electricity purchase remains signed
+        settlement
+  CCGT:
+    type: gas_ccgt
+    source_kind: research_assumption_not_observed_plant_data
+    source: Explicit new spot-energy research assumption; excludes O&M/degradation.
+      Shutdown rates assumed zero; not observed plant costs. Online amount is a NEW
+      explicitly declared non-O&M running-cost assumption, not a verified decomposition
+      of an ambiguous old online amount.
+    fuel_cost_yuan_per_mwh: 390.0
+    online_cost_yuan_per_h: 9000
+    online_cost_basis: online_operation_excluding_om
+    startup_cost_yuan_per_start: 150000
+    shutdown_cost_yuan_per_stop: 0.0
+    derivation:
+      original_record:
+        type: gas_ccgt
+        scalar_marginal_cost_yuan_per_mwh: 405
+        fixed_online_cost_yuan_per_h: 9000
+        fixed_startup_cost_yuan_per_start: 150000
+      original_record_hash: 7ef732eeaad68f031d75d8bb77520dbfaf1fefa16ed5761c0547b845f3a1beec
+      classification: exact_known_legacy_research
+      original_profile_sha256: 5705d4380347cc2d72f5513e0dae0e9c29c60199d23ece50134c839cae83fd70
+      excluded: O&M and cycle degradation only; electricity purchase remains signed
+        settlement
+  GT:
+    type: gas_gt
+    source_kind: research_assumption_not_observed_plant_data
+    source: Explicit new spot-energy research assumption; excludes O&M/degradation.
+      Shutdown rates assumed zero; not observed plant costs. Online amount is a NEW
+      explicitly declared non-O&M running-cost assumption, not a verified decomposition
+      of an ambiguous old online amount.
+    fuel_cost_yuan_per_mwh: 600.0
+    online_cost_yuan_per_h: 4000
+    online_cost_basis: online_operation_excluding_om
+    startup_cost_yuan_per_start: 40000
+    shutdown_cost_yuan_per_stop: 0.0
+    derivation:
+      original_record:
+        type: gas_gt
+        scalar_marginal_cost_yuan_per_mwh: 620
+        fixed_online_cost_yuan_per_h: 4000
+        fixed_startup_cost_yuan_per_start: 40000
+      original_record_hash: 2d5539688ac624881a5e3488b93a31d9b170e8988208fde758af1eb2a3c22715
+      classification: exact_known_legacy_research
+      original_profile_sha256: 5705d4380347cc2d72f5513e0dae0e9c29c60199d23ece50134c839cae83fd70
+      excluded: O&M and cycle degradation only; electricity purchase remains signed
+        settlement
+  W1:
+    type: wind
+    source_kind: research_assumption_not_observed_plant_data
+    source: Explicit new spot-energy research assumption; excludes O&M/degradation.
+      Shutdown rates assumed zero; not observed plant costs.
+    cost_scope: no_fuel_or_defined_start_stop_costs_excluding_om
+    derivation:
+      original_record:
+        type: wind
+        scalar_marginal_cost_yuan_per_mwh: 8
+      original_record_hash: d88f94909429e8c6d848f2eb8af915fb2ad2a6bbdde64f43e565b583567c87c9
+      classification: exact_known_legacy_research
+      original_profile_sha256: 5705d4380347cc2d72f5513e0dae0e9c29c60199d23ece50134c839cae83fd70
+      excluded: O&M and cycle degradation only; electricity purchase remains signed
+        settlement
+  W2:
+    type: wind
+    source_kind: research_assumption_not_observed_plant_data
+    source: Explicit new spot-energy research assumption; excludes O&M/degradation.
+      Shutdown rates assumed zero; not observed plant costs.
+    cost_scope: no_fuel_or_defined_start_stop_costs_excluding_om
+    derivation:
+      original_record:
+        type: wind
+        scalar_marginal_cost_yuan_per_mwh: 11
+      original_record_hash: cbbbe75eaa912c3b52265a3badb5621329264659180e879516360c31d4a799cf
+      classification: exact_known_legacy_research
+      original_profile_sha256: 5705d4380347cc2d72f5513e0dae0e9c29c60199d23ece50134c839cae83fd70
+      excluded: O&M and cycle degradation only; electricity purchase remains signed
+        settlement
+  PV1:
+    type: pv
+    source_kind: research_assumption_not_observed_plant_data
+    source: Explicit new spot-energy research assumption; excludes O&M/degradation.
+      Shutdown rates assumed zero; not observed plant costs.
+    cost_scope: no_fuel_or_defined_start_stop_costs_excluding_om
+    derivation:
+      original_record:
+        type: pv
+        scalar_marginal_cost_yuan_per_mwh: 5
+      original_record_hash: 81cc0736825d637ee4d86ae65565e2e218280c1c61de3b7f86e905ab246fea00
+      classification: exact_known_legacy_research
+      original_profile_sha256: 5705d4380347cc2d72f5513e0dae0e9c29c60199d23ece50134c839cae83fd70
+      excluded: O&M and cycle degradation only; electricity purchase remains signed
+        settlement
+  PV2:
+    type: pv
+    source_kind: research_assumption_not_observed_plant_data
+    source: Explicit new spot-energy research assumption; excludes O&M/degradation.
+      Shutdown rates assumed zero; not observed plant costs.
+    cost_scope: no_fuel_or_defined_start_stop_costs_excluding_om
+    derivation:
+      original_record:
+        type: pv
+        scalar_marginal_cost_yuan_per_mwh: 5
+      original_record_hash: 81cc0736825d637ee4d86ae65565e2e218280c1c61de3b7f86e905ab246fea00
+      classification: exact_known_legacy_research
+      original_profile_sha256: 5705d4380347cc2d72f5513e0dae0e9c29c60199d23ece50134c839cae83fd70
+      excluded: O&M and cycle degradation only; electricity purchase remains signed
+        settlement
+  PV3:
+    type: pv
+    source_kind: research_assumption_not_observed_plant_data
+    source: Explicit new spot-energy research assumption; excludes O&M/degradation.
+      Shutdown rates assumed zero; not observed plant costs.
+    cost_scope: no_fuel_or_defined_start_stop_costs_excluding_om
+    derivation:
+      original_record:
+        type: pv
+        scalar_marginal_cost_yuan_per_mwh: 5
+      original_record_hash: 81cc0736825d637ee4d86ae65565e2e218280c1c61de3b7f86e905ab246fea00
+      classification: exact_known_legacy_research
+      original_profile_sha256: 5705d4380347cc2d72f5513e0dae0e9c29c60199d23ece50134c839cae83fd70
+      excluded: O&M and cycle degradation only; electricity purchase remains signed
+        settlement
+  H1:
+    type: hydro
+    source_kind: research_assumption_not_observed_plant_data
+    source: Explicit new spot-energy research assumption; excludes O&M/degradation.
+      Shutdown rates assumed zero; not observed plant costs.
+    cost_scope: no_fuel_or_defined_start_stop_costs_excluding_om
+    derivation:
+      original_record:
+        type: hydro
+        scalar_marginal_cost_yuan_per_mwh: 6
+      original_record_hash: 15cfa5778751882d8a19ca8827f3b8959768c4d5b8d61351b64eb981d96bfc21
+      classification: exact_known_legacy_research
+      original_profile_sha256: 5705d4380347cc2d72f5513e0dae0e9c29c60199d23ece50134c839cae83fd70
+      excluded: O&M and cycle degradation only; electricity purchase remains signed
+        settlement
+  ES1:
+    type: storage
+    source_kind: research_assumption_not_observed_plant_data
+    source: Explicit new spot-energy research assumption; excludes O&M/degradation.
+      Shutdown rates assumed zero; not observed plant costs.
+    cost_scope: no_fuel_or_defined_start_stop_costs_excluding_om
+    derivation:
+      original_record:
+        type: storage
+        discharge_degradation_yuan_per_mwh: 25
+      original_record_hash: 93e494fff9fe4aa38b543d78cf8fbbad668d56952ca4f0c0056c13c06ebe7538
+      classification: exact_known_legacy_research
+      original_profile_sha256: 5705d4380347cc2d72f5513e0dae0e9c29c60199d23ece50134c839cae83fd70
+      excluded: O&M and cycle degradation only; electricity purchase remains signed
+        settlement
+  ES2:
+    type: storage
+    source_kind: research_assumption_not_observed_plant_data
+    source: Explicit new spot-energy research assumption; excludes O&M/degradation.
+      Shutdown rates assumed zero; not observed plant costs.
+    cost_scope: no_fuel_or_defined_start_stop_costs_excluding_om
+    derivation:
+      original_record:
+        type: storage
+        discharge_degradation_yuan_per_mwh: 35
+      original_record_hash: 66709ed722fbd70259fc338b5db5b0b88af0caf1a1d8d9269f91717780c80696
+      classification: exact_known_legacy_research
+      original_profile_sha256: 5705d4380347cc2d72f5513e0dae0e9c29c60199d23ece50134c839cae83fd70
+      excluded: O&M and cycle degradation only; electricity purchase remains signed
+        settlement
+  ES3:
+    type: storage
+    source_kind: research_assumption_not_observed_plant_data
+    source: Explicit new spot-energy research assumption; excludes O&M/degradation.
+      Shutdown rates assumed zero; not observed plant costs.
+    cost_scope: no_fuel_or_defined_start_stop_costs_excluding_om
+    derivation:
+      original_record:
+        type: storage
+        discharge_degradation_yuan_per_mwh: 45
+      original_record_hash: e8a23c2a8d7e98c37c2dd186ca88e7b15aaa9cbf078fc2c42394f6834b79e300
+      classification: exact_known_legacy_research
+      original_profile_sha256: 5705d4380347cc2d72f5513e0dae0e9c29c60199d23ece50134c839cae83fd70
+      excluded: O&M and cycle degradation only; electricity purchase remains signed
+        settlement
+  ES4:
+    type: storage
+    source_kind: research_assumption_not_observed_plant_data
+    source: Explicit new spot-energy research assumption; excludes O&M/degradation.
+      Shutdown rates assumed zero; not observed plant costs.
+    cost_scope: no_fuel_or_defined_start_stop_costs_excluding_om
+    derivation:
+      original_record:
+        type: storage
+        discharge_degradation_yuan_per_mwh: 25
+      original_record_hash: 93e494fff9fe4aa38b543d78cf8fbbad668d56952ca4f0c0056c13c06ebe7538
+      classification: exact_known_legacy_research
+      original_profile_sha256: 5705d4380347cc2d72f5513e0dae0e9c29c60199d23ece50134c839cae83fd70
+      excluded: O&M and cycle degradation only; electricity purchase remains signed
+        settlement
+  ES5:
+    type: storage
+    source_kind: research_assumption_not_observed_plant_data
+    source: Explicit new spot-energy research assumption; excludes O&M/degradation.
+      Shutdown rates assumed zero; not observed plant costs.
+    cost_scope: no_fuel_or_defined_start_stop_costs_excluding_om
+    derivation:
+      original_record:
+        type: storage
+        discharge_degradation_yuan_per_mwh: 25
+      original_record_hash: 93e494fff9fe4aa38b543d78cf8fbbad668d56952ca4f0c0056c13c06ebe7538
+      classification: exact_known_legacy_research
+      original_profile_sha256: 5705d4380347cc2d72f5513e0dae0e9c29c60199d23ece50134c839cae83fd70
+      excluded: O&M and cycle degradation only; electricity purchase remains signed
+        settlement
+  PS1:
+    type: pumped
+    source_kind: research_assumption_not_observed_plant_data
+    source: Explicit new spot-energy research assumption; excludes O&M/degradation.
+      Shutdown rates assumed zero; not observed plant costs.
+    gen_start_yuan_per_unit_start: 2000
+    pump_start_yuan_per_unit_start: 4000
+    gen_stop_yuan_per_unit_stop: 0.0
+    pump_stop_yuan_per_unit_stop: 0.0
+    derivation:
+      original_record:
+        type: pumped
+        generation_vom_yuan_per_mwh: 10
+        gen_start_yuan_per_unit_start: 2000
+        pump_start_yuan_per_unit_start: 4000
+      original_record_hash: 9f158a81aafdb7acbb8a4e0c9e36a3a5d43b0bac707fef07bad82061dd437b24
+      classification: exact_known_legacy_research
+      original_profile_sha256: 5705d4380347cc2d72f5513e0dae0e9c29c60199d23ece50134c839cae83fd70
+      excluded: O&M and cycle degradation only; electricity purchase remains signed
+        settlement

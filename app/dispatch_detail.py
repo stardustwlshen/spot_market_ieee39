@@ -9,6 +9,7 @@ import streamlit as st
 
 from chinese_labels import column_label, csv_bytes, display_frame, value_label
 from common import show_df
+from smm.time_grid import period_label
 
 PLAN_COLUMNS = ("period", "time", "unit", "type", "bus", "P_mw", "energy_mwh")
 _ALIASES = {
@@ -90,8 +91,8 @@ def dispatch_csv_bytes(frame: pd.DataFrame, stage: str, *, chinese: bool = True)
     return csv_bytes(dispatch_display_frame(frame, stage) if chinese else frame, chinese=False)
 
 
-def _period_label(period: int) -> str:
-    return f"{period // 4:02d}:{period % 4 * 15:02d}（序号 {period}）"
+def _period_label(period: int, period_hours: float = 0.25) -> str:
+    return f"{period_label(period, period_hours)}（序号 {period}）"
 
 
 def _reset_filters(keys: dict[str, str]):
@@ -99,14 +100,14 @@ def _reset_filters(keys: dict[str, str]):
         st.session_state.pop(key, None)
 
 
-def dispatch_detail_table(source: pd.DataFrame | None, stage: str, *, result_key: str) -> pd.DataFrame:
+def dispatch_detail_table(source: pd.DataFrame | None, stage: str, *, result_key: str, period_hours: float = 0.25) -> pd.DataFrame:
     """Render one searchable table; both downloads use exactly its filtered rows."""
-    frame = dispatch_plan_frame(source)
+    frame = dispatch_plan_frame(source, period_hours=period_hours)
     st.subheader("逐主体实际出力与执行电量" if stage == "实时" else "逐主体出力与中标电量")
     st.caption(
         ("实时仅显示已执行时段；区外来电沿用同一时段的日前固定计划。" if stage == "实时"
          else "日前显示中标计划，不代表实时实际执行。")
-        + " 电量按每段15分钟核算，充电/抽水的净出力与净电量为负。"
+        + f" 电量按每段{period_hours * 60:g}分钟核算，充电/抽水的净出力与净电量为负。"
     )
     if frame.empty:
         st.info("当前阶段没有逐主体出力记录。")
@@ -138,7 +139,7 @@ def dispatch_detail_table(source: pd.DataFrame | None, stage: str, *, result_key
                                format_func=value_label, placeholder="全部资源类型", disabled=not options["type"])
     with cols[2]:
         period_range = st.select_slider("时段范围（含起止时段）", periods, value=(periods[0], periods[-1]),
-                                        format_func=_period_label, key=keys["period"], disabled=len(periods) == 1) if periods else None
+                                        format_func=lambda p: _period_label(p, period_hours), key=keys["period"], disabled=len(periods) == 1) if periods else None
         if not periods:
             st.caption("未记录有效时段，无法按时段筛选。")
     # An untouched full range includes rows with an unknown period instead of

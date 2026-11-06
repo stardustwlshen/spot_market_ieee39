@@ -16,7 +16,7 @@ from decimal import Decimal
 from numbers import Integral
 from typing import Iterable
 
-from .bids import _unit_meta, bid_rules_for_type, default_bids, raise_on_errors, validate_bids
+from .bids import _unit_meta, bid_rules_for_type, default_bids, legacy_default_bids, raise_on_errors, validate_bids
 from .config import Config
 
 
@@ -84,6 +84,15 @@ def simulate_bids(
         raise ValueError(f"未知或停用资源：{', '.join(sorted(unknown))}")
 
     draft = copy.deepcopy(default_bids(cfg) if base_bids is None else base_bids)
+    # A random translation of an already cost-derived baseline is not a fresh
+    # cost preview. Preserve the prior derivation as history, not active basis.
+    previous_basis = draft.pop('_cost_basis', None)
+    if previous_basis is not None:
+        history = draft.setdefault('_cost_basis_history', [])
+        if not isinstance(history, list):
+            raise ValueError('历史成本报价依据须为列表')
+        if previous_basis not in history:
+            history.append(previous_basis)
     if base_bids is None:
         # Preview generation has no wall-clock side effect; save_bids supplies a
         # real creation timestamp only when the user explicitly saves a version.
@@ -244,8 +253,8 @@ def research_cost_bid_preview(
         raise ValueError('缺少显式fixed_costs.yaml；成本报价不会回退到报价或旧研究档案')
     for uid in selected:
         if uid not in fixed['units'] or fixed['units'][uid]['type'] != meta[uid]['type']:
-            raise ValueError(f'{uid}: 缺少匹配类型的固定实际成本记录')
-    draft = copy.deepcopy(default_bids(cfg) if base_bids is None else base_bids)
+            raise ValueError(f'{uid}: 缺少匹配类型的独立核算成本记录')
+    draft = copy.deepcopy(legacy_default_bids(cfg) if base_bids is None else base_bids)
     if base_bids is None:
         draft.pop('created', None)
     raise_on_errors(validate_bids(cfg, draft, require_complete=True))
@@ -276,7 +285,8 @@ def research_cost_bid_preview(
                        'offer_strategy_markups_yuan_per_mwh': markups,
                        'cost_scope': 'constant fixed profile marginal cost; segment markups are offers only',
                        'fuel_hhv_yuan_per_gj': d['fuel_price'], 'heat_rate_hhv_gj_per_mwh': d['heat_rate'],
-                       'implied_average_efficiency_hhv': 3.6 / d['heat_rate'],
+                       'heat_rate_basis': sheet.get('thermal_heat_rate_basis', 'legacy_unspecified_not_claimed_average'),
+                       'incremental_energy_ratio_not_average_efficiency': 3.6 / d['heat_rate'],
                        'variable_om_yuan_per_mwh': d['variable_om'],
                        'base_convention': 'priced_minimum_output_energy_plus_fixed_intercept',
                        'fixed_intercept_yuan_per_h': unit['noload_cost'],

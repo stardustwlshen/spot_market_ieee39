@@ -250,7 +250,9 @@ def test_saved_all_types_complete_small_market_pipeline(scene):
     bids = json.loads((scene / 'current_quote.json').read_bytes())['draft']
     result = run_full(cfg, build_da_case(cfg, build_network(cfg), generate_profiles(cfg), bids), log=lambda *a: None)
     assert len(result['rr'].rt) == cfg.T == 8
-    assert result['settled']
+    assert result['settled'] is False
+    assert result['settlement_calculated'] is True
+    assert result['settlement_scope'] == 'illustrative_prefix'
     assert set(result['rt']['units']['unit']) >= {'TEST_'+kind for kind in TYPES}
     assert result['settle']['reconciliation']['residual'].abs().max() < 1e-6
     assert np.isfinite(result['rt']['units']['P_mw']).all()

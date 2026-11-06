@@ -64,7 +64,7 @@ def _copy_tree_contents(src_root: Path, dst: Path, *, copy_current_quote: bool):
     (dst / "config").mkdir()
     for f in ("base.yaml", "units.yaml", "modes.yaml"):
         shutil.copy2(src_root / "config" / f, dst / "config" / f)
-    for f in ("fixed_costs.yaml", "bid_cost_basis.yaml", "generated_research_costs.json"):
+    for f in ("fixed_costs.yaml", "bid_cost_basis.yaml", "generated_research_costs.json", "spot_market_costs.yaml"):
         source = src_root / "config" / f
         if source.exists():
             shutil.copy2(source, dst / "config" / f)
@@ -102,6 +102,8 @@ def create_scenario(name: str, source: str | None = None, note: str = "") -> Pat
     (dst / "scenario.json").write_text(json.dumps(meta, ensure_ascii=False, indent=2), encoding="utf-8")
     from .research_cost_setup import initialize_missing_cost_defaults
     initialize_missing_cost_defaults(dst)
+    from .spot_costs import initialize_new_scene
+    initialize_new_scene(dst)
     return dst
 
 

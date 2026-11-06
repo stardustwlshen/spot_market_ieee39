@@ -305,8 +305,11 @@ def test_witness_cross_checks_real_references_and_frozen_capacity(narrowed_offer
     elif damage=='counts':
         row=s['rows'][0];row['zone_counts']=[1. if row['zone_counts'][0]==2. else 2.]
     elif damage=='capacity':
-        row=next(x for x in s['rows'] if x['spill_m3s']>=1. and x['power_mw']==50.)
-        row['power_mw']=51.;row['spill_m3s']-=1.
+        row=next(x for x in s['rows'] if x['power_mw']==50.)
+        row['power_mw']=51.
+        for future in s['rows']:
+            if future['unit']==row['unit'] and future['period']>=row['period']:
+                future['volume_1e4m3']-=.36*cfg.dt  # Keep water balance without relying on arbitrary spill.
         d['rows'][0]['witness_generation_mwh']+=cfg.dt;d['rows'][0]['minimum_margin_mwh']+=cfg.dt
     elif damage=='forged_window_source':
         s['reference_metadata']['H1'].update(trajectory_source='day_ahead',round=None)
@@ -315,13 +318,19 @@ def test_witness_cross_checks_real_references_and_frozen_capacity(narrowed_offer
     result=audit(cfg,da,rr)
     assert not result['hydro_daily_minimum_evidence_valid'],result
     assert result['hydro_daily_minimum_final_satisfied'] is False
+    if damage=='capacity':assert any('frozen offered power capacity' in e for e in result['hydro_daily_minimum_errors'])
 
 
 def test_offline_witness_reference_and_capacity_cross_checks(narrowed_offer):
     cfg,h,st=exported(narrowed_offer)
     assert audit_exported(cfg,h,st)['hydro_daily_minimum_final_satisfied']
     d=h['rt_windows'][0]['snapshot']['hydro_daily_energy'];s=d['suffix']
-    row=next(x for x in s['rows'] if x['spill_m3s']>=1. and x['power_mw']==50.)
-    row['power_mw']=51.;row['spill_m3s']-=1.
+    row=next(x for x in s['rows'] if x['power_mw']==50.)
+    row['power_mw']=51.
+    for future in s['rows']:
+        if future['unit']==row['unit'] and future['period']>=row['period']:
+            future['volume_1e4m3']-=.36*cfg.dt  # Preserve water with unchanged, possibly zero spill.
     d['rows'][0]['witness_generation_mwh']+=cfg.dt;d['rows'][0]['minimum_margin_mwh']+=cfg.dt
-    assert not audit_exported(cfg,h,st)['hydro_daily_minimum_evidence_valid']
+    result=audit_exported(cfg,h,st)
+    assert not result['hydro_daily_minimum_evidence_valid']
+    assert any('frozen offered power capacity' in e for e in result['hydro_daily_minimum_errors'])

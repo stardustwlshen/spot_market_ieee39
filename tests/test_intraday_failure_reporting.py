@@ -119,7 +119,7 @@ def test_failure_archive_fail_closed(failure_archive,damage):
 # Exercise the real reference selection and fixed-commitment constructor. Only
 # optimization is stubbed; these tests must not invent already-correct metadata.
 from smm import rolling
-from test_handoff_integrity import context, install_window_probe
+from test_handoff_integrity import context, install_window_probe, da_case_probe
 
 
 @pytest.mark.parametrize('policy',[
@@ -144,7 +144,7 @@ def test_real_first_failure_reference_scope(context,monkeypatch,policy):
         return dict(snap={'hydro_constraints':{},'value_window':rows},slack={})
     install_window_probe(monkeypatch,clear)
     ref=rolling.failed_intraday_reference(plan,0,'proven physical infeasibility')
-    result=rolling.run_rt_period(NS(cfg=cfg),plan,ref,cfg,rolling.initial_state(cfg),0,ref=ref,id_active=True)
+    result=rolling.run_rt_period(da_case_probe(cfg),plan,ref,cfg,rolling.initial_state(cfg),0,ref=ref,id_active=True)
     result['t']=0
     rr=NS(id_rounds=[],id_failures=[dict(tau=0,phase='scuc',solver_status='infeasible',
           reason='proven physical infeasibility',fallback='day_ahead')],rt=[result])

@@ -6,7 +6,7 @@ import pytest
 
 from smm.bid_cost_basis import cost_basis_anchors
 from smm.bid_simulation import simulate_cost_based_bids
-from smm.bids import default_bids, bid_dir
+from smm.bids import default_bids, legacy_default_bids, bid_dir
 from smm.config import load_config
 
 
@@ -46,7 +46,7 @@ def test_unit_heat_rate_drives_differences_without_random_noise():
 
 
 def test_preview_preserves_structure_original_manual_other_units_and_files():
-    cfg = load_config(); base = default_bids(cfg)
+    cfg = load_config(); base = legacy_default_bids(cfg)  # Explicit historical curve-shape regression
     base['units']['C2']['segments'][-1]['price'] += .5
     original = deepcopy(base)
     paths = list(bid_dir(cfg).glob('bids_v*.json'))
@@ -99,7 +99,7 @@ def test_no_clipping_and_no_protected_overwrite():
 
 
 def test_storage_separate_buy_and_sell_anchors_and_shapes():
-    cfg = load_config(); base = default_bids(cfg)
+    cfg = load_config(); base = legacy_default_bids(cfg)  # Historical shape, not new default prices
     out = simulate_cost_based_bids(cfg, worksheet={'ES1': storage()}, selected_unit_ids=['ES1'], base_bids=base)
     unit = out['units']['ES1']
     assert unit['ch_segments'][0]['price'] == 280

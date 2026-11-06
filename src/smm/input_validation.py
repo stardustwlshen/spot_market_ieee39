@@ -1,5 +1,6 @@
 """Fail closed on impossible technical parameters and missing rolling actual state."""
 import math
+import re
 from numbers import Real
 
 
@@ -10,8 +11,17 @@ def number(value, label, *, positive=False):
 
 
 
+def validate_resource_enabled(units):
+    """Validate flags before filtering, so strings/integers cannot change the fleet."""
+    for family in ('thermal', 'hydro', 'pumped', 'storage', 'renewable', 'tie'):
+        for index, spec in enumerate(units.get(family, []) or []):
+            if not isinstance(spec.get('enabled', True), bool):
+                raise ValueError(f'{family}[{index}].enabled须为布尔值，禁止以字符串或数字决定启停用')
+
+
 def _validate_resource_ids(cfg):
     """Bids and model dictionaries share one namespace across active resources."""
+    validate_resource_enabled(cfg.units)
     seen = {}
     for family in ('thermal', 'hydro', 'pumped', 'storage', 'renewable', 'tie'):
         for index, spec in enumerate(cfg.units.get(family, [])):
@@ -24,10 +34,20 @@ def _validate_resource_ids(cfg):
             if uid in seen:
                 raise ValueError(f'资源id {uid!r}重复: {seen[uid]} 与 {label}；启用资源id须全局唯一')
             seen[uid] = label
+    # Exported cash accounting uses generated nodal-load and storage legs in
+    # the same entity namespace as resource IDs. Reject collisions before solve.
+    generated = {'平衡松弛(过剩)'}
+    for family, suffixes in (('storage', ('_放电', '_充电')), ('pumped', ('_发电', '_抽水'))):
+        for spec in cfg.units.get(family, []):
+            if spec.get('enabled', True):
+                generated.update(spec['id'] + suffix for suffix in suffixes)
+    for uid in seen:
+        if re.fullmatch(r'L\d+', uid) or uid in generated:
+            raise ValueError(f'资源id {uid!r}与内部结算主体编号冲突，请使用其他编号')
 
 
 def _validate_hydro_topology(cfg):
-    """Only active modeled stations can supply upstream releases; no external aliases."""
+    """Full-flow serial cascades only; no aliases, cycles, or undeclared splits."""
     hydro = [h for h in cfg.units.get('hydro', []) if h.get('enabled', True)]
     active_ids = {h['id'] for h in hydro}
     upstream = {}
@@ -44,7 +64,17 @@ def _validate_hydro_topology(cfg):
         if up == uid:
             raise ValueError(f'{uid}.upstream不能引用自身（水电拓扑环路）')
         upstream[uid] = up
-    # Each station has at most one upstream reference. Walk each chain once.
+    # Every downstream receives its upstream's complete release in both the
+    # market model and the daily-energy suffix. Multiple children would copy
+    # that water unless an explicit flow-allocation model were implemented.
+    downstream = {}
+    for child, parent in upstream.items():
+        if parent in downstream:
+            raise ValueError(
+                f'水电上游 {parent} 对应多个下游 {downstream[parent]}、{child}；'
+                '当前仅支持全额出流的串联梯级，分叉须显式分流建模，禁止复制上游水量')
+        downstream[parent] = child
+    # Each station has at most one upstream and downstream. Walk each chain once.
     done = set()
     for uid in active_ids:
         path = []
@@ -80,6 +110,53 @@ def _active(cfg, family):
     return [s for s in cfg.units.get(family, []) if s.get('enabled', True)]
 
 
+def _boolean(value, label):
+    if not isinstance(value, bool):
+        raise ValueError(f'{label}须为布尔值，禁止将字符串或数值当作开关')
+    return value
+
+
+def validate_reserve_configuration(cfg):
+    """Reject malformed rules before truthiness or coefficients alter procurement."""
+    reserve = cfg.mode.get('reserve')
+    if not isinstance(reserve, dict):
+        raise ValueError('reserve须为配置对象')
+    for key, default in (('include_ctg', None), ('storage_reserve', False), ('down_enabled', True)):
+        _boolean(reserve.get(key, default), f'reserve.{key}')
+    for key in ('rho_L', 'rho_RE', 'rho_L_dn', 'rho_RE_dn'):
+        _nonnegative(reserve.get(key), f'reserve.{key}')
+    confidence = number(reserve.get('mu_RE', 0.), 'reserve.mu_RE')
+    if not 0. <= confidence <= 1.:
+        raise ValueError('reserve.mu_RE置信因子须在[0,1]内，不能放大可用新能源余量')
+    providers = reserve.get('providers')
+    allowed = {'coal', 'gas_ccgt', 'gas_gt', 'hydro'} | {
+        spec.get('type') for spec in _active(cfg, 'thermal')
+        if isinstance(spec.get('type'), str)}
+    if (not isinstance(providers, (list, tuple))
+            or any(not isinstance(kind, str) or kind not in allowed for kind in providers)
+            or len(providers) != len(set(providers))):
+        raise ValueError('reserve.providers须为不重复的受支持常规资源类型列表')
+    if (reserve.get('storage_reserve', False)
+            or ('hydro' in providers and bool(_active(cfg, 'hydro')))):
+        number(reserve.get('T_dur_h'), 'reserve.T_dur_h', positive=True)
+    n1 = cfg.base.get('n1_loss_mw')
+    if n1 is not None:
+        _nonnegative(n1, 'n1_loss_mw')
+
+
+def validate_operation_configuration(cfg):
+    """Configuration flags must retain the explicit meanings selected by users."""
+    validate_reserve_configuration(cfg)
+    solver = cfg.base.get('solver', {})
+    for key, default in (('storage_binary', True), ('tighten', False), ('warm_start', False)):
+        _boolean(solver.get(key, default), f'solver.{key}')
+    _boolean(cfg.mode.get('intraday', {}).get('enabled', False), 'intraday.enabled')
+    _boolean(cfg.mode.get('realtime', {}).get('first_period_actual', True),
+             'realtime.first_period_actual')
+    _integer((cfg.mode.get('pumped') or {}).get('mode_step_periods', 1),
+             'pumped.mode_step_periods', positive=True)
+
+
 def _thermal_state(spec, state, label):
     if not isinstance(state, dict) or not {'online', 'p0', 'hours'} <= set(state):
         raise ValueError(f'{label}须含online/p0/hours')
@@ -92,6 +169,40 @@ def _thermal_state(spec, state, label):
     high = spec['pmax'] if online else 0.
     if not low - 1e-6 <= power <= high + 1e-6:
         raise ValueError(f'{label}在线状态/出力不一致，p0须在[{low}, {high}] MW')
+
+
+def hydro_aggregate_power_intervals(zones, online):
+    """Exact attainable total MW for identical online units in stable zones.
+
+    Each online unit may occupy a different zone. Repeated interval sums and
+    union merging preserve those combinations without assuming equal output.
+    Numeric acceptance tolerance belongs only at the final membership check;
+    merging must not progressively fill real gaps between attainable totals.
+    The caller validates zones and the nonnegative integer online count.
+    """
+    intervals = [(0., 0.)]
+    for _ in range(online):
+        candidates = sorted((lower + lo, upper + hi)
+                            for lower, upper in intervals for lo, hi in zones)
+        merged = []
+        for lower, upper in candidates:
+            if merged and lower <= merged[-1][1]:
+                merged[-1] = (merged[-1][0], max(merged[-1][1], upper))
+            else:
+                merged.append((lower, upper))
+        intervals = merged
+    return intervals
+
+
+def _hydro_initial_power(spec, power, online):
+    uid = spec['id']
+    count = _integer(online, f'{uid}实际hydro_online')
+    if count > spec['n_units']:
+        raise ValueError(f'{uid}实际hydro_online超过电站机组台数')
+    power = number(power, f'{uid}实际hydro_p')
+    intervals = hydro_aggregate_power_intervals(spec['zones'], count)
+    if not any(lo - 1e-6 <= power <= hi + 1e-6 for lo, hi in intervals):
+        raise ValueError(f'{uid}实际hydro_p={power} MW不在{count}台在线机组的稳定区聚合可达域内')
 
 
 def hydro_volume_bounds(spec, season):
@@ -230,6 +341,20 @@ def _validate_technical_parameters(cfg, init=None):
                     raise ValueError(f'{uid}.pondage不得超过初始库容')
 
 
+def intraday_lead_periods(cfg):
+    """Only a nonnegative integral forecast issue lead is meaningful."""
+    return _integer(cfg.mode.get('intraday', {}).get('lead_issue_periods', 1),
+                    'intraday.lead_issue_periods')
+
+
+def validate_renewable_profiles(cfg):
+    """The same profile/type choices enforced by the unit editor apply to APIs."""
+    allowed = {'wind': {'wind_a', 'wind_b'}, 'pv': {'pv'}}
+    for spec in _active(cfg, 'renewable'):
+        if spec.get('type') not in allowed or spec.get('profile') not in allowed[spec['type']]:
+            raise ValueError(f"{spec['id']}.profile 与新能源类型不匹配或不受支持")
+
+
 def validate_time_grid(cfg):
     """Reject inconsistent clocks instead of rounding a different market window."""
     dt = number(cfg.base['dt_h'], 'dt_h', positive=True)
@@ -249,14 +374,55 @@ def validate_time_grid(cfg):
     ic = cfg.mode.get('intraday', {})
     if ic.get('enabled', False):
         steps(ic.get('interval_h'), 'intraday.interval_h')
+        intraday_lead_periods(cfg)
+
+
+def validate_production_day(cfg):
+    """Profile preparation models one calendar day; debug runs use periods prefix."""
+    validate_time_grid(cfg)
+    count = _integer(cfg.base['periods'], 'periods', positive=True)
+    dt = number(cfg.base['dt_h'], 'dt_h', positive=True)
+    if not math.isclose(count * dt, 24., rel_tol=0., abs_tol=1e-9):
+        raise ValueError('完整生产日要求periods×dt_h=24；短段调试请使用运行periods参数')
+
+
+def validate_clearing_limits(limits):
+    lo = number(limits.get('clear_min'), 'price_limits.clear_min')
+    hi = number(limits.get('clear_max'), 'price_limits.clear_max')
+    if lo > hi:
+        raise ValueError('price_limits.clear_min不得大于clear_max')
+    return lo, hi
+
+
+def validate_solver_scheduler(cfg):
+    """The HiGHS global worker pool must agree between MIP and pricing LP."""
+    solver=cfg.base.get('solver',{})
+    if not isinstance(solver,dict):raise ValueError('solver must be a configuration object')
+    raw_extra=solver.get('highs_extra')
+    if raw_extra is not None and not isinstance(raw_extra,dict):
+        raise ValueError('solver.highs_extra must be an object or null')
+    threads=solver.get('threads',4)
+    if isinstance(threads,bool) or not isinstance(threads,int) or not 1<=threads<=2147483647:
+        raise ValueError('solver.threads must be a positive integer within 1..2147483647; automatic pool sizing is not supported')
+    extra=solver.get('highs_extra') or {}
+    mip_threads=extra.get('threads',threads)
+    if type(mip_threads) is not int or mip_threads!=threads:
+        raise ValueError('HiGHS MIP and LP thread budgets must agree; highs_extra.threads cannot override solver.threads')
+    return threads
 
 
 def validate_physical_inputs(cfg, init=None):
+    validate_solver_scheduler(cfg)
     _validate_resource_ids(cfg)
+    validate_operation_configuration(cfg)
+    validate_clearing_limits(cfg.mode.get("price_limits", {}))
+    validate_renewable_profiles(cfg)
     validate_time_grid(cfg)
     _integer(cfg.base['periods'], 'periods', positive=True)
     _validate_hydro_topology(cfg)
     _validate_technical_parameters(cfg, init=init)
+    from .hydro_commitment import validate_configuration as validate_hydro_commitment
+    validate_hydro_commitment(cfg)
     if init is None:
         return
     if not isinstance(init, dict):
@@ -266,6 +432,14 @@ def validate_physical_inputs(cfg, init=None):
         raise ValueError('滚动实际thermal状态必须完整，不能退回技术初值')
     for spec in _active(cfg, 'thermal'):
         _thermal_state(spec, thermal[spec['id']], f"{spec['id']}实际thermal状态")
+    hydro = _active(cfg, 'hydro')
+    expected_hydro = {spec['id'] for spec in hydro}
+    for name in ('hydro_p', 'hydro_online'):
+        values = init.get(name, {})
+        if not isinstance(values, dict) or set(values) != expected_hydro:
+            raise ValueError(f'滚动实际{name}必须完整包含所有启用水电，不能退回技术初值')
+    for spec in hydro:
+        _hydro_initial_power(spec, init['hydro_p'][spec['id']], init['hydro_online'][spec['id']])
     for family in ('storage', 'pumped', 'hydro'):
         expected = {x['id'] for x in _active(cfg, family)}
         states = init.get(family, {})
@@ -355,6 +529,8 @@ def validate_case_inputs(case):
     from .fixed_load import tie_mode
 
     cfg, net = case.cfg, case.net
+    if getattr(case,'actual_state_required',False) and not isinstance(case.init,dict):
+        raise ValueError('Continuous DA/ID/RT model requires its explicit window initial state; configuration fallback is prohibited')
     for family in ('thermal', 'hydro', 'pumped', 'storage', 'renewable', 'tie'):
         if any(not spec.get('enabled', True) for spec in cfg.units.get(family, [])):
             raise ValueError(f'case.cfg.units.{family}包含停用资源；请先通过filter_enabled过滤，禁止模型继续调度停用资源')

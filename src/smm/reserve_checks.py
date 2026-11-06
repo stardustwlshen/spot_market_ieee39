@@ -9,7 +9,12 @@ def audit(payload,tol=1e-5):
     out=dict(windows=0,resource_periods=0,qualified_resource_periods=0,positive_reserve_resource_periods=0,
              max_violation=0.,max_export_difference=0.,minimum_selected_duration_margin_mwh=None,minimum_selected_duration_margin_1e4m3=None,
              full_activation_risk_resource_periods=0,minimum_full_activation_margin_mwh=None,minimum_full_activation_margin_1e4m3=None,
-             rt_executed_reserve_up_short_max_mw=0.,rt_executed_reserve_down_short_max_mw=0.,violations=[])
+             rt_executed_reserve_up_short_max_mw=0.,rt_executed_reserve_down_short_max_mw=0.,
+             hydro_water_checked_resource_periods=0,hydro_water_legacy_resource_periods=0,
+             hydro_water_violation_count=0,hydro_water_check_passed=None,
+             hydro_outflow_checked_resource_periods=0,hydro_outflow_unconfigured_resource_periods=0,
+             hydro_outflow_legacy_resource_periods=0,hydro_outflow_violation_count=0,
+             hydro_outflow_check_passed=None,violations=[])
     def number(v):
         if isinstance(v,bool) or not isinstance(v,(int,float)) or not math.isfinite(v):raise ValueError(f'Invalid numeric evidence {v!r}')
         return float(v)
@@ -21,11 +26,32 @@ def audit(payload,tol=1e-5):
         if d>tol:out['violations'].append(dict(check=label,difference=d))
     def selected(v,unit):
         v=number(v);key='minimum_selected_duration_margin_'+unit;old=out[key];out[key]=v if old is None else min(old,v)
-    stages=[('DA',payload['da'])]+[(f'RT{i}',e) for i,e in enumerate(payload['rt_windows'])]
+    stages=[('DA',payload['da'])]+[(f'ID{i}',e) for i,e in enumerate(payload.get('id_windows',[]))]+[(f'RT{i}',e) for i,e in enumerate(payload['rt_windows'])]
     for stage,e in stages:
-        out['windows']+=1;enabled=e['storage_reserve_enabled'];down_enabled=e['down_enabled'];H=number(e['T_dur_h']) if enabled else None
-        if enabled and H<=0:raise ValueError('Nonpositive duration')
+        out['windows']+=1;enabled=e['storage_reserve_enabled'];down_enabled=e['down_enabled']
         rows=e['resources'];catalog=e['resource_catalog'];T=int(e['periods']);start=int(e['window_start'])
+        new_water=e.get('evidence_version') is not None
+        hydro_expected='hydro' in e['providers'] and any(r.get('type')=='hydro' for r in rows)
+        if new_water:
+            if e['evidence_version'] not in (2,3) or e.get('hydro_reserve_water_formulation')!='period_end_stock_incremental_up_water_v1':
+                raise ValueError('Missing/unknown hydro reserve water evidence version or formulation')
+            if not isinstance(e.get('hydro_reserve_water_enabled'),bool) or e['hydro_reserve_water_enabled']!=hydro_expected:
+                raise ValueError('Hydro reserve water participation is inconsistent with providers/resources')
+        elif ('hydro_reserve_water_formulation' in e or 'hydro_reserve_water_enabled' in e
+              or any('hydro_reserve_water_checked' in row for row in rows)):
+            raise ValueError('Hydro reserve water evidence is missing its schema version')
+        new_outflow=e.get('evidence_version')==3
+        outflow_expected=hydro_expected and any(r.get('type')=='hydro' and r.get('qout_max_m3s') is not None for r in rows)
+        if new_outflow:
+            if (e.get('hydro_reserve_outflow_formulation')!='generation_flow_with_reducible_spill_v1'
+                    or e.get('hydro_reserve_outflow_enabled') is not outflow_expected):
+                raise ValueError('Missing/inconsistent hydro reserve outflow policy')
+        elif ('hydro_reserve_outflow_formulation' in e or 'hydro_reserve_outflow_enabled' in e
+              or any('hydro_reserve_outflow_checked' in r for r in rows)):
+            raise ValueError('Hydro reserve outflow evidence cannot downgrade its schema version')
+        hydro_water_enabled=new_water and hydro_expected
+        H=number(e['T_dur_h']) if enabled or hydro_water_enabled else None
+        if H is not None and H<=0:raise ValueError('Nonpositive duration')
         pairs=[(r['unit'],r['relative_period']) for r in rows]
         if len(pairs)!=len(set(pairs)) or set(pairs)!={(u,t) for u in catalog for t in range(T)}:raise ValueError('Incomplete/duplicate resource grid')
         system={x['relative_period']:x for x in e['system']}
@@ -48,6 +74,69 @@ def audit(payload,tol=1e-5):
                 if typ not in ('storage','pumped'):
                     if eligible:
                         margin(number(r['pmax_mw'])-P-ru,label+'/power_up');margin(P-number(r['pmin_mw'])-rd,label+'/power_down')
+                    if typ=='hydro':
+                        if new_outflow:
+                            before_flow=len(out['violations'])
+                            rate=number(r['water_rate_m3s_per_mw'])
+                            if rate<=0:raise ValueError('Nonpositive hydro water rate')
+                            spill=number(r['Qspill_base_m3s']);eco=number(r['qeco_m3s'])
+                            qmax=r['qout_max_m3s'];checked=hydro_expected and qmax is not None
+                            status='checked' if checked else 'not_configured' if qmax is None else 'not_participating'
+                            if r.get('hydro_reserve_outflow_checked') is not checked or r.get('hydro_reserve_outflow_status')!=status:
+                                raise ValueError('Hydro reserve outflow check status is inconsistent')
+                            margin(spill,label+'/spill_nonnegative');margin(eco,label+'/ecology_nonnegative')
+                            qgen=rate*P;base=qgen+spill;active_gen=qgen+rate*ru
+                            active_spill=max(0.,spill-rate*ru);active_out=active_gen+active_spill
+                            for key,value in [('Qgen_base_m3s',qgen),('Qout_base_m3s',base),
+                                    ('reserve_up_activation_generation_m3s',active_gen),
+                                    ('reserve_up_activation_spill_m3s',active_spill),
+                                    ('reserve_up_activation_outflow_m3s',active_out),
+                                    ('reserve_up_ecological_margin_m3s',active_out-eco)]:
+                                equal(r[key],value,label+'/export_'+key)
+                            margin(base-eco,label+'/base_ecological_flow')
+                            margin(active_out-eco,label+'/activation_ecological_flow')
+                            if qmax is not None:
+                                qmax=number(qmax);margin(qmax,label+'/outflow_max_nonnegative')
+                                margin(qmax-base,label+'/baseline_outflow_limit')
+                            if checked:
+                                margin(qmax-active_out,label+'/activation_outflow_limit')
+                                equal(r['reserve_up_outflow_margin_m3s'],qmax-active_out,label+'/export_outflow_margin')
+                                out['hydro_outflow_checked_resource_periods']+=1
+                            else:
+                                if r['reserve_up_outflow_margin_m3s'] is not None:
+                                    raise ValueError('Unconfigured/inactive outflow margin must be N/A')
+                                if hydro_expected and qmax is None:
+                                    out['hydro_outflow_unconfigured_resource_periods']+=1
+                            out['hydro_outflow_violation_count']+=len(out['violations'])-before_flow
+                        elif hydro_expected:
+                            out['hydro_outflow_legacy_resource_periods']+=1
+                        if hydro_water_enabled:
+                            before=len(out['violations'])
+                            if r.get('hydro_reserve_water_checked') is not True:
+                                raise ValueError('Missing hydro reserve water check evidence')
+                            equal(r['T_dur_h'],H,label+'/hydro_duration')
+                            rate=number(r['water_rate_m3s_per_mw'])
+                            if rate<=0:raise ValueError('Nonpositive hydro water rate')
+                            lo=number(r['V_min_1e4m3']);hi=number(r['V_max_1e4m3'])
+                            v0=number(r['V_start_1e4m3']);v1=number(r['V_end_1e4m3'])
+                            margin(hi-lo,label+'/hydro_volume_bounds')
+                            for stock in (v0,v1):
+                                margin(stock-lo,label+'/hydro_stock_lower');margin(hi-stock,label+'/hydro_stock_upper')
+                            available=v1-lo;required=.36*rate*H*ru;remaining=available-required
+                            margin(remaining,label+'/hydro_incremental_up_water')
+                            equal(r['reserve_available_water_1e4m3'],available,label+'/export_hydro_available_water')
+                            equal(r['reserve_incremental_water_up_1e4m3'],required,label+'/export_hydro_required_water')
+                            equal(r['reserve_duration_up_margin_1e4m3'],remaining,label+'/export_hydro_water_margin')
+                            equal(r['reserve_duration_lower_margin_1e4m3'],remaining,label+'/export_hydro_water_lower_margin')
+                            if r['reserve_duration_down_margin_1e4m3'] is not None:
+                                raise ValueError('Hydro downward reserve water margin must remain N/A')
+                            out['hydro_water_checked_resource_periods']+=1
+                            out['hydro_water_violation_count']+=len(out['violations'])-before
+                            selected(remaining,'1e4m3')
+                        elif not new_water and hydro_expected:
+                            out['hydro_water_legacy_resource_periods']+=1
+                        elif new_water and r.get('hydro_reserve_water_checked') is not False:
+                            raise ValueError('Disabled hydro reserve water must be explicitly unchecked')
                     continue
                 if e.get('formulation') in ('incremental_current_stock','period_end_stock'):
                     end_stock=e.get('formulation')=='period_end_stock'
@@ -156,6 +245,22 @@ def audit(payload,tol=1e-5):
             if stage.startswith('RT') and t==0:
                 out['rt_executed_reserve_up_short_max_mw']=max(out['rt_executed_reserve_up_short_max_mw'],sr['R_up_short'])
                 out['rt_executed_reserve_down_short_max_mw']=max(out['rt_executed_reserve_down_short_max_mw'],sr['R_dn_short'])
+    if out['hydro_water_legacy_resource_periods']:
+        out['hydro_water_check_scope']='legacy_capacity_only_not_water_verified'
+    elif out['hydro_water_checked_resource_periods']:
+        out['hydro_water_check_passed']=out['hydro_water_violation_count']==0
+        out['hydro_water_check_scope']='period_end_stock_incremental_up_water_v1'
+    else:
+        out['hydro_water_check_scope']='not_applicable_no_hydro_reserve_participation'
+    if out['hydro_outflow_legacy_resource_periods']:
+        out['hydro_outflow_check_scope']='legacy_outflow_activation_not_verified'
+    elif out['hydro_outflow_checked_resource_periods']:
+        out['hydro_outflow_check_passed']=out['hydro_outflow_violation_count']==0
+        out['hydro_outflow_check_scope']='generation_flow_with_reducible_spill_v1'
+    elif out['hydro_outflow_unconfigured_resource_periods']:
+        out['hydro_outflow_check_scope']='not_configured_no_hydro_outflow_limit'
+    else:
+        out['hydro_outflow_check_scope']='not_applicable_no_hydro_reserve_participation'
     out['passed']=not out['violations']
     return out
 

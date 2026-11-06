@@ -12,7 +12,15 @@ from numbers import Real
 import numpy as np
 import pyomo.environ as pyo
 
+from .natural_inflow import model_natural, evidence_natural_values
+
 SCOPE = "hydro_assets_only;not_future_network_or_reserve;not_individual_turbine_commitment"
+
+
+def scope(cfg):
+    from .hydro_commitment import specs
+    return ("hydro_assets_only;not_future_network_or_reserve;identified_minimum_times_for_configured_stations"
+            if specs(cfg) else SCOPE)
 
 
 def limits(cfg):
@@ -127,8 +135,8 @@ def _attach_suffix(m):
             if history is None or absolute >= len(history):
                 raise ValueError(f"水电日电量续程缺少已执行出库历史{h}[{absolute}]")
             return _number(history[absolute], f"{h}.hydro_hist[{absolute}]")
-        original = next(d for d in case.cfg.units["hydro"] if d["id"] == h)
-        return original["water_rate"] * original["init_units_on"] * original["init_p_unit"]
+        from .state_bridge import hydro_before
+        return hydro_before(case.cfg, case.init or {}, h, absolute)
     for h, d in md.hydro.items():
         unit = md.hydro_units[h]
         if d["units"] != [h]:
@@ -149,7 +157,7 @@ def _attach_suffix(m):
             add(previous-b.Ph[h, t] <= unit["ramp"]*60*md.dt*online(h, t-1))
             upstream = release(d["upstream"], t-int(d.get("lag_periods", 0))) if d.get("upstream") else 0.
             qout = release(h, t)
-            add(b.V[h, t] == variable("V", h, t-1)+(d["qin"]+upstream-qout)*md.dt*.36)
+            add(b.V[h, t] == variable("V", h, t-1)+(model_natural(md,h,t)+upstream-qout)*md.dt*.36)
             add(pyo.inequality(d["vmin"], b.V[h, t], d["vmax"]))
             add(qout >= d["qeco"])
             if d.get("qout_max") is not None:
@@ -175,7 +183,7 @@ def diagnostics(m):
     if b is not None:
         suffix = dict(start_period=m._case.t0+m._md.T, end_period_exclusive=m._case.cfg.T,
             quantities_execute=False, quantities_settle=False, zero_objective_weight=True,
-            scope=SCOPE, reference_metadata=copy.deepcopy(b._reference_metadata), hydro_mode=b._hydro_mode,
+            scope=scope(m._case.cfg), reference_metadata=copy.deepcopy(b._reference_metadata), hydro_mode=b._hydro_mode,
             integers_fixed=all(v.fixed for v in b.delta.values()),
             rows=[dict(unit=h, period=m._case.t0+t, power_mw=float(pyo.value(b.Ph[h,t])),
                 volume_1e4m3=float(pyo.value(b.V[h,t])), spill_m3s=float(pyo.value(b.Qspill[h,t])),
@@ -183,10 +191,11 @@ def diagnostics(m):
                 for h in m.HS for t in b.F])
     return dict(active=True, stage=m._case.stage, start_period=m._case.t0,
         end_period_exclusive=m._case.t0+m._md.T, rows=rows, suffix=suffix,
-        rule="hard_daily_minimum_no_shortage_slack", scope=SCOPE)
+        rule="hard_daily_minimum_no_shortage_slack", scope=scope(m._case.cfg),
+        minimum_duration_stations=list(getattr(getattr(m,"hydro_commitment",None),"_initial_state",{}).get("stations",{})))
 
 
-def audit(cfg, da_snapshot, rr, tolerance=1e-5, *, bids=None):
+def audit(cfg, da_snapshot, rr, tolerance=1e-5, *, bids=None, input_registry=None):
     """Recompute executed daily energy, not overlapping forecast-window totals."""
     minimum = limits(cfg)
     if not minimum:
@@ -251,7 +260,7 @@ def audit(cfg, da_snapshot, rr, tolerance=1e-5, *, bids=None):
             if (not isinstance(suffix, dict) or suffix.get("start_period") != end
                     or suffix.get("end_period_exclusive") != cfg.T or suffix.get("integers_fixed") is not True
                     or suffix.get("quantities_execute") is not False or suffix.get("quantities_settle") is not False
-                    or suffix.get("zero_objective_weight") is not True or suffix.get("scope") != SCOPE):
+                    or suffix.get("zero_objective_weight") is not True or suffix.get("scope") != scope(cfg)):
                 fail(f"RT@{start}: missing/invalid hydro suffix")
                 return
             frows = suffix.get("rows", [])
@@ -294,7 +303,7 @@ def audit(cfg, da_snapshot, rr, tolerance=1e-5, *, bids=None):
                 fail(f"{stage}@{start}.{h}: hard minimum shortfall")
         if needs_suffix and isinstance(suffix, dict):
             references = _audit_suffix_references(cfg, da_snapshot, rr, round_result, start, suffix, fail)
-            _audit_suffix_physics(cfg, sn, start, end, suffix, state, fail, tolerance, capacities, references)
+            _audit_suffix_physics(cfg, sn, start, end, suffix, state, fail, tolerance, capacities, references,input_registry)
     check_window(da_snapshot, 0, "DA", {h: 0. for h in minimum})
     executed_before = []
     for i, r in enumerate(rounds):
@@ -346,7 +355,7 @@ def audit(cfg, da_snapshot, rr, tolerance=1e-5, *, bids=None):
         hydro_daily_minimum_scope="DA_and_ID_remaining_day;RT_asset_witness;actual_executed_first_periods_only")
 
 
-def _audit_suffix_physics(cfg, sn, start, end, suffix, state, fail, tol, capacities, references):
+def _audit_suffix_physics(cfg, sn, start, end, suffix, state, fail, tol, capacities, references,input_registry=None):
     """Independently reconstruct the asset witness from detached quantities."""
     specs = {h["id"]: h for h in cfg.units["hydro"]}
     records = {(r["unit"], r["period"]): r for r in suffix["rows"]}
@@ -368,8 +377,8 @@ def _audit_suffix_physics(cfg, sn, start, end, suffix, state, fail, tol, capacit
             return finite(sn["Qout"][h][t-start])
         if t >= 0:
             return finite(state.hydro_hist[h][t])
-        d = specs[h]
-        return d["water_rate"]*d["init_units_on"]*d["init_p_unit"]
+        from .state_bridge import hydro_before
+        return hydro_before(cfg, state, h, t)
     try:
         for h,d in specs.items():
             season = d["seasons"][cfg.base["season"]]
@@ -404,7 +413,7 @@ def _audit_suffix_physics(cfg, sn, start, end, suffix, state, fail, tol, capacit
                 if finite(r["spill_m3s"]) < -tol or q < season["qeco"]-tol or (d.get("qout_max") is not None and q > d["qout_max"]+tol):
                     raise ValueError(f"{h}@{t}: ecological/outflow limit")
                 upstream = release(d["upstream"],t-int(d.get("lag_periods",0))) if d.get("upstream") else 0.
-                expected = volume+(season["qin"]+upstream-q)*cfg.dt*.36
+                expected = volume+(evidence_natural_values(cfg,sn,h,[t],source_registry=input_registry)[0]+upstream-q)*cfg.dt*.36
                 volume = finite(r["volume_1e4m3"])
                 if abs(volume-expected)>tol or volume<lo-tol or volume>hi+tol:
                     raise ValueError(f"{h}@{t}: water balance/volume bounds")
@@ -445,7 +454,7 @@ def audit_exported(cfg, hydro_evidence, actual_states, tolerance=1e-5, *, bids=N
             id_failures=hydro_evidence.get('id_failures', []) if id_failures is None else id_failures,
             states=[SimpleNamespace(**r) for r in actual_states["windows"]])
         rr.states.append(SimpleNamespace(**actual_states["final_executed_state"]))
-        return audit(cfg, snapshot(hydro_evidence["da"]), rr, tolerance, bids=bids)
+        return audit(cfg, snapshot(hydro_evidence["da"]), rr, tolerance, bids=bids,input_registry=hydro_evidence.get("causal_input_registry"))
     except (KeyError, ValueError, TypeError, AttributeError) as exc:
         return dict(hydro_daily_minimum_active=True, hydro_daily_minimum_evidence_valid=False,
             hydro_daily_minimum_full_day=False, hydro_daily_minimum_final_satisfied=False,
@@ -455,6 +464,9 @@ def audit_exported(cfg, hydro_evidence, actual_states, tolerance=1e-5, *, bids=N
 
 def id_state_values(round_result):
     """Archive the same formal SCED bundle used for handoff validity decisions."""
+    if 'state_value_evidence' in round_result or round_result.get('models_retained') is False:
+        from .result_retention import strict_audit_values
+        return strict_audit_values(round_result)
     if 'state_values' in round_result:
         return round_result['state_values']
     model = round_result.get('model')

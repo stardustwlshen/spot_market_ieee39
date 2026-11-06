@@ -27,10 +27,10 @@ def archive(tmp_path,monkeypatch):
     pd.DataFrame({'bus':[1,2],'load_mw':[0.,0.]}).to_csv(root/'data/case39/buses.csv',index=False)
     summary={'completed_scope':'full_day','executed_periods':2,'expected_periods':2,
              'checks':{'rt_balance_err_mw':0.},'realtime':{'fallback_count':0},
-             'da_summary':{'slack':dict(shed_mwh=0.,surplus_mwh=0.,line_slack_max=0.,anchor_slack_max_mwh=0.)}}
+             'da_summary':{'slack':dict(shed_mwh=0.,surplus_mwh=0.,line_slack_max=0.,anchor_slack_max_mwh=0.,reserve_up_short_max=0.,reserve_dn_short_max=0.)}}
     (tmp_path/'summary.json').write_text(json.dumps(summary))
     def csv(name,rows):pd.DataFrame(rows).to_csv(tmp_path/name,index=False)
-    csv('rt_system.csv',[dict(period=t,R_up_short=0.,shed_mw=0.,surplus_mw=0.,line_slack_max_win=0.,
+    csv('rt_system.csv',[dict(period=t,R_up_short=0.,R_dn_short=0.,reserve_up_short_max_win=0.,reserve_dn_short_max_win=0.,shed_mw=0.,surplus_mw=0.,line_slack_max_win=0.,
                             anchor_slack_max_mwh_win=0.,state_band_slack_max_win=0.) for t in range(2)])
     for prefix in ('da','rt'):
         csv(f'{prefix}_storage.csv',[dict(period=t,unit='S',E_mwh=100.,P_dis=0.,P_ch=0.) for t in range(2)])
@@ -51,8 +51,8 @@ def archive(tmp_path,monkeypatch):
     from smm import reserve_checks
     monkeypatch.setattr(reserve_checks,'audit',lambda payload:{'violations':[],'max_violation':0.,'passed':True})
     catalog=['G','S','P','H']
-    (tmp_path/'reserve_window_evidence.json').write_text(json.dumps({'da':{'periods':2,'window_start':0,'resource_catalog':catalog},
-        'rt_windows':[{'periods':2-t,'window_start':t,'resource_catalog':catalog} for t in range(2)]}))
+    (tmp_path/'reserve_window_evidence.json').write_text(json.dumps({'da':{'periods':2,'window_start':0,'resource_catalog':catalog,'down_enabled':False,'system':[dict(period=k,relative_period=k,R_up_short=0.,R_dn_short=0.) for k in range(2)]},
+        'rt_windows':[{'periods':2-t,'window_start':t,'resource_catalog':catalog,'down_enabled':False,'system':[dict(period=t+k,relative_period=k,R_up_short=0.,R_dn_short=0.) for k in range(2-t)]} for t in range(2)]}))
     return tmp_path
 
 
@@ -133,3 +133,14 @@ def test_failure_exit_code_and_inputs_unchanged(archive,monkeypatch):
     assert before=={p.relative_to(archive):p.read_bytes() for p in archive.rglob('*') if p.is_file()}
     (archive/'rt_prices.csv').unlink()
     assert validator.main()==1
+
+
+@pytest.mark.parametrize('hourly', [[None, None], [10., None], []])
+def test_undefined_zero_load_hourly_price_range_is_unknown(archive, hourly):
+    path = archive / 'summary.json'
+    summary = json.loads(path.read_text())
+    summary['spread'] = {'da_lw_hourly': hourly, 'rt_lw_hourly': hourly}
+    path.write_text(json.dumps(summary, allow_nan=False))
+    result = validator.metrics(archive)
+    assert result['日前小时价差'] is None
+    assert result['实时小时价差'] is None

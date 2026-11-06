@@ -16,9 +16,11 @@ def da_result():
     from smm.network import build_network
 
     cfg = load_config()
+    cfg.base["default_bid_model"] = "legacy_v1"  # Exact historical price golden, not current v5
     cfg.base["tie_line_mode"] = "supply"  # historical regression contract; new fixed demand tested separately
     cfg.base["forecast"] = {"model": "legacy_v1"}  # explicit historical curve golden; current v2 tested separately
     cfg.units["renewable"] = [u for u in cfg.units["renewable"] if u["id"] not in {"PV2", "PV3"}]  # pre-expansion asset golden
+    cfg.units["storage"] = [u for u in cfg.units["storage"] if u["id"] in {"ES1", "ES2", "ES3"}]  # explicit original-battery golden; expanded default has separate acceptance
     cfg.mode["realtime"]["storage"]["anchor"] = "hourly_eq"  # explicit historical soft-anchor fixture
     cfg.mode["realtime"]["storage"]["mode"] = "sced_anchor"  # 第二轮：默认改为价值法，历史夹具显式保留旧锚点模式
     cfg.mode["realtime"]["hydro"] = "window_end_da"           # 历史夹具：水电窗口末硬目标（tracking_policy 已移除）

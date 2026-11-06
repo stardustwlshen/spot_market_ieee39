@@ -8,6 +8,7 @@ import yaml
 from input_workflow import business_error, launch_error
 from common import (TYPE_CN, MODE_CN, STATUS_CN, page_setup, run_label, run_progress, run_status,
                     sc, scen_config, scenario_selector, start_run, stop_run)
+from smm.time_grid import result_time_grid
 from quote_simulation import quotation_workspace
 from run_record_actions import elapsed_for_display, render_open_saved_result
 
@@ -49,9 +50,9 @@ if running:
     st.info("已有后台运行，或历史进程身份尚待核实。暂禁用改价和启动，避免重复求解。")
 elif needs_restart:
     st.info("请先重启应用，再编辑报价、机组或开始运行，避免混用更新前后的代码。")
-st.caption(f"{cfg.base['date']} · { {'wet': '丰水期', 'dry': '枯水期'}.get(cfg.base['season'], cfg.base['season']) } · 选择一台机组改报价，观察整个市场的运行变化。")
+st.caption(f"{cfg.base['date']} · { {'wet': '丰水期', 'dry': '枯水期'}.get(cfg.base['season'], cfg.base['season']) }")
 
-quote_tab, network_tab = st.tabs(['机组与报价', '全网与其他机组'])
+quote_tab, network_tab = st.tabs(['机组与报价', '系统接线图与全网'])
 with quote_tab:
     draft, bid_errors = quotation_workspace(cfg, name, disabled=active)
     from unit_editor import render_unit_editor
@@ -70,13 +71,19 @@ render_fixed_load_policy(cfg, name, disabled=active)
 from anchor_policy_controls import render_anchor_policy
 render_anchor_policy(cfg, name, disabled=active)
 
+from advanced_parameters import render_advanced_parameters, render_effective_parameters
+render_advanced_parameters(cfg, name, disabled=active)
+render_effective_parameters(cfg)
+
 c1, c2 = st.columns(2)
 mode = c1.radio("运行模式", ["full", "da"], format_func=lambda value: {"da": "仅日前", "full": "全天：日前→实时→结算"}[value], horizontal=True, disabled=active)
 short_run = c2.checkbox("短时试跑", value=False, disabled=active or mode == 'da')
-periods = (c2.number_input("实时试跑时段数（每段15分钟）", 1, 96, 8, disabled=active)
+periods = (c2.number_input(f"实时试跑时段数（每段{cfg.dt * 60:g}分钟）", 1, cfg.T, min(8, cfg.T), disabled=active)
            if short_run and mode == 'full' else 0)
 if short_run and mode == 'full':
     st.caption("短时试跑仍先计算全天日前计划；只截短实时，不是完整日结算。")
+from smm.input_version import run_options
+st.session_state['network_run_options:' + name] = run_options(mode, periods)
 historical_regulation = bool(cfg.mode.get('regulation', {}).get('enabled', False))
 historical_fixed_load = cfg.base.get('tie_line_mode', 'supply') == 'fixed_load'
 if historical_regulation:
@@ -103,7 +110,7 @@ st.subheader("市场运行情况")
 def monitor():
     runs = sc.list_runs()
     if not runs:
-        st.info("暂无运行记录。选择模式后点击“开始运行”。", icon="📭")
+        st.info("暂无运行记录。", icon="📭")
         return
     for m in runs:
         m["status"] = run_status(m)
@@ -125,7 +132,9 @@ def monitor():
         st.info('请从备份核对并恢复该文件。可在“查看运行”切换其他记录；原文件未改写。')
         return
     if m.get("demo_description"):st.info(m["demo_description"])
-    st.caption(f"所看结果来自：{m['scenario']} · 报价 v{m.get('bid_version', '未记录')}。采用该次冻结输入，不随上方修改变化。")
+    st.caption(f"{m['scenario']} · 报价 v{m.get('bid_version', '未记录')} · 本次冻结输入")
+    from input_version_notice import render_input_version_notice
+    render_input_version_notice(m)
     logp = Path(sel) / "run.log"
     log = logp.read_text(encoding="utf-8", errors="replace") if logp.exists() else ""
     s = m["status"]
@@ -149,7 +158,7 @@ def monitor():
                            else "运行失败，不能视为完整日结果")
         business_error(failure_summary, failure_detail, "请展开技术诊断查看原因；已执行前缀仍可查看。")
     if s == "done":
-        st.info("所选运行范围计算结束，可到“结果”页查看；这不代表精度或物理检查通过。" + (" 注意：这是调试截断范围，不是完整日。" if m.get("periods") and m["periods"] < 96 else ""))
+        st.info("所选范围计算结束，不代表精度或物理检查通过。" + (" 注意：这是调试截断范围，不是完整日。" if m.get("periods") and m["periods"] < result_time_grid({"snapshot_root": str(Path(sel) / "scenario_snapshot")})[0] else ""))
         render_open_saved_result(m)
     if (Path(sel)/"cancel.request").exists() and s in ("running", "starting", "cancelling"):
         st.warning("取消已请求；当前SCUC/SCED不强杀，完成后停止。已执行前缀不是完整日结算。")
@@ -165,9 +174,11 @@ def monitor():
         from market_views import stages_dashboard
         with st.expander('日前SCUC/SCED阶段诊断（不是实时执行）'):
             stages_dashboard(live['da_stages'],prefix='da_stage:'+sel)
+    from stage_results import live_intraday_view
+    live_intraday_view(live, prefix='live_id:'+sel)
     if live.get("executed"):
         st.subheader(f"实时已执行：{live['executed_periods']} / {live['total_periods']} 时段")
-        st.caption("每个15分钟窗口结束立即刷新。下图/表只含已执行首时段；前瞻计划单独展示且会被下一窗口修订。")
+        st.caption("以下仅含实时已执行首段；前瞻计划另列。")
         from common import display_frame
         executed=live["executed"]
         from market_views import system_metrics
@@ -190,16 +201,16 @@ def monitor():
             history=live.get('stage_history',{})
             if history:
                 window=st.selectbox('窗口起点',list(history),format_func=lambda x:f'第{int(x)}段',key='stage_window:'+sel)
-                stages_dashboard(history[window],prefix='live_stage:'+sel)
+                stages_dashboard(history[window],prefix='live_stage:'+sel,market_stage='RT',window_start=int(window))
             else:stages_dashboard(None,prefix='live_stage:'+sel)
         with st.expander('水电实际状态与窗口末跟踪目标',expanded=False):
             from market_views import hydro_window_dashboard
             hydro_window_dashboard(live.get('hydro_window_history',{}),prefix='live_hydro:'+sel)
         if not live.get("settled"):
-            st.caption("滚动前缀仅用于观察，不包含完整日最终结算；失败/取消不会冒充完成结果。")
+            st.caption("已执行前缀，不是完整日结算。")
     elif live.get("phase"):
-        phase_label = {"preparing": "准备输入", "da": "日前出清", "da_done": "日前完成", "realtime": "实时滚动", "done": "完成", "failed": "失败", "stopped": "停止"}.get(live["phase"], "处理中")
-        st.info(f"当前阶段：{phase_label}；日前尚未完成时不会伪造实时曲线。")
+        phase_label = {"preparing": "准备输入", "da": "日前出清", "da_done": "日前完成", "da_stage": "日前求解阶段完成", "id_round": "日内轮完成（参考计划）", "rt_window": "实时首段已执行", "realtime": "实时滚动", "done": "完成", "failed": "失败", "stopped": "停止"}.get(live["phase"], "处理中")
+        st.info(f"当前阶段：{phase_label}")
     if not live.get("executed"):
         from simulation_results import saved_da_tables, render_all_unit_parameters
         da_tables = saved_da_tables(Path(sel))

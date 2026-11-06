@@ -17,6 +17,7 @@ ROOT = Path(pipeline.__file__).resolve().parents[2]
 @pytest.fixture
 def isolated_cfg(tmp_path):
     cfg = load_config()
+    cfg.base["default_bid_model"] = "legacy_v1"  # External historical shape; intentionally no cost archive
     shutil.copytree(cfg.root / 'data', tmp_path / 'data')
     cfg.root = tmp_path
     return cfg

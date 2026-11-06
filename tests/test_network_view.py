@@ -121,7 +121,7 @@ def test_figure_stacks_resources_and_distinguishes_transformers():
     data['resources'] = pd.concat([data['resources'], row.to_frame().T], ignore_index=True)
     fig = topology_figure(data, 31, 'T6-31')
     labels = [a.text for a in fig.layout.annotations]
-    assert any('C1<br>same_bus_test' in text for text in labels)
+    assert any('煤 C1<br>煤 same_bus_test' in text for text in labels)
     assert sum(trace.line.dash == 'dash' for trace in fig.data if trace.mode == 'lines') == 11
     runtime = result_snapshot(data, fixture_result(), 'da', 0)
     figure = topology_figure(runtime)

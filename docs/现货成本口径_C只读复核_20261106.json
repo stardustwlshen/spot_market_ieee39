@@ -1,0 +1,47 @@
+{
+  "status": "read_only_evidence_audit_passed",
+  "run": "/workspace/scratch/42c5fe32dad0/continued_logic_review_20261106/final_repo/outputs/full_C_cost_v5_MKT_wet_id_on",
+  "scope": {
+    "periods": 96,
+    "profit_units": 17,
+    "rt_units": 18,
+    "recognized_extra_tie": [
+      "TIE"
+    ]
+  },
+  "source_evidence_sha256": {
+    "summary.json": "8975b696fbdadd3f93aaeae37ca3378edb21f698d41663612eeb651412de2944",
+    "fixed_cost_profile.json": "93398f842e67e7c828fb314fa51d980387136e7c5078cbbb4f519438399801d9",
+    "operating_profit_by_period.csv": "d9cae8ad03bd89316b3713e1cc9e9e59211acb9e40e954118a6bd98213e1fb03",
+    "operating_profit_by_unit.csv": "9d525150496f996f36ba87a161f525ca91794136f547c95a85fa8996a0eb88c5",
+    "settlement_detail.csv": "4fd0b483cb283e908135c98d5fc195c4230555f3c82dede2cbf6bd5d88c8ee8f",
+    "rt_units.csv": "6501b040d06e918c21e6204bcf5af1d80f1427cdb3f37c454e21a40037b6fb1f",
+    "rt_pumped.csv": "c14b67fad0ed7ee7d73771e9d397f68d77df3aef7867d413c121350c28262332",
+    "rt_storage.csv": "b99dbd33f765d5ea851bd5682df2404b5a6f7c2ae0009af87acb809afe6778e4",
+    "rolling_actual_states.json": "d93a0cca83b95e18217d4ca07f6a756e49cd46ae1355ae61c172902d565c865f",
+    "scenario_snapshot/config/base.yaml": "9bfe41efc581089ad60f7934d8767b668235b8951369049149dcc4d62f055649",
+    "scenario_snapshot/config/units.yaml": "57173e0f3b01589d2188b38ad3be846b7ee19cba9d2b50f9dcb72435ace6c04b"
+  },
+  "raw_frozen_fixed_costs_yaml_present": false,
+  "source_limitation": "Archived resolved fixed_cost_profile.json verified. Its claimed input SHA is retained but cannot be independently verified against absent raw YAML. CSV quantities and money rounded to four decimals.",
+  "max_abs_period_cost_reconciliation_error_yuan": {
+    "variable_cost_yuan": 0.0034999999988940544,
+    "fixed_online_cost_yuan": 0,
+    "startup_cost_yuan": 0,
+    "cash_operating_cost_yuan": 0.0034999999988940544,
+    "simulated_operating_profit_yuan": 0.003499999997757186
+  },
+  "PS1": {
+    "sales_settlement_yuan": "269065.8049",
+    "pumping_settlement_yuan": "-323955.0000",
+    "net_energy_cash_yuan": "-54889.1951",
+    "generation_starts": "3.0",
+    "pumping_starts": "4.0",
+    "startup_cost_yuan": "22000.0",
+    "old_per_period_vom_sum_yuan": "8946.4287",
+    "new_policy_profit_excluding_vom_yuan": "-76889.1951",
+    "initial_inventory_1e4m3": 200.0,
+    "final_inventory_1e4m3": 196.09375
+  },
+  "existing_recalculation_blocker": "Known frozen TIE rows are incorrectly rejected by exact resource-only RT grid. No code modified."
+}

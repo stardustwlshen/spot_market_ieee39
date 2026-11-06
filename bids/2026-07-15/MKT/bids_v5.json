@@ -1,0 +1,1578 @@
+{
+  "date": "2026-07-15",
+  "rule_set": "MKT",
+  "version": 5,
+  "created": "2026-11-05T21:10:09",
+  "note": "分类型逐机组成本基准报价；成本与机会参数均为显式研究假设；非实测成本；历史及手工报价不迁移；首次丰水生成，切换季节不自动重报价",
+  "units": {
+    "C1": {
+      "mode": "price_quantity",
+      "segments": [
+        {
+          "p_start": 0.0,
+          "p_end": 290.0,
+          "price": 280.0
+        },
+        {
+          "p_start": 290.0,
+          "p_end": 361.2,
+          "price": 280.0
+        },
+        {
+          "p_start": 361.2,
+          "p_end": 432.4,
+          "price": 285.6
+        },
+        {
+          "p_start": 432.4,
+          "p_end": 503.6,
+          "price": 294.0
+        },
+        {
+          "p_start": 503.6,
+          "p_end": 574.8,
+          "price": 305.2
+        },
+        {
+          "p_start": 574.8,
+          "p_end": 646.0,
+          "price": 319.2
+        }
+      ],
+      "startup_cost": {
+        "cold": 600000,
+        "warm": 400000,
+        "hot": 250000
+      },
+      "noload_cost": 6000.0,
+      "startup_cost_yuan": 250000.0
+    },
+    "C2": {
+      "mode": "price_quantity",
+      "segments": [
+        {
+          "p_start": 0.0,
+          "p_end": 325.0,
+          "price": 297.0
+        },
+        {
+          "p_start": 325.0,
+          "p_end": 405.0,
+          "price": 297.0
+        },
+        {
+          "p_start": 405.0,
+          "p_end": 485.0,
+          "price": 302.94
+        },
+        {
+          "p_start": 485.0,
+          "p_end": 565.0,
+          "price": 311.85
+        },
+        {
+          "p_start": 565.0,
+          "p_end": 645.0,
+          "price": 323.73
+        },
+        {
+          "p_start": 645.0,
+          "p_end": 725.0,
+          "price": 338.58
+        }
+      ],
+      "startup_cost": {
+        "cold": 700000,
+        "warm": 450000,
+        "hot": 280000
+      },
+      "noload_cost": 6500.0,
+      "startup_cost_yuan": 280000.0
+    },
+    "C3": {
+      "mode": "price_quantity",
+      "segments": [
+        {
+          "p_start": 0.0,
+          "p_end": 390.0,
+          "price": 315.0
+        },
+        {
+          "p_start": 390.0,
+          "p_end": 485.0,
+          "price": 315.0
+        },
+        {
+          "p_start": 485.0,
+          "p_end": 580.0,
+          "price": 321.3
+        },
+        {
+          "p_start": 580.0,
+          "p_end": 675.0,
+          "price": 330.75
+        },
+        {
+          "p_start": 675.0,
+          "p_end": 770.0,
+          "price": 343.35
+        },
+        {
+          "p_start": 770.0,
+          "p_end": 865.0,
+          "price": 359.1
+        }
+      ],
+      "startup_cost": {
+        "cold": 800000,
+        "warm": 520000,
+        "hot": 320000
+      },
+      "noload_cost": 7500.0,
+      "startup_cost_yuan": 320000.0
+    },
+    "CCGT": {
+      "mode": "price_quantity",
+      "segments": [
+        {
+          "p_start": 0.0,
+          "p_end": 310.0,
+          "price": 405.0
+        },
+        {
+          "p_start": 310.0,
+          "p_end": 385.4,
+          "price": 405.0
+        },
+        {
+          "p_start": 385.4,
+          "p_end": 460.8,
+          "price": 413.1
+        },
+        {
+          "p_start": 460.8,
+          "p_end": 536.2,
+          "price": 425.25
+        },
+        {
+          "p_start": 536.2,
+          "p_end": 611.6,
+          "price": 441.45
+        },
+        {
+          "p_start": 611.6,
+          "p_end": 687.0,
+          "price": 461.7
+        }
+      ],
+      "startup_cost": {
+        "cold": 300000,
+        "warm": 220000,
+        "hot": 150000
+      },
+      "noload_cost": 9000.0,
+      "startup_cost_yuan": 150000.0
+    },
+    "GT": {
+      "mode": "price_quantity",
+      "segments": [
+        {
+          "p_start": 0.0,
+          "p_end": 75.0,
+          "price": 620.0
+        },
+        {
+          "p_start": 75.0,
+          "p_end": 120.0,
+          "price": 620.0
+        },
+        {
+          "p_start": 120.0,
+          "p_end": 165.0,
+          "price": 632.4
+        },
+        {
+          "p_start": 165.0,
+          "p_end": 210.0,
+          "price": 651.0
+        },
+        {
+          "p_start": 210.0,
+          "p_end": 255.0,
+          "price": 675.8
+        },
+        {
+          "p_start": 255.0,
+          "p_end": 300.0,
+          "price": 706.8
+        }
+      ],
+      "startup_cost": {
+        "cold": 60000,
+        "warm": 50000,
+        "hot": 40000
+      },
+      "noload_cost": 4000.0,
+      "startup_cost_yuan": 40000.0
+    },
+    "W1": {
+      "mode": "price_quantity",
+      "segments": [
+        {
+          "p_start": 0.0,
+          "p_end": 208.0,
+          "price": 10.0
+        },
+        {
+          "p_start": 208.0,
+          "p_end": 416.0,
+          "price": 20.0
+        },
+        {
+          "p_start": 416.0,
+          "p_end": 624.0,
+          "price": 30.0
+        },
+        {
+          "p_start": 624.0,
+          "p_end": 832.0,
+          "price": 40.0
+        },
+        {
+          "p_start": 832.0,
+          "p_end": 1040.0,
+          "price": 50.0
+        }
+      ],
+      "avail_pmax": null
+    },
+    "W2": {
+      "mode": "price_quantity",
+      "segments": [
+        {
+          "p_start": 0.0,
+          "p_end": 112.8,
+          "price": 10.0
+        },
+        {
+          "p_start": 112.8,
+          "p_end": 225.6,
+          "price": 20.0
+        },
+        {
+          "p_start": 225.6,
+          "p_end": 338.4,
+          "price": 30.0
+        },
+        {
+          "p_start": 338.4,
+          "p_end": 451.2,
+          "price": 40.0
+        },
+        {
+          "p_start": 451.2,
+          "p_end": 564.0,
+          "price": 50.0
+        }
+      ],
+      "avail_pmax": null
+    },
+    "PV1": {
+      "mode": "price_quantity",
+      "segments": [
+        {
+          "p_start": 0.0,
+          "p_end": 130.4,
+          "price": 10.0
+        },
+        {
+          "p_start": 130.4,
+          "p_end": 260.8,
+          "price": 20.0
+        },
+        {
+          "p_start": 260.8,
+          "p_end": 391.2,
+          "price": 30.0
+        },
+        {
+          "p_start": 391.2,
+          "p_end": 521.6,
+          "price": 40.0
+        },
+        {
+          "p_start": 521.6,
+          "p_end": 652.0,
+          "price": 50.0
+        }
+      ],
+      "avail_pmax": null
+    },
+    "PV2": {
+      "mode": "price_quantity",
+      "segments": [
+        {
+          "p_start": 0.0,
+          "p_end": 150.0,
+          "price": 10.0
+        },
+        {
+          "p_start": 150.0,
+          "p_end": 300.0,
+          "price": 20.0
+        },
+        {
+          "p_start": 300.0,
+          "p_end": 450.0,
+          "price": 30.0
+        },
+        {
+          "p_start": 450.0,
+          "p_end": 600.0,
+          "price": 40.0
+        },
+        {
+          "p_start": 600.0,
+          "p_end": 750.0,
+          "price": 50.0
+        }
+      ],
+      "avail_pmax": null
+    },
+    "PV3": {
+      "mode": "price_quantity",
+      "segments": [
+        {
+          "p_start": 0.0,
+          "p_end": 150.0,
+          "price": 10.0
+        },
+        {
+          "p_start": 150.0,
+          "p_end": 300.0,
+          "price": 20.0
+        },
+        {
+          "p_start": 300.0,
+          "p_end": 450.0,
+          "price": 30.0
+        },
+        {
+          "p_start": 450.0,
+          "p_end": 600.0,
+          "price": 40.0
+        },
+        {
+          "p_start": 600.0,
+          "p_end": 750.0,
+          "price": 50.0
+        }
+      ],
+      "avail_pmax": null
+    },
+    "H1": {
+      "mode": "price_quantity",
+      "hydro_bid": {
+        "method": "segments",
+        "season": "wet"
+      },
+      "segments": [
+        {
+          "p_start": 0.0,
+          "p_end": 101.6,
+          "price": 120.0
+        },
+        {
+          "p_start": 101.6,
+          "p_end": 203.2,
+          "price": 130.0
+        },
+        {
+          "p_start": 203.2,
+          "p_end": 304.8,
+          "price": 150.0
+        },
+        {
+          "p_start": 304.8,
+          "p_end": 406.4,
+          "price": 180.0
+        },
+        {
+          "p_start": 406.4,
+          "p_end": 508.0,
+          "price": 210.0
+        }
+      ]
+    },
+    "ES1": {
+      "mode": "price_quantity",
+      "dis_segments": [
+        {
+          "p_start": 0.0,
+          "p_end": 33.333,
+          "price": 410.0
+        },
+        {
+          "p_start": 33.333,
+          "p_end": 66.667,
+          "price": 430.0
+        },
+        {
+          "p_start": 66.667,
+          "p_end": 100.0,
+          "price": 440.0
+        }
+      ],
+      "ch_segments": [
+        {
+          "p_start": 0.0,
+          "p_end": 33.333,
+          "price": 350.0
+        },
+        {
+          "p_start": 33.333,
+          "p_end": 66.667,
+          "price": 330.0
+        },
+        {
+          "p_start": 66.667,
+          "p_end": 100.0,
+          "price": 320.0
+        }
+      ],
+      "soc_min": 0.1,
+      "soc_max": 0.9,
+      "soc_end": 0.5,
+      "self_schedule": null
+    },
+    "ES2": {
+      "mode": "price_quantity",
+      "dis_segments": [
+        {
+          "p_start": 0.0,
+          "p_end": 66.667,
+          "price": 430.0
+        },
+        {
+          "p_start": 66.667,
+          "p_end": 133.333,
+          "price": 440.0
+        },
+        {
+          "p_start": 133.333,
+          "p_end": 200.0,
+          "price": 460.0
+        }
+      ],
+      "ch_segments": [
+        {
+          "p_start": 0.0,
+          "p_end": 66.667,
+          "price": 350.0
+        },
+        {
+          "p_start": 66.667,
+          "p_end": 133.333,
+          "price": 340.0
+        },
+        {
+          "p_start": 133.333,
+          "p_end": 200.0,
+          "price": 320.0
+        }
+      ],
+      "soc_min": 0.1,
+      "soc_max": 0.9,
+      "soc_end": 0.5,
+      "self_schedule": null
+    },
+    "ES3": {
+      "mode": "price_quantity",
+      "dis_segments": [
+        {
+          "p_start": 0.0,
+          "p_end": 33.333,
+          "price": 440.0
+        },
+        {
+          "p_start": 33.333,
+          "p_end": 66.667,
+          "price": 460.0
+        },
+        {
+          "p_start": 66.667,
+          "p_end": 100.0,
+          "price": 470.0
+        }
+      ],
+      "ch_segments": [
+        {
+          "p_start": 0.0,
+          "p_end": 33.333,
+          "price": 360.0
+        },
+        {
+          "p_start": 33.333,
+          "p_end": 66.667,
+          "price": 340.0
+        },
+        {
+          "p_start": 66.667,
+          "p_end": 100.0,
+          "price": 330.0
+        }
+      ],
+      "soc_min": 0.1,
+      "soc_max": 0.9,
+      "soc_end": 0.5,
+      "self_schedule": null
+    },
+    "ES4": {
+      "mode": "price_quantity",
+      "dis_segments": [
+        {
+          "p_start": 0.0,
+          "p_end": 50.0,
+          "price": 410.0
+        },
+        {
+          "p_start": 50.0,
+          "p_end": 100.0,
+          "price": 430.0
+        },
+        {
+          "p_start": 100.0,
+          "p_end": 150.0,
+          "price": 440.0
+        }
+      ],
+      "ch_segments": [
+        {
+          "p_start": 0.0,
+          "p_end": 50.0,
+          "price": 350.0
+        },
+        {
+          "p_start": 50.0,
+          "p_end": 100.0,
+          "price": 330.0
+        },
+        {
+          "p_start": 100.0,
+          "p_end": 150.0,
+          "price": 320.0
+        }
+      ],
+      "soc_min": 0.1,
+      "soc_max": 0.9,
+      "soc_end": 0.5,
+      "self_schedule": null
+    },
+    "ES5": {
+      "mode": "price_quantity",
+      "dis_segments": [
+        {
+          "p_start": 0.0,
+          "p_end": 50.0,
+          "price": 410.0
+        },
+        {
+          "p_start": 50.0,
+          "p_end": 100.0,
+          "price": 430.0
+        },
+        {
+          "p_start": 100.0,
+          "p_end": 150.0,
+          "price": 440.0
+        }
+      ],
+      "ch_segments": [
+        {
+          "p_start": 0.0,
+          "p_end": 50.0,
+          "price": 350.0
+        },
+        {
+          "p_start": 50.0,
+          "p_end": 100.0,
+          "price": 330.0
+        },
+        {
+          "p_start": 100.0,
+          "p_end": 150.0,
+          "price": 320.0
+        }
+      ],
+      "soc_min": 0.1,
+      "soc_max": 0.9,
+      "soc_end": 0.5,
+      "self_schedule": null
+    },
+    "PS1": {
+      "mode": "price_quantity",
+      "gen_segments": [
+        {
+          "p_start": 0.0,
+          "p_end": 200.0,
+          "price": 390.0
+        },
+        {
+          "p_start": 200.0,
+          "p_end": 400.0,
+          "price": 410.0
+        },
+        {
+          "p_start": 400.0,
+          "p_end": 600.0,
+          "price": 440.0
+        }
+      ],
+      "pump_segments": [
+        {
+          "p_start": 0.0,
+          "p_end": 600.0,
+          "price": 290.0
+        }
+      ],
+      "vup_end": 200
+    }
+  },
+  "_cost_basis": {
+    "algorithm": "fixed-cost-plus-offer-strategy-v2",
+    "worksheet": {
+      "version": "synthetic-cost-study-v1",
+      "source_kind": "research_assumption_not_observed_plant_data",
+      "source": "Synthetic research assumptions; EIA references support heat-rate formula/type distinctions only, not these unit-specific values",
+      "currency_energy_units": "CNY/MWh; fuel CNY/GJ_HHV; heat rate GJ_HHV/MWh",
+      "thermal": {
+        "C1": {
+          "fuel_price": 30,
+          "heat_rate": 9,
+          "variable_om": 10
+        },
+        "C2": {
+          "fuel_price": 30,
+          "heat_rate": 9.5,
+          "variable_om": 12
+        },
+        "C3": {
+          "fuel_price": 30,
+          "heat_rate": 10,
+          "variable_om": 15
+        },
+        "CCGT": {
+          "fuel_price": 60,
+          "heat_rate": 6.5,
+          "variable_om": 15
+        },
+        "GT": {
+          "fuel_price": 60,
+          "heat_rate": 10,
+          "variable_om": 20
+        }
+      },
+      "thermal_offer_markup_factors": [
+        1,
+        1.02,
+        1.05,
+        1.09,
+        1.14
+      ],
+      "renewable_vom": {
+        "W1": 8,
+        "W2": 11,
+        "PV1": 5,
+        "PV2": 5,
+        "PV3": 5
+      },
+      "renewable_strategy_increments": [
+        0,
+        10,
+        20,
+        30,
+        40
+      ],
+      "hydro": {
+        "H1": {
+          "variable_om": 6,
+          "water_opportunity": {
+            "wet": 110,
+            "dry": 180
+          }
+        }
+      },
+      "hydro_opportunity_increments": [
+        0,
+        15,
+        35,
+        60,
+        90
+      ],
+      "storage": {
+        "ES1": {
+          "replacement_energy": 250,
+          "degradation": 25,
+          "reservation": 410
+        },
+        "ES2": {
+          "replacement_energy": 250,
+          "degradation": 35,
+          "reservation": 425
+        },
+        "ES3": {
+          "replacement_energy": 250,
+          "degradation": 45,
+          "reservation": 440
+        },
+        "ES4": {
+          "replacement_energy": 250,
+          "degradation": 25,
+          "reservation": 410
+        },
+        "ES5": {
+          "replacement_energy": 250,
+          "degradation": 25,
+          "reservation": 410
+        }
+      },
+      "storage_sell_increments": [
+        0,
+        15,
+        30
+      ],
+      "storage_buy_decrements": [
+        0,
+        15,
+        30
+      ],
+      "pumped": {
+        "PS1": {
+          "replacement_energy": 250,
+          "variable_om": 10,
+          "reservation": 390
+        }
+      },
+      "pumped_sell_increments": [
+        0,
+        20,
+        45
+      ],
+      "accounting_warning": "Offer opportunity costs only; do not add again to objective or settlement costs",
+      "formula_references": [
+        "https://www.eia.gov/todayinenergy/detail.php?id=7590",
+        "https://www.eia.gov/todayinenergy/detail.php?id=52158",
+        "https://learn.pjm.com/-/media/DotCom/committees-groups/subcommittees/cds/20110620/20110620-item-03b-cds-educational-paper-for-no-load.ashx"
+      ],
+      "no_load_convention": "Historical PJM educational reference for zero-output cost intercept only, not current market parameters; internal thermal base prices carry Pmin energy, fixed noload unchanged",
+      "fixed_cost_link": "Actual cost anchors are loaded only from fixed_costs.yaml; thermal fuel/heat-rate/VOM records explain initial scalar calibration, not runtime cost overrides.",
+      "thermal_strategy_scope": "Offer prices equal fixed scalar cost times declared markup factors; actual marginal cost remains constant, not a blockwise heat-rate integral.",
+      "thermal_heat_rate_basis": "incremental_hhv_excludes_separate_online_intercept",
+      "thermal_heat_rate_warning": "Synthetic incremental calibration, not measured average heat rate. Online intercept is separate; do not infer plant average efficiency as 3.6 divided by this rate.",
+      "season": "wet"
+    },
+    "fixed_cost_profile_sha256": "5705d4380347cc2d72f5513e0dae0e9c29c60199d23ece50134c839cae83fd70",
+    "fixed_cost_parameters": {
+      "C1": {
+        "type": "coal",
+        "scalar_marginal_cost_yuan_per_mwh": 280,
+        "fixed_online_cost_yuan_per_h": 6000,
+        "fixed_startup_cost_yuan_per_start": 250000
+      },
+      "C2": {
+        "type": "coal",
+        "scalar_marginal_cost_yuan_per_mwh": 297,
+        "fixed_online_cost_yuan_per_h": 6500,
+        "fixed_startup_cost_yuan_per_start": 280000
+      },
+      "C3": {
+        "type": "coal",
+        "scalar_marginal_cost_yuan_per_mwh": 315,
+        "fixed_online_cost_yuan_per_h": 7500,
+        "fixed_startup_cost_yuan_per_start": 320000
+      },
+      "CCGT": {
+        "type": "gas_ccgt",
+        "scalar_marginal_cost_yuan_per_mwh": 405,
+        "fixed_online_cost_yuan_per_h": 9000,
+        "fixed_startup_cost_yuan_per_start": 150000
+      },
+      "ES1": {
+        "type": "storage",
+        "discharge_degradation_yuan_per_mwh": 25
+      },
+      "ES2": {
+        "type": "storage",
+        "discharge_degradation_yuan_per_mwh": 35
+      },
+      "ES3": {
+        "type": "storage",
+        "discharge_degradation_yuan_per_mwh": 45
+      },
+      "ES4": {
+        "type": "storage",
+        "discharge_degradation_yuan_per_mwh": 25
+      },
+      "ES5": {
+        "type": "storage",
+        "discharge_degradation_yuan_per_mwh": 25
+      },
+      "GT": {
+        "type": "gas_gt",
+        "scalar_marginal_cost_yuan_per_mwh": 620,
+        "fixed_online_cost_yuan_per_h": 4000,
+        "fixed_startup_cost_yuan_per_start": 40000
+      },
+      "H1": {
+        "type": "hydro",
+        "scalar_marginal_cost_yuan_per_mwh": 6
+      },
+      "PS1": {
+        "type": "pumped",
+        "generation_vom_yuan_per_mwh": 10,
+        "gen_start_yuan_per_unit_start": 2000,
+        "pump_start_yuan_per_unit_start": 4000
+      },
+      "PV1": {
+        "type": "pv",
+        "scalar_marginal_cost_yuan_per_mwh": 5
+      },
+      "PV2": {
+        "type": "pv",
+        "scalar_marginal_cost_yuan_per_mwh": 5
+      },
+      "PV3": {
+        "type": "pv",
+        "scalar_marginal_cost_yuan_per_mwh": 5
+      },
+      "W1": {
+        "type": "wind",
+        "scalar_marginal_cost_yuan_per_mwh": 8
+      },
+      "W2": {
+        "type": "wind",
+        "scalar_marginal_cost_yuan_per_mwh": 11
+      }
+    },
+    "fixed_cost_source": "Explicit fixed synthetic cash operating cost profile; independent of bids and offer worksheets. Initial thermal marginal assumptions are 280/297/315/405/620 CNY per MWh. Fixed online and startup parameters are copied once from original technical assumptions (startup hot fee), not read from bids at runtime.",
+    "selected_unit_ids": [
+      "C1",
+      "C2",
+      "C3",
+      "CCGT",
+      "ES1",
+      "ES2",
+      "ES3",
+      "ES4",
+      "ES5",
+      "GT",
+      "H1",
+      "PS1",
+      "PV1",
+      "PV2",
+      "PV3",
+      "W1",
+      "W2"
+    ],
+    "changes": [
+      {
+        "unit_id": "C1",
+        "type": "coal",
+        "curve": "segments",
+        "unrounded_prices_yuan_per_mwh": [
+          280,
+          280,
+          285.6,
+          294.0,
+          305.20000000000005,
+          319.2
+        ],
+        "rounded_prices_yuan_per_mwh": [
+          280.0,
+          280.0,
+          285.6,
+          294.0,
+          305.2,
+          319.2
+        ],
+        "tick_yuan_per_mwh": 0.01,
+        "basis": {
+          "fixed_marginal_cost_yuan_per_mwh": 280,
+          "original_hhv_derived_marginal_cost_yuan_per_mwh": 280,
+          "fixed_scalar_overrides_original_derivation": false,
+          "offer_strategy_markups_yuan_per_mwh": [
+            0,
+            5.600000000000005,
+            14.000000000000012,
+            25.200000000000024,
+            39.199999999999974
+          ],
+          "cost_scope": "constant fixed profile marginal cost; segment markups are offers only",
+          "fuel_hhv_yuan_per_gj": 30,
+          "heat_rate_hhv_gj_per_mwh": 9,
+          "heat_rate_basis": "incremental_hhv_excludes_separate_online_intercept",
+          "incremental_energy_ratio_not_average_efficiency": 0.4,
+          "variable_om_yuan_per_mwh": 10,
+          "base_convention": "priced_minimum_output_energy_plus_fixed_intercept",
+          "fixed_intercept_yuan_per_h": 6000.0,
+          "pmin_energy_yuan_per_h": 81200
+        }
+      },
+      {
+        "unit_id": "C2",
+        "type": "coal",
+        "curve": "segments",
+        "unrounded_prices_yuan_per_mwh": [
+          297,
+          297,
+          302.94,
+          311.85,
+          323.73,
+          338.58
+        ],
+        "rounded_prices_yuan_per_mwh": [
+          297.0,
+          297.0,
+          302.94,
+          311.85,
+          323.73,
+          338.58
+        ],
+        "tick_yuan_per_mwh": 0.01,
+        "basis": {
+          "fixed_marginal_cost_yuan_per_mwh": 297,
+          "original_hhv_derived_marginal_cost_yuan_per_mwh": 297.0,
+          "fixed_scalar_overrides_original_derivation": false,
+          "offer_strategy_markups_yuan_per_mwh": [
+            0,
+            5.940000000000005,
+            14.850000000000014,
+            26.730000000000025,
+            41.57999999999997
+          ],
+          "cost_scope": "constant fixed profile marginal cost; segment markups are offers only",
+          "fuel_hhv_yuan_per_gj": 30,
+          "heat_rate_hhv_gj_per_mwh": 9.5,
+          "heat_rate_basis": "incremental_hhv_excludes_separate_online_intercept",
+          "incremental_energy_ratio_not_average_efficiency": 0.37894736842105264,
+          "variable_om_yuan_per_mwh": 12,
+          "base_convention": "priced_minimum_output_energy_plus_fixed_intercept",
+          "fixed_intercept_yuan_per_h": 6500.0,
+          "pmin_energy_yuan_per_h": 96525
+        }
+      },
+      {
+        "unit_id": "C3",
+        "type": "coal",
+        "curve": "segments",
+        "unrounded_prices_yuan_per_mwh": [
+          315,
+          315,
+          321.3,
+          330.75,
+          343.35,
+          359.09999999999997
+        ],
+        "rounded_prices_yuan_per_mwh": [
+          315.0,
+          315.0,
+          321.3,
+          330.75,
+          343.35,
+          359.1
+        ],
+        "tick_yuan_per_mwh": 0.01,
+        "basis": {
+          "fixed_marginal_cost_yuan_per_mwh": 315,
+          "original_hhv_derived_marginal_cost_yuan_per_mwh": 315,
+          "fixed_scalar_overrides_original_derivation": false,
+          "offer_strategy_markups_yuan_per_mwh": [
+            0,
+            6.300000000000006,
+            15.750000000000014,
+            28.350000000000026,
+            44.099999999999966
+          ],
+          "cost_scope": "constant fixed profile marginal cost; segment markups are offers only",
+          "fuel_hhv_yuan_per_gj": 30,
+          "heat_rate_hhv_gj_per_mwh": 10,
+          "heat_rate_basis": "incremental_hhv_excludes_separate_online_intercept",
+          "incremental_energy_ratio_not_average_efficiency": 0.36,
+          "variable_om_yuan_per_mwh": 15,
+          "base_convention": "priced_minimum_output_energy_plus_fixed_intercept",
+          "fixed_intercept_yuan_per_h": 7500.0,
+          "pmin_energy_yuan_per_h": 122850
+        }
+      },
+      {
+        "unit_id": "CCGT",
+        "type": "gas_ccgt",
+        "curve": "segments",
+        "unrounded_prices_yuan_per_mwh": [
+          405,
+          405,
+          413.1,
+          425.25,
+          441.45000000000005,
+          461.69999999999993
+        ],
+        "rounded_prices_yuan_per_mwh": [
+          405.0,
+          405.0,
+          413.1,
+          425.25,
+          441.45,
+          461.7
+        ],
+        "tick_yuan_per_mwh": 0.01,
+        "basis": {
+          "fixed_marginal_cost_yuan_per_mwh": 405,
+          "original_hhv_derived_marginal_cost_yuan_per_mwh": 405.0,
+          "fixed_scalar_overrides_original_derivation": false,
+          "offer_strategy_markups_yuan_per_mwh": [
+            0,
+            8.100000000000007,
+            20.250000000000018,
+            36.45000000000003,
+            56.69999999999996
+          ],
+          "cost_scope": "constant fixed profile marginal cost; segment markups are offers only",
+          "fuel_hhv_yuan_per_gj": 60,
+          "heat_rate_hhv_gj_per_mwh": 6.5,
+          "heat_rate_basis": "incremental_hhv_excludes_separate_online_intercept",
+          "incremental_energy_ratio_not_average_efficiency": 0.5538461538461539,
+          "variable_om_yuan_per_mwh": 15,
+          "base_convention": "priced_minimum_output_energy_plus_fixed_intercept",
+          "fixed_intercept_yuan_per_h": 9000.0,
+          "pmin_energy_yuan_per_h": 125550
+        }
+      },
+      {
+        "unit_id": "ES1",
+        "type": "storage",
+        "curve": "dis_segments",
+        "unrounded_prices_yuan_per_mwh": [
+          410,
+          425,
+          440
+        ],
+        "rounded_prices_yuan_per_mwh": [
+          410.0,
+          430.0,
+          440.0
+        ],
+        "tick_yuan_per_mwh": 10.0,
+        "basis": {
+          "fixed_discharge_expense_yuan_per_mwh": 25,
+          "technical_roundtrip_efficiency": 0.9025,
+          "replacement_cost_including_losses": 302.0083102493075,
+          "reservation_yuan_per_mwh": 410,
+          "discharge_anchor": 410,
+          "charge_willingness_anchor": 347.4625,
+          "formula": "sell=max(replacement/eta+expense,reservation); buy=eta*(reservation-expense)"
+        }
+      },
+      {
+        "unit_id": "ES1",
+        "type": "storage",
+        "curve": "ch_segments",
+        "unrounded_prices_yuan_per_mwh": [
+          347.4625,
+          332.4625,
+          317.4625
+        ],
+        "rounded_prices_yuan_per_mwh": [
+          350.0,
+          330.0,
+          320.0
+        ],
+        "tick_yuan_per_mwh": 10.0,
+        "basis": {
+          "fixed_discharge_expense_yuan_per_mwh": 25,
+          "technical_roundtrip_efficiency": 0.9025,
+          "replacement_cost_including_losses": 302.0083102493075,
+          "reservation_yuan_per_mwh": 410,
+          "discharge_anchor": 410,
+          "charge_willingness_anchor": 347.4625,
+          "formula": "sell=max(replacement/eta+expense,reservation); buy=eta*(reservation-expense)"
+        }
+      },
+      {
+        "unit_id": "ES2",
+        "type": "storage",
+        "curve": "dis_segments",
+        "unrounded_prices_yuan_per_mwh": [
+          425,
+          440,
+          455
+        ],
+        "rounded_prices_yuan_per_mwh": [
+          430.0,
+          440.0,
+          460.0
+        ],
+        "tick_yuan_per_mwh": 10.0,
+        "basis": {
+          "fixed_discharge_expense_yuan_per_mwh": 35,
+          "technical_roundtrip_efficiency": 0.9025,
+          "replacement_cost_including_losses": 312.0083102493075,
+          "reservation_yuan_per_mwh": 425,
+          "discharge_anchor": 425,
+          "charge_willingness_anchor": 351.97499999999997,
+          "formula": "sell=max(replacement/eta+expense,reservation); buy=eta*(reservation-expense)"
+        }
+      },
+      {
+        "unit_id": "ES2",
+        "type": "storage",
+        "curve": "ch_segments",
+        "unrounded_prices_yuan_per_mwh": [
+          351.97499999999997,
+          336.97499999999997,
+          321.97499999999997
+        ],
+        "rounded_prices_yuan_per_mwh": [
+          350.0,
+          340.0,
+          320.0
+        ],
+        "tick_yuan_per_mwh": 10.0,
+        "basis": {
+          "fixed_discharge_expense_yuan_per_mwh": 35,
+          "technical_roundtrip_efficiency": 0.9025,
+          "replacement_cost_including_losses": 312.0083102493075,
+          "reservation_yuan_per_mwh": 425,
+          "discharge_anchor": 425,
+          "charge_willingness_anchor": 351.97499999999997,
+          "formula": "sell=max(replacement/eta+expense,reservation); buy=eta*(reservation-expense)"
+        }
+      },
+      {
+        "unit_id": "ES3",
+        "type": "storage",
+        "curve": "dis_segments",
+        "unrounded_prices_yuan_per_mwh": [
+          440,
+          455,
+          470
+        ],
+        "rounded_prices_yuan_per_mwh": [
+          440.0,
+          460.0,
+          470.0
+        ],
+        "tick_yuan_per_mwh": 10.0,
+        "basis": {
+          "fixed_discharge_expense_yuan_per_mwh": 45,
+          "technical_roundtrip_efficiency": 0.9025,
+          "replacement_cost_including_losses": 322.0083102493075,
+          "reservation_yuan_per_mwh": 440,
+          "discharge_anchor": 440,
+          "charge_willingness_anchor": 356.4875,
+          "formula": "sell=max(replacement/eta+expense,reservation); buy=eta*(reservation-expense)"
+        }
+      },
+      {
+        "unit_id": "ES3",
+        "type": "storage",
+        "curve": "ch_segments",
+        "unrounded_prices_yuan_per_mwh": [
+          356.4875,
+          341.4875,
+          326.4875
+        ],
+        "rounded_prices_yuan_per_mwh": [
+          360.0,
+          340.0,
+          330.0
+        ],
+        "tick_yuan_per_mwh": 10.0,
+        "basis": {
+          "fixed_discharge_expense_yuan_per_mwh": 45,
+          "technical_roundtrip_efficiency": 0.9025,
+          "replacement_cost_including_losses": 322.0083102493075,
+          "reservation_yuan_per_mwh": 440,
+          "discharge_anchor": 440,
+          "charge_willingness_anchor": 356.4875,
+          "formula": "sell=max(replacement/eta+expense,reservation); buy=eta*(reservation-expense)"
+        }
+      },
+      {
+        "unit_id": "ES4",
+        "type": "storage",
+        "curve": "dis_segments",
+        "unrounded_prices_yuan_per_mwh": [
+          410,
+          425,
+          440
+        ],
+        "rounded_prices_yuan_per_mwh": [
+          410.0,
+          430.0,
+          440.0
+        ],
+        "tick_yuan_per_mwh": 10.0,
+        "basis": {
+          "fixed_discharge_expense_yuan_per_mwh": 25,
+          "technical_roundtrip_efficiency": 0.9025,
+          "replacement_cost_including_losses": 302.0083102493075,
+          "reservation_yuan_per_mwh": 410,
+          "discharge_anchor": 410,
+          "charge_willingness_anchor": 347.4625,
+          "formula": "sell=max(replacement/eta+expense,reservation); buy=eta*(reservation-expense)"
+        }
+      },
+      {
+        "unit_id": "ES4",
+        "type": "storage",
+        "curve": "ch_segments",
+        "unrounded_prices_yuan_per_mwh": [
+          347.4625,
+          332.4625,
+          317.4625
+        ],
+        "rounded_prices_yuan_per_mwh": [
+          350.0,
+          330.0,
+          320.0
+        ],
+        "tick_yuan_per_mwh": 10.0,
+        "basis": {
+          "fixed_discharge_expense_yuan_per_mwh": 25,
+          "technical_roundtrip_efficiency": 0.9025,
+          "replacement_cost_including_losses": 302.0083102493075,
+          "reservation_yuan_per_mwh": 410,
+          "discharge_anchor": 410,
+          "charge_willingness_anchor": 347.4625,
+          "formula": "sell=max(replacement/eta+expense,reservation); buy=eta*(reservation-expense)"
+        }
+      },
+      {
+        "unit_id": "ES5",
+        "type": "storage",
+        "curve": "dis_segments",
+        "unrounded_prices_yuan_per_mwh": [
+          410,
+          425,
+          440
+        ],
+        "rounded_prices_yuan_per_mwh": [
+          410.0,
+          430.0,
+          440.0
+        ],
+        "tick_yuan_per_mwh": 10.0,
+        "basis": {
+          "fixed_discharge_expense_yuan_per_mwh": 25,
+          "technical_roundtrip_efficiency": 0.9025,
+          "replacement_cost_including_losses": 302.0083102493075,
+          "reservation_yuan_per_mwh": 410,
+          "discharge_anchor": 410,
+          "charge_willingness_anchor": 347.4625,
+          "formula": "sell=max(replacement/eta+expense,reservation); buy=eta*(reservation-expense)"
+        }
+      },
+      {
+        "unit_id": "ES5",
+        "type": "storage",
+        "curve": "ch_segments",
+        "unrounded_prices_yuan_per_mwh": [
+          347.4625,
+          332.4625,
+          317.4625
+        ],
+        "rounded_prices_yuan_per_mwh": [
+          350.0,
+          330.0,
+          320.0
+        ],
+        "tick_yuan_per_mwh": 10.0,
+        "basis": {
+          "fixed_discharge_expense_yuan_per_mwh": 25,
+          "technical_roundtrip_efficiency": 0.9025,
+          "replacement_cost_including_losses": 302.0083102493075,
+          "reservation_yuan_per_mwh": 410,
+          "discharge_anchor": 410,
+          "charge_willingness_anchor": 347.4625,
+          "formula": "sell=max(replacement/eta+expense,reservation); buy=eta*(reservation-expense)"
+        }
+      },
+      {
+        "unit_id": "GT",
+        "type": "gas_gt",
+        "curve": "segments",
+        "unrounded_prices_yuan_per_mwh": [
+          620,
+          620,
+          632.4,
+          651.0,
+          675.8000000000001,
+          706.8
+        ],
+        "rounded_prices_yuan_per_mwh": [
+          620.0,
+          620.0,
+          632.4,
+          651.0,
+          675.8,
+          706.8
+        ],
+        "tick_yuan_per_mwh": 0.01,
+        "basis": {
+          "fixed_marginal_cost_yuan_per_mwh": 620,
+          "original_hhv_derived_marginal_cost_yuan_per_mwh": 620,
+          "fixed_scalar_overrides_original_derivation": false,
+          "offer_strategy_markups_yuan_per_mwh": [
+            0,
+            12.400000000000011,
+            31.00000000000003,
+            55.80000000000005,
+            86.79999999999994
+          ],
+          "cost_scope": "constant fixed profile marginal cost; segment markups are offers only",
+          "fuel_hhv_yuan_per_gj": 60,
+          "heat_rate_hhv_gj_per_mwh": 10,
+          "heat_rate_basis": "incremental_hhv_excludes_separate_online_intercept",
+          "incremental_energy_ratio_not_average_efficiency": 0.36,
+          "variable_om_yuan_per_mwh": 20,
+          "base_convention": "priced_minimum_output_energy_plus_fixed_intercept",
+          "fixed_intercept_yuan_per_h": 4000.0,
+          "pmin_energy_yuan_per_h": 46500
+        }
+      },
+      {
+        "unit_id": "H1",
+        "type": "hydro",
+        "curve": "segments",
+        "unrounded_prices_yuan_per_mwh": [
+          116,
+          131,
+          151,
+          176,
+          206
+        ],
+        "rounded_prices_yuan_per_mwh": [
+          120.0,
+          130.0,
+          150.0,
+          180.0,
+          210.0
+        ],
+        "tick_yuan_per_mwh": 10.0,
+        "basis": {
+          "variable_om_yuan_per_mwh": 6,
+          "water_opportunity_yuan_per_mwh": 110,
+          "opportunity_increments_yuan_per_mwh": [
+            0,
+            15,
+            35,
+            60,
+            90
+          ]
+        }
+      },
+      {
+        "unit_id": "PS1",
+        "type": "pumped",
+        "curve": "gen_segments",
+        "unrounded_prices_yuan_per_mwh": [
+          390,
+          410,
+          435
+        ],
+        "rounded_prices_yuan_per_mwh": [
+          390.0,
+          410.0,
+          440.0
+        ],
+        "tick_yuan_per_mwh": 10.0,
+        "basis": {
+          "fixed_discharge_expense_yuan_per_mwh": 10,
+          "technical_roundtrip_efficiency": 0.7619047619047619,
+          "replacement_cost_including_losses": 338.125,
+          "reservation_yuan_per_mwh": 390,
+          "discharge_anchor": 390,
+          "charge_willingness_anchor": 289.5238095238095,
+          "formula": "sell=max(replacement/eta+expense,reservation); buy=eta*(reservation-expense)"
+        }
+      },
+      {
+        "unit_id": "PS1",
+        "type": "pumped",
+        "curve": "pump_segments",
+        "unrounded_prices_yuan_per_mwh": [
+          289.5238095238095
+        ],
+        "rounded_prices_yuan_per_mwh": [
+          290.0
+        ],
+        "tick_yuan_per_mwh": 10.0,
+        "basis": {
+          "fixed_discharge_expense_yuan_per_mwh": 10,
+          "technical_roundtrip_efficiency": 0.7619047619047619,
+          "replacement_cost_including_losses": 338.125,
+          "reservation_yuan_per_mwh": 390,
+          "discharge_anchor": 390,
+          "charge_willingness_anchor": 289.5238095238095,
+          "formula": "sell=max(replacement/eta+expense,reservation); buy=eta*(reservation-expense)"
+        }
+      },
+      {
+        "unit_id": "PV1",
+        "type": "pv",
+        "curve": "segments",
+        "unrounded_prices_yuan_per_mwh": [
+          5,
+          15,
+          25,
+          35,
+          45
+        ],
+        "rounded_prices_yuan_per_mwh": [
+          10.0,
+          20.0,
+          30.0,
+          40.0,
+          50.0
+        ],
+        "tick_yuan_per_mwh": 10.0,
+        "basis": {
+          "variable_om_yuan_per_mwh": 5,
+          "strategy_increments_yuan_per_mwh": [
+            0,
+            10,
+            20,
+            30,
+            40
+          ]
+        }
+      },
+      {
+        "unit_id": "PV2",
+        "type": "pv",
+        "curve": "segments",
+        "unrounded_prices_yuan_per_mwh": [
+          5,
+          15,
+          25,
+          35,
+          45
+        ],
+        "rounded_prices_yuan_per_mwh": [
+          10.0,
+          20.0,
+          30.0,
+          40.0,
+          50.0
+        ],
+        "tick_yuan_per_mwh": 10.0,
+        "basis": {
+          "variable_om_yuan_per_mwh": 5,
+          "strategy_increments_yuan_per_mwh": [
+            0,
+            10,
+            20,
+            30,
+            40
+          ]
+        }
+      },
+      {
+        "unit_id": "PV3",
+        "type": "pv",
+        "curve": "segments",
+        "unrounded_prices_yuan_per_mwh": [
+          5,
+          15,
+          25,
+          35,
+          45
+        ],
+        "rounded_prices_yuan_per_mwh": [
+          10.0,
+          20.0,
+          30.0,
+          40.0,
+          50.0
+        ],
+        "tick_yuan_per_mwh": 10.0,
+        "basis": {
+          "variable_om_yuan_per_mwh": 5,
+          "strategy_increments_yuan_per_mwh": [
+            0,
+            10,
+            20,
+            30,
+            40
+          ]
+        }
+      },
+      {
+        "unit_id": "W1",
+        "type": "wind",
+        "curve": "segments",
+        "unrounded_prices_yuan_per_mwh": [
+          8,
+          18,
+          28,
+          38,
+          48
+        ],
+        "rounded_prices_yuan_per_mwh": [
+          10.0,
+          20.0,
+          30.0,
+          40.0,
+          50.0
+        ],
+        "tick_yuan_per_mwh": 10.0,
+        "basis": {
+          "variable_om_yuan_per_mwh": 8,
+          "strategy_increments_yuan_per_mwh": [
+            0,
+            10,
+            20,
+            30,
+            40
+          ]
+        }
+      },
+      {
+        "unit_id": "W2",
+        "type": "wind",
+        "curve": "segments",
+        "unrounded_prices_yuan_per_mwh": [
+          11,
+          21,
+          31,
+          41,
+          51
+        ],
+        "rounded_prices_yuan_per_mwh": [
+          10.0,
+          20.0,
+          30.0,
+          40.0,
+          50.0
+        ],
+        "tick_yuan_per_mwh": 10.0,
+        "basis": {
+          "variable_om_yuan_per_mwh": 11,
+          "strategy_increments_yuan_per_mwh": [
+            0,
+            10,
+            20,
+            30,
+            40
+          ]
+        }
+      }
+    ],
+    "strategy_seed": null,
+    "rounding": "ROUND_HALF_UP; no clipping/no artificial tie breaking",
+    "submission_policy": "freeze once and reuse all RT windows; not saved"
+  },
+  "default_bid_model": "cost_basis_v2",
+  "initial_generation_season": "wet",
+  "season_change_policy": "Archived offers stay frozen across season changes; repricing requires explicit generation and adoption."
+}

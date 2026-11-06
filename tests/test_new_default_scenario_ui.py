@@ -29,6 +29,7 @@ def old_scene(tmp_path, monkeypatch):
     sc.write_yaml('默认', 'base', base)
     units = sc.read_yaml('默认', 'units')
     units['renewable'] = [u for u in units['renewable'] if u['id'] not in {'PV2', 'PV3'}]
+    units['storage'] = [u for u in units['storage'] if u['id'] not in {'ES4', 'ES5'}]
     sc.write_yaml('默认', 'units', units)
     (root / 'data/profile_overrides.csv').write_text('old uploaded curve\n')
     (root / 'current_quote.json').write_text('{"old_user_quote": true}\n')
@@ -48,6 +49,8 @@ def test_new_default_entry_creates_switches_and_preserves_old_files(old_scene):
     assert not at.exception
     assert any(x.label == '从新版默认配置新建场景（保留旧场景）' for x in at.expander)
     assert any('新版默认：光伏 2152 MW' in x.value and 'multiscale_v2' in x.value for x in at.caption)
+    assert any('新版默认：' in x.value and '电池 700 MW / 2000 MWh' in x.value for x in at.caption)
+    assert any('当前场景：' in x.value and '电池 400 MW / 800 MWh' in x.value for x in at.caption)
     assert any('当前场景：光伏 652 MW' in x.value and 'legacy_v1' in x.value for x in at.caption)
     assert sc.list_scenarios() == ['默认']  # Opening the control is read-only.
     item(at.text_input, '新版场景名称').set_value('我的新版')
@@ -59,7 +62,9 @@ def test_new_default_entry_creates_switches_and_preserves_old_files(old_scene):
     cfg = load_config(root=sc.scenario_path('我的新版'))
     assert cfg.base['forecast']['model'] == 'multiscale_v2'
     assert sum(u['cap'] for u in cfg.units['renewable'] if u['type'] == 'pv') == 2152
-    assert {'PV2', 'PV3'} <= load_bids(cfg)['units'].keys()
+    assert {'PV2', 'PV3', 'ES4', 'ES5'} <= load_bids(cfg)['units'].keys()
+    assert sum(u['pmax'] for u in cfg.units['storage']) == 700
+    assert sum(u['ecap'] for u in cfg.units['storage']) == 2000
     assert not (cfg.root / 'current_quote.json').exists()
     assert not (cfg.root / 'data/profile_overrides.csv').exists()
     assert snapshot(old_scene) == before and snapshot(sc.RUNS_DIR) == runs
@@ -119,7 +124,8 @@ def test_actual_run_page_can_create_select_and_navigate_back(tmp_path, monkeypat
     assert not at.exception and not at.error
     assert item(at.selectbox, '当前场景').value == '新版运行测试'
     assert any('PV2' in option for option in item(at.selectbox, '模拟机组').options)
-    assert 'PV3' in at.session_state['quote_current:新版运行测试']['units']
+    assert {'PV3', 'ES4', 'ES5'} <= at.session_state['quote_current:新版运行测试']['units'].keys()
+    assert {'ES4', 'ES5'} <= {option.split(' · ', 1)[0] for option in item(at.selectbox, '模拟机组').options}
     assert snapshot(old) == before
     item(at.selectbox, '当前场景').set_value('默认').run()
     assert not at.exception and at.session_state['scenario'] == '默认'

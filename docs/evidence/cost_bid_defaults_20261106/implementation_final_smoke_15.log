@@ -1,0 +1,24 @@
+============================= test session starts ==============================
+platform linux -- Python 3.12.14, pytest-9.2.0, pluggy-1.7.0 -- /opt/codex/runtimes/codex-primary-runtime/dependencies/python/bin/python
+cachedir: .pytest_cache
+rootdir: /workspace/scratch/42c5fe32dad0/continued_logic_review_20261106/cost_capacity_impl
+plugins: anyio-4.16.0, typeguard-4.6.0
+collecting ... collected 15 items
+
+tests/test_capacity_cost_defaults.py::test_size_changes_incremental_cost_and_shared_startup_template[coal-646-30-9-10] PASSED [  6%]
+tests/test_capacity_cost_defaults.py::test_size_changes_incremental_cost_and_shared_startup_template[gas_ccgt-687-60-6.5-15] PASSED [ 13%]
+tests/test_capacity_cost_defaults.py::test_size_changes_incremental_cost_and_shared_startup_template[gas_gt-300-60-10-20] PASSED [ 20%]
+tests/test_capacity_cost_defaults.py::test_equal_capacity_thermal_technologies_have_distinct_costs_and_startups PASSED [ 26%]
+tests/test_capacity_cost_defaults.py::test_bounds_and_nonfinite_inputs_fail_closed PASSED [ 33%]
+tests/test_capacity_cost_defaults.py::test_nonthermal_capacity_quantity_and_efficiency_are_not_fake_price_multipliers PASSED [ 40%]
+tests/test_capacity_cost_defaults.py::test_new_default_uses_per_unit_archives_without_rewriting_them PASSED [ 46%]
+tests/test_capacity_cost_defaults.py::test_legacy_selector_missing_keeps_old_shapes_and_bad_selector_fails PASSED [ 53%]
+tests/test_capacity_cost_defaults.py::test_cost_default_never_falls_back_when_independent_cost_archives_missing PASSED [ 60%]
+tests/test_capacity_cost_defaults.py::test_frozen_v5_does_not_change_with_season_and_explicit_preview_does PASSED [ 66%]
+tests/test_capacity_cost_defaults.py::test_v1_overlay_still_loads_unchanged_and_keeps_original_version_source PASSED [ 73%]
+tests/test_capacity_cost_defaults.py::test_handwritten_quote_cost_separation_and_selected_preview_no_cross_resource_mutation PASSED [ 80%]
+tests/test_capacity_cost_defaults.py::test_complete_default_96_period_model_has_exact_offer_cost_coefficients PASSED [ 86%]
+tests/test_capacity_cost_defaults.py::test_random_translation_retires_prior_cost_basis_without_losing_evidence PASSED [ 93%]
+tests/test_unit_editor.py::test_saved_all_types_complete_small_market_pipeline PASSED [100%]
+
+============================== 15 passed in 9.80s ==============================

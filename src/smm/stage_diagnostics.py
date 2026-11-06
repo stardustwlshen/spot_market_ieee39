@@ -24,11 +24,34 @@ def capture(m, stage, info=None):
     summary['stage']=stage
     summary['status']='正式SCED（RT仅窗口首段执行）' if stage=='energy_sced' else '预计划/辅助筛选（不执行、不结算）'
     summary['objective_kind']='regulation_score_only_not_payment' if stage=='agc_auxiliary' else 'energy_objective_including_penalties'
-    summary['prices_are_market_prices']=stage=='energy_sced'
+    market_stage = getattr(m._case, 'stage', 'DA')
+    auxiliary = bool(m._case.cfg.mode.get('auxiliary_pricing', {}).get('enabled', False))
+    selected = stage == ('auxiliary_pricing' if auxiliary else 'energy_sced')
+    summary.update(market_stage=market_stage, window_start=offset, window_periods=len(m.T),
+                   dt_h=m._case.cfg.dt, quantities_execute=False,
+                   quantity_role=('RT_first_period_only' if market_stage == 'RT' else
+                                  'DA_award_plan' if market_stage == 'DA' else 'ID_reference_plan') if stage == 'energy_sced' else 'not_executed',
+                   prices_are_market_prices=bool(selected and market_stage != 'ID'),
+                   selected_price_source=selected,
+                   price_role=('indicative_not_settled' if market_stage == 'ID' else
+                               'selected_settlement_price_rule') if selected else 'not_selected_for_settlement')
+    if market_stage == 'ID':
+        summary['status'] = '日内参考计划/指示价（不执行、不结算）'
+    prices = []
+    if stage in ('energy_sced', 'auxiliary_pricing'):
+        from .scuc import extract_prices
+        raw = extract_prices(m)['lmp']
+        lim = m._case.cfg.mode['price_limits']
+        prices = [dict(period=offset+int(t), bus=bus, lmp_raw=float(raw[i, int(t)]),
+                       lmp_clamped=float(min(lim['clear_max'], max(lim['clear_min'], raw[i, int(t)]))))
+                  for i, bus in enumerate(m._case.net.buses) for t in m.T]
+    water = [dict(period=offset+int(t), station=h, V_1e4m3=val(m.V[h,t]),
+                  Qout_m3s=val(d['water_rate']*sum(m.Ph[j,t] for j in d['units'])+m.Qspill[h,t]))
+             for h,d in md.hydro.items() for t in m.T]
     from .scuc import integer_components
     integer_values = [dict(variable=name, index=list(index) if isinstance(index, tuple) else index,
                            value=val(v), fixed=bool(v.fixed))
                       for name, component in integer_components(m) for index, v in component.items()]
     from .asset_reachability import diagnostics
     summary['asset_reachability']=diagnostics(m)
-    return {'units':rows,'summary':summary,'integer_values':integer_values}
+    return {'units':rows,'summary':summary,'integer_values':integer_values,'prices':prices,'hydro_states':water}

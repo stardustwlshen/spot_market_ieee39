@@ -68,6 +68,14 @@ storage:
     replacement_energy: 250
     degradation: 45
     reservation: 440
+  ES4:
+    replacement_energy: 250
+    degradation: 25
+    reservation: 410
+  ES5:
+    replacement_energy: 250
+    degradation: 25
+    reservation: 410
 storage_sell_increments:
 - 0
 - 15
@@ -97,3 +105,6 @@ no_load_convention: Historical PJM educational reference for zero-output cost in
 
 fixed_cost_link: Actual cost anchors are loaded only from fixed_costs.yaml; thermal fuel/heat-rate/VOM records explain initial scalar calibration, not runtime cost overrides.
 thermal_strategy_scope: Offer prices equal fixed scalar cost times declared markup factors; actual marginal cost remains constant, not a blockwise heat-rate integral.
+
+thermal_heat_rate_basis: incremental_hhv_excludes_separate_online_intercept
+thermal_heat_rate_warning: Synthetic incremental calibration, not measured average heat rate. Online intercept is separate; do not infer plant average efficiency as 3.6 divided by this rate.

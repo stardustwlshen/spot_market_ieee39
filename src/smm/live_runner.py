@@ -21,21 +21,26 @@ def read_live(directory):
     return json.loads(path.read_text(encoding='utf-8')) if path.exists() else {}
 
 
-def freeze_inputs(root, directory, bids=None, regulation=None):
+def freeze_inputs(root, directory, bids=None, regulation=None, *, run_options=None, bid_version=None):
     """Snapshot before launching: later scenario edits cannot change an active run."""
     from .unit_edit_transaction import scene_input_lock
     with scene_input_lock(root):
-        return _freeze_inputs_unlocked(root, directory, bids, regulation)
+        return _freeze_inputs_unlocked(root, directory, bids, regulation, run_options=run_options, bid_version=bid_version)
 
 
-def _freeze_inputs_unlocked(root, directory, bids=None, regulation=None):
+def _freeze_inputs_unlocked(root, directory, bids=None, regulation=None, *, run_options=None, bid_version=None):
     root, directory = Path(root), Path(directory)
     from .config import load_config
     from .regulation import validate_config
     import copy
     preflight=load_config(root=root)
+    from .spot_costs import load_profile as load_spot_costs
+    load_spot_costs(preflight)  # malformed accounting inputs fail before launching; missing stays unknown
     if regulation is not None:preflight.mode['regulation']=copy.deepcopy(regulation)
     validate_config(preflight)  # before spawning or modifying the frozen input tree
+    from .input_version import source_version
+    source = source_version(root, bids=bids, bid_version=bid_version, options=run_options,
+                            quote_policy='workspace' if bids is not None else 'archived')
     snap = directory / 'scenario_snapshot'
     if snap.exists():
         raise FileExistsError('运行输入快照已存在，禁止覆盖')
@@ -57,7 +62,7 @@ def _freeze_inputs_unlocked(root, directory, bids=None, regulation=None):
         dest = bid_dir(cfg);dest.mkdir(parents=True, exist_ok=True)
         atomic_json(dest/f"bids_v{bids['version']}.json", bids)
         atomic_json(directory/'submitted_bids.json', bids)
-    capture_provenance(directory, snap, filename="frozen_input_provenance.json")
+    capture_provenance(directory, snap, filename="frozen_input_provenance.json", source_version=source)
     return snap
 
 
@@ -78,6 +83,15 @@ class ProgressWriter:
             self.da=event['da']
             self.state['da_stages']=getattr(self.da,'stage_diagnostics',{})
             self.state['da_prices']=json.loads(self.da.tables['prices'].to_json(orient='records'))
+        elif phase=='id_round':
+            rr=event['rr']
+            self.state['id_stage_history']={str(r['tau']):r.get('stage_diagnostics',{}) for r in rr.id_rounds}
+            self.state['id_rounds']=[dict(tau=r['tau'], issue_t=r.get('issue_t'),
+                                         solution_quality=r.get('solution_quality',{})) for r in rr.id_rounds]
+            self.state['id_failures']=list(getattr(rr,'id_failures',[]))
+            self.state['id_failed_stage_history']={str(r['tau']):r.get('stages',{}) for r in getattr(rr,'id_failed_stages',[])}
+            self.state['id_latest_tau']=event.get('tau')
+            # ID progress is planning only. Never advance executed_periods or settled.
         elif phase=='rt_window':
             from .rolling import rt_tables
             da=event.get('da',self.da);rr=event['rr']
@@ -98,11 +112,12 @@ class ProgressWriter:
         self.check_cancel()  # completed-stage boundary, never interrupt a solver mid-call
 
 
-def completion_metadata(expected, executed, *, mode='full', calculated=True):
+def completion_metadata(expected, executed, *, mode='full', calculated=True, dt_h=None):
     expected,executed=int(expected),int(executed)
-    complete=mode=='full' and executed==expected
+    complete=mode=='full' and executed==expected and (dt_h is None or abs(expected * dt_h - 24.) < 1e-9)
     return dict(completed_scope='da_only' if mode=='da' else ('full_day' if complete else 'debug_prefix'),
                 expected_periods=expected,executed_periods=executed,
+                **({} if dt_h is None else dict(dt_h=float(dt_h), expected_hours=expected*dt_h, executed_hours=executed*dt_h)),
                 settlement_scope='not_applicable' if mode=='da' or not calculated else ('full_day' if complete else 'illustrative_prefix'),
                 settlement_calculated=bool(calculated and mode=='full'),settled=bool(complete and calculated))
 
@@ -124,7 +139,7 @@ def file_fingerprint(root, folders, *, suffix=None):
     return dict(algorithm='sha256',files=entries,content_fingerprint=hashlib.sha256(canonical).hexdigest())
 
 
-def capture_provenance(directory, input_root, *, filename='run_provenance.json', source_root=None):
+def capture_provenance(directory, input_root, *, filename='run_provenance.json', source_root=None, source_version=None):
     """Capture at invocation, not when results are later inspected; no secret/dotfile copies."""
     import subprocess
     if (Path(directory)/filename).exists():
@@ -141,5 +156,7 @@ def capture_provenance(directory, input_root, *, filename='run_provenance.json',
                   source=file_fingerprint(source_root,('src','app','scripts'),suffix='.py'),
                   inputs=file_fingerprint(input_root,('config','data','bids')),
                   interpretation='content observed at run invocation; not a copied or sandboxed source tree')
+    if source_version is not None:
+        evidence['source_version'] = source_version
     atomic_json(Path(directory)/filename,evidence)
     return evidence

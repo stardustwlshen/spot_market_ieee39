@@ -1,0 +1,228 @@
+{
+  "thermal_mw": 3223,
+  "hydro_mw": 508,
+  "wind_mw": 1604,
+  "pv_mw": 2152,
+  "storage_mw": 400,
+  "storage_mwh": 800,
+  "storage_usable_discharge_mwh": 608.0,
+  "pumped_mw": 600,
+  "load_peak": 4313.518022974989,
+  "load_min": 2772.19714642119,
+  "load_mwh": 88419.87933382098,
+  "re_available_mwh": 31799.66557866572,
+  "storage": [
+    {
+      "id": "ES1",
+      "bus": 19,
+      "pmax": 100,
+      "ecap": 200,
+      "eta_c": 0.95,
+      "eta_d": 0.95,
+      "soc_min": 0.1,
+      "soc_max": 0.9,
+      "soc0": 0.5,
+      "soc_end_bid": 0.5
+    },
+    {
+      "id": "ES2",
+      "bus": 16,
+      "pmax": 200,
+      "ecap": 400,
+      "eta_c": 0.95,
+      "eta_d": 0.95,
+      "soc_min": 0.1,
+      "soc_max": 0.9,
+      "soc0": 0.5,
+      "soc_end_bid": 0.5
+    },
+    {
+      "id": "ES3",
+      "bus": 25,
+      "pmax": 100,
+      "ecap": 200,
+      "eta_c": 0.95,
+      "eta_d": 0.95,
+      "soc_min": 0.1,
+      "soc_max": 0.9,
+      "soc0": 0.5,
+      "soc_end_bid": 0.5
+    }
+  ],
+  "candidate_node_neighbors": {
+    "4": [
+      {
+        "branch_id": "L3-4",
+        "from_bus": 3,
+        "to_bus": 4,
+        "x_pu": 0.0213,
+        "rate_mw": 600.0,
+        "kind": "line",
+        "rate_orig_mw": 500.0
+      },
+      {
+        "branch_id": "L4-5",
+        "from_bus": 4,
+        "to_bus": 5,
+        "x_pu": 0.0128,
+        "rate_mw": 720.0,
+        "kind": "line",
+        "rate_orig_mw": 600.0
+      },
+      {
+        "branch_id": "L4-14",
+        "from_bus": 4,
+        "to_bus": 14,
+        "x_pu": 0.0129,
+        "rate_mw": 600.0,
+        "kind": "line",
+        "rate_orig_mw": 500.0
+      }
+    ],
+    "8": [
+      {
+        "branch_id": "L5-8",
+        "from_bus": 5,
+        "to_bus": 8,
+        "x_pu": 0.0112,
+        "rate_mw": 1080.0,
+        "kind": "line",
+        "rate_orig_mw": 900.0
+      },
+      {
+        "branch_id": "L7-8",
+        "from_bus": 7,
+        "to_bus": 8,
+        "x_pu": 0.0046,
+        "rate_mw": 1080.0,
+        "kind": "line",
+        "rate_orig_mw": 900.0
+      },
+      {
+        "branch_id": "L8-9",
+        "from_bus": 8,
+        "to_bus": 9,
+        "x_pu": 0.0363,
+        "rate_mw": 1080.0,
+        "kind": "line",
+        "rate_orig_mw": 900.0
+      }
+    ],
+    "16": [
+      {
+        "branch_id": "L15-16",
+        "from_bus": 15,
+        "to_bus": 16,
+        "x_pu": 0.0094,
+        "rate_mw": 720.0,
+        "kind": "line",
+        "rate_orig_mw": 600.0
+      },
+      {
+        "branch_id": "L16-17",
+        "from_bus": 16,
+        "to_bus": 17,
+        "x_pu": 0.0089,
+        "rate_mw": 720.0,
+        "kind": "line",
+        "rate_orig_mw": 600.0
+      },
+      {
+        "branch_id": "L16-19",
+        "from_bus": 16,
+        "to_bus": 19,
+        "x_pu": 0.0195,
+        "rate_mw": 432.0,
+        "kind": "line",
+        "rate_orig_mw": 600.0
+      },
+      {
+        "branch_id": "L16-21",
+        "from_bus": 16,
+        "to_bus": 21,
+        "x_pu": 0.0135,
+        "rate_mw": 720.0,
+        "kind": "line",
+        "rate_orig_mw": 600.0
+      },
+      {
+        "branch_id": "L16-24",
+        "from_bus": 16,
+        "to_bus": 24,
+        "x_pu": 0.0059,
+        "rate_mw": 720.0,
+        "kind": "line",
+        "rate_orig_mw": 600.0
+      }
+    ],
+    "19": [
+      {
+        "branch_id": "L16-19",
+        "from_bus": 16,
+        "to_bus": 19,
+        "x_pu": 0.0195,
+        "rate_mw": 432.0,
+        "kind": "line",
+        "rate_orig_mw": 600.0
+      },
+      {
+        "branch_id": "T19-20",
+        "from_bus": 19,
+        "to_bus": 20,
+        "x_pu": 0.013818,
+        "rate_mw": 1080.0,
+        "kind": "trafo",
+        "rate_orig_mw": 900.0
+      },
+      {
+        "branch_id": "T19-33",
+        "from_bus": 19,
+        "to_bus": 33,
+        "x_pu": 0.014217,
+        "rate_mw": 1080.0,
+        "kind": "trafo",
+        "rate_orig_mw": 900.0
+      }
+    ],
+    "25": [
+      {
+        "branch_id": "L2-25",
+        "from_bus": 2,
+        "to_bus": 25,
+        "x_pu": 0.0086,
+        "rate_mw": 360.0,
+        "kind": "line",
+        "rate_orig_mw": 500.0
+      },
+      {
+        "branch_id": "L25-26",
+        "from_bus": 25,
+        "to_bus": 26,
+        "x_pu": 0.0323,
+        "rate_mw": 504.0,
+        "kind": "line",
+        "rate_orig_mw": 600.0
+      },
+      {
+        "branch_id": "T25-37",
+        "from_bus": 25,
+        "to_bus": 37,
+        "x_pu": 0.023208,
+        "rate_mw": 1080.0,
+        "kind": "trafo",
+        "rate_orig_mw": 900.0
+      }
+    ],
+    "33": [
+      {
+        "branch_id": "T19-33",
+        "from_bus": 19,
+        "to_bus": 33,
+        "x_pu": 0.014217,
+        "rate_mw": 1080.0,
+        "kind": "trafo",
+        "rate_orig_mw": 900.0
+      }
+    ]
+  }
+}

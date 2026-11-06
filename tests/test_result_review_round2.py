@@ -143,6 +143,9 @@ def test_run_page_keeps_bad_metadata_visible_and_other_scenes_usable(tmp_path, m
     before = (bad / 'meta.json').read_bytes()
     at = AppTest.from_file(str(ROOT / 'app/主页.py'), default_timeout=60).run()
     assert not at.exception
+    # Home now opens the date-aware workflow; exercise the preserved single-day page.
+    at.switch_page('pages/2_运行.py').run()
+    assert not at.exception
     assert next(x for x in at.button if x.label == '▶ 开始运行').disabled
     assert any('元数据损坏' in x.value or '损坏的运行元数据' in x.value for x in at.error)
     next(x for x in at.selectbox if x.label == '当前场景').select('另一场景').run()

@@ -80,7 +80,7 @@ def main():
                 print(f"[{tag}] 复用 {hit[-1].parent}", flush=True)
                 continue
         case = prepare(cfg, a.bid_version)
-        res = run_full(cfg, case, periods=a.periods, log=lambda *x: None)
+        res = run_full(cfg, case, periods=a.periods, log=lambda *x: None, retain_id_models=False)
         d = cfg.root / "outputs" / f"full_{cfg.base['date']}_{cfg.rule_set}_{cfg.base['season']}_v{case.bids['version']}_{tag}"
         s = write_full_outputs(res, d, make_plots=not a.no_plots)
         out[tag] = dict(dir=str(d.relative_to(cfg.root)), metrics=metrics(s), time_s=s["time_s"], checks=s["checks"])

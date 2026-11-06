@@ -50,23 +50,33 @@ def render_profit(rows):
     return AppTest.from_string(f"import sys\nsys.path.insert(0,{str(ROOT/'app')!r})\nfrom market_views import operating_profit_dashboard\noperating_profit_dashboard({rows!r})",default_timeout=20).run()
 
 
-def test_missing_profit_profile_not_zero_cost_or_fake_profit():
+@pytest.mark.parametrize('basis', [None, 'legacy_cash_operating_v1', 'spot_energy_cash_v2'])
+def test_missing_profit_profile_not_zero_cost_or_fake_profit(basis):
     at=render_profit([dict(unit='H1',cash_revenue_yuan=100.,cost_available=False,
-                          cost_missing_reason='missing',cash_operating_cost_yuan=0.,simulated_operating_profit_yuan=100.)])
+                          cost_missing_reason='missing',cash_operating_cost_yuan=0.,simulated_operating_profit_yuan=100.,
+                          **({'profit_basis':basis} if basis else {}))])
     assert not at.exception
     df=at.dataframe[0].value
-    assert df['模拟运营利润 元'].isna().all()
-    assert df['现金运营成本 元'].isna().all()
+    profit_label = '现货利润（模拟） 元' if basis == 'spot_energy_cash_v2' else '历史口径利润 元'
+    cost_label = '现货运行成本 元' if basis == 'spot_energy_cash_v2' else '历史口径运行成本 元'
+    assert df[profit_label].isna().all()
+    assert df[cost_label].isna().all()
     assert df['净能量现金结算 元'].iloc[0]==100.
     assert at.warning
 
 
-def test_profit_keeps_signed_charging_item_not_double_deducted():
+@pytest.mark.parametrize('basis', [None, 'legacy_cash_operating_v1', 'spot_energy_cash_v2'])
+def test_profit_keeps_signed_charging_item_not_double_deducted(basis):
     at=render_profit([dict(unit='ES1',cash_revenue_yuan=100.,charging_settlement_yuan=-20.,
-                          cost_available=True,cash_operating_cost_yuan=30.,simulated_operating_profit_yuan=70.)])
+                          cost_available=True,cash_operating_cost_yuan=30.,simulated_operating_profit_yuan=70.,
+                          **({'profit_basis':basis} if basis else {}))])
     assert not at.exception
     df=next(x.value for x in at.dataframe if '其中充电/抽水结算 元（已含）' in x.value)
-    assert df['模拟运营利润 元'].iloc[0]==70.
+    profit_label = '现货利润（模拟） 元' if basis == 'spot_energy_cash_v2' else '历史口径利润 元'
+    cost_label = '现货运行成本 元' if basis == 'spot_energy_cash_v2' else '历史口径运行成本 元'
+    assert df[profit_label].iloc[0]==70.
+    assert df[cost_label].iloc[0]==30.
+    assert df['净能量现金结算 元'].iloc[0]==100.
     assert df['其中充电/抽水结算 元（已含）'].iloc[0]==-20.
     assert any('不再重复扣减' in x.value for x in at.caption)
 

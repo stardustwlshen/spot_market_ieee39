@@ -1,0 +1,20 @@
+2026-11-06 成本与报价只读审计
+
+范围：本证据验证当前实现，不表示建议的新算法已经实施，也不证明新默认DA+RT96运行。
+
+解释器：当前python，使用项目既有锁版依赖。
+命令：
+PYTHONPATH=/workspace/shared/ieee39_locked_deps_20261106:src STREAMLIT_GLOBAL_DEVELOPMENT_MODE=false python -m pytest -q tests/test_research_defaults.py tests/test_bid_cost_basis.py tests/test_operating_profit.py tests/test_research_cost_setup.py tests/test_bids.py tests/test_scenario_cost_copy.py
+
+结果：183 passed in 8.95s
+
+附加只读计算：
+- 17个启用资源的最新默认报价v4、独立固定成本、当前成本预览逐项提取，见input_audit.json。
+- 全部启用资源成本预览通过validate_bids，无报价错误。
+- generate_research_defaults对ID整体重命名不变。
+- 3种火电×4个容量（100/300/600/1000MW）生成成本与技术模板对照。
+- 记录显式replace_known_research方案涉及的13个旧研究资源，未应用该方案。
+
+文件变更仅本次审计文档及本证据目录。未修改成本/报价配置或代码；未运行新默认市场出清；未提交或推送。
+
+环境说明：最初普通pytest不可用、普通python -m pytest缺模块；切换到既有锁版依赖后完成以上回归，没有为此安装软件。

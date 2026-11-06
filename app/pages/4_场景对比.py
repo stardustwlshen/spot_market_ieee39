@@ -6,6 +6,7 @@ import streamlit as st
 
 from common import (DA_COLOR, PALETTE, RT_COLOR, TYPE_CN, all_results, df_download, empty_state, get_result,
                     load_weighted, page_setup, period_labels, result_label, show_df, show_fig, style_fig)
+from smm.time_grid import result_time_grid, result_time_axis
 from result_comparison import comparison_metrics, frozen_price_buses
 from result_navigation import validate_display_result
 
@@ -38,7 +39,10 @@ for result, name in ((RA, '方案甲'), (RB, '方案乙')):
         st.warning(name + '：' + line_warning)
 if any(bus is None for bus in price_buses):
     st.warning('部分结果缺少冻结节点记录；只用已保存的负荷权重，缺失时均价曲线留空，不借用当前网络或等权均价。')
-lbl = period_labels(96)
+if result_time_grid(RA) != result_time_grid(RB):
+    st.warning('两次运行时间网格不同，不能按时段序号直接对比。请选择相同步长和时段数的结果。')
+    st.stop()
+lbl = period_labels(*result_time_grid(RA))
 
 
 same_rt_periods = (RA["full"] and RB["full"] and
@@ -64,7 +68,7 @@ for R, bus, n, dash in ((RA, price_buses[0], "方案甲", "solid"), (RB, price_b
         lr = load_weighted(R["rt_prices"], bus)
         fig.add_scatter(x=[lbl[t] for t in lr.index], y=lr, name=f"{n} 实时", line=dict(dash=dash, color=RT_COLOR))
 st.subheader("电价")
-show_fig(style_fig(fig, "系统负荷加权均价（方案甲实线 / 方案乙虚线；蓝 = 日前，红 = 实时）", "时刻（每15分钟）", "电价（元/MWh）", 380))
+show_fig(style_fig(fig, "系统负荷加权均价（方案甲实线 / 方案乙虚线；蓝 = 日前，红 = 实时）", result_time_axis(RA), "电价（元/MWh）", 380))
 
 pa = RA["da_nodal_prices"].groupby("bus").lmp.mean()
 pb = RB["da_nodal_prices"].groupby("bus").lmp.mean()

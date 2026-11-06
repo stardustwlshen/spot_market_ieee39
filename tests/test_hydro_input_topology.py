@@ -67,3 +67,51 @@ def test_invalid_lag_rejected_even_without_upstream(station, lag):
     cfg.units['hydro'][station]['lag_periods'] = lag
     with pytest.raises(ValueError, match=f'H{station + 1}.lag_periods'):
         validate_physical_inputs(cfg)
+
+
+@pytest.mark.parametrize('lags', [(0, 0), (2, 2), (0, 3)])
+def test_fork_rejected_before_full_release_can_be_duplicated(lags):
+    cfg = chain()
+    cfg.units['hydro'][1]['lag_periods'] = lags[0]
+    third = deepcopy(cfg.units['hydro'][1])
+    third.update(id='H3', lag_periods=lags[1])
+    cfg.units['hydro'].append(third)
+    with pytest.raises(ValueError, match='H1.*多个下游.*H2.*H3'):
+        validate_physical_inputs(cfg)
+
+
+def test_disabled_second_child_does_not_restrict_the_active_chain():
+    cfg = chain()
+    third = deepcopy(cfg.units['hydro'][1])
+    third.update(id='H3', enabled=False)
+    cfg.units['hydro'].append(third)
+    validate_physical_inputs(cfg)
+
+
+def test_long_chain_and_disjoint_chain_are_supported():
+    cfg = chain()
+    third = deepcopy(cfg.units['hydro'][1])
+    third.update(id='H3', upstream='H2')
+    fourth = deepcopy(cfg.units['hydro'][0])
+    fourth.update(id='H4')
+    fifth = deepcopy(cfg.units['hydro'][1])
+    fifth.update(id='H5', upstream='H4')
+    cfg.units['hydro'].extend([third, fourth, fifth])
+    before = deepcopy(cfg.units)
+    validate_physical_inputs(cfg)
+    assert cfg.units == before
+
+
+@pytest.mark.parametrize('stage', ['DA', 'ID', 'RT'])
+def test_fork_is_rejected_at_every_mutable_model_build(stage):
+    from smm.scuc import build_model
+    from test_hydro_rolling import hydro_case
+    c = hydro_case(T=1)
+    c.stage = stage
+    for name in ('H2', 'H3'):
+        h = deepcopy(c.cfg.units['hydro'][0])
+        h.update(id=name, upstream='H1', lag_periods=0)
+        c.cfg.units['hydro'].append(h)
+        c.bids['units'][name] = deepcopy(c.bids['units']['H1'])
+    with pytest.raises(ValueError, match='多个下游'):
+        build_model(c)

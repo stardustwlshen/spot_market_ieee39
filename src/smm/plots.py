@@ -28,22 +28,23 @@ TYPE_COLOR = {"tie": "#7f7f7f", "coal": "#4d4d4d", "hydro": "#1f77b4", "wind": "
               "gas_ccgt": "#d62728", "gas_gt": "#ff7f0e", "storage": "#9467bd", "pumped": "#17becf"}
 
 
-def _xt(ax, T=96):
-    step = 8 if T > 24 else 2
+def _xt(ax, T=96, dt_h=0.25):
+    from .time_grid import period_label
+    step = max(1, round(2 / dt_h))
     ticks = list(range(0, T + 1, step))
     ax.set_xticks(ticks)
-    ax.set_xticklabels([f"{(k*15)//60:02d}:{(k*15)%60:02d}" for k in ticks], rotation=0, fontsize=8)
+    ax.set_xticklabels([period_label(k, dt_h) for k in ticks], rotation=0, fontsize=8)
     ax.set_xlim(0, max(1, T - 1))
 
 
-def lmp_heatmap(prices: pd.DataFrame, path: Path, title="日前节点电价（元/MWh）"):
+def lmp_heatmap(prices: pd.DataFrame, path: Path, title="日前节点电价（元/MWh）", dt_h=0.25):
     piv = prices.pivot(index="bus", columns="period", values="lmp")
     fig, ax = plt.subplots(figsize=(13, 8))
     im = ax.imshow(piv.values, aspect="auto", cmap="RdYlBu_r", interpolation="nearest")
     ax.set_yticks(range(len(piv.index)))
     ax.set_yticklabels(piv.index, fontsize=7)
     ax.set_ylabel("母线")
-    _xt(ax, piv.shape[1])
+    _xt(ax, piv.shape[1], dt_h=dt_h)
     ax.set_title(title)
     fig.colorbar(im, ax=ax, label="元/MWh")
     fig.tight_layout()
@@ -51,7 +52,7 @@ def lmp_heatmap(prices: pd.DataFrame, path: Path, title="日前节点电价（�
     plt.close(fig)
 
 
-def lmp_curves(prices: pd.DataFrame, system: pd.DataFrame, path: Path, buses=None, title="节点电价曲线"):
+def lmp_curves(prices: pd.DataFrame, system: pd.DataFrame, path: Path, buses=None, title="节点电价曲线", dt_h=0.25):
     piv = prices.pivot(index="period", columns="bus", values="lmp")
     if buses is None:  # 取最低、最高、和参考母线
         avg = piv.mean()
@@ -60,7 +61,7 @@ def lmp_curves(prices: pd.DataFrame, system: pd.DataFrame, path: Path, buses=Non
     for b in buses:
         ax.plot(piv.index, piv[b], label=f"母线{b}", lw=1.3)
     ax.plot(system.period, system.energy_price, "k--", lw=1.5, label="系统能量价 λ")
-    _xt(ax, int(system.period.max())+1)
+    _xt(ax, int(system.period.max())+1, dt_h=dt_h)
     ax.set_ylabel("元/MWh")
     ax.set_title(title)
     ax.grid(alpha=0.3)
@@ -70,7 +71,7 @@ def lmp_curves(prices: pd.DataFrame, system: pd.DataFrame, path: Path, buses=Non
     plt.close(fig)
 
 
-def generation_stack(units: pd.DataFrame, system: pd.DataFrame, path: Path, title="日前出清分类型出力", load_label="负荷（日前预测）"):
+def generation_stack(units: pd.DataFrame, system: pd.DataFrame, path: Path, title="日前出清分类型出力", load_label="负荷（日前预测）", dt_h=0.25):
     u = units.copy()
     u["P_pos"] = u.P_mw.clip(lower=0)
     u["P_neg"] = u.P_mw.clip(upper=0)
@@ -93,7 +94,7 @@ def generation_stack(units: pd.DataFrame, system: pd.DataFrame, path: Path, titl
     if curt.max() > 1e-3:
         top = pos[types].sum(axis=1)
         ax.fill_between(curt.index, top, top + curt, facecolor="none", hatch="////", edgecolor="#2ca02c", lw=0.6, label="风光弃电")
-    _xt(ax, int(system.period.max())+1)
+    _xt(ax, int(system.period.max())+1, dt_h=dt_h)
     ax.set_ylabel("MW")
     ax.set_title(title)
     ax.legend(loc="upper left", ncol=5, fontsize=8)
@@ -103,7 +104,7 @@ def generation_stack(units: pd.DataFrame, system: pd.DataFrame, path: Path, titl
     plt.close(fig)
 
 
-def storage_soc(storage: pd.DataFrame, path: Path, prices: pd.DataFrame | None = None, title="储能充放电与荷电状态"):
+def storage_soc(storage: pd.DataFrame, path: Path, prices: pd.DataFrame | None = None, title="储能充放电与荷电状态", dt_h=0.25):
     units = storage.unit.unique()
     fig, axes = plt.subplots(len(units), 1, figsize=(12, 2.8 * len(units)), sharex=True)
     axes = np.atleast_1d(axes)
@@ -127,21 +128,21 @@ def storage_soc(storage: pd.DataFrame, path: Path, prices: pd.DataFrame | None =
         h1, l1 = ax.get_legend_handles_labels()
         h2, l2 = ax2.get_legend_handles_labels()
         ax.legend(h1 + h2, l1 + l2, fontsize=7, loc="upper left", ncol=3)
-        _xt(ax, int(storage.period.max())+2)
+        _xt(ax, int(storage.period.max())+2, dt_h=dt_h)
     fig.suptitle(title)
     fig.tight_layout()
     fig.savefig(path, dpi=130)
     plt.close(fig)
 
 
-def line_loading(lines: pd.DataFrame, path: Path, top=6, title="重载/阻塞线路负载率"):
+def line_loading(lines: pd.DataFrame, path: Path, top=6, title="重载/阻塞线路负载率", dt_h=0.25):
     mx = lines.groupby("line").loading.max().sort_values(ascending=False).head(top)
     fig, ax = plt.subplots(figsize=(12, 4.5))
     for l in mx.index:
         d = lines[lines.line == l]
         ax.plot(d.period, d.loading * 100, label=l)
     ax.axhline(100, color="r", ls="--", lw=1)
-    _xt(ax, int(lines.period.max())+1)
+    _xt(ax, int(lines.period.max())+1, dt_h=dt_h)
     ax.set_ylabel("负载率 %")
     ax.set_title(title)
     ax.legend(ncol=6, fontsize=8)
@@ -151,7 +152,7 @@ def line_loading(lines: pd.DataFrame, path: Path, top=6, title="重载/阻塞线
     plt.close(fig)
 
 
-def rebid_compare(base_prices, new_prices, base_units, new_units, unit_ids, path: Path, buses, title="改报价前后对比"):
+def rebid_compare(base_prices, new_prices, base_units, new_units, unit_ids, path: Path, buses, title="改报价前后对比", dt_h=0.25):
     fig, axes = plt.subplots(2, 1, figsize=(12, 8), sharex=True)
     ax = axes[0]
     for b in buses:
@@ -172,13 +173,13 @@ def rebid_compare(base_prices, new_prices, base_units, new_units, unit_ids, path
     ax.set_ylabel("中标出力 MW")
     ax.legend(ncol=4, fontsize=8)
     ax.grid(alpha=0.3)
-    _xt(ax)
+    _xt(ax, int(max(base_prices.period.max(), new_prices.period.max())) + 1, dt_h=dt_h)
     fig.tight_layout()
     fig.savefig(path, dpi=130)
     plt.close(fig)
 
 
-def forecast_plot(profiles: pd.DataFrame, path: Path, title="日前/日内/实时预测与实际"):
+def forecast_plot(profiles: pd.DataFrame, path: Path, title="日前/日内/实时预测与实际", dt_h=0.25):
     keys = [c[:-7] for c in profiles if c.endswith("_actual") and c[:-7]+"_da" in profiles]
     if not keys:
         return
@@ -193,7 +194,7 @@ def forecast_plot(profiles: pd.DataFrame, path: Path, title="日前/日内/实�
         ax.set_title("系统负荷" if key == "load" else key, fontsize=10)
         ax.grid(alpha=0.3)
         ax.legend(fontsize=8, ncol=3)
-        _xt(ax, len(profiles))
+        _xt(ax, len(profiles), dt_h=dt_h)
     fig.suptitle(title)
     fig.tight_layout()
     fig.savefig(path, dpi=120)
@@ -205,7 +206,7 @@ SETTLE_LABEL = {"coal": "燃煤", "gas_ccgt": "燃气联合循环", "gas_gt": "�
                 "storage_dis": "储能放电", "storage_ch": "储能充电", "pumped_gen": "抽蓄发电", "pumped_pump": "抽蓄抽水", "load": "负荷", "tie": "区外来电", "slack": "平衡松弛"}
 
 
-def da_vs_rt_lmp(da_prices: np.ndarray, rt_prices: np.ndarray, load_da: np.ndarray, load_rt: np.ndarray, buses, path: Path):
+def da_vs_rt_lmp(da_prices: np.ndarray, rt_prices: np.ndarray, load_da: np.ndarray, load_rt: np.ndarray, buses, path: Path, dt_h=0.25):
     """上：负荷加权平均 LMP（日前与实时）；中：日前与实时价差最大的 4 个节点；下：RT−DA 价差热力图。"""
     T = rt_prices.shape[1]
     da = da_prices[:, :T]
@@ -234,14 +235,15 @@ def da_vs_rt_lmp(da_prices: np.ndarray, rt_prices: np.ndarray, load_da: np.ndarr
     ax.set_ylabel("母线"); ax.set_title("实时减日前节点电价（元/MWh）")
     fig.colorbar(im, ax=ax, fraction=0.025)
     for a in axes:
-        _xt(a, T)
+        _xt(a, T, dt_h=dt_h)
     fig.tight_layout(); fig.savefig(path, dpi=130); plt.close(fig)
 
 
 def rolling_plans(id_plans: pd.DataFrame, id_sto: pd.DataFrame, rt_units: pd.DataFrame, rt_sto: pd.DataFrame,
-                  da_units: pd.DataFrame, da_sto: pd.DataFrame, path: Path, units=None, sto=None, x=None):
+                  da_units: pd.DataFrame, da_sto: pd.DataFrame, path: Path, units=None, sto=None, x=None, dt_h=0.25):
     """（开日内时）各轮日内计划（细线）vs 日前（虚线）vs 实时执行（黑线）；x 给出时画日前 SOC ±x 锚点带。"""
     T = int(rt_units.period.max()) + 1
+    full_T = int(da_units.period.max()) + 1
     rounds = sorted(id_plans.tau.unique())
     cmap = plt.cm.viridis
     if units is None:
@@ -275,10 +277,10 @@ def rolling_plans(id_plans: pd.DataFrame, id_sto: pd.DataFrame, rt_units: pd.Dat
             ax.plot(d.period, d.P_mw, "-", color="k", lw=2, label="实时执行")
             ax.set_ylabel("MW"); ax.set_title(f"{name} 出力：{'各轮日内计划（浅→深）/ ' if rounds else ''}日前 / 实时执行")
         ax.grid(alpha=.3); ax.legend(loc="upper left", fontsize=8)
-        _xt(ax, 96)
-        ax.axvspan(T - 0.5, 95, color="#eeeeee", zorder=0) if T < 96 else None
+        _xt(ax, full_T, dt_h=dt_h)
+        ax.axvspan(T - 0.5, full_T - 1, color="#eeeeee", zorder=0) if T < full_T else None
     if rounds:
-        sm = plt.cm.ScalarMappable(cmap=cmap, norm=plt.Normalize(0, max(rounds) / 4))
+        sm = plt.cm.ScalarMappable(cmap=cmap, norm=plt.Normalize(0, max(rounds) * dt_h))
         fig.colorbar(sm, ax=axes, fraction=0.015, label="日内轮次触发时刻（小时）")
     fig.savefig(path, dpi=130, bbox_inches="tight"); plt.close(fig)
 
@@ -310,18 +312,18 @@ def settlement_bars(by_type: pd.DataFrame, by_entity: pd.DataFrame, path: Path):
     fig.tight_layout(); fig.savefig(path, dpi=130); plt.close(fig)
 
 
-def reserve_balance(system: pd.DataFrame, path: Path, title="上备用需求、供给与缺额"):
+def reserve_balance(system: pd.DataFrame, path: Path, title="上备用需求、供给与缺额", dt_h=0.25):
     fig, axes = plt.subplots(2, 1, figsize=(12, 6), sharex=True)
     for key, label in (("R_up_req", "需求"), ("R_up_supply", "资源供给"), ("R_up_re_credit_mw", "新能源置信折算")):
         if key in system:
             axes[0].plot(system.period, system[key], label=label)
     axes[0].set_title(title); axes[0].set_ylabel("MW"); axes[0].legend()
     axes[1].bar(system.period, system.R_up_short, label="上备用缺额", color="#d62728")
-    axes[1].set_ylabel("MW"); axes[1].legend(); _xt(axes[1], int(system.period.max())+1)
+    axes[1].set_ylabel("MW"); axes[1].legend(); _xt(axes[1], int(system.period.max())+1, dt_h=dt_h)
     fig.tight_layout(); fig.savefig(path, dpi=130); plt.close(fig)
 
 
-def water_states(hydro: pd.DataFrame, pumped: pd.DataFrame, path: Path, title="水电与抽蓄库存"):
+def water_states(hydro: pd.DataFrame, pumped: pd.DataFrame, path: Path, title="水电与抽蓄库存", dt_h=0.25):
     groups = [(str(u), d, "V_1e4m3") for u,d in hydro.groupby("station")] if not hydro.empty else []
     groups += [(str(u), d, "V_up") for u,d in pumped.groupby("unit")] if not pumped.empty else []
     if not groups:
@@ -332,22 +334,22 @@ def water_states(hydro: pd.DataFrame, pumped: pd.DataFrame, path: Path, title="�
         if "V_start" in data and pd.notna(data.V_start.iloc[0]):
             ax.scatter([data.period.iloc[0]], [data.V_start.iloc[0]], label="初始库存", s=20)
         ax.set_title(name); ax.set_ylabel("万m³"); ax.grid(alpha=.3)
-        _xt(ax, int(data.period.max())+2)
+        _xt(ax, int(data.period.max())+2, dt_h=dt_h)
     fig.suptitle(title); fig.tight_layout(); fig.savefig(path,dpi=130); plt.close(fig)
 
 
-def dispatch_plots(tables, directory: Path, *, stage="da"):
+def dispatch_plots(tables, directory: Path, *, stage="da", dt_h=0.25):
     """All standard dispatch families, no hard-coded resource IDs."""
     label = "日前计划" if stage == "da" else "实时已执行"
     prefix = "" if stage == "da" else "rt_"
-    lmp_heatmap(tables["prices"], directory / f"{prefix}lmp_heatmap.png", title=label+"节点结算价")
-    lmp_curves(tables["prices"], tables["system"], directory / f"{prefix}lmp_curves.png", title=label+"节点电价曲线")
-    generation_stack(tables["units"], tables["system"], directory / f"{prefix}generation_stack.png", title=label+"分类型出力", load_label=label+"需求负荷")
+    lmp_heatmap(tables["prices"], directory / f"{prefix}lmp_heatmap.png", title=label+"节点结算价", dt_h=dt_h)
+    lmp_curves(tables["prices"], tables["system"], directory / f"{prefix}lmp_curves.png", title=label+"节点电价曲线", dt_h=dt_h)
+    generation_stack(tables["units"], tables["system"], directory / f"{prefix}generation_stack.png", title=label+"分类型出力", load_label=label+"需求负荷", dt_h=dt_h)
     if not tables["storage"].empty:
-        storage_soc(tables["storage"], directory / f"{prefix}storage_soc.png", tables["prices"], title=label+"储能充放电与SOC")
-    line_loading(tables["lines"], directory / f"{prefix}line_loading.png", title=label+"线路负载率")
-    reserve_balance(tables["system"], directory / f"{prefix}reserve_balance.png", title=label+"上备用")
-    water_states(tables["hydro"], tables["pumped"], directory / f"{prefix}water_states.png", title=label+"水电与抽蓄库存")
+        storage_soc(tables["storage"], directory / f"{prefix}storage_soc.png", tables["prices"], title=label+"储能充放电与SOC", dt_h=dt_h)
+    line_loading(tables["lines"], directory / f"{prefix}line_loading.png", title=label+"线路负载率", dt_h=dt_h)
+    reserve_balance(tables["system"], directory / f"{prefix}reserve_balance.png", title=label+"上备用", dt_h=dt_h)
+    water_states(tables["hydro"], tables["pumped"], directory / f"{prefix}water_states.png", title=label+"水电与抽蓄库存", dt_h=dt_h)
     names = ["lmp_heatmap.png", "lmp_curves.png", "generation_stack.png", "line_loading.png", "reserve_balance.png"]
     if not tables["storage"].empty:
         names.append("storage_soc.png")

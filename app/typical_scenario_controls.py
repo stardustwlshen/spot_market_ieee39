@@ -11,14 +11,14 @@ def render_typical_scenarios(cfg, name, *, bids=None, disabled=False):
     from input_workflow import business_error
     key = f'typical:{name}'
     with st.expander('典型运行场景：丰枯水、风光与负荷组合', expanded=False):
-        st.caption('合成研究情景。负荷仅是外生需求，不参与报价或需求响应；组合只保存为新场景，原场景、上传文件与报价不覆盖。')
+        st.caption('合成研究情景，另存新场景；负荷不参与报价或需求响应。')
         source_model = cfg.base.get('forecast', {}).get('model', 'legacy_v1')
-        st.caption(f'当前组合源模型：{source_model}。新仓库默认使用multiscale_v2；旧场景与上传时序不自动替换。旧场景需要新版时，先在下方风光曲线控制中预览并采用，再建立组合。')
+        st.caption(f'曲线模型：{source_model}。如需切换，请先采用新曲线，再建组合。')
         existing = (cfg.root/MANIFEST).exists()
         use_current = st.checkbox('当前输入作为新基准', value=False, key=key+':new_baseline',
                                   disabled=disabled) if existing else True
         if existing and not use_current:
-            st.caption('沿用本场景保存的最初基准重新组合，倍率不逐次叠乘；源场景后来改价仍会复制。')
+            st.caption('沿用最初基准，倍率不叠乘；复制当前报价。')
         cols = st.columns(3)
         season = cols[0].selectbox('水文类型', ['保持基准', '丰水期', '枯水期'], key=key+':season', disabled=disabled)
         renewable = cols[1].selectbox('新能源出力水平', list(RENEWABLE_LEVELS),
@@ -34,9 +34,8 @@ def render_typical_scenarios(cfg, name, *, bids=None, disabled=False):
                 pv = separate[1].selectbox('光伏水平', list(RENEWABLE_LEVELS), key=key+':pv', disabled=disabled)
                 wind_multiplier, pv_multiplier = RENEWABLE_LEVELS[wind], RENEWABLE_LEVELS[pv]
             event = st.selectbox('附加时序压力', list(WIND_EVENTS), key=key+':wind_event', disabled=disabled)
-        st.caption('基础18组合是幅值敏感性矩阵；风光分别设置后可覆盖54组合，另有傍晚持续低风压力。均不代表真实典型日或发生概率；负荷日形状、季节气象关联及独立预测误差尾部仍需额外数据检验。')
-        st.caption('先选曲线模型，再建典型场景；新副本保存完整时序，后续切换自动生成模型不会改写这些已保存曲线。')
-        st.caption('actual / 日前 DA / 日内 ID / 超短期 RT 四阶段一起调整。风光不改装机并按装机限幅；区外来电固定计划保持不变，只缩放区内基础负荷。' if cfg.base.get('tie_line_mode', 'supply') == 'supply' else '旧转换场景四阶段的基础负荷与独立TIE需求各缩放一次；建议先恢复区外来电，再创建新组合。')
+        st.caption('倍率与低风压力均为合成假设，不代表真实典型日或发生概率。')
+        st.caption('actual / DA / ID / RT 同步缩放；风光按装机限幅，区外来电计划不变。' if cfg.base.get('tie_line_mode', 'supply') == 'supply' else '旧转换场景四阶段的基础负荷与独立TIE需求各缩放一次；建议先恢复区外来电，再创建新组合。')
         request = dict(season={'保持基准': None, '丰水期': 'wet', '枯水期': 'dry'}[season],
                        renewable_multiplier=RENEWABLE_LEVELS[renewable], load_multiplier=LOAD_LEVELS[load],
                        use_current_as_baseline=use_current, restore=False, wind_multiplier=wind_multiplier,
@@ -93,7 +92,7 @@ def render_typical_scenarios(cfg, name, *, bids=None, disabled=False):
                 'vmin': '最小库容（万m³）', 'vmax': '最大库容（万m³）', 'v_end': '日末库容下限（万m³）',
                 'qeco': '生态流量（m³/s）', 'e_day': '日电量上限（MWh）'}), hide_index=True, width='stretch')
             st.dataframe(preview['profiles'], hide_index=True, width='stretch')
-            st.caption('这些是出清输入，不是求解结果；丰枯水使用该季真实配置的来水、库容与日电量边界，不保证任意组合均可行。')
+            st.caption('输入采用所选季节的水文与日电量边界，不代表出清可行。')
         changed = preview['availability_changes']
         confirmed = False
         if changed:

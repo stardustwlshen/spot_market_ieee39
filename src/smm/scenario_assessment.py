@@ -16,6 +16,7 @@ def assess_boundaries(case, *, model_data=None):
     from .fixed_load import tie_mode, tie_profiles
     from .scuc import prepare
 
+    from .natural_inflow import model_natural
     md = model_data or prepare(case)
     cfg, profiles = case.cfg, case.profiles
     hours = md.T * md.dt
@@ -33,7 +34,7 @@ def assess_boundaries(case, *, model_data=None):
         # optimistic bound; treating own inflow as total would be a false fail.
         if not h.get('upstream'):
             limits['water_terminal_mwh'] = max(0., (float(h['v0']) - float(h['v_end'])) /
-                (.36 * float(h['water_rate'])) + float(h['qin']) * hours / float(h['water_rate']))
+                (.36 * float(h['water_rate'])) + sum(model_natural(md,uid,t) for t in range(md.T)) * md.dt / float(h['water_rate']))
         hydro_bounds.append(dict(unit=uid, upper_mwh=min(limits.values()), limits=limits,
                                  upstream_water_bound_omitted=bool(h.get('upstream'))))
     hydro_energy = sum(row['upper_mwh'] for row in hydro_bounds)
@@ -59,7 +60,8 @@ def assess_boundaries(case, *, model_data=None):
     fixed = [tie_profiles(cfg, profiles, u) for u in cfg.units.get('tie', [])] if tie_mode(cfg) == 'fixed_load' else []
     stages = []
     net_curves = {}
-    for stage in STAGES:
+    input_stages=('da',) if getattr(case,'selected_inputs',None) is not None else STAGES
+    for stage in input_stages:
         demand = profiles[f'load_{stage}'].to_numpy(float).copy()
         demand += sum((item[f"{u['id']}_{stage}"] for u, item in zip(cfg.units.get('tie', []), fixed)), start=np.zeros(md.T))
         ren = (sum((np.asarray(v, float) for v in case.ren_fc.values()), start=np.zeros(md.T)) if stage == 'da' else
@@ -94,7 +96,8 @@ def assess_boundaries(case, *, model_data=None):
         renewable_local_generation_nameplate_share=(wind_mw+pv_mw)/local_generation_mw if local_generation_mw>0 else None,
         nameplate_share_denominator='local_thermal_hydro_wind_pv_excludes_storage_and_external_tie',
         hydro_energy_bounds=hydro_bounds, storage_net_energy_bounds=stock_bounds, stages=stages,
-        da_net_load_error_rmse_mw=float(np.sqrt(np.mean((net_curves['da'] - net_curves['actual'])**2))),
+        da_net_load_error_rmse_mw=(float(np.sqrt(np.mean((net_curves['da'] - net_curves['actual'])**2))) if 'actual' in net_curves else None),
+        input_information_scope=('issued_DA_only_no_future_actual' if getattr(case,'selected_inputs',None) is not None else 'legacy_offline_four_columns'),
         caveats=['未考虑输电、机组启停/爬坡、备用资格与响应、储能逐段能量/抽发互斥，供给上界偏乐观。',
                  '任一阶段失败提示对应边界压力；ID/RT整日曲线不等于滚动首时段的实际执行结果。',
                  '丰枯水×新能源×负荷为合成敏感性设计，不代表季节联合概率或真实典型日。',

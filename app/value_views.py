@@ -8,6 +8,7 @@
 from __future__ import annotations
 
 import pandas as pd
+from smm.time_grid import result_time_axis, result_time_grid
 
 SIGN_NOTE = ('价值 v 来自所选日前或日内调度 SCED：中间时段 v[t] = −dual(c_X[t+1])，表示多存 1 单位对后续报价目标的边际影响；'
              '正值=多存省成本）。抽蓄按 v/e_gen、水电按 v×0.36×耗水率 折算为 元/MWh。'
@@ -221,7 +222,7 @@ def render_da_values(R, lbl, key):
             fig.add_scatter(x=[lbl[int(t)] for t in p.period], y=p.lmp, name=f'节点{bus} 日前电价', line=dict(color=DA_COLOR, dash='dot'))
         kind = f.kind_label.iloc[0]
         extra = '' if f.native_unit.iloc[0] == '元/MWh' else f'；原生单位 {f.native_unit.iloc[0]}，图中已折算为 元/MWh'
-        show_fig(style_fig(fig, f'{unit} {kind}价值 vs 节点电价{extra}', '时刻（每15分钟）', '元/MWh', 320), key=f'{key}:{unit}')
+        show_fig(style_fig(fig, f'{unit} {kind}价值 vs 节点电价{extra}', result_time_axis(R), '元/MWh', 320), key=f'{key}:{unit}')
     summary = vc.groupby(['kind_label', 'unit']).value_yuan_per_mwh.agg(['min', 'mean', 'max']).reset_index()
     summary.columns = ['类别', '主体', '最小 元/MWh', '平均 元/MWh', '最大 元/MWh']
     show_df(summary, '%.2f')
@@ -315,7 +316,7 @@ def render_window_browser(R, lbl, key):
     count = tau - int(t0) + 1
     horizon = ((R.get('summary') or {}).get('realtime') or {}).get('lookahead_h')
     configured = f'配置前瞻 {horizon:g} 小时；' if isinstance(horizon, (int, float)) and not isinstance(horizon, bool) else '配置前瞻未记录；'
-    st.caption(f'窗口 {lbl[int(t0)]} 起，末时段 τ 的起点为 {lbl[tau]}；保存范围共 {count} 段、{count * 15} 分钟'
+    st.caption(f'窗口 {lbl[int(t0)]} 起，末时段 τ 的起点为 {lbl[tau]}；保存范围共 {count} 段、{count * result_time_grid(R)[1] * 60:g} 分钟'
                f'（{configured}日末窗口按剩余时段截断，正式只执行首段）。')
     _render_terminal_policy(f)
     render_hydro_terminal_lookahead(R, key, window_start=t0)
@@ -354,7 +355,7 @@ def render_window_browser(R, lbl, key):
         bound_label = 'τ 日末计罚目标（非硬等式）' if planned_soft else 'τ 保存的带/目标'
         fig.add_scatter(x=[lbl[tau]] * 2, y=[row.lower, row.upper], mode='lines+markers', name=bound_label, line=dict(color='#e9a03b', width=6))
         show_fig(style_fig(fig, f'{unit} 窗口内状态（黄色：{bound_label}）', '时刻', col, 280), key=f'{key}:{unit}:{t0}')
-    st.caption('窗口内曲线为各时段实际执行后的状态（每个窗口只执行首段，后续段来自后续窗口）；前瞻窗口内未执行的计划未逐窗保存，不补画。')
+    st.caption('窗口内曲线为各时段实际执行后的状态（每个窗口只执行首段，后续段来自后续窗口）；本图不把未来状态作为执行；已保存的逐窗口 SCUC/SCED 前瞻数量可在“SCUC/SCED与定价结果”查看，缺失字段不补画。')
 
 
 def render_aux_vs_dual(R, stage, lbl, key):
@@ -371,7 +372,7 @@ def render_aux_vs_dual(R, stage, lbl, key):
     fig = px.imshow(piv.values, x=[lbl[int(t)] for t in piv.columns], y=[str(b) for b in piv.index], aspect='auto',
                     color_continuous_scale=DIFF_SCALE, color_continuous_midpoint=0, labels=dict(color='元/MWh'))
     fig.update_yaxes(type='category', autorange='reversed', dtick=1, tickfont=dict(size=9))
-    show_fig(style_fig(fig, '辅助定价原始价 − 正式调度对偶价（元/MWh）', '时刻（每15分钟）', '节点', 460), key=key)
+    show_fig(style_fig(fig, '辅助定价原始价 − 正式调度对偶价（元/MWh）', result_time_axis(R), '节点', 460), key=key)
     st.caption(f'差值绝对值：最大 {a["diff"].abs().max():.2f}，平均 {a["diff"].abs().mean():.2f} 元/MWh；'
                f'{int((a["diff"].abs() > 0.01).sum())} / {len(a)} 个 节点×时段 差值超过 0.01。辅助定价只定价、数量不执行。')
     top = a.reindex(a['diff'].abs().sort_values(ascending=False).index).head(10).rename(
@@ -413,7 +414,7 @@ def render_value_compare(RA, RB, lbl, key, names=('方案甲', '方案乙')):
         s = f.set_index('period').value_yuan_per_mwh.rename(n)
         rows = s.to_frame() if rows is None else rows.join(s, how='outer')
     show_fig(style_fig(fig, f'{unit} 价值曲线对比（{names[0]}实线 / {names[1]}虚线；蓝=日前，红点=实时窗口末使用值）',
-                       '时刻（每15分钟）', '价值（元/MWh）', 360), key=key + ':fig')
+                       result_time_axis(RA), '价值（元/MWh）', 360), key=key + ':fig')
     rows[f'{names[1]}−{names[0]}'] = rows[names[1]] - rows[names[0]]
     rows = rows.reset_index().rename(columns={'period': '时段序号'})
     rows.insert(1, '时刻', [lbl[int(t)] for t in rows['时段序号']])

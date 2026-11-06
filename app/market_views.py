@@ -90,12 +90,15 @@ def unit_dashboard(tables, *, bids=None, settlement=None, prefix='unit', indicat
         st.caption('电能量结算是转移支付，不等于物理成本或利润；不含调频、容量电费。')
 
 
-def stages_dashboard(stages, *, prefix='stages'):
+def stages_dashboard(stages, *, prefix='stages', market_stage='DA', window_start=None):
     st.subheader('窗口 × 阶段对照（诊断，不覆盖正式执行）')
     if not stages:
         st.info('未记录：此运行未保存启停预计划完整逐主体快照，不能从最终能量调度反推或冒充。正式结果仍可在上方查看。')
         return
+    from stage_results import stage_result_view
+    stage_result_view(stages, prefix=prefix+':selected', market_stage=market_stage, window_start=window_start)
     names={'scuc_preplan':'启停预计划（未直接执行）','agc_auxiliary':'历史调频辅助优化（仅作可行筛选）','energy_sced':'正式能量调度（日前为计划、实时首段执行）','auxiliary_pricing':'辅助定价（数量不执行）'}
+    if market_stage=='ID':names['energy_sced']='正式 SCED（日内参考，不执行、不结算）'
     historical='agc_auxiliary' in stages
     if not historical:names.pop('agc_auxiliary')
     else:st.warning('历史调频实验阶段，非当前纯电能量流程。')
@@ -252,6 +255,42 @@ def reserve_dashboard(tables, *, prefix='reserve', indicative=False):
     df_download(export_awards, f'{uid}_safety_reserve.csv', label='下载所选主体安全备用CSV', key=prefix+':unitcsv')
 
     resource_kind=selected['type'].iloc[0] if 'type' in selected else None
+    if resource_kind=='hydro':
+        ability=_frame(tables.get('reserve'))
+        if ability.empty or 'unit' not in ability or 'hydro_reserve_water_checked' not in ability:
+            st.info('历史水电备用只记录容量口径，水量筛查未记录，不能称水量验收通过。');return
+        ability=ability[ability.unit==uid].sort_values('period').copy()
+        if ability.empty or not ability.hydro_reserve_water_checked.eq(True).all():
+            st.info('此水电未启用上备用水量筛查，不按0余量展示。');return
+        st.subheader('水电上备用增量水量筛查')
+        st.caption('使用已扣基准发电/弃水的时段末库容，额外耗水=0.36×耗水率×持续小时×上备用MW；不再乘调度时段长度。不预支未来来水、未到达的梯级水或已弃水；零调节池径流站可用库存为0。此保守筛查不是完整激活轨迹或网络可交付证明。')
+        fields={'period':'时段','unit':'主体','T_dur_h':'备用持续时长 h',
+                'V_end_1e4m3':'时段末库容 万m³','V_min_1e4m3':'物理最低库容 万m³',
+                'water_rate_m3s_per_mw':'耗水率 m³/s每MW',
+                'reserve_available_water_1e4m3':'备用可用水量 万m³',
+                'reserve_incremental_water_up_1e4m3':'上备用增量耗水 万m³',
+                'reserve_duration_up_margin_1e4m3':'上备用水量余量 万m³'}
+        keep=[key for key in fields if key in ability]
+        st.dataframe(ability[keep].rename(columns=fields),hide_index=True,width='stretch')
+        df_download(ability[keep],f'{uid}_hydro_reserve_water.csv',label='下载水电备用水量CSV',key=prefix+':hydrowatercsv')
+        if 'hydro_reserve_outflow_checked' not in ability:
+            st.info('历史结果未记录备用激活出库筛查，不由水量检查通过推断出库检查通过。')
+        elif not ability.hydro_reserve_outflow_checked.eq(True).all():
+            st.info('本主体未配置出库上限或未参与水电备用；不展示虚构的无限能力或0流量余量。')
+        else:
+            st.subheader('水电上备用出库流量筛查')
+            st.caption('必要条件：耗水率×（基准总发电MW＋上备用MW）≤已配置出库上限。允许减少可控弃水，生态要求作用于总下泄；以下为理论激活流量，不是实际执行轨迹。不证明闸门响应、不可减旁路水、爬坡或网络可交付；库存筛查仍按全额备用耗水，不抵扣减弃水收益。')
+            flow_fields={'period':'时段','unit':'主体','qout_max_m3s':'出库上限 m³/s',
+                'qeco_m3s':'生态总下泄下限 m³/s','Qout_base_m3s':'基准总出库 m³/s',
+                'Qspill_base_m3s':'基准弃水 m³/s','reserve_up_activation_generation_m3s':'理论激活发电流量 m³/s',
+                'reserve_up_activation_spill_m3s':'理论激活弃水 m³/s',
+                'reserve_up_activation_outflow_m3s':'理论激活总出库 m³/s',
+                'reserve_up_outflow_margin_m3s':'激活出库余量 m³/s',
+                'reserve_up_ecological_margin_m3s':'激活生态下泄余量 m³/s'}
+            cols=[key for key in flow_fields if key in ability]
+            st.dataframe(ability[cols].rename(columns=flow_fields),hide_index=True,width='stretch')
+            df_download(ability[cols],f'{uid}_hydro_reserve_outflow.csv',label='下载水电备用出库CSV',key=prefix+':hydrooutflowcsv')
+        return
     if resource_kind not in ('storage','pumped'):return
     st.subheader('储能/抽蓄备用筛选诊断（不是已激活轨迹）')
     if resource_kind=='storage':
@@ -306,8 +345,12 @@ def reserve_dashboard(tables, *, prefix='reserve', indicative=False):
 
 def operating_profit_dashboard(by_unit, by_period=None, *, prefix='operating_profit'):
     """Display independent fixed-cost accounting, never infer cost from bids."""
-    st.subheader('逐主体模拟运营利润（不是企业净利润）')
-    st.caption('固定单位成本 × 实际执行量，加在线和启动费用；报价与核算成本分离。利润不含资本、融资、税费。')
+    rows=_frame(by_unit)
+    spot='profit_basis' in rows and rows.profit_basis.eq('spot_energy_cash_v2').all()
+    cost_label='现货运行成本' if spot else '历史口径运行成本'
+    profit_label='现货利润（模拟）' if spot else '历史口径利润'
+    st.subheader('逐主体'+profit_label+'（不是企业净利润）')
+    st.caption('只计燃料、明确在线费及实际启停；不含运维/折旧/寿命折损。' if spot else '历史核算范围可能包含运维/寿命折损；原记录未改写。')
     with st.expander('核算口径与购买电量说明'):
         st.caption('固定的是单位成本参数，不是全天总费用。利润 = 净能量现金结算 − 可核算运营成本；'
                    '不计调度松弛罚值、机会成本、资本性支出、融资或税费。充电/抽水结算已在净结算内，不再重复扣减；'
@@ -316,16 +359,22 @@ def operating_profit_dashboard(by_unit, by_period=None, *, prefix='operating_pro
     if rows.empty:
         st.info('未记录：此运行未保存独立固定成本核算结果；不能拿报价成本代替实际运营成本，不能反推利润。')
         return
+    from settlement_validation import normalized_profit_table
+    try:
+        rows = normalized_profit_table(rows)
+    except (ValueError, TypeError) as exc:
+        st.warning('本次成本与利润记录损坏，暂不展示该表；物理出力、电价和独立结算仍可查看。' + str(exc))
+        return
     names={'unit':'主体','type':'类型','da_cash_revenue_yuan':'日前现金结算 元',
            'rt_deviation_cash_revenue_yuan':'实时偏差现金结算 元','cash_revenue_yuan':'净能量现金结算 元',
-           'charging_settlement_yuan':'其中充电/抽水结算 元（已含）','variable_cost_yuan':'可变运营成本 元',
-           'fixed_online_cost_yuan':'在线固定成本 元','startup_cost_yuan':'启动成本 元',
-           'cash_operating_cost_yuan':'现金运营成本 元','simulated_operating_profit_yuan':'模拟运营利润 元',
+           'charging_settlement_yuan':'其中充电/抽水结算 元（已含）','variable_cost_yuan':('燃料发电成本 元' if spot else '历史可变成本 元'),
+           'fixed_online_cost_yuan':'在线运行成本 元','startup_cost_yuan':'启动成本 元','shutdown_cost_yuan':'停机成本 元','profit_basis':'核算口径','cost_basis_version':'成本版本',
+           'cash_operating_cost_yuan':cost_label+' 元','simulated_operating_profit_yuan':profit_label+' 元',
            'cost_available':'成本参数完整','cost_missing_reason':'成本缺项原因',
            'inventory_start':'期初库存','inventory_end':'期末库存','inventory_change':'库存变化','inventory_unit':'库存单位'}
     # Incomplete evidence cannot turn into apparently numeric profits, even for legacy exports.
     monetary_costs=['variable_cost_yuan','fixed_online_cost_yuan','startup_cost_yuan',
-                    'cash_operating_cost_yuan','simulated_operating_profit_yuan']
+                    'cash_operating_cost_yuan','simulated_operating_profit_yuan','shutdown_cost_yuan']
     complete = rows.get('cost_available',pd.Series(False,index=rows.index)).eq(True)
     rows.loc[~complete,[c for c in monetary_costs if c in rows]]=float('nan')
     if not complete.all():st.warning('存在缺失成本参数：对应成本与利润保持 未记录，不按零成本估算；现金结算仍可查看。')
@@ -349,7 +398,7 @@ def operating_profit_dashboard(by_unit, by_period=None, *, prefix='operating_pro
         return '未记录' if pd.isna(value) else f'{float(value)/1e4:,.2f}'
     cols=st.columns(4)
     for col,key,label in zip(cols,('da_cash_revenue_yuan','rt_deviation_cash_revenue_yuan','cash_operating_cost_yuan','simulated_operating_profit_yuan'),
-                             ('日前现金结算 · 万元','实时偏差结算 · 万元','现金运营成本 · 万元','模拟运营利润 · 万元')):
+                             ('日前现金结算 · 万元','实时偏差结算 · 万元',cost_label+' · 万元',profit_label+' · 万元')):
         col.metric(label,amount(key))
     with st.expander('成本分项、购买电量与库存 · 所选主体',expanded=True):
         component=[c for c in names if c in rows]
@@ -359,6 +408,12 @@ def operating_profit_dashboard(by_unit, by_period=None, *, prefix='operating_pro
         st.dataframe(display_frame(rows.rename(columns=names)),hide_index=True,width='stretch')
         df_download(rows, 'operating_profit_by_unit.csv', label='下载逐主体运营利润CSV', key=prefix+':download')
         detail=_frame(by_period)
+        if not detail.empty:
+            try:
+                detail = normalized_profit_table(detail, per_period=True)
+            except (ValueError, TypeError) as exc:
+                st.warning('逐时成本与利润明细损坏，保留可用的逐主体汇总。' + str(exc))
+                return
         if not detail.empty and 'unit' in detail:
             selected=detail[detail.unit==uid].copy()
             valid=selected.get('cost_available',pd.Series(False,index=selected.index)).eq(True)

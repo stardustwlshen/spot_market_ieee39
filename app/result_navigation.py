@@ -6,13 +6,15 @@ from pathlib import Path
 import pandas as pd
 import streamlit as st
 
+from smm.time_grid import result_time_grid
+
 # 第二轮J项：按出清阶段分块（日前 / 日内·实时滚动 / 最终结果），各阶段子页结构一致
-MAIN_SECTIONS = ['日前', '日内/实时滚动', '最终结果']
-MAIN_SECTIONS_INTRADAY = ['日前', '日内滚动', '实时', '最终结果']
+MAIN_SECTIONS = ['日前', '日内·实时滚动', '最终结果']
+MAIN_SECTIONS_INTRADAY = MAIN_SECTIONS
 MAIN_SECTIONS_DA_ONLY = ['日前', '最终结果']
-STAGE_SECTIONS = ['关键指标', '节点电价', '发电结构与机组出力', '储能·抽蓄·水电', '备用', '电网与阻塞', '弃风弃光', '该阶段诊断']
+STAGE_SECTIONS = ['关键指标', '节点电价', '发电结构与机组出力', '储能·抽蓄·水电', '备用', '电网与阻塞', '弃风弃光', 'SCUC/SCED与定价结果']
 RT_SECTIONS = STAGE_SECTIONS + ['窗口浏览']
-INTRADAY_SECTIONS = ['关键指标', '节点电价（指示性）', '发电结构与机组出力', '储能·抽蓄·水电', '该阶段诊断']
+INTRADAY_SECTIONS = ['关键指标', '节点电价（指示性）', '发电结构与机组出力', '储能·抽蓄·水电', 'SCUC/SCED与定价结果']
 FINAL_SECTIONS = ['关键指标对比', '电价对比', '中标与实际', 'SOC/库容轨迹', '价值曲线', '弃电', '阻塞线路',
                   '两部制结算恒等式', '收入与成本', '诊断']
 DIAGNOSTIC_SECTIONS = ['未满足项与求解质量', '主体与求解阶段', '完整存档与来源']
@@ -147,7 +149,7 @@ def validate_line_scope(result):
             raise ValueError(f'{label}线路潮流缺少必要字段：' + '、'.join(sorted(required - set(table))))
         table = table.copy()
         periods = pd.to_numeric(table.period, errors='coerce')
-        if periods.isna().any() or not ((periods >= 0) & (periods < 96) & (periods % 1 == 0)).all():
+        if periods.isna().any() or not ((periods >= 0) & (periods < result_time_grid(result)[0]) & (periods % 1 == 0)).all():
             raise ValueError(f'{label}线路潮流时段编号无效')
         table['period'] = periods.astype(int)
         if table.line.isna().any() or table.line.astype(str).str.strip().eq('').any() or table.duplicated(['line', 'period']).any():
@@ -251,8 +253,8 @@ def validate_display_result(result):
             frame[column] = values
         if 'period' in frame:
             periods = pd.to_numeric(frame.period, errors='coerce')
-            if periods.isna().any() or not ((periods >= 0) & (periods < 96) & (periods % 1 == 0)).all():
-                raise ValueError(f'{label}时段编号无效，不能按15分钟读取')
+            if periods.isna().any() or not ((periods >= 0) & (periods < result_time_grid(result)[0]) & (periods % 1 == 0)).all():
+                raise ValueError(f'{label}时段编号无效，超出本次冻结运行日网格')
             frame['period'] = periods.astype(int)
             identifier = 'bus' if key.endswith('prices') else 'unit' if key.endswith(('awards', 'units', 'storage')) else None
             if identifier and (frame[identifier].isna().any() or frame[identifier].astype(str).str.strip().eq('').any()):
@@ -265,6 +267,9 @@ def validate_display_result(result):
                 raise ValueError(f'{label}时段记录重复')
         result[key] = frame
 
+    if result.get('full'):
+        from settlement_validation import validate_saved_settlement
+        validate_saved_settlement(result)
     validate_resource_scope(result)
 
     da_count = result['da_summary'].get('expected_periods')
@@ -287,7 +292,7 @@ def validate_display_result(result):
                 numeric_count = float(count)
             except (TypeError, ValueError):
                 numeric_count = float('nan')
-            if isinstance(count, bool) or not (0 < numeric_count <= 96 and numeric_count.is_integer()):
+            if isinstance(count, bool) or not (0 < numeric_count <= result_time_grid(result)[0] and numeric_count.is_integer()):
                 raise ValueError(f'{stage}摘要时段数量无效')
             if periods != set(range(int(numeric_count))):
                 raise ValueError(f'{stage}实际记录的时段与摘要声明的 {int(numeric_count)} 段不一致')
@@ -345,17 +350,22 @@ def build_result_navigation(summary, da_summary, *, directory, full=True, intrad
     if important:
         render = st.error if any(level == 'error' for level, _ in important) else st.warning
         render('本次运行有需要注意的结果：\n\n' + '\n\n'.join('• '+text.split('。')[0]+'。' for _, text in important) + '\n\n完整检查范围与原因见“最终结果 → 诊断”。')
-    st.caption('阅读顺序：先看日前，再看日内/实时滚动，最后在“最终结果”直接对比日前与实时（日前值、实时值、实时−日前）。缺失记录不按零处理。')
-    sections = (MAIN_SECTIONS_INTRADAY if intraday else MAIN_SECTIONS) if full else MAIN_SECTIONS_DA_ONLY
+    st.caption('日前为计划；日内为参考、不结算；实时仅执行首段；辅助模型仅定价。缺失记录不按零处理。'
+               if full else '日前为计划，辅助模型仅定价；缺失记录不按零处理。')
+    sections = MAIN_SECTIONS if full else MAIN_SECTIONS_DA_ONLY
     main = st.tabs(sections)
     out = dict(main=main, sections=sections)
     with main[0]:
         out['da'] = st.tabs(STAGE_SECTIONS)
     if full:
-        if intraday:
-            with main[1]:
+        with main[1]:
+            rolling_tabs = st.tabs(['日内轮次与交接', '实时执行与前瞻'])
+        with rolling_tabs[0]:
+            if not intraday:
+                st.info('本次未启用日内滚动，或旧档未记录启用状态；不虚构日内轮次。实时参考以逐窗口记录为准。')
+            else:
                 out['id'] = st.tabs(INTRADAY_SECTIONS)
-        with main[sections.index('实时' if intraday else '日内/实时滚动')]:
+        with rolling_tabs[1]:
             out['rt'] = st.tabs(RT_SECTIONS)
     with main[-1]:
         out['final'] = st.tabs(FINAL_SECTIONS)

@@ -17,7 +17,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 from smm.config import load_config, rt_terminal_policy  # noqa: E402
 from smm.full import run_full, write_full_outputs  # noqa: E402
-from smm.pipeline import prepare  # noqa: E402
+from smm.pipeline import prepare, format_optional_price  # noqa: E402
 
 ap = argparse.ArgumentParser()
 ap.add_argument("--bid-version", type=int, default=None)
@@ -96,13 +96,13 @@ if d.exists():
     raise FileExistsError(f"输出目录已存在，历史结果未覆盖：{d}；请用 --tag 指定新的运行后缀")
 from smm.run_input_provenance import freeze_cli_inputs
 freeze_cli_inputs(cfg, case, d)
-res = run_full(cfg, case, periods=a.periods)
+res = run_full(cfg, case, periods=a.periods, retain_id_models=False)
 s = write_full_outputs(res, d, make_plots=not a.no_plots)
 sp, ch, ts = s["spread"], s["checks"], s["time_s"]
 print("=" * 70)
 print(f"全流程 {s['date']} {s['rule_name']} {s['season']}  日内 {s['intraday']['rounds']} 轮 / 实时 {s['periods']} 时段")
-print(f"  负荷加权均价  日前 {sp['da_lw_avg']:.2f}  实时 {sp['rt_lw_avg']:.2f}  价差均值 {sp['lw_spread_mean']:+.2f}"
-      f"（|价差|均值 {sp['lw_spread_abs_mean']:.2f}，范围 {sp['lw_spread_min']:+.1f}~{sp['lw_spread_max']:+.1f}）")
+print(f"  负荷加权均价  日前 {format_optional_price(sp['da_lw_avg'])}  实时 {format_optional_price(sp['rt_lw_avg'])}  价差均值 {format_optional_price(sp['lw_spread_mean'], '+.2f')}"
+      f"（|价差|均值 {format_optional_price(sp['lw_spread_abs_mean'])}，范围 {format_optional_price(sp['lw_spread_min'], '+.1f')}~{format_optional_price(sp['lw_spread_max'], '+.1f')}）")
 print(f"  节点价差 |RT−DA| 最大 {sp['nodal_spread_abs_max']:.1f}，RMS {sp['nodal_spread_rms']:.1f}")
 print("  结算（万元，+收入/−支出）：")
 for k, r in s["settlement_by_type"].items():
@@ -119,7 +119,7 @@ _mode_txt = (f"value δ0={_vm.get('band_fraction')}（假设值）/水电 {rtc.g
 print(f"  储能实时 {_mode_txt}；锚点松弛触发 {rtc['anchor_slack_periods']} 个窗口；"
       f"辅助算价定价时段（启用辅助算价时应为全部时段） {rtc['repriced_periods']} 个；硬→软回退 {rtc.get('fallback_count', 0)} 个窗口")
 print(f"  锚点最大松弛：储能 {rtc.get('storage_anchor_slack_max_mwh', '不可得')} MWh；抽蓄 {rtc.get('pumped_anchor_slack_max_1e4m3', '不可得')} 万m³（旧混合指标不作能量值）")
-print(f"  日末 21:00–24:00 负荷加权均价 日前 {sp['da_lw_tail']:.2f} / 实时 {sp['rt_lw_tail']:.2f}；实时节点价最大 {sp['rt_lmp_max']:.1f}")
+print(f"  日末 21:00–24:00 负荷加权均价 日前 {format_optional_price(sp['da_lw_tail'])} / 实时 {format_optional_price(sp['rt_lw_tail'])}；实时节点价最大 {sp['rt_lmp_max']:.1f}")
 print(f"  校核 {ch}")
 print(f"  用时 日前 {ts['da']:.0f}s / 日内 {ts['intraday']:.0f}s / 实时 {ts['realtime']:.0f}s / 结算 {ts['settlement']:.0f}s / 合计 {ts['total']:.0f}s")
 print(f"  输出目录 {d}")

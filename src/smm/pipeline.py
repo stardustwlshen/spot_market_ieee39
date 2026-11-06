@@ -19,7 +19,7 @@ def ensure_default_bids(cfg: Config) -> Path:
     if not list(d.glob("bids_v*.json")):
         b = default_bids(cfg)
         raise_on_errors(validate_bids(cfg, b))
-        p = save_bids(cfg, b, note="缺省报价（假设值）")
+        p = save_bids(cfg, b, note=b.get("note", "缺省报价（假设值）"))
         bids_to_csv(json.loads(p.read_text(encoding="utf-8")), p.with_suffix(".csv"))
         return p
     return sorted(d.glob("bids_v*.json"), key=lambda p: int(p.stem.split("_v")[-1]))[-1]
@@ -35,8 +35,8 @@ def prepare(cfg: Config, bid_version: int | None = None, verbose=True, *, read_o
     ``bid_data`` is a supplied JSON object, not a replacement global loader.
     Even explicit None is invalid rather than a request to fall back to defaults.
     """
-    from .input_validation import validate_time_grid
-    validate_time_grid(cfg)
+    from .input_validation import validate_production_day
+    validate_production_day(cfg)
     if bid_data is not _UNSET_BID_DATA:
         bids = copy.deepcopy(bid_data)
         raise_on_errors(validate_bids(cfg, bids))
@@ -93,7 +93,7 @@ def write_outputs(res: DAResult, d: Path, make_plots=True) -> dict:
     if "dispatch_with_slack_units" in t:
         t["dispatch_with_slack_units"].to_csv(d / "da_unit_awards_dispatch_penalty.csv", index=False)
     s = summarize(res)
-    scope = completion_metadata(res.case.cfg.T, 0, mode="da")
+    scope = completion_metadata(res.case.cfg.T, 0, mode="da", dt_h=res.case.cfg.dt)
     s.update(scope)
     s["costs"] = res.costs
     s["reserve_rule"] = {k: v for k, v in res.case.reserve_info.items() if not isinstance(v, list)}
@@ -102,19 +102,23 @@ def write_outputs(res: DAResult, d: Path, make_plots=True) -> dict:
     (d / "summary.json").write_text(json.dumps(s, ensure_ascii=False, indent=2, default=float), encoding="utf-8")
     plot_files = []
     if make_plots:
-        plot_files = plots.dispatch_plots(t, d)
-        plots.forecast_plot(res.case.profiles, d / "forecast_vs_actual.png")
+        plot_files = plots.dispatch_plots(t, d, dt_h=res.case.cfg.dt)
+        plots.forecast_plot(res.case.profiles, d / "forecast_vs_actual.png", dt_h=res.case.cfg.dt)
         if any(c.endswith("_actual") and c[:-7]+"_da" in res.case.profiles for c in res.case.profiles):
             plot_files.append("forecast_vs_actual.png")
     write_catalog(d, scope, plot_files=plot_files)
     return s
 
 
+def format_optional_price(value, spec='.2f'):
+    return '不适用（无负荷）' if value is None else format(value, spec)
+
+
 def print_summary(s: dict):
     print("=" * 60)
     print(f"日前出清 {s['date']} {s['rule_set']} {s['season']} 报价 v{s['bid_version']}")
     print(f"  目标函数（含罚）  : {s['objective']:,.0f} 元   报价总成本 {s['bid_cost_total']:,.0f} 元（其中启动费 {s['startup_cost']:,.0f}）")
-    print(f"  LMP 范围          : {s['lmp_min']:.2f} ~ {s['lmp_max']:.2f} 元/MWh（负荷加权均价 {s['lmp_load_weighted_avg']:.2f}）")
+    print(f"  LMP 范围          : {s['lmp_min']:.2f} ~ {s['lmp_max']:.2f} 元/MWh（负荷加权均价 {format_optional_price(s['lmp_load_weighted_avg'])}）")
     print(f"  系统能量价 λ 范围 : {s['energy_price_min']:.2f} ~ {s['energy_price_max']:.2f}")
     print(f"  LMP 分解最大误差  : {s['lmp_decomp_max_err']:.2e}")
     cl = ", ".join(f"{c['line']}({c['periods']}点, μmax={c['max_mu']:.0f})" for c in s["congested_lines"]) or "无"

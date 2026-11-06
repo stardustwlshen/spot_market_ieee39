@@ -53,7 +53,7 @@ LABELS = {
     'generation_vom_yuan_per_mwh': '发电可变运维核算成本（元/MWh）',
     'gen_start_yuan_per_unit_start': '单台发电启动核算成本（元/次）',
     'pump_start_yuan_per_unit_start': '单台抽水启动核算成本（元/次）',
-    'fuel_price': '燃料价格（元/GJ）', 'heat_rate': '热耗率（GJ/MWh）', 'variable_om': '可变运维（元/MWh）',
+    'fuel_price': '燃料价格（元/GJ）', 'heat_rate': '热耗参数（GJ/MWh，口径见依据）', 'variable_om': '可变运维（元/MWh）',
     'water_opportunity': '水机会成本（元/MWh）', 'replacement_energy': '补能价格（元/MWh）',
     'degradation': '折损成本（元/MWh）', 'reservation': '保留价值（元/MWh）',
     'renewable_vom': '新能源运维依据（元/MWh）',
@@ -66,6 +66,15 @@ LABELS = {
     'accounting_warning': '核算边界', 'formula_references': '公式参考来源',
     'no_load_convention': '空载参数约定', 'fixed_cost_link': '固定成本关联说明',
     'thermal_strategy_scope': '火电报价策略范围',
+    'thermal_heat_rate_basis': '火电热耗口径', 'thermal_heat_rate_warning': '热耗与空载边界说明',
+    'default_bid_model': '默认报价生成方式', 'initial_generation_season': '首次生成水期',
+    'season_change_policy': '切换水期的报价保护策略',
+    'heat_rate_basis': '热耗口径', 'reference_capacity_mw': '参考容量（MW）',
+    'reference_heat_rate': '参考增量热耗（GJ/MWh）', 'reference_variable_om': '参考可变运维（元/MWh）',
+    'heat_rate_capacity_exponent': '热耗容量指数（研究假设）', 'vom_capacity_exponent': '运维容量指数（研究假设）',
+    'capacity_factor_min': '容量修正下界', 'capacity_factor_max': '容量修正上界',
+    'heat_rate_capacity_factor': '热耗容量修正倍率', 'vom_capacity_factor': '运维容量修正倍率',
+    'capacity_factor_clamped': '容量修正是否到达边界',
 }
 
 
@@ -76,6 +85,9 @@ VALUE_LABELS = {
     'explicit_scalar': '显式单次启动报价', 'segments': '分段报价',
     'wet': '丰水期', 'dry': '枯水期', 'reservoir': '库容型', 'run_of_river': '径流式',
     'gen': '发电', 'pump': '抽水', 'idle': '空闲',
+    'cost_basis_v2': '独立成本与报价策略（新版研究基准）', 'legacy_v1': '历史固定价格模板',
+    'incremental_hhv_excludes_separate_online_intercept': '增量高位热耗，不含单列在线截距',
+    'legacy_unspecified_not_claimed_average': '历史未明确口径，不解释为平均效率',
 }
 
 
@@ -163,8 +175,13 @@ def unit_information_sections(cfg, uid):
     fixed, error = _read_archive(cfg, 'fixed_costs.yaml')
     record = (fixed or {}).get('units', {})
     record = record.get(uid) if isinstance(record, dict) else None
-    sections['独立核算成本（场景研究假设）'] = field_rows(record) if isinstance(record, dict) and record else [
+    sections['原成本档案（报价依据，非本次现货核算）'] = field_rows(record) if isinstance(record, dict) and record else [
         {'参数': '主体核算成本', '数值': error or '未知：未提供该主体的独立核算成本', '原始字段': uid}]
+    from smm.spot_costs import load_profile as load_spot, parameters as spot_parameters
+    from spot_cost_editor import LABELS as SPOT_LABELS
+    spot=load_spot(cfg);typ=unit.get('type',group)
+    current,reason=spot_parameters(spot,uid,typ)
+    sections['现货核算成本（不含运维）'] = ([{'参数':SPOT_LABELS.get(k,LABELS.get(k,k)),'数值':_value(v),'原始字段':k} for k,v in current.items() if k!='derivation'] if current else [{'参数':'成本缺项','数值':reason,'原始字段':uid}])
     if fixed:
         metadata = {key: value for key, value in fixed.items() if key != 'units'}
         if 'unit_sources' in metadata:

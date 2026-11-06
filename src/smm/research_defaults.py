@@ -11,14 +11,49 @@ import json
 import math
 from numbers import Real
 
-ALGORITHM_VERSION = 'typed-research-defaults-v1'
+ALGORITHM_VERSION = 'typed-capacity-research-defaults-v2'
+SUPPORTED_ALGORITHM_VERSIONS = frozenset({'typed-research-defaults-v1', ALGORITHM_VERSION})
 SOURCE_KIND = 'research_assumption_not_observed_plant_data'
 SOURCE = ('Synthetic research assumptions, not observed plant data. Type templates '
           'from original config/bid_cost_basis.yaml and config/fixed_costs.yaml; '
-          'online/startup capacity scaling is a research convention, not an empirical law.')
+          'bounded incremental heat-rate/VOM capacity corrections and online/startup scaling '
+          'are research conventions, not empirical laws or observed plant costs.')
 _THERMAL = {'coal': (30, 9, 10, 646, 6000, 250000),
             'gas_ccgt': (60, 6.5, 15, 687, 9000, 150000),
             'gas_gt': (60, 10, 20, 300, 4000, 40000)}
+
+
+def thermal_research_parameters(typ: str, capacity_mw: float) -> dict:
+    """Shared synthetic template for NEW resources, not a real-plant cost model.
+
+    The record is an independently committed thermal block, not a sum of an
+    arbitrary number of identical blocks. Dimensionless size corrections are
+    bounded proxies only. Incremental heat rate excludes the separately
+    calibrated online intercept; it is never labeled average plant efficiency.
+    """
+    if typ not in _THERMAL:
+        raise ValueError(f'未知火电类型: {typ}')
+    cap = _positive({'pmax': capacity_mw}, 'pmax', typ)
+    fuel, heat_ref, vom_ref, reference, online, startup = _THERMAL[typ]
+    ratio = cap / reference
+    # All exponents and bounds below are declared research assumptions.
+    log_ratio = math.log(cap) - math.log(reference)
+    heat_factor = math.exp(min(math.log(1.15), max(math.log(.90), -.08 * log_ratio)))
+    vom_factor = math.exp(min(math.log(1.15), max(math.log(.90), -.05 * log_ratio)))
+    if any(not math.isfinite(v) or v <= 0 for v in (online * ratio, startup * ratio)):
+        raise ValueError('容量缩放后的在线/启动成本须为有限正数')
+    return dict(fuel_price=fuel, heat_rate=heat_ref * heat_factor,
+                variable_om=vom_ref * vom_factor, reference_capacity_mw=reference,
+                reference_heat_rate=heat_ref, reference_variable_om=vom_ref,
+                reference_online_yuan_per_h=online, reference_startup_yuan_per_start=startup,
+                heat_rate_capacity_exponent=-.08, vom_capacity_exponent=-.05,
+                capacity_factor_min=.90, capacity_factor_max=1.15,
+                heat_rate_capacity_factor=heat_factor, vom_capacity_factor=vom_factor,
+                capacity_factor_clamped=(heat_factor in (.90, 1.15) or vom_factor in (.90, 1.15)),
+                fixed_online_cost_yuan_per_h=online * ratio,
+                fixed_startup_cost_yuan_per_start=startup * ratio,
+                heat_rate_basis='incremental_hhv_excludes_separate_online_intercept',
+                capacity_scope='independently_committed_thermal_block_not_aggregation')
 
 
 def research_record_hash(record: dict) -> str:
@@ -78,7 +113,8 @@ def generate_research_defaults(cfg) -> dict:
     profile = dict(version='synthetic-fixed-operating-costs-v1', source_kind=SOURCE_KIND,
                    source=SOURCE, accounting_scope='Energy-only simulated cash operating profit; excludes capital, financing, tax, AGC, compensation, inventory valuation, water opportunity cost and operator constraint penalties. Charging settlement already belongs to net cash revenue.', units={})
     sheet = dict(version='synthetic-cost-study-v1', source_kind=SOURCE_KIND, source=SOURCE,
-                 currency_energy_units='CNY/MWh; fuel CNY/GJ_HHV; heat rate GJ_HHV/MWh',
+                 currency_energy_units='CNY/MWh; fuel CNY/GJ_HHV; incremental heat rate GJ_HHV/MWh',
+                 thermal_heat_rate_basis='incremental_hhv_excludes_separate_online_intercept',
                  thermal={}, renewable_vom={}, hydro={}, storage={}, pumped={}, season=season,
                  thermal_offer_markup_factors=[1, 1.02, 1.05, 1.09, 1.14],
                  renewable_strategy_increments=[0, 10, 20, 30, 40],
@@ -113,15 +149,15 @@ def generate_research_defaults(cfg) -> dict:
             rec = {'type': typ}
             if typ in _THERMAL:
                 cap = positive('pmax')
-                fuel, heat, vom, reference, online, startup = _THERMAL[typ]
-                params = dict(fuel_price=fuel, heat_rate=heat, variable_om=vom,
-                              reference_capacity_mw=reference, reference_online_yuan_per_h=online,
-                              reference_startup_yuan_per_start=startup)
+                params = thermal_research_parameters(typ, cap)
+                fuel, heat, vom = (params[k] for k in ('fuel_price', 'heat_rate', 'variable_om'))
                 rec.update(scalar_marginal_cost_yuan_per_mwh=fuel * heat + vom,
-                           fixed_online_cost_yuan_per_h=online * (cap / reference),
-                           fixed_startup_cost_yuan_per_start=startup * (cap / reference))
+                           fixed_online_cost_yuan_per_h=params['fixed_online_cost_yuan_per_h'],
+                           fixed_startup_cost_yuan_per_start=params['fixed_startup_cost_yuan_per_start'])
                 sheet['thermal'][uid] = dict(fuel_price=fuel, heat_rate=heat, variable_om=vom)
-                formulas = dict(marginal='fuel_price * heat_rate + variable_om',
+                formulas = dict(heat_rate='reference_heat_rate * clip((pmax/reference_capacity)**(-0.08),0.90,1.15)',
+                                variable_om='reference_variable_om * clip((pmax/reference_capacity)**(-0.05),0.90,1.15)',
+                                marginal='fuel_price * incremental_heat_rate + variable_om',
                                 online='reference_online * pmax / reference_capacity',
                                 startup='reference_startup * pmax / reference_capacity')
             elif typ in ('wind', 'pv'):
@@ -175,7 +211,7 @@ def generate_research_defaults(cfg) -> dict:
             evidence[uid] = dict(type=typ, capacity_mw=cap, technical_parameters=tech,
                                  parameters=params, formulas=formulas, algorithm_version=ALGORITHM_VERSION,
                                  source_kind=SOURCE_KIND, source=SOURCE, record_hash=research_record_hash(rec),
-                                 capacity_scope='MW/MWh constrain quantities; do not scale marginal CNY/MWh')
+                                 capacity_scope='Thermal capacity corrects incremental heat rate/VOM by bounded research factors; MW/MWh otherwise constrain quantities, never multiply marginal CNY/MWh by MW')
     return dict(profile=profile, worksheet=sheet, evidence=evidence)
 
 

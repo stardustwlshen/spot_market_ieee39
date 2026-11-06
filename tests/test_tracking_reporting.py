@@ -7,18 +7,22 @@ from smm import full
 
 
 def evidence(monkeypatch, soft=True):
-    cfg=NS(dt=.25,base={'season':'wet'},mode={'realtime':{'hydro':'window_end_da'}},
-        units={'hydro':[dict(id='H',seasons={'wet':dict(vmin=0.,vmax=200.,qeco=0.)})]})
+    qin=1/.09  # Declared legacy natural inflow, independently checked in both stages.
+    cfg=NS(T=1,dt=.25,base={'season':'wet','forecast':{'model':'legacy_v1'}},
+        mode={'realtime':{'hydro':'window_end_da'}},
+        units={'hydro':[dict(id='H',seasons={'wet':dict(vmin=0.,vmax=200.,qeco=0.,qin=qin)})]})
     if soft: cfg.mode['realtime']['tracking_policy']={'mode':'soft_deliverable_energy','penalty_yuan_per_discharge_mwh':1000.}
-    def snap(volume, qin, target=None):
-        return dict(Ph={'H':np.array([0.])},Vh={'H':np.array([volume])},Qout={'H':np.array([0.])},delta={('H',0):np.array([1])},
+    def snap(volume, qin, target=None, *, outflow=0.):
+        return dict(Ph={'H':np.array([0.])},Vh={'H':np.array([volume])},Qout={'H':np.array([outflow])},delta={('H',0):np.array([1])},
             hydro_constraints={'H':dict(p_start_mw=0.,v_start_1e4m3=100.,qin_m3s=[qin],upstream_in_m3s=[0.],
                 ramp_up_limit_mw=[0.],ramp_down_limit_mw=[0.],v_end_target_1e4m3=target,
                 terminal_kind='soft_da_window_end' if soft else 'hard_da_window_end',
                 tracking_slack_up_1e4m3=1.,tracking_slack_down_1e4m3=0.)})
-    da=NS(case=NS(cfg=cfg),model=object()); dasn=snap(100.,0.)
+    # DA releases the declared inflow; RT retains it. The 1e4m3 difference is
+    # an economic target deviation, not invented stage-dependent natural water.
+    da=NS(case=NS(cfg=cfg),model=object()); dasn=snap(100.,qin,outflow=qin)
     monkeypatch.setattr(full.rolling,'snapshot',lambda m:dasn)
-    rr=NS(rt=[{'t':0,'snap':snap(101.,1/.09,100.)}],states=[NS(hydro={'H':100.},hydro_p={'H':0.})])
+    rr=NS(rt=[{'t':0,'snap':snap(101.,qin,100.)}],states=[NS(hydro={'H':100.},hydro_p={'H':0.})])
     return da,rr
 
 
@@ -29,6 +33,7 @@ def test_soft_physical_valid_nonzero_target_deviation_passes(monkeypatch):
     assert out['hydro_tracking_target_deviation_max_1e4m3']==1.
     assert out['hydro_tracking_equation_max_err_1e4m3']==0.
     assert out['hydro_window_terminal_max_err_1e4m3']==0.
+    assert out['hydro_water_balance_max_err_1e4m3']==0.
 
 
 @pytest.mark.parametrize('corruption',['slack','target','water','missing','nan'])
@@ -40,6 +45,23 @@ def test_soft_tracking_fail_closed(monkeypatch,corruption):
     if corruption=='missing':del meta['tracking_slack_up_1e4m3']
     if corruption=='nan':meta['tracking_slack_up_1e4m3']=float('nan')
     assert not full.hydro_window_checks(da,rr)['hydro_window_constraints_satisfied']
+
+
+@pytest.mark.parametrize('corruption',['water_with_valid_source','coherent_but_false_source'])
+def test_soft_tracking_cannot_hide_water_or_source_corruption(monkeypatch,corruption):
+    da,rr=evidence(monkeypatch);sn=rr.rt[0]['snap'];meta=sn['hydro_constraints']['H']
+    if corruption=='water_with_valid_source':
+        sn['Qout']['H'][0]=1.  # Source remains valid; reported stock omits this release.
+    else:
+        meta['qin_m3s']=[0.];sn['Vh']['H'][0]=100.
+        meta['tracking_slack_up_1e4m3']=0.  # Internally balanced, but false natural source.
+    out=full.hydro_window_checks(da,rr)
+    assert not out['hydro_window_constraints_satisfied']
+    if corruption=='water_with_valid_source':
+        assert out['hydro_window_checks_available']
+        assert out['hydro_water_balance_max_err_1e4m3']==pytest.approx(.09)
+    else:
+        assert not out['hydro_window_checks_available']
 
 
 def test_old_hard_target_remains_strict(monkeypatch):

@@ -5,6 +5,7 @@ import pandas as pd
 import streamlit as st
 
 from unit_input_view import LABELS, parameter_rows
+from unit_parameter_help import field_help, field_readonly, effective_quote_rows
 from smm.network import build_network
 from smm.unit_editor import TYPES, catalog, scene_fingerprint, unit_template, prepare_unit_edit, apply_unit_edit
 
@@ -18,35 +19,65 @@ _PRIMARY = {'thermal': ['pmax', 'pmin', 'ramp'], 'renewable': ['cap', 'profile']
             'pumped': ['n_units', 'unit_gen_max', 'unit_pump']}
 
 
-def _field(value, path, prefix, *, disabled=False):
+def _field(value, path, prefix, *, disabled=False, family=None, unit=None):
+    unit = unit or {}
     name = path[-1]
     label = ' / '.join(_LABELS.get(x, x) for x in path)
     key = prefix + ':' + '.'.join(path)
     if isinstance(value, dict):
-        return {k: _field(v, path + (k,), prefix, disabled=disabled) for k, v in value.items()}
+        return {k: _field(v, path + (k,), prefix, disabled=disabled, family=family, unit=unit) for k, v in value.items()}
+    disabled = disabled or field_readonly(family, path, unit)
+    help_text = field_help(family, path, unit)
     if name == 'zones':
         frame = pd.DataFrame(value, columns=['下限（MW）', '上限（MW）'])
-        st.caption(label)
+        st.caption(label, help=help_text)
         result = st.data_editor(frame, hide_index=True, num_rows='dynamic', key=key, disabled=disabled)
         return result.values.tolist()
     if isinstance(value, bool):
-        return st.checkbox(label, value=value, key=key, disabled=disabled)
+        return st.checkbox(label, value=value, key=key, disabled=disabled, help=help_text)
     if name in _ENUMS:
         options = list(_ENUMS[name])
         if value not in options:
             options = [value, *options]  # Preserve invalid legacy input until deliberately repaired.
         return st.selectbox(label, options, index=options.index(value), key=key,
-                            format_func=lambda x: _NAMES.get(x, x), disabled=disabled)
+                            format_func=lambda x: _NAMES.get(x, x), disabled=disabled, help=help_text)
     if name == 'upstream':
-        value = st.text_input(label + '（留空表示无上游）', value=value or '', key=key, disabled=disabled)
+        value = st.text_input(label + '（留空表示无上游）', value=value or '', key=key, disabled=disabled, help=help_text)
         return value.strip() or None
     if value is None:
-        active = st.checkbox('设置' + label + '（不选表示不设置）', value=False, key=key+':set', disabled=disabled)
-        number = st.number_input(label, value=0., key=key+':number', disabled=disabled)
+        active = st.checkbox('设置' + label + '（不选表示不设置）', value=False, key=key+':set', disabled=disabled, help=help_text)
+        number = st.number_input(label, value=0., key=key+':number', disabled=disabled, help=help_text)
         return number if active else None
     if isinstance(value, (float, int)):
-        return st.number_input(label, value=value, key=key, disabled=disabled)
-    return st.text_input(label, value=str(value), key=key, disabled=disabled)
+        if name in ('ut', 'dt', 'hours'):
+            value = float(value)  # Hour durations are not integer counters.
+        return st.number_input(label, value=value, key=key, disabled=disabled, help=help_text)
+    edited = st.text_input(label, value=str(value), key=key, disabled=disabled, help=help_text)
+    return value if field_readonly(family, path, unit) else edited
+
+
+def _hydro_commitment_editor(candidate, prefix, disabled, active):
+    from smm.hydro_commitment import research_initial
+    previous = candidate.get('commitment', {})
+    if not active:
+        candidate['commitment'] = {**previous, 'mode': 'legacy_aggregate'}
+        st.caption('旧模式不约束水电最小开停时间。')
+        return
+    declaration = copy.deepcopy(previous) if previous.get('initial_units') else research_initial(candidate)
+    st.caption('逐台研究初态，可修改；不是设备实测。默认已持续1小时，修改最小时长不会自动改此值。')
+    frame = pd.DataFrame(declaration['initial_units'])
+    edited = st.data_editor(frame, hide_index=True, num_rows='dynamic', key=prefix+':hydro_initial_units',
+                           disabled=disabled, column_config={
+        'unit_id': st.column_config.TextColumn('机组编号'),
+        'online': st.column_config.CheckboxColumn('在线'),
+        'elapsed_h': st.column_config.NumberColumn('已持续时间（h）', min_value=0.),
+        'elapsed_kind': st.column_config.SelectboxColumn('时长来源',options=['exact','lower_bound'],
+            help='exact为声明的模拟时长；lower_bound为保守下界，未知历史可明确填下界0。')})
+    rows = edited.to_dict('records')
+    candidate['commitment'] = dict(schema_version=1, mode='unit_duration_v1',
+                                  initial_source='research_assumption', initial_units=rows)
+    candidate['init_units_on'] = sum(r.get('online') is True for r in rows)
+    st.caption('接续实际状态在多日任务入口查看；复制修改后应作为新的研究起点，不覆盖历史。')
 
 
 def _forget_quote_widgets(name):
@@ -62,7 +93,7 @@ def render_unit_editor(cfg, name, *, disabled=False):
     if notice:
         st.success(notice)
     with st.expander('编辑或新增机组', expanded=session_key in st.session_state):
-        st.caption('只作用于当前场景。历史运行与原报价版本保持不变；取消不保存。所有自动参数、成本和报价均为模拟假设，不是实测数据。')
+        st.caption('只编辑当前场景；取消不保存。新增默认值为模拟假设。')
         if session_key not in st.session_state:
             action = st.radio('机组操作', ['编辑现有机组', '新增机组', '复制机组'], horizontal=True,
                               key=session_key+':action', disabled=disabled)
@@ -93,7 +124,7 @@ def render_unit_editor(cfg, name, *, disabled=False):
                 count = st.number_input('机组台数', value=1, min_value=1, key=session_key+':count:'+kind, disabled=disabled) if family in ('hydro', 'pumped') else 1
                 energy = st.number_input('电池能量容量（MWh）', value=200., min_value=.001,
                                          key=session_key+':energy', disabled=disabled) if family == 'storage' else 200.
-                st.caption('先填编号、节点和容量即可。下一步可查看、更改初态、效率、爬坡、启停、水文与库容等完整默认值。')
+                st.caption('下一步核对初态、效率、爬坡与库容等参数。')
             if st.button('核对技术参数', key=session_key+':open', disabled=disabled):
                 try:
                     unit = copy.deepcopy(source) if source else unit_template(kind, uid, bus, capacity, n_units=count, energy=energy)
@@ -107,14 +138,25 @@ def render_unit_editor(cfg, name, *, disabled=False):
                     st.rerun()
                 except (ValueError, TypeError, OSError, RuntimeError) as exc:
                     st.error('未进入编辑：' + str(exc))
-            st.caption('固定联络线是外部计划，不作为新发电机组新增；其负荷口径使用下方场景设置。')
+            st.caption('固定联络线按外部计划处理。')
             return
         editor = st.session_state[session_key]
         original = editor['unit']
         family = editor['family']
         st.markdown('**' + original['id'] + ' · 核对后保存**')
-        st.caption('成本仅更新本机组可确认的模拟记录；真实或自定义成本保持不变。编辑容量不会暗中缩放当前报价。输入检查不等于全时段可行性证明，运行仍会校核供需与约束。')
+        st.caption('保留手工报价与自定义成本；参数检查不代表全时段可行。')
+        rows = effective_quote_rows(cfg, original, family)
+        if rows:
+            with st.expander('当前生效值与来源'):
+                st.dataframe(pd.DataFrame(rows), hide_index=True, width='stretch')
+                st.caption('当前申报在上方报价区修改；技术缺省值不会覆盖已有报价。')
         prefix = session_key+':fields:'+str(editor['token'])
+        hydro_enabled = False
+        if family == 'hydro':
+            hydro_enabled = st.checkbox('启用逐台最小开停时间',
+                value=original.get('commitment', {}).get('mode') == 'unit_duration_v1',
+                key=prefix+':hydro_commitment_enabled', disabled=disabled,
+                help='每台分别约束最小开停时间；跨午夜未完成部分继续保留。此处只改草稿，保存后生效。')
         with st.form(session_key+':form'):
             candidate = copy.deepcopy(original)
             buses = build_network(cfg).buses
@@ -122,18 +164,23 @@ def render_unit_editor(cfg, name, *, disabled=False):
             candidate['bus'] = st.selectbox('接入节点', bus_options,
                 index=bus_options.index(original['bus']), key=prefix+':bus', disabled=disabled)
             for field in _PRIMARY[family]:
-                candidate[field] = _field(original[field], (field,), prefix, disabled=disabled)
+                candidate[field] = _field(original[field], (field,), prefix, disabled=disabled, family=family, unit=original)
+            if family == 'hydro':
+                _hydro_commitment_editor(candidate, prefix, disabled, hydro_enabled)
             with st.expander('其余技术参数与初始状态（可修改）'):
                 for field, value in original.items():
-                    if field not in {'id', 'type', 'bus', *_PRIMARY[family]}:
-                        candidate[field] = _field(value, (field,), prefix, disabled=disabled)
+                    if field not in {'id', 'type', 'bus', 'commitment', *_PRIMARY[family]}:
+                        if family == 'hydro' and field == 'init_units_on' and candidate.get('commitment', {}).get('mode') == 'unit_duration_v1':
+                            st.caption(f"初始在线台数：{candidate['init_units_on']}（由逐台状态计算）")
+                            continue
+                        candidate[field] = _field(candidate.get(field, value), (field,), prefix, disabled=disabled, family=family, unit=candidate)
             reset_bid = False
             if editor['original_id'] is not None:
                 reset_bid = st.checkbox('仅为此机组重新生成模拟报价（旧报价完整备份）',
                                         key=prefix+':reset_bid', disabled=disabled)
-                st.caption('默认保留原报价。容量、SOC或库容改动如使报价不兼容，保存会明确报错；勾选后只重建此机组。')
+                st.caption('报价不兼容时拒绝保存；勾选后仅重建本机组报价。')
             else:
-                st.caption('启用的新增机组将同时生成对应模拟成本依据和当前报价，其他机组报价不变。复制模板仅复制技术参数，不复制原机组的真实成本。')
+                st.caption('新增机组生成模拟成本与报价；复制不沿用原机组的真实成本。')
             check = st.form_submit_button('检查参数', disabled=disabled)
             save = st.form_submit_button('保存机组', type='primary', disabled=disabled)
             cancel = st.form_submit_button('取消编辑')

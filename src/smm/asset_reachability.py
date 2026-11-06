@@ -68,7 +68,9 @@ def attach(m):
         if name in ('xg','xp'):
             absolute=case.t0+t
             if t==-1:return md.pumped[unit]['init'][name]
-            if absolute<0:return int(md.pumped[unit].get('init_mode','idle')==('gen' if name=='xg' else 'pump'))
+            if absolute<0:
+                from .state_bridge import pumped_before
+                return pumped_before(case.cfg, case.init or {}, unit, name, absolute)
             hist=(case.init or {}).get('pumped_hist',{}).get(unit,{}).get(name,[])
             if absolute>=len(hist) or not math.isfinite(float(hist[absolute])) or float(hist[absolute]) not in (0.,1.):
                 raise ValueError(f'资产可达性后缀缺少抽蓄已执行工况历史 {unit}/{name}[{absolute}]')

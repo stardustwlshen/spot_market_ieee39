@@ -47,3 +47,23 @@ def test_unrequested_render_is_not_invented_and_successful_render_passes(monkeyp
     assert validator.main()==0 and not seen
     monkeypatch.setattr(sys,'argv',['validate_runs.py','good','--render'])
     assert validator.main()==0 and len(seen)==1
+
+
+@pytest.mark.parametrize('missing', [None, '日前', '日内·实时滚动', '最终结果'])
+def test_render_check_uses_current_shared_main_sections(monkeypatch, tmp_path, missing):
+    from types import SimpleNamespace
+    from streamlit.testing.v1 import AppTest
+    import common
+    from result_navigation import MAIN_SECTIONS
+    original = common.all_results
+    labels = [label for label in MAIN_SECTIONS if label != missing]
+    # Include nested tabs, which must not be confused with the main stage blocks.
+    labels += ['实时执行与前瞻', '日内轮次与交接', '电能量结算']
+    at = SimpleNamespace(exception=[], tabs=[SimpleNamespace(label=label) for label in labels],
+                         get=lambda kind: [])
+    at.run = lambda: at
+    monkeypatch.setattr(AppTest, 'from_file', lambda *args, **kwargs: at)
+    result = validator.render_check(tmp_path)
+    assert result['渲染异常数'] == 0
+    assert result['三大块渲染'] is (missing is None)
+    assert common.all_results is original

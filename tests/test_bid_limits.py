@@ -15,6 +15,7 @@ def errors(cfg, bids):
 
 def test_default_profile_preserves_generated_quantities_and_prices():
     cfg = load_config()
+    cfg.base['default_bid_model']='legacy_v1'  # Historical fixed-price profile compatibility
     old = copy.deepcopy(cfg)
     old.mode['price_limits']['bid_min'] = 0
     old.mode['bid_rules'] = {'profile': 'generic'}
@@ -51,7 +52,7 @@ def test_settlement_cap_not_a_bid_cap_and_type_override_is_independent():
     cfg = load_config(); bids = default_bids(cfg)
     cfg.mode['price_limits']['clear_max'] = 50
     assert not errors(cfg, bids)
-    cfg.mode['bid_rules']['by_type'] = {'coal': {'price_max': 400}}
+    cfg.mode['bid_rules']['by_type'] = {'coal': {'price_max': 300}}
     assert any(i.unit_id == 'C1' and i.rule == '申报限价' for i in errors(cfg, bids))
     assert not any(i.unit_id == 'GT' and i.rule == '申报限价' for i in errors(cfg, bids))
 
@@ -109,7 +110,9 @@ def test_invalid_input_fields_rejected_not_clipped(mutation):
 
 
 def test_load_and_save_reject_invalid_before_version_write(tmp_path):
-    cfg=replace(load_config(),root=tmp_path);b=default_bids(cfg);b['units']['C1']['segments'][-1]['price']=801
+    cfg=replace(load_config(),root=tmp_path)
+    cfg.base['default_bid_model']='legacy_v1'  # Isolate invalid-save atomicity, no cost archives
+    b=default_bids(cfg);b['units']['C1']['segments'][-1]['price']=801
     with pytest.raises(ValueError,match='报价校验未通过'):
         save_bids(cfg,b)
     assert not bid_dir(cfg).exists()

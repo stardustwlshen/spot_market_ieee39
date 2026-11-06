@@ -1,6 +1,7 @@
 # 运行配置。标“假设值”的均非规则原文数值。
 date: "2026-07-15"
 season: wet               # wet 丰水期 / dry 枯水期
+default_bid_model: cost_basis_v2  # 显式独立成本+报价策略；旧场景缺键保留legacy_v1
 rule_set: MKT             # 统一市场规则（config/modes.yaml，参考川/甘）
 periods: 96
 dt_h: 0.25

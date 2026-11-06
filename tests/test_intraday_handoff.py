@@ -43,7 +43,7 @@ def test_intraday_reference_maps_relative_values_to_absolute(da_result, monkeypa
     # periods. Supply correctly sized solver outputs instead of relying on truncation.
     short = {kind: {u: {key: value[:T-tau] if isinstance(value, np.ndarray) else value
                         for key, value in rec.items()} for u, rec in units.items()} for kind, units in rel.items()}
-    monkeypatch.setattr(scuc, "state_values", lambda model: short)
+    monkeypatch.setattr(scuc, "state_values", lambda model, **kwargs: short)
     ref = rolling.intraday_reference(da_plan, da_plan, dict(tau=tau, snap=snap, model=m), T)
     for kind, units in rel.items():
         for u, rec in units.items():
@@ -70,7 +70,8 @@ def _capture(monkeypatch):
         seen["vplan"] = plan
         return dict(state_value=[], state_band=[])
 
-    def fake_case(da_case, c2, t, t1, issue, first, state, fixed, term, stage):
+    def fake_case(da_case, c2, t, t1, issue, first, state, fixed, term, stage, *, selected_inputs=None):
+        assert selected_inputs is None  # Historical fixture has no causal source.
         seen["fixed"] = fixed
         raise _Stop()
 
@@ -93,7 +94,7 @@ def test_rt_uses_intraday_reference_and_falls_back(da_result, monkeypatch, sourc
     gt = [u["id"] for u in cfg.units["thermal"] if u["type"] == "gas_gt"]
     plan = copy.deepcopy(da_plan)
     seen = _capture(monkeypatch)
-    with pytest.raises(Exception):
+    with pytest.raises(_Stop):
         rolling.run_rt_period(d.case, da_plan, plan, cfg, rolling.initial_state(cfg), 0, ref=ref, id_active=id_active)
     assert (seen["vplan"]["E"] is ref["E"]) == expect_ref
     locked = {g for (g, _k) in seen["fixed"]["u"]}
@@ -110,9 +111,18 @@ def test_per_resource_switch_and_free_gt(da_result, monkeypatch):
     bounds = {s["id"]: (s["soc_min"] * s["ecap"], s["soc_max"] * s["ecap"]) for s in cfg.units["storage"]}
     ref["E"] = {s: np.clip(a + 0.5, *bounds[s]) for s, a in ref["E"].items()}
     seen = _capture(monkeypatch)
-    with pytest.raises(Exception):
+    with pytest.raises(_Stop):
         rolling.run_rt_period(d.case, da_plan, da_plan, cfg, rolling.initial_state(cfg), 0, ref=ref, id_active=True)
     assert seen["vplan"]["E"] is da_plan["E"]          # 储能开关关：仍用日前
     assert seen["vplan"]["Vh"] is ref["Vh"]            # 水电开关开：用日内
     gt = {u["id"] for u in cfg.units["thermal"] if u["type"] == "gas_gt"}
     assert not gt & {g for (g, _k) in seen["fixed"]["u"]}   # free：实时仍可调 GT
+
+
+def test_capture_accepts_selected_input_keyword_and_keeps_stop_type(monkeypatch):
+    seen = _capture(monkeypatch)
+    fixed = {'u': {('G', 0): 1}}
+    with pytest.raises(_Stop):
+        rolling.make_window_case(None, None, 0, 1, 0, False, None,
+                                 fixed, {}, 'RT', selected_inputs=None)
+    assert seen['fixed'] is fixed

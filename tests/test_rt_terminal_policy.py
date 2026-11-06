@@ -108,16 +108,20 @@ def test_id_nonphysical_errors_are_never_fallback(monkeypatch,context,error):
 
 
 def test_planned_soft_day_end_does_not_retry_unchanged_physics(monkeypatch,context):
-    from test_handoff_integrity import install_window_probe
+    from test_handoff_integrity import da_case_probe, install_window_probe
     cfg,plan=context;attempts=[]
     def fail(case,**kwargs):
         attempts.append(case)
         raise scuc.InfeasibleModelError('physical',phase='scuc')
     install_window_probe(monkeypatch,fail)
     state=rolling.initial_state(cfg);state.t=95
-    with pytest.raises(RuntimeError,match='physical'):
-        rolling.run_rt_period(NS(cfg=cfg),plan,plan,cfg,state,95)
+    with pytest.raises(RuntimeError,match='physical') as exc:
+        rolling.run_rt_period(da_case_probe(cfg),plan,plan,cfg,state,95)
     assert len(attempts)==1
+    assert isinstance(exc.value.__cause__,scuc.InfeasibleModelError)
+    assert exc.value.__cause__.phase=='scuc'
+    assert attempts[0].terminal['state_band_terminal_policy']['mode']=='soft'
+    assert not attempts[0].terminal.get('state_band_soft',False)
 
 
 def test_model_accepts_normalized_legacy_hard_policy_without_penalty():

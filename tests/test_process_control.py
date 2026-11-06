@@ -276,7 +276,7 @@ def test_cli_worker_native_process_initialization_and_tiny_da(tmp_path,mode):
     # A real separate Python worker executes the production CLI. Only the case
     # preparation uses the existing 2-bus hydro fixture; optimization is real.
     wrapper=tmp_path/'worker.py';out=tmp_path/'中文 路径'/'run'
-    wrapper.write_text('''import sys, os, runpy
+    wrapper.write_text('''import sys, os, runpy, copy
 from pathlib import Path
 from types import SimpleNamespace
 root=Path(sys.argv[1]);out=Path(sys.argv[2]);testmode=sys.argv[3]
@@ -289,6 +289,15 @@ scenario.SCEN_DIR=out.parent/'scenarios'
 scene=scenario.scenario_path('测试场景');(scene/'config').mkdir(parents=True)
 for name,data in [('base',case.cfg.base),('units',case.cfg.units),('modes',{case.cfg.rule_set:case.cfg.mode})]:
     (scene/'config'/f'{name}.yaml').write_text(yaml.safe_dump(data,allow_unicode=True),encoding='utf-8')
+# Explicit synthetic cost records and the actual tiny-case offers must be frozen.
+# Do not let input preparation silently generate different bids or skip validation.
+from smm.research_defaults import generate_research_defaults
+from smm.bids import save_bids
+cost=generate_research_defaults(case.cfg)
+for name,data in [('fixed_costs',cost['profile']),('bid_cost_basis',cost['worksheet'])]:
+    (scene/'config'/f'{name}.yaml').write_text(yaml.safe_dump(data,allow_unicode=True),encoding='utf-8')
+fixture_cfg=copy.deepcopy(case.cfg);fixture_cfg.root=scene
+save_bids(fixture_cfg,case.bids,new_version=False)
 def prepare(cfg,*a,**kw):case.cfg=cfg;return case
 pipeline.prepare=prepare
 if testmode=='darwin_branch':process_control.sys=SimpleNamespace(platform='darwin')
@@ -317,6 +326,14 @@ runpy.run_path(str(root/'scripts/run_scenario.py'),run_name='__main__')
         assert meta['executed_periods']==0 and meta['settled'] is False
         assert meta['completed_scope']=='da_only'
         assert (out/'da'/'summary.json').exists()
+        snapshot=out/'scenario_snapshot'
+        assert (snapshot/'config'/'fixed_costs.yaml').exists()
+        assert (snapshot/'config'/'bid_cost_basis.yaml').exists()
+        archived=json.loads(next((snapshot/'bids').rglob('bids_v1.json')).read_text())
+        resolved=json.loads((out/'resolved_bids.json').read_text())
+        assert archived['version']==resolved['version']==1
+        assert archived['units']==resolved['units']
+        assert set(resolved['units'])=={'CHEAP','LOCAL','H1'}
 
 
 def test_child_exit_before_identity_capture_does_not_leave_permanent_starting(isolated,monkeypatch):

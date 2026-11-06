@@ -69,6 +69,8 @@ def _load_config_unlocked(rule_set=None, season=None, overrides=None, root=None)
 
 def filter_enabled(units: dict) -> dict:
     """去掉 enabled: false 的资源（水电/抽蓄的可选电站），其 id 记入 units["_disabled"]（报价校验时忽略）。"""
+    from .input_validation import validate_resource_enabled
+    validate_resource_enabled(units)
     units = dict(units)
     units.setdefault("pumped", [])
     units["pumped"] = units["pumped"] or []

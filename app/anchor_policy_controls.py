@@ -26,25 +26,25 @@ def render_anchor_policy(cfg, scenario, disabled=False):
     mode = storage.get('mode', 'value')
     if mode == 'value':
         current = '价值法'
-        st.info('当前储能/抽蓄采用价值法：使用所选参考的状态价值与中间偏差带，物理约束保持。')
+        st.info('当前储能/抽蓄采用价值法。')
         policy = cfg.mode['realtime'].get('value_method', {}).get('terminal_policy') or {}
         terminal_mode = policy.get('mode', 'hard')
         if terminal_mode == 'soft':
             rate = policy.get('penalty_yuan_per_discharge_mwh')
             rate_label = f'{rate:g}' if isinstance(rate, (int, float)) and not isinstance(rate, bool) else '未记录'
-            st.caption(f'当前实时日末为计划软目标，罚价 {rate_label} 元/可放电MWh（可配置研究假设，不是市场规则或结算付款）。'
-                       '储能/抽蓄对日前日末目标的双侧偏差计成本；水电若采用价值法，仅对低于原日末下限的不足计成本。'
-                       '从首次求解起即允许带成本偏差，不是硬目标失败后的应急兜底，不保证偏差在某百分比以内。'
-                       '中间参考带仍按配置使用，取消严格回归日末的可达包络，日末不再额外保留±2%硬带。'
-                       '日前、日内终态政策不变；日末延续价值仍为0。')
+            st.caption(f'实时日末：计划软目标，罚价 {rate_label} 元/可放电MWh（研究假设，不是市场规则或结算付款）；不保证日末偏差幅度。')
+            with st.expander('价值法与日末目标说明', expanded=False):
+                st.caption('使用所选参考的状态价值与中间偏差带，物理约束保持。'
+                           '储能/抽蓄计双侧偏差，水电价值法仅对日末不足计成本。'
+                           '从首次求解起即允许偏差，不是硬目标失败后的应急兜底；日末不设额外±2%硬带。'
+                           '日前、日内终态政策不变；日末延续价值仍为0。')
         elif terminal_mode == 'hard':
-            st.caption('当前实时日末采用原硬目标政策；历史场景缺少新日末政策配置时也保持hard，浏览不会自动改成软目标。'
-                       '日末延续价值为0与硬目标要求并不冲突。')
+            st.caption('实时日末采用原硬目标政策；历史场景缺少新日末政策配置时也保持hard。')
         else:
             st.warning(f'实时日末政策“{terminal_mode}”未识别；请核对本场景配置，不推断软/硬。')
     else:
         current = '固定日前充放电' if mode == 'fixed_da' else labels.get(storage.get('anchor'), '已保存策略')
-        st.info(f'当前储能/抽蓄采用“{current}”。浏览本页不会改变场景或历史结果。')
+        st.info(f'当前储能/抽蓄采用“{current}”。')
     with st.expander('可选研究策略：两小时锚点（改变本场景）', expanded=False):
         st.caption(f'这是可选模型切换，不是升级要求。采用后将本场景储能/抽蓄从“{current}”改为每两小时跟随日前状态的锚点策略；'
                    '明确不可行时才按既定规则尝试软化并记录。水电配置和已保存结果不变，不能据此保证计算更优。')

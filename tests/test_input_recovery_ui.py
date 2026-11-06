@@ -77,6 +77,13 @@ def test_startup_modes_unit_edit_isolation_and_saved_archives(scenario, uniform)
 
 
 def test_cost_preview_requires_acceptance_and_preserves_other_units_and_all_inputs(scenario):
+    # v5 already starts at its cost anchor. Change the explicit test cost first
+    # so acceptance still exercises a real price change, not an idempotent preview.
+    import yaml
+    cost_path = scenario.scenario_path('默认') / 'config/fixed_costs.yaml'
+    cost = yaml.safe_load(cost_path.read_bytes())
+    cost['units']['C1']['scalar_marginal_cost_yuan_per_mwh'] += 10
+    cost_path.write_text(yaml.safe_dump(cost, allow_unicode=True))
     at = open_app()
     key = key_for(at)
     initial = copy.deepcopy(at.session_state[key])
@@ -222,6 +229,13 @@ def test_hydro_outflow_limit_and_source_are_read_only_lossless(scenario, cap):
 
 
 def test_manual_replacement_requires_explicit_opt_in_and_acceptance(scenario):
+    # v5 already starts at its cost anchor. Change the explicit test cost first
+    # so acceptance still exercises a real price change, not an idempotent preview.
+    import yaml
+    cost_path = scenario.scenario_path('默认') / 'config/fixed_costs.yaml'
+    cost = yaml.safe_load(cost_path.read_bytes())
+    cost['units']['C1']['scalar_marginal_cost_yuan_per_mwh'] += 10
+    cost_path.write_text(yaml.safe_dump(cost, allow_unicode=True))
     at = open_app()
     key = key_for(at)
     amount = item(at.number_input, '空载报价（元/h）').value + 1
@@ -235,6 +249,7 @@ def test_manual_replacement_requires_explicit_opt_in_and_acceptance(scenario):
     item(at.button, '采用预览报价').click().run()
     assert not at.exception
     assert at.session_state[key]['units']['C1'] != manual['units']['C1']
+    assert at.session_state[key]['units']['C1']['noload_cost'] == amount  # Energy preview never resets online cost
     assert all(at.session_state[key]['units'][uid] == bid for uid, bid in manual['units'].items() if uid != 'C1')
 
 

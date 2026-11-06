@@ -31,6 +31,15 @@ def test_hydro_worker_failure_or_cancel_allows_new_run(tmp_path, monkeypatch, te
     (scene/'config').mkdir(parents=True);(scene/'data').mkdir()
     for filename,data in [('base',case.cfg.base),('units',case.cfg.units),('modes',{case.cfg.rule_set:case.cfg.mode})]:
         (scene/'config'/f'{filename}.yaml').write_text(yaml.safe_dump(data,allow_unicode=True))
+    # Prepare this synthetic scene's explicit cost records and actual fixture bids.
+    # No production fallback: input freezing must read the same declared inputs.
+    from smm.research_defaults import generate_research_defaults
+    from smm.bids import save_bids
+    cost = generate_research_defaults(case.cfg)
+    for filename, value in [('fixed_costs', cost['profile']), ('bid_cost_basis', cost['worksheet'])]:
+        (scene/'config'/f'{filename}.yaml').write_text(yaml.safe_dump(value,allow_unicode=True))
+    fixture_cfg=copy.deepcopy(case.cfg);fixture_cfg.root=scene
+    save_bids(fixture_cfg,case.bids,new_version=False)
     def prepare(cfg,*args,**kwargs):
         case.cfg=cfg
         return case

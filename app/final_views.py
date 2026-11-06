@@ -13,8 +13,8 @@ DA, RT, DIFF = '日前', '实时', '实时−日前'
 
 
 def _dt(R) -> float:
-    n = (R.get('summary') or {}).get('expected_periods') or 96
-    return 24.0 / float(n)
+    from smm.time_grid import result_time_grid
+    return result_time_grid(R)[1]
 
 
 def executed_periods(R) -> list[int]:
@@ -41,7 +41,7 @@ def _execution_scope(R):
     prefix = bool(periods) and periods == list(range(periods[-1] + 1))
     full_day = (summary.get('completed_scope') == 'full_day' and expected is not None
                 and executed == expected and periods == list(range(expected)))
-    return dict(periods=periods, expected=expected, full_day=full_day, prefix=prefix)
+    return dict(periods=periods, expected=expected, full_day=full_day, prefix=prefix, dt_h=(_dt(R) if expected is not None else None))
 
 
 def _state_end_label(scope):
@@ -53,7 +53,7 @@ def _state_end_label(scope):
     endpoint = f'第{periods[-1] + 1}段末'
     expected = scope.get('expected')
     if expected and 0 <= periods[-1] < expected:
-        minutes = 24 * 60 * (periods[-1] + 1) / expected
+        minutes = scope.get("dt_h", 24 / expected) * 60 * (periods[-1] + 1)
         if float(minutes).is_integer():
             endpoint += f'，{int(minutes) // 60:02d}:{int(minutes) % 60:02d}'
     label = '已执行前缀末' if scope.get('prefix') else '已执行末'
@@ -264,11 +264,16 @@ def settlement_identity(R):
     reconciliation = numeric(R.get('settlement_reconciliation'), ['residual'], '资金平衡对账')
     if reconciliation is not None:
         out['资金平衡残差 元'] = float(reconciliation.residual.abs().max())
+    from settlement_validation import cross_table_settlement_check
+    cross_errors, missing_checks = cross_table_settlement_check(R)
+    unavailable.extend(missing_checks)
+    if cross_errors:
+        out['跨表结算校验失败'] = '；'.join(cross_errors)
     if unavailable:
         out['未验证项'] = '；'.join(unavailable)
     errors = [v for k, v in out.items() if k.endswith('元')]
     # Known failures remain failures; incomplete evidence can never pass overall.
-    out['通过（<1 元）'] = False if any(v >= 1 for v in errors) else (None if unavailable else True)
+    out['通过（<1 元）'] = False if cross_errors or any(v >= 1 for v in errors) else (None if unavailable else True)
     return out
 
 
@@ -343,7 +348,8 @@ def render_final(R, *, buses, ll_da, ll_rt, report, lbl, sel, tabs=None):
     import plotly.graph_objects as go
     import streamlit as st
     from common import DA_COLOR, DIFF_SCALE, PALETTE, RT_COLOR, df_download, show_df, show_fig, style_fig
-    TIME = '时刻（每15分钟）'
+    from smm.time_grid import result_time_axis
+    TIME = result_time_axis(R)
     dt = _dt(R)
     periods = executed_periods(R)
     if not periods:

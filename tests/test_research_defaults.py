@@ -34,7 +34,7 @@ def test_types_capacity_scaling_and_separate_opportunity_costs():
     cfg = load_config()
     out = generate_research_defaults(cfg)
     units, sheet, evidence = out['profile']['units'], out['worksheet'], out['evidence']
-    assert [units[x]['scalar_marginal_cost_yuan_per_mwh'] for x in ['C1', 'C2', 'C3', 'CCGT', 'GT']] == [280, 280, 280, 405, 620]
+    assert [units[x]['scalar_marginal_cost_yuan_per_mwh'] for x in ['C1', 'C2', 'C3', 'CCGT', 'GT']] == pytest.approx([280, 277.4619066987628, 273.6224699514087, 405, 620])
     assert units['C2']['fixed_online_cost_yuan_per_h'] == pytest.approx(6000 * 725 / 646)
     assert units['C2']['fixed_startup_cost_yuan_per_start'] == pytest.approx(250000 * 725 / 646)
     assert units['W2']['scalar_marginal_cost_yuan_per_mwh'] == 8
@@ -101,7 +101,7 @@ def test_disabled_unknown_types_and_missing_fields():
 def test_legacy_recognition_is_exact_and_does_not_trust_labels():
     cfg = load_config()
     old = yaml.safe_load((Path(cfg.root) / 'config/fixed_costs.yaml').read_text())['units']
-    legacy = {uid: record for uid, record in old.items() if uid not in {'PV2', 'PV3'}}
+    legacy = {uid: record for uid, record in old.items() if uid not in {'PV2', 'PV3', 'ES4', 'ES5'}}
     assert len(legacy) == 13
     for uid, record in legacy.items():
         assert is_known_legacy_research_record(uid, record)
@@ -137,7 +137,7 @@ def test_legacy_worksheet_recognition_is_exact():
     old = yaml.safe_load((Path(cfg.root) / 'config/bid_cost_basis.yaml').read_text())
     for group in ('thermal', 'renewable_vom', 'hydro', 'storage', 'pumped'):
         for uid, record in old[group].items():
-            if uid in {'PV2', 'PV3'}:
+            if uid in {'PV2', 'PV3', 'ES4', 'ES5'}:
                 assert not is_known_legacy_worksheet_record(group, uid, record)
                 continue  # Added defaults must not be misidentified as original legacy records.
             assert is_known_legacy_worksheet_record(group, uid, record)

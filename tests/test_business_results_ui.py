@@ -19,7 +19,7 @@ def test_actual_results_business_first_and_technical_collapsed(monkeypatch):
     def _aux(m):  # 只选记录了辅助定价来源的完整存档（早期存档缺该字段，不能据此断言说明文字）
         try:return json.loads(Path(m['dir']).joinpath('summary.json').read_text()).get('da_summary',{}).get('pricing_source')=='bounded_auxiliary_pricing'
         except Exception:return False
-    # 开日内的存档按“日前/日内/实时/最终结果”分块（result_navigation 设计如此），本用例断言的是无日内存档的标签集
+    # 本用例选择无日内存档；三块结构也由独立的启用日内用例覆盖
     def _intraday(m):  # 同 3_结果.py 的 INTRADAY 判定
         try:return bool((json.loads(Path(m['dir']).joinpath('summary.json').read_text()).get('intraday') or {}).get('enabled'))
         except Exception:return False
@@ -33,8 +33,8 @@ def test_actual_results_business_first_and_technical_collapsed(monkeypatch):
     assert not at.exception
     # 第二轮J项：按阶段分块，每阶段同一组子页；最终结果以日前/实时直接对比为核心
     labels=[t.label for t in at.tabs]
-    assert all(label in labels for label in ['日前','日内/实时滚动','最终结果','关键指标','节点电价','窗口浏览','电价对比','两部制结算恒等式','收入与成本'])
-    assert labels.count('弃风弃光')==2 and labels.count('该阶段诊断')==2
+    assert all(label in labels for label in ['日前','日内·实时滚动','最终结果','关键指标','节点电价','窗口浏览','电价对比','两部制结算恒等式','收入与成本'])
+    assert labels.count('弃风弃光')==2 and labels.count('SCUC/SCED与定价结果')==2
     assert labels.index('诊断')>labels.index('最终结果')  # 诊断放在“最终结果”最后一个子页
     advanced=next(e for e in at.expander if e.label=='高级诊断与技术记录（按需查看）')
     assert advanced.proto.expanded is False
@@ -46,12 +46,16 @@ def test_actual_results_business_first_and_technical_collapsed(monkeypatch):
     assert any('逐主体出力与中标电量' in s.value for s in at.subheader)
     assert not any('间隙' in m.label for m in at.metric)
 
-    profit_table=next(d.value for d in at.dataframe if '模拟运营利润 元' in d.value and '净能量现金结算 元' in d.value)
+    # 限定全主体收入成本页，不误选逐主体总览，并按档案口径核对。
+    income_tab=next(t for t in at.tabs if t.label=='收入与成本')
     saved_profit=pd.read_csv(Path(full['dir'])/'operating_profit_by_unit.csv')
-    pd.testing.assert_series_equal(profit_table['模拟运营利润 元'].reset_index(drop=True),saved_profit.simulated_operating_profit_yuan,check_names=False)
-    assert (profit_table['模拟运营利润 元']<0).sum()==(saved_profit.simulated_operating_profit_yuan<0).sum()
+    spot='profit_basis' in saved_profit and saved_profit.profit_basis.eq('spot_energy_cash_v2').all()
+    profit_column='现货利润（模拟） 元' if spot else '历史口径利润 元'
+    profit_table=next(d.value for d in income_tab.dataframe if profit_column in d.value and '净能量现金结算 元' in d.value)
+    pd.testing.assert_series_equal(profit_table[profit_column].reset_index(drop=True),saved_profit.simulated_operating_profit_yuan,check_names=False)
+    assert (profit_table[profit_column]<0).sum()==(saved_profit.simulated_operating_profit_yuan<0).sum()
     # J项：线路负载/拓扑并入各阶段“电网与阻塞”子页（以小标题区分），不再单设页签
     assert '电网与阻塞' in [t.label for t in at.tabs]
     assert '主体与求解阶段' in [t.label for t in at.tabs]
     assert '电能量结算' in [t.label for t in at.tabs] and '成本与利润' in [t.label for t in at.tabs]
-    assert any('电网拓扑' in s.value for s in at.subheader)
+    assert {'日前系统接线图','实时系统接线图'} <= {s.value for s in at.subheader}

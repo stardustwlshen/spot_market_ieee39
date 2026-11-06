@@ -1,0 +1,666 @@
+{
+  "status": "implemented_in_isolated_copy_full_day_integration_pending",
+  "source_kind": "research_assumption_not_observed_plant_data",
+  "root_cash_costs_changed": false,
+  "default_bid_model": "cost_basis_v2",
+  "initial_generation_season": "wet",
+  "season_changes_do_not_reprice_archives": true,
+  "rows": [
+    {
+      "unit": "C1",
+      "cash_cost_unchanged": {
+        "type": "coal",
+        "scalar_marginal_cost_yuan_per_mwh": 280,
+        "fixed_online_cost_yuan_per_h": 6000,
+        "fixed_startup_cost_yuan_per_start": 250000
+      },
+      "curves": {
+        "segments": {
+          "v4": [
+            0.0,
+            300.0,
+            320.0,
+            340.0,
+            370.0,
+            410.0
+          ],
+          "v5": [
+            280.0,
+            280.0,
+            285.6,
+            294.0,
+            305.2,
+            319.2
+          ],
+          "quantity_bounds_unchanged": true
+        }
+      },
+      "startup_old_effective": 250000.0,
+      "startup_new_effective": 250000.0,
+      "noload_old": 6000.0,
+      "noload_new": 6000.0
+    },
+    {
+      "unit": "C2",
+      "cash_cost_unchanged": {
+        "type": "coal",
+        "scalar_marginal_cost_yuan_per_mwh": 297,
+        "fixed_online_cost_yuan_per_h": 6500,
+        "fixed_startup_cost_yuan_per_start": 280000
+      },
+      "curves": {
+        "segments": {
+          "v4": [
+            0.0,
+            300.0,
+            320.0,
+            340.0,
+            370.0,
+            410.0
+          ],
+          "v5": [
+            297.0,
+            297.0,
+            302.94,
+            311.85,
+            323.73,
+            338.58
+          ],
+          "quantity_bounds_unchanged": true
+        }
+      },
+      "startup_old_effective": 280000.0,
+      "startup_new_effective": 280000.0,
+      "noload_old": 6500.0,
+      "noload_new": 6500.0
+    },
+    {
+      "unit": "C3",
+      "cash_cost_unchanged": {
+        "type": "coal",
+        "scalar_marginal_cost_yuan_per_mwh": 315,
+        "fixed_online_cost_yuan_per_h": 7500,
+        "fixed_startup_cost_yuan_per_start": 320000
+      },
+      "curves": {
+        "segments": {
+          "v4": [
+            0.0,
+            300.0,
+            320.0,
+            340.0,
+            370.0,
+            410.0
+          ],
+          "v5": [
+            315.0,
+            315.0,
+            321.3,
+            330.75,
+            343.35,
+            359.1
+          ],
+          "quantity_bounds_unchanged": true
+        }
+      },
+      "startup_old_effective": 320000.0,
+      "startup_new_effective": 320000.0,
+      "noload_old": 7500.0,
+      "noload_new": 7500.0
+    },
+    {
+      "unit": "CCGT",
+      "cash_cost_unchanged": {
+        "type": "gas_ccgt",
+        "scalar_marginal_cost_yuan_per_mwh": 405,
+        "fixed_online_cost_yuan_per_h": 9000,
+        "fixed_startup_cost_yuan_per_start": 150000
+      },
+      "curves": {
+        "segments": {
+          "v4": [
+            570.0,
+            670.0,
+            690.0,
+            710.0,
+            730.0,
+            750.0
+          ],
+          "v5": [
+            405.0,
+            405.0,
+            413.1,
+            425.25,
+            441.45,
+            461.7
+          ],
+          "quantity_bounds_unchanged": true
+        }
+      },
+      "startup_old_effective": 150000.0,
+      "startup_new_effective": 150000.0,
+      "noload_old": 9000.0,
+      "noload_new": 9000.0
+    },
+    {
+      "unit": "GT",
+      "cash_cost_unchanged": {
+        "type": "gas_gt",
+        "scalar_marginal_cost_yuan_per_mwh": 620,
+        "fixed_online_cost_yuan_per_h": 4000,
+        "fixed_startup_cost_yuan_per_start": 40000
+      },
+      "curves": {
+        "segments": {
+          "v4": [
+            550.0,
+            650.0,
+            670.0,
+            690.0,
+            720.0,
+            750.0
+          ],
+          "v5": [
+            620.0,
+            620.0,
+            632.4,
+            651.0,
+            675.8,
+            706.8
+          ],
+          "quantity_bounds_unchanged": true
+        }
+      },
+      "startup_old_effective": 40000.0,
+      "startup_new_effective": 40000.0,
+      "noload_old": 4000.0,
+      "noload_new": 4000.0
+    },
+    {
+      "unit": "W1",
+      "cash_cost_unchanged": {
+        "type": "wind",
+        "scalar_marginal_cost_yuan_per_mwh": 8
+      },
+      "curves": {
+        "segments": {
+          "v4": [
+            0.0,
+            20.0,
+            40.0,
+            60.0,
+            80.0
+          ],
+          "v5": [
+            10.0,
+            20.0,
+            30.0,
+            40.0,
+            50.0
+          ],
+          "quantity_bounds_unchanged": true
+        }
+      }
+    },
+    {
+      "unit": "W2",
+      "cash_cost_unchanged": {
+        "type": "wind",
+        "scalar_marginal_cost_yuan_per_mwh": 11
+      },
+      "curves": {
+        "segments": {
+          "v4": [
+            0.0,
+            20.0,
+            40.0,
+            60.0,
+            80.0
+          ],
+          "v5": [
+            10.0,
+            20.0,
+            30.0,
+            40.0,
+            50.0
+          ],
+          "quantity_bounds_unchanged": true
+        }
+      }
+    },
+    {
+      "unit": "PV1",
+      "cash_cost_unchanged": {
+        "type": "pv",
+        "scalar_marginal_cost_yuan_per_mwh": 5
+      },
+      "curves": {
+        "segments": {
+          "v4": [
+            0.0,
+            20.0,
+            40.0,
+            60.0,
+            80.0
+          ],
+          "v5": [
+            10.0,
+            20.0,
+            30.0,
+            40.0,
+            50.0
+          ],
+          "quantity_bounds_unchanged": true
+        }
+      }
+    },
+    {
+      "unit": "PV2",
+      "cash_cost_unchanged": {
+        "type": "pv",
+        "scalar_marginal_cost_yuan_per_mwh": 5
+      },
+      "curves": {
+        "segments": {
+          "v4": [
+            0.0,
+            20.0,
+            40.0,
+            60.0,
+            80.0
+          ],
+          "v5": [
+            10.0,
+            20.0,
+            30.0,
+            40.0,
+            50.0
+          ],
+          "quantity_bounds_unchanged": true
+        }
+      }
+    },
+    {
+      "unit": "PV3",
+      "cash_cost_unchanged": {
+        "type": "pv",
+        "scalar_marginal_cost_yuan_per_mwh": 5
+      },
+      "curves": {
+        "segments": {
+          "v4": [
+            0.0,
+            20.0,
+            40.0,
+            60.0,
+            80.0
+          ],
+          "v5": [
+            10.0,
+            20.0,
+            30.0,
+            40.0,
+            50.0
+          ],
+          "quantity_bounds_unchanged": true
+        }
+      }
+    },
+    {
+      "unit": "H1",
+      "cash_cost_unchanged": {
+        "type": "hydro",
+        "scalar_marginal_cost_yuan_per_mwh": 6
+      },
+      "curves": {
+        "segments": {
+          "v4": [
+            100.0,
+            130.0,
+            160.0,
+            200.0,
+            240.0
+          ],
+          "v5": [
+            120.0,
+            130.0,
+            150.0,
+            180.0,
+            210.0
+          ],
+          "quantity_bounds_unchanged": true
+        }
+      }
+    },
+    {
+      "unit": "ES1",
+      "cash_cost_unchanged": {
+        "type": "storage",
+        "discharge_degradation_yuan_per_mwh": 25
+      },
+      "curves": {
+        "dis_segments": {
+          "v4": [
+            420.0,
+            450.0,
+            480.0
+          ],
+          "v5": [
+            410.0,
+            430.0,
+            440.0
+          ],
+          "quantity_bounds_unchanged": true
+        },
+        "ch_segments": {
+          "v4": [
+            300.0,
+            280.0,
+            260.0
+          ],
+          "v5": [
+            350.0,
+            330.0,
+            320.0
+          ],
+          "quantity_bounds_unchanged": true
+        }
+      }
+    },
+    {
+      "unit": "ES2",
+      "cash_cost_unchanged": {
+        "type": "storage",
+        "discharge_degradation_yuan_per_mwh": 35
+      },
+      "curves": {
+        "dis_segments": {
+          "v4": [
+            360,
+            380,
+            400
+          ],
+          "v5": [
+            430.0,
+            440.0,
+            460.0
+          ],
+          "quantity_bounds_unchanged": true
+        },
+        "ch_segments": {
+          "v4": [
+            340,
+            320,
+            300
+          ],
+          "v5": [
+            350.0,
+            340.0,
+            320.0
+          ],
+          "quantity_bounds_unchanged": true
+        }
+      }
+    },
+    {
+      "unit": "ES3",
+      "cash_cost_unchanged": {
+        "type": "storage",
+        "discharge_degradation_yuan_per_mwh": 45
+      },
+      "curves": {
+        "dis_segments": {
+          "v4": [
+            420.0,
+            450.0,
+            480.0
+          ],
+          "v5": [
+            440.0,
+            460.0,
+            470.0
+          ],
+          "quantity_bounds_unchanged": true
+        },
+        "ch_segments": {
+          "v4": [
+            300.0,
+            280.0,
+            260.0
+          ],
+          "v5": [
+            360.0,
+            340.0,
+            330.0
+          ],
+          "quantity_bounds_unchanged": true
+        }
+      }
+    },
+    {
+      "unit": "ES4",
+      "cash_cost_unchanged": {
+        "type": "storage",
+        "discharge_degradation_yuan_per_mwh": 25
+      },
+      "curves": {
+        "dis_segments": {
+          "v4": [
+            420.0,
+            450.0,
+            480.0
+          ],
+          "v5": [
+            410.0,
+            430.0,
+            440.0
+          ],
+          "quantity_bounds_unchanged": true
+        },
+        "ch_segments": {
+          "v4": [
+            300.0,
+            280.0,
+            260.0
+          ],
+          "v5": [
+            350.0,
+            330.0,
+            320.0
+          ],
+          "quantity_bounds_unchanged": true
+        }
+      }
+    },
+    {
+      "unit": "ES5",
+      "cash_cost_unchanged": {
+        "type": "storage",
+        "discharge_degradation_yuan_per_mwh": 25
+      },
+      "curves": {
+        "dis_segments": {
+          "v4": [
+            420.0,
+            450.0,
+            480.0
+          ],
+          "v5": [
+            410.0,
+            430.0,
+            440.0
+          ],
+          "quantity_bounds_unchanged": true
+        },
+        "ch_segments": {
+          "v4": [
+            300.0,
+            280.0,
+            260.0
+          ],
+          "v5": [
+            350.0,
+            330.0,
+            320.0
+          ],
+          "quantity_bounds_unchanged": true
+        }
+      }
+    },
+    {
+      "unit": "PS1",
+      "cash_cost_unchanged": {
+        "type": "pumped",
+        "generation_vom_yuan_per_mwh": 10,
+        "gen_start_yuan_per_unit_start": 2000,
+        "pump_start_yuan_per_unit_start": 4000
+      },
+      "curves": {
+        "gen_segments": {
+          "v4": [
+            420.0,
+            450.0,
+            480.0
+          ],
+          "v5": [
+            390.0,
+            410.0,
+            440.0
+          ],
+          "quantity_bounds_unchanged": true
+        },
+        "pump_segments": {
+          "v4": [
+            300.0
+          ],
+          "v5": [
+            290.0
+          ],
+          "quantity_bounds_unchanged": true
+        }
+      }
+    }
+  ],
+  "new_resource_generator_comparison": [
+    {
+      "type": "coal",
+      "capacity_mw": 100,
+      "old_v1_marginal": 280,
+      "new_v2_marginal": 321.4777067678805,
+      "new_v2_incremental_heat_rate": 10.35,
+      "new_v2_vom": 10.977706767880493,
+      "new_v2_online": 928.7925696594427,
+      "new_v2_startup": 38699.69040247679
+    },
+    {
+      "type": "coal",
+      "capacity_mw": 300,
+      "old_v1_marginal": 280,
+      "new_v2_marginal": 297.4773876817749,
+      "new_v2_incremental_heat_rate": 9.569547676997841,
+      "new_v2_vom": 10.390957371839724,
+      "new_v2_online": 2786.377708978328,
+      "new_v2_startup": 116099.07120743033
+    },
+    {
+      "type": "coal",
+      "capacity_mw": 600,
+      "old_v1_marginal": 280,
+      "new_v2_marginal": 281.63731588363856,
+      "new_v2_incremental_heat_rate": 9.05334375552897,
+      "new_v2_vom": 10.037003217769424,
+      "new_v2_online": 5572.755417956656,
+      "new_v2_startup": 232198.14241486066
+    },
+    {
+      "type": "coal",
+      "capacity_mw": 1000,
+      "old_v1_marginal": 280,
+      "new_v2_marginal": 270.5087050306395,
+      "new_v2_incremental_heat_rate": 8.690827119173628,
+      "new_v2_vom": 9.783891455430657,
+      "new_v2_online": 9287.925696594428,
+      "new_v2_startup": 386996.9040247678
+    },
+    {
+      "type": "gas_ccgt",
+      "capacity_mw": 100,
+      "old_v1_marginal": 405,
+      "new_v2_marginal": 465.01730148548734,
+      "new_v2_incremental_heat_rate": 7.475,
+      "new_v2_vom": 16.517301485487355,
+      "new_v2_online": 1310.0436681222707,
+      "new_v2_startup": 21834.061135371176
+    },
+    {
+      "type": "gas_ccgt",
+      "capacity_mw": 300,
+      "old_v1_marginal": 405,
+      "new_v2_marginal": 432.3612791916688,
+      "new_v2_incremental_heat_rate": 6.94544689804642,
+      "new_v2_vom": 15.63446530888358,
+      "new_v2_online": 3930.1310043668122,
+      "new_v2_startup": 65502.18340611354
+    },
+    {
+      "type": "gas_ccgt",
+      "capacity_mw": 600,
+      "old_v1_marginal": 405,
+      "new_v2_marginal": 409.349486894569,
+      "new_v2_incremental_heat_rate": 6.570793147823386,
+      "new_v2_vom": 15.101898025165855,
+      "new_v2_online": 7860.2620087336245,
+      "new_v2_startup": 131004.36681222708
+    },
+    {
+      "type": "gas_ccgt",
+      "capacity_mw": 1000,
+      "old_v1_marginal": 405,
+      "new_v2_marginal": 393.18207214765374,
+      "new_v2_incremental_heat_rate": 6.307683528387921,
+      "new_v2_vom": 14.721060444378512,
+      "new_v2_online": 13100.436681222707,
+      "new_v2_startup": 218340.61135371178
+    },
+    {
+      "type": "gas_gt",
+      "capacity_mw": 100,
+      "old_v1_marginal": 620,
+      "new_v2_marginal": 676.2494859393261,
+      "new_v2_incremental_heat_rate": 10.918668996138923,
+      "new_v2_vom": 21.129346170990754,
+      "new_v2_online": 1333.3333333333333,
+      "new_v2_startup": 13333.333333333332
+    },
+    {
+      "type": "gas_gt",
+      "capacity_mw": 300,
+      "old_v1_marginal": 620,
+      "new_v2_marginal": 620.0,
+      "new_v2_incremental_heat_rate": 10.0,
+      "new_v2_vom": 20.0,
+      "new_v2_online": 4000.0,
+      "new_v2_startup": 40000.0
+    },
+    {
+      "type": "gas_gt",
+      "capacity_mw": 600,
+      "old_v1_marginal": 620,
+      "new_v2_marginal": 586.9533146138544,
+      "new_v2_incremental_heat_rate": 9.460576467255958,
+      "new_v2_vom": 19.31872657849691,
+      "new_v2_online": 8000.0,
+      "new_v2_startup": 80000.0
+    },
+    {
+      "type": "gas_gt",
+      "capacity_mw": 1000,
+      "old_v1_marginal": 620,
+      "new_v2_marginal": 563.7367475760677,
+      "new_v2_incremental_heat_rate": 9.081753299650327,
+      "new_v2_vom": 18.831549597048177,
+      "new_v2_online": 13333.333333333334,
+      "new_v2_startup": 133333.33333333334
+    }
+  ]
+}

@@ -63,7 +63,8 @@ with admit_run_directory(d, scenario=a.scenario, mode=a.mode,
         # 场景快照（便于复现）
         snap = d / "scenario_snapshot"
         if not snap.exists():
-            freeze_inputs(root, d)
+            from smm.input_version import run_options
+            freeze_inputs(root, d, run_options=run_options(a.mode, a.periods), bid_version=a.bid_version)
         root = snap
         from smm.da import run_da
         from smm.pipeline import prepare, print_summary, write_outputs
@@ -100,15 +101,16 @@ with admit_run_directory(d, scenario=a.scenario, mode=a.mode,
         else:
             from smm.full import run_full, write_full_outputs
             put(stage="日前出清 + 实时滚动")
-            res = run_full(cfg, case, periods=a.periods, progress_callback=progress, should_cancel=progress.cancelled)
+            res = run_full(cfg, case, periods=a.periods, progress_callback=progress, should_cancel=progress.cancelled, retain_id_models=False)
             progress.check_cancel()
             put(stage="写出结果")
             write_outputs(res["da"], d / "da", make_plots=False)
             s = write_full_outputs(res, d, make_plots=a.plots)
             sp = s["spread"]
-            print(f"负荷加权均价 日前 {sp['da_lw_avg']:.2f} 实时 {sp['rt_lw_avg']:.2f} 价差均值 {sp['lw_spread_mean']:+.2f}", flush=True)
+            from smm.pipeline import format_optional_price
+            print(f"负荷加权均价 日前 {format_optional_price(sp['da_lw_avg'])} 实时 {format_optional_price(sp['rt_lw_avg'])} 价差均值 {format_optional_price(sp['lw_spread_mean'], '+.2f')}", flush=True)
         executed = len(res["rr"].rt) if a.mode == "full" else 0
-        scope = completion_metadata(cfg.T, executed, mode=a.mode)
+        scope = completion_metadata(cfg.T, executed, mode=a.mode, dt_h=cfg.dt)
         progress.state.update(phase="done", **scope)
         progress.write()
         atomic_json(d/"output_scope.json",scope)

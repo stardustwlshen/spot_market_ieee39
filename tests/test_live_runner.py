@@ -84,7 +84,7 @@ def test_streamlit_displays_partial_without_settlement(tmp_path,monkeypatch):
     at=AppTest.from_file(str(root/'app/pages/2_运行.py'),default_timeout=60).run()
     assert not at.exception
     assert any('实时已执行：1 / 96' in x.value for x in at.subheader)
-    assert any('不包含完整日最终结算' in x.value for x in at.caption)
+    assert any('已执行前缀' in x.value and '不是完整日结算' in x.value for x in at.caption)
     assert next(x for x in at.button if x.label=='▶ 开始运行').disabled
     assert len(at.dataframe)>=3
     assert len(at.get("vega_lite_chart"))>=2  # System charts plus selected-unit diagnostics.

@@ -196,8 +196,8 @@ def clear_reservations(m):
     """
     if not getattr(m, "_agc", {}).get("enabled", False):
         return None
-    from .scuc import INT_VARS, solve_sced
-    if any(not v.fixed for name in INT_VARS for v in getattr(m, name).values()):
+    from .scuc import integer_components, solve_sced
+    if any(not v.fixed for name, component in integer_components(m) for v in component.values()):
         raise ValueError("调频预留必须在全部SCUC整数决策固定之后进行")
     if getattr(m, "_agc_stage", None) != "energy_scuc":
         raise ValueError("调频预留要求先调用prepare_energy并完成能量SCUC")

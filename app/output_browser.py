@@ -18,6 +18,8 @@ def indexed_artifacts(directory):
     if not manifest_path.is_file():
         return base, []
     manifest = json.loads(manifest_path.read_text(encoding='utf-8'))
+    if not isinstance(manifest, dict) or not isinstance(manifest.get('artifacts', []), list):
+        raise ValueError('结果文件索引须为对象且 artifacts 须为列表')
     items = []
     for item in manifest.get('artifacts', []):
         if not isinstance(item, dict):

@@ -62,7 +62,10 @@ def test_value_term_only_at_window_end(da_result):
     t, t1 = 10, 18
     terms = rolling.value_method_terms(cfg, plan, t, t1)
     assert terms["state_value"] and {x[2] for x in terms["state_value"]} == {t1 - 1 - t}
-    state = rolling.initial_state(cfg)
+    # Model-only diagnostic assumes the identified DA prefix was followed;
+    # replay its per-unit history instead of relabelling the midnight state.
+    state = rolling.state_from_plan(cfg, plan, t)
+    assert state.t == t
     case = rolling.make_window_case(da2.case, cfg, t, t1, t, True, state, {}, dict(terms), "RT")
     m = scuc.build_model(case)
     coefs = _objective_vars(m)

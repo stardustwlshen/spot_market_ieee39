@@ -26,7 +26,7 @@ def source(tmp_path, monkeypatch):
     cfg = load_config(root=root)
     bids = default_bids(cfg)
     # Deliberate user price edit must survive every boundary operation.
-    bids['units']['C1']['segments'][1]['price'] += 10
+    bids['units']['C1']['segments'][-1]['price'] += 10
     save_bids(cfg, bids)
     record = {'schema': 1, 'draft': bids, 'baseline': default_bids(cfg), 'basis_label': 'test current quotation', 'history': {}, 'manual': ['C1'], 'initial_latest': bids}
     (root/'current_quote.json').write_text(json.dumps(record), encoding='utf-8')
@@ -93,7 +93,7 @@ def test_recombine_is_not_cumulative_and_restore_keeps_new_price_edits(source):
     np.testing.assert_allclose(recombined['profiles'].load_actual, baseline.load_actual*.9)
     # Change a price only, which is not a reason to lose the original curve basis.
     quote = json.loads((first/'current_quote.json').read_text())['draft']
-    quote['units']['C1']['segments'][1]['price'] += 10
+    quote['units']['C1']['segments'][-1]['price'] += 10
     restored = prepare_typical(first, bids=quote, restore=True)
     destination = create_typical('基准恢复', restored, bids=quote)
     result = apply_profile_overrides(load_config(root=destination), generate_profiles(load_config(root=destination)))
@@ -116,7 +116,7 @@ def test_clipping_does_not_change_nameplate_and_is_reported(source):
 def test_stale_input_quote_duplicate_name_and_lost_basis_fail_closed(source):
     preview=prepare_typical(source,load_multiplier=.9)
     current=json.loads((source/'current_quote.json').read_text())['draft']
-    current['units']['C1']['segments'][1]['price']+=10
+    current['units']['C1']['segments'][-1]['price']+=10
     with pytest.raises(RuntimeError,match='报价已变化'):
         create_typical('changed_quote',preview,bids=current)
     created=create_typical('first',preview)
@@ -216,10 +216,13 @@ def test_ui_declared_available_requires_explicit_new_scene_confirmation(source):
 
 
 def test_composed_scene_reaches_actual_da_and_rt_solve(source):
-    """Small authorized test scene, not a claim about full-day scenario feasibility."""
+    """Coarse full-day DA plus one RT period, not a full-day RT certificate."""
     path=source/'config/base.yaml';base=yaml.safe_load(path.read_text())
-    base['periods']=8;base['solver']['time_limit_s']=20;base['solver']['mip_rel_gap']=.05
+    base['periods']=48;base['dt_h']=.5;base['solver']['time_limit_s']=20;base['solver']['mip_rel_gap']=.05
     path.write_text(yaml.safe_dump(base))
+    path=source/'config/modes.yaml';modes=yaml.safe_load(path.read_text())
+    modes['MKT']['realtime']['interval_min']=30
+    path.write_text(yaml.safe_dump(modes))
     path=source/'config/units.yaml';units=yaml.safe_load(path.read_text())
     for p in units.get('pumped',[]):p['enabled']=False
     path.write_text(yaml.safe_dump(units))

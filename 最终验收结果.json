@@ -1,0 +1,116 @@
+{
+  "_historical_notice": {
+    "scope": "历史验收记录，不是当前交付版本的验收结果",
+    "date": "2026-11-05",
+    "applies_to_source_sha256": "ce5c922decd40ce693810185bafe35d549ef2753feaf25b0206421eab2263f3b",
+    "current_delivery_status": "请查看与当前源码指纹绑定的另行交付验收报告；本文件不声明当前版本通过。"
+  },
+  "status": "completed_with_disclosed_scope_and_scenario_risks",
+  "baseline_commit": "abd1cb7fc8ddb53e37c16bd1e4d3a7234f298be0",
+  "baseline_tree": "d91869412548743db373ba5aada1e590d952fe37",
+  "final_source_sha256": "ce5c922decd40ce693810185bafe35d549ef2753feaf25b0206421eab2263f3b",
+  "source_files": 261,
+  "source_unchanged_after_full_suite": true,
+  "finished_utc": "2026-11-05T14:41:07.935533+00:00",
+  "full_suite": {
+    "collected": 2587,
+    "passed": 2552,
+    "failed": 0,
+    "skipped": 35,
+    "seconds": 1047.05,
+    "exit_code": 0,
+    "skip_scope": "34 checks require specific undistributed historical archives; 1 finite-difference path skipped because fixture disables storage reserve"
+  },
+  "first_full_suite": {
+    "passed": 2497,
+    "failed": 3,
+    "skipped": 35,
+    "seconds": 1062.71,
+    "errors_fixed": [
+      "Unknown-period result scope fallback",
+      "Synthetic 2-hour fixture incorrectly expected full-day settled",
+      "Streamlit target-install environment needed developmentMode=false"
+    ]
+  },
+  "final_wet": {
+    "elapsed_s": 547.5881795380001,
+    "executed_periods": 96,
+    "id_success": 24,
+    "id_failed": 0,
+    "solver_gap_max": {
+      "DA": 0.0076789431098261,
+      "ID": 0.0049923356430666,
+      "RT": 0.0093858399561341
+    },
+    "all_mip_targets_met": true,
+    "strict_acceptance": true,
+    "actual_up_short_mwh": 0.0,
+    "actual_up_short_max_mw": 0.0,
+    "terminal_deviations": [
+      {
+        "kind": "E",
+        "unit": "ES1",
+        "deviation_native": 0.0,
+        "deviation_discharge_mwh": 0.0,
+        "penalty_cost": 0.0
+      },
+      {
+        "kind": "E",
+        "unit": "ES2",
+        "deviation_native": 0.0,
+        "deviation_discharge_mwh": 0.0,
+        "penalty_cost": 0.0
+      },
+      {
+        "kind": "E",
+        "unit": "ES3",
+        "deviation_native": 0.0,
+        "deviation_discharge_mwh": 0.0,
+        "penalty_cost": 0.0
+      },
+      {
+        "kind": "Vu",
+        "unit": "PS1",
+        "deviation_native": 0.15507759166138158,
+        "deviation_discharge_mwh": 1.488744879949263,
+        "penalty_cost": 1488.7448799492631
+      },
+      {
+        "kind": "V",
+        "unit": "H1",
+        "deviation_native": 0.0,
+        "deviation_discharge_mwh": 0.0,
+        "penalty_cost": 0.0
+      }
+    ],
+    "all_stage_outputs_verified": true,
+    "strict_json_files": 19
+  },
+  "revised_core_dry": {
+    "source_sha256": "6e81fd93c9ce8cba1fb9633183be858da1d5fb63f1637591b233aa9b3fd793b1",
+    "executed_periods": 96,
+    "id_success": 24,
+    "id_failed": 0,
+    "actual_up_short_periods": 5,
+    "actual_up_short_mwh": 33.549064957848614,
+    "actual_up_short_max_mw": 43.40041514769075,
+    "strict_acceptance": false,
+    "id_gap_missed_rounds": [
+      "04:00",
+      "05:00"
+    ],
+    "id_gap_approx": [
+      0.02922,
+      0.00936
+    ],
+    "not_substitute_for_final_whole_source_run": true
+  },
+  "no_push": true,
+  "no_remote_configured": true,
+  "limits": [
+    "No browser pixel or cross-platform certification",
+    "No claim that every scenario is shortage-free",
+    "DA/ID terminal policies unchanged; RT default soft policy unchanged",
+    "No unconditional global optimality or AC/N-1 guarantee"
+  ]
+}

@@ -22,8 +22,9 @@ RESOURCES = [('E', '储能SOC电量', 'ES1', 'storage', 'unit', 'E_mwh', 100., '
 def make_result(executed=8, expected=96, scope='debug_prefix'):
     """Distinct nonzero values expose wrong scopes, units, and zero-filling."""
     result = {'summary': dict(executed_periods=executed, expected_periods=expected, completed_scope=scope),
-              'settlement_detail': pd.DataFrame([dict(entity='ES1', period=0, q_da=1., q_rt=2., lmp_da=10., lmp_rt=2., da_amount=240. / expected, rt_amount=48. / expected, total=288. / expected)]),
-              'settlement_by_entity': pd.DataFrame([dict(entity='ES1', da_amount=10., rt_amount=2., total=12.)]),
+              'settlement_detail': pd.DataFrame([dict(entity='ES1', type='storage', period=t, q_da=1., q_rt=2., lmp_da=10., lmp_rt=2., da_amount=240. / expected, rt_amount=48. / expected, total=288. / expected, dev_pnl=-192. / expected) for t in range(executed)]),
+              'settlement_by_entity': pd.DataFrame([dict(entity='ES1', type='storage', da_amount=240.*executed/expected, rt_amount=48.*executed/expected, total=288.*executed/expected, dev_pnl=-192.*executed/expected)]),
+              'settlement_by_type': pd.DataFrame([dict(type='storage', da_amount=240.*executed/expected, rt_amount=48.*executed/expected, total=288.*executed/expected, dev_pnl=-192.*executed/expected)]),
               'settlement_reconciliation': pd.DataFrame([dict(residual=0.)])}
     prices = pd.DataFrame([dict(period=t, bus=b, lmp=30. + t + b, load_mw=100.)
                            for t in range(expected) for b in (1, 2)])

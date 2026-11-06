@@ -20,7 +20,12 @@ def _integers(m):
     for name, component in scuc.integer_components(m):
         for index, v in component.items():
             value = float(pyo.value(v))
-            if not v.fixed or not np.isfinite(value) or abs(value - round(value)) > 1e-6:
+            if not v.fixed or not np.isfinite(value):
+                raise ValueError(f'auxiliary pricing requires fixed integer {v.name}')
+            relaxed = name in ('u_ch', 'u_dis') and not getattr(m, '_storage_binary', True)
+            invalid_domain = (not -1e-6 <= value <= 1. + 1e-6 if relaxed
+                              else abs(value - round(value)) > 1e-6)
+            if invalid_domain:
                 raise ValueError(f'auxiliary pricing requires fixed integer {v.name}')
             values[(name, index)] = value
     for v in m.component_data_objects(pyo.Var):
@@ -55,6 +60,8 @@ def _differences(dispatch, auxiliary, names):
 def _prices(m, source):
     raw = deepcopy(scuc.extract_prices(m))
     limits = m._case.cfg.mode['price_limits']
+    from .input_validation import validate_clearing_limits
+    validate_clearing_limits(limits)
     return dict(source=source, raw=raw,
                 lmp_clipped=np.clip(raw['lmp'], limits['clear_min'], limits['clear_max']),
                 clipping=dict(min=limits['clear_min'], max=limits['clear_max']),
@@ -200,6 +207,7 @@ def run_auxiliary_pricing(dispatch_model):
     if any(not np.isfinite(value) for value, _ in before.values()):
         raise ValueError('dispatch must contain finite completed SCED values')
     auxiliary = dispatch_model.clone()
+    auxiliary._hydro_quantity_source = 'auxiliary_pricing'
     if hasattr(dispatch_model, "_solver_budget"):
         auxiliary._solver_budget = dispatch_model._solver_budget  # same shared ledger, never a cloned allowance
         auxiliary._solver_budget_phase = "auxiliary_pricing"
@@ -257,13 +265,19 @@ def run_auxiliary_pricing(dispatch_model):
             row[label+'_equivalent_discharge_slack_mwh'] = native_slack * row['discharge_mwh_per_native_unit']
             row[label+'_equivalent_discharge_residual_mwh'] = residual * row['discharge_mwh_per_native_unit']
             row[label+'_anchor_cost_yuan'] = native_slack * row['old_yuan_per_native_unit' if label == 'dispatch' else 'new_yuan_per_native_unit']
+    from .results import reserve_snapshot
     return dict(model=auxiliary, dispatch_prices=dispatch_prices, anchor_costs=anchors, removed_rt_tracking=tracking,
+                reserve_evidence=dict(dispatch=reserve_snapshot(dispatch_model),auxiliary=reserve_snapshot(auxiliary)),
                 removed_asset_reachability=bool(getattr(auxiliary,"_removed_asset_reachability",False)),
                 hydro_spill_fixation=spill_fixation, hydro_spill_policy="fixed_to_formal_dispatch_all_horizon",
                 auxiliary_prices=_prices(auxiliary, 'bounded_auxiliary_pricing'),
                 solve_info=info, bands=bands, penalties_yuan_per_mwh=specification["penalties_yuan_per_mwh"],
                 configuration=specification, operational_enabled=bool(specification["enabled"]), invocation="pipeline" if specification["enabled"] else "manual_standalone_diagnostic",
                 integer_invariance=True, original_dispatch_unchanged=True,
+                storage_relaxation_comparison=not getattr(dispatch_model, '_storage_binary', True),
+                dispatch_model_scope=('storage_lp_relaxation_comparison_not_physical_dispatch'
+                                      if not getattr(dispatch_model, '_storage_binary', True)
+                                      else 'integer_storage_dispatch'),
                 dispatch_slack=scuc.slack_summary(dispatch_model), auxiliary_slack=scuc.slack_summary(auxiliary),
                 slack_differences=_differences(dispatch_model, auxiliary, ('shed','surplus','sl','sR_up','sR_dn','sA_up','sA_dn')),
                 max_absolute_power_deviation_mw=max((abs(r['deviation_mw']) for r in bands), default=0.0),

@@ -90,6 +90,8 @@ def generate_profiles(cfg: Config, seed: int | None = None) -> pd.DataFrame:
     the code version. Uploaded columns still take precedence in the separate
     ``apply_profile_overrides`` step. Neither model is an operational forecaster.
     """
+    from .input_validation import validate_renewable_profiles
+    validate_renewable_profiles(cfg)
     fo = cfg.base.get("forecast") or {}
     if not isinstance(fo, dict):
         raise ValueError("forecast须为配置对象")
@@ -128,7 +130,8 @@ def _generate_legacy_profiles(cfg: Config, seed: int | None = None) -> pd.DataFr
                 raise ValueError(f'forecast.sigma.{kind}.{stage}须非负')
     peak = number(cfg.base["load_scale"], 'load_scale', positive=True) * 6254.23
     out = pd.DataFrame({"period": np.arange(1, T + 1)})
-    out["time"] = [f"{(t*15)//60:02d}:{(t*15)%60:02d}" for t in range(T)]
+    from .time_grid import period_label
+    out["time"] = [period_label(t, cfg.dt) for t in range(T)]
 
     def make(name, actual, cap_for_sigma, kind, xi=None, daylight=None, clip_cap=None):
         base = ar1(T, PH[kind], rng, xi)
@@ -211,6 +214,8 @@ def apply_profile_overrides(cfg: Config, df: pd.DataFrame, overrides: pd.DataFra
             col = f"{n}_{stage}"
             if col not in overrides:
                 continue
+            if any(isinstance(value, (bool, np.bool_)) for value in overrides[col]):
+                raise ValueError(f"profile_overrides {col} 不得包含布尔值")
             try:
                 values = overrides[col].to_numpy(dtype=float)
             except (TypeError, ValueError) as exc:
@@ -269,6 +274,8 @@ def forecast_view(profiles: pd.DataFrame, name: str, issue_t: int, periods, firs
     提前量 lead = t − issue_t：lead ≤ 0 且 first_actual → 实际值；1 ≤ lead ≤ 16 时误差由超短期(rt)线性过渡到日内(id)；
     lead > 16 用日内误差。越临近越准，同一时段的预测随发布时刻推进而收敛到实际值。
     """
+    if profiles.attrs.get('forecast_model') == 'causal_physical_v3':
+        raise ValueError('causal_physical_v3 must use its issued ForecastFrame, never legacy forecast_view')
     a = profiles[f"{name}_actual"].to_numpy()
     e_id = a - profiles[f"{name}_id"].to_numpy()
     e_rt = a - profiles[f"{name}_rt"].to_numpy()
