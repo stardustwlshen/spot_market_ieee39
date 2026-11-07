@@ -1,6 +1,7 @@
 from copy import deepcopy
 from dataclasses import replace
 from decimal import Decimal
+from pathlib import Path
 
 import numpy as np
 import pyomo.environ as pyo
@@ -192,7 +193,8 @@ def test_aux_clone_keeps_all_commitments_and_never_mutates_dispatch():
         assert rolling.snapshot(m)['hydro_commitment']==before['hydro_commitment']
 
 
-def test_enabled_editor_help_and_new_unit_template_are_effective():
+def test_enabled_editor_help_and_new_unit_template_are_effective(monkeypatch):
+    monkeypatch.syspath_prepend(str(Path(__file__).resolve().parents[1] / "app"))
     from smm.unit_editor import unit_template
     from unit_parameter_help import field_help, field_readonly
     h=unit_template('hydro','NEW',2,100.,n_units=2)

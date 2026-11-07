@@ -43,7 +43,7 @@ DIFF_SCALE = "RdBu_r"                               # 差值（以 0 为中心�
 TYPE_SYMBOL = {"coal": "square", "gas_ccgt": "diamond", "gas_gt": "diamond-open", "hydro": "hexagon", "wind": "triangle-up",
                "pv": "star", "tie": "pentagon", "storage": "cross",
                "pumped": "hourglass"}
-PAGES = [("pages/5_出清任务.py", "出清任务", "🗓️", "单日或连续多日场景与报价"),
+PAGES = [("pages/6_单日模拟.py", "单日模拟", "▶️", "场景 → 机组 → 报价 → 运行 → 结果"),
          ("pages/2_运行.py", "报价模拟", "▶️", "选择机组、改报价、运行市场"),
          ("pages/3_结果.py", "结果", "📊", "完整电价、出力、约束与结算"),
          ("pages/4_场景对比.py", "场景对比", "⚖️", "对比两次报价模拟结果")]
@@ -147,11 +147,17 @@ def sidebar_nav():
     with st.sidebar:
         st.markdown('<div class="smm-brand">⚡ IEEE39 现货市场出清仿真</div>', unsafe_allow_html=True)
         st.caption("单机改价 · 全市场模拟")
-        for path, label, icon, helptext in PAGES:
+        for path, label, icon, helptext in (PAGES[0],PAGES[2]):
             try:
-                st.page_link(path, label=label, icon=icon, help=helptext)
-            except Exception:  # noqa: BLE001  （测试环境未注册多页时跳过）
+                st.page_link(path,label=label,icon=icon,help=helptext)
+            except Exception:
                 pass
+        with st.expander('更多工具'):
+            for path,label,icon,helptext in (PAGES[1],PAGES[3]):
+                try:
+                    st.page_link(path,label='场景参数与单日调试' if path==PAGES[1][0] else label,icon=icon,help=helptext)
+                except Exception:
+                    pass
         st.divider()
 
 
@@ -218,7 +224,7 @@ def period_labels(T: int = 96, dt_h: float = 0.25) -> list[str]:
 
 
 # ----------------------------------------------------------------------------- 场景选择
-def scenario_selector(key: str = "scenario", sidebar: bool = True, label: str = "当前场景") -> str:
+def scenario_selector(key: str = "scenario", sidebar: bool = True, label: str = "当前场景", *, disabled: bool = False, manage: bool = True) -> str:
     names = sc.list_scenarios()
     recommended=next((n for n in ("水电窗口硬锚点_20261102","电能量完善版_20261102") if n in names),sc.DEFAULT)
     pending = st.session_state.pop('new_default_switch_to', None)
@@ -229,14 +235,15 @@ def scenario_selector(key: str = "scenario", sidebar: bool = True, label: str = 
     if cur not in names:
         cur = names[0]
     box = st.sidebar if sidebar else st
-    name = box.selectbox(label, names, index=names.index(cur), key=f"_sel_{key}")
+    name = box.selectbox(label, names, index=names.index(cur), key=f"_sel_{key}", disabled=disabled)
     st.session_state["scenario"] = name
     with (box if sidebar else nullcontext()):
         notice = st.session_state.pop('new_default_created_notice', None)
         if notice:
             st.success(notice)
         from new_default_scenario import render_new_default_scene
-        render_new_default_scene(name, key=key)
+        if manage:
+            render_new_default_scene(name, key=key, disabled=disabled)
     return name
 
 
@@ -404,7 +411,7 @@ def run_label(m: dict) -> str:
 
 
 def all_results() -> list[dict]:
-    """可展示的结果：runs/ 下完成的运行 + outputs/ 下命令行生成的历史结果（只读导入）。"""
+    """只列普通单日结果；保留独立命令行历史输出，不扫描顺序研究归档。"""
     out = [m for m in sc.list_runs() if m.get("status") == "done"]
     od = ROOT / "outputs"
     if od.exists():
@@ -412,9 +419,8 @@ def all_results() -> list[dict]:
             if d.is_dir() and (d / "summary.json").exists() and (d.name.startswith("full_") or d.name.startswith("da_")) and "_MKT_" in d.name:
                 mode = "full" if d.name.startswith("full_") else "da"
                 out.append(dict(scenario="命令行outputs", mode=mode, status="done", dir=str(d), started=""))
-    from smm.series_ui_adapter import completed_day_metadata
-    out.extend(completed_day_metadata(ROOT / 'series_tasks'))
-    return out
+    from result_catalog import is_single_day_result
+    return [m for m in out if is_single_day_result(m)]
 
 
 def result_label(m: dict) -> str:

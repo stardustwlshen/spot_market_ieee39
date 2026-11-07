@@ -492,7 +492,7 @@ def render_explorer(data, prefix):
         st.dataframe(branch_table(branches, runtime), hide_index=True, width='stretch')
 
 
-def render_input_network(cfg, prefix):
+def render_input_network(cfg, prefix, *, structure_only=False):
     from unit_input_view import scenario_unit_catalog
     try:
         data = network_data(cfg.root, base=cfg.base, catalog=scenario_unit_catalog(cfg))
@@ -500,7 +500,7 @@ def render_input_network(cfg, prefix):
         st.caption('图只读已保存参数。编辑框中的未保存内容不进入图，也不改写历史结果。')
         if 'unit_editor:' + Path(cfg.root).name in st.session_state:
             st.info('机组编辑草稿尚未提交：本图保持已保存输入；保存成功后同步更新。')
-        view = st.radio('输入图显示', ['结构与容量', '时段负荷输入'], horizontal=True, key=prefix+':input_view')
+        view = '结构与容量' if structure_only else st.radio('输入图显示', ['结构与容量', '时段负荷输入'], horizontal=True, key=prefix+':input_view')
         if view == '时段负荷输入':
             from smm.time_grid import period_label
             left, right = st.columns([1,2])

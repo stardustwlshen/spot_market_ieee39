@@ -93,17 +93,19 @@ with admit_run_directory(d, scenario=a.scenario, mode=a.mode,
         put(bid_version=case.bids["version"], stage="日前出清")
         (d / "da").mkdir(exist_ok=True)
         if a.mode == "da":
-            res = run_da(case)
+            res = run_da(case, stage_callback=progress, activity_callback=progress.activity)
             progress.check_cancel()
             progress({"phase":"da_done", "da":res})
+            progress.activity(dict(phase="writing_outputs"))
             s = write_outputs(res, d / "da", make_plots=a.plots)
             print_summary(s)
         else:
             from smm.full import run_full, write_full_outputs
             put(stage="日前出清 + 实时滚动")
-            res = run_full(cfg, case, periods=a.periods, progress_callback=progress, should_cancel=progress.cancelled, retain_id_models=False)
+            res = run_full(cfg, case, periods=a.periods, progress_callback=progress, should_cancel=progress.cancelled, retain_id_models=False, activity_callback=progress.activity)
             progress.check_cancel()
             put(stage="写出结果")
+            progress.activity(dict(phase="writing_outputs"))
             write_outputs(res["da"], d / "da", make_plots=False)
             s = write_full_outputs(res, d, make_plots=a.plots)
             sp = s["spread"]

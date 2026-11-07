@@ -20,7 +20,7 @@ def _summary(cfg) -> str:
     return f'光伏 {pv:g} MW · 风电 {wind:g} MW · 电池 {battery_mw:g} MW / {battery_mwh:g} MWh · {forecast} · {tie}'
 
 
-def render_new_default_scene(current_name: str, *, key: str) -> None:
+def render_new_default_scene(current_name: str, *, key: str, disabled: bool = False) -> None:
     """Called inside the selector's chosen container; creation requires a click."""
     with st.expander('从新版默认配置新建场景（保留旧场景）'):
         st.caption('使用此项目当前默认机组、网络、曲线模型、成本与报价，另建独立场景。不会复制当前场景的手工覆盖曲线或改价，也不会覆盖旧场景与历史结果。')
@@ -36,8 +36,9 @@ def render_new_default_scene(current_name: str, *, key: str) -> None:
         except (OSError, ValueError, TypeError, KeyError, AttributeError, yaml.YAMLError):
             st.caption('当前场景配置不能读取；仍可另建新版场景，原文件保留。')
         st.caption('以上为装机与输入模型，不是实际发电比例或本次出清结果。')
-        disabled = bool(st.session_state.get('runtime_needs_restart'))
-        if disabled:
+        needs_restart = bool(st.session_state.get('runtime_needs_restart'))
+        disabled = disabled or needs_restart
+        if needs_restart:
             st.info('请先重启应用，再从新版默认配置新建，避免混用更新前后的代码。')
         with st.form(f'new_default:{key}'):
             name = st.text_input('新版场景名称', value='新版高光伏', key=f'new_default:{key}:name')

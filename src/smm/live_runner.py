@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import os
 import shutil
+import time
 from pathlib import Path
 
 class RunCancelled(RuntimeError):
@@ -13,7 +14,22 @@ def atomic_json(path, value):
     path = Path(path)
     tmp = path.with_name(path.name + f'.{os.getpid()}.tmp')
     tmp.write_text(json.dumps(value, ensure_ascii=False, default=str, allow_nan=False), encoding='utf-8')
-    tmp.replace(path)
+    try:
+        # Windows readers/AV may briefly deny replacement while holding a handle.
+        # Retry only permission/sharing failures; critical callers still fail closed.
+        for attempt in range(8):
+            try:
+                tmp.replace(path)
+                break
+            except PermissionError:
+                if attempt == 7:
+                    raise
+                time.sleep(min(.01 * 2**attempt, .2))
+    finally:
+        try:
+            tmp.unlink(missing_ok=True)
+        except OSError:
+            pass  # Do not mask the write failure; only our exact temp path is touched.
 
 
 def read_live(directory):
@@ -74,9 +90,41 @@ class ProgressWriter:
     def cancelled(self): return (self.directory/'cancel.request').exists()
     def check_cancel(self):
         if self.cancelled(): raise RunCancelled('用户取消：保留已执行前缀，不生成完整日结算')
-    def write(self): atomic_json(self.directory/'live.json',self.state)
+    def activity(self, event):
+        """Small boundary record; never serialize growing result tables on solver starts."""
+        from datetime import datetime, timezone
+        record = {key: event[key] for key in ('phase', 'activity', 'stage', 'period', 'total', 'completed') if key in event}
+        record['updated_at'] = datetime.now(timezone.utc).isoformat()
+        record.update(executed_periods=self.state['executed_periods'], total_periods=self.state['total_periods'])
+        self._write_telemetry(self.directory/'progress.json', record)
+    def _write_telemetry(self, path, value):
+        try:
+            atomic_json(path, value)
+        except PermissionError as exc:
+            # Live UI evidence is not settlement or business-state persistence.
+            # Keep computing after bounded retries; never catch cancellation,
+            # serialization/model errors, or critical meta/output writes here.
+            last = getattr(self, '_write_warning_at', float('-inf'))
+            if time.monotonic() - last >= 30.:
+                print(f'[progress warning] Progress update temporarily blocked: {path.name}: {exc}', flush=True)
+                self._write_warning_at = time.monotonic()
+            blocked = getattr(self, '_telemetry_blocked_paths', set())
+            blocked.add(path.name)
+            self._telemetry_blocked_paths = blocked
+        else:
+            blocked = getattr(self, '_telemetry_blocked_paths', set())
+            was_blocked = bool(blocked)
+            blocked.discard(path.name)
+            if was_blocked and not blocked:
+                print('[progress recovered] Progress writing resumed.', flush=True)
+    def write(self):
+        from datetime import datetime, timezone
+        self.state['updated_at'] = datetime.now(timezone.utc).isoformat()
+        self._write_telemetry(self.directory/'live.json',self.state)
+        self.activity(self.state)
     def __call__(self, event):
         phase=event['phase'];self.state['phase']=phase
+        self.state['stage'] = event.get('stage')
         if phase=='da_stage':
             self.state['da_stages']=event.get('stage_diagnostics',{})
         elif phase=='da_done':

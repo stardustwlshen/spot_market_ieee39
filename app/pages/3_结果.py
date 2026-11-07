@@ -14,10 +14,13 @@ from common import (DA_COLOR, DIFF_SCALE, LMP_SCALE, LOAD_SCALE, PALETTE, RT_COL
 from smm.time_grid import result_time_grid, result_time_axis
 
 page_setup("运行与出清结果")
-res = all_results()
+from result_catalog import is_single_day_result
+res = [m for m in all_results() if is_single_day_result(m)]
 if not res:
+    st.session_state.pop('result_sel', None)
+    st.session_state.pop('_result_sel_widget', None)
     empty_state("还没有完成的运行结果。", "请先运行场景。")
-    st.page_link("pages/2_运行.py", label="前往运行页", icon="▶️")
+    st.page_link("pages/6_单日模拟.py", label="前往单日模拟", icon="▶️")
     st.stop()
 from result_navigation import select_saved_result, recorded_number
 sel = select_saved_result(res)

@@ -1019,7 +1019,7 @@ class RollingResult:
 
 
 def run_rolling(da_res, periods: int | None = None, log=print, *, progress_callback=None, should_cancel=None,
-                initial_actual_state: SysState | None = None, retain_id_models: bool = True) -> RollingResult:
+                initial_actual_state: SysState | None = None, retain_id_models: bool = True, activity_callback=None) -> RollingResult:
     """逐时段实时滚动；MKT.intraday.enabled 时在每个日内触发时刻先做一轮日内，实时开机沿用日内计划。"""
     if type(retain_id_models) is not bool:
         raise ValueError("retain_id_models must be boolean")
@@ -1059,6 +1059,8 @@ def run_rolling(da_res, periods: int | None = None, log=print, *, progress_callb
             from .live_runner import RunCancelled
             raise RunCancelled(f"Cancelled after {len(out.rt)} executed periods")
         if use_id and t % step == 0:
+            if activity_callback:
+                activity_callback(dict(phase='id_start', period=t, total=T, completed=len(out.rt)))
             a = time.perf_counter()
             try:
                 r = run_intraday_round(case, da_plan, cfg, state, t, log)
@@ -1088,6 +1090,8 @@ def run_rolling(da_res, periods: int | None = None, log=print, *, progress_callb
             out.plans.append(plan)
             if progress_callback:
                 progress_callback({"phase": "id_round", "rr": out, "tau": t, "completed": len(out.rt), "total": T})
+        if activity_callback:
+            activity_callback(dict(phase='rt_start', period=t, total=T, completed=len(out.rt)))
         a = time.perf_counter()
         r = run_rt_period(case, da_plan, plan, cfg, state, t, ref=ref, id_active=bool(out.id_rounds or out.id_failures))
         t_rt += time.perf_counter() - a

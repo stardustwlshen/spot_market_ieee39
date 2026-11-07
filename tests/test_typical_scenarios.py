@@ -292,3 +292,12 @@ def test_full_workspace_switches_to_created_scene_without_losing_quote(source):
     record=json.loads((scenario.scenario_path('整页组合')/'current_quote.json').read_text())
     original=json.loads((source/'current_quote.json').read_text())
     assert record['draft']['units']['C1']['segments']==original['draft']['units']['C1']['segments']
+
+
+def test_fingerprint_paths_use_portable_separators(tmp_path):
+    from smm.typical_scenarios import fingerprint
+    (tmp_path/'data').mkdir()
+    (tmp_path/'data/profile_overrides.csv').write_text('period,time',encoding='utf-8')
+    found=fingerprint(tmp_path)
+    assert 'data/profile_overrides.csv' in found
+    assert all('\\' not in path for path in found)

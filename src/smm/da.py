@@ -62,7 +62,7 @@ def _stage_comparison(incumbent, dispatch, info, sced) -> dict:
                                "degeneracy and a near-optimal incumbent do not imply identical dispatch.")
 
 
-def run_da(case: DACase, verbose: bool = True, *, stage_callback=None) -> DAResult:
+def run_da(case: DACase, verbose: bool = True, *, stage_callback=None, activity_callback=None) -> DAResult:
     from .stage_diagnostics import capture
     from .bids import effective_bids
     case = replace(case, bids=effective_bids(case.cfg, case.bids))
@@ -71,14 +71,19 @@ def run_da(case: DACase, verbose: bool = True, *, stage_callback=None) -> DAResu
         stages[name] = capture(model, name, info)
         if stage_callback:
             stage_callback({"phase": "da_stage", "stage": name, "stage_diagnostics": stages})
+    def activity(name):
+        if activity_callback:
+            activity_callback(dict(phase='da_activity', activity=name))
     cfg = case.cfg
     if cfg.mode.get("auxiliary_pricing", {}).get("enabled", False) and cfg.mode.get("regulation", {}).get("enabled", False):
         raise ValueError("auxiliary pricing currently requires regulation disabled")
     log = print if verbose else (lambda *a, **k: None)
     t0 = time.perf_counter()
+    activity('build')
     m = scuc.build_model(case)
     log(f"[DA] 模型构建 {time.perf_counter()-t0:.1f}s，开始 SCUC（HiGHS MILP）…")
     regulation.prepare_energy(m)
+    activity('scuc')
     info = scuc.solve_scuc(m, log)
     log(f"[DA] SCUC {info['termination']}，用时 {info['time_s']:.1f}s，目标 {info['objective']:.0f}，gap {info['gap']:.4%}")
     if not cfg.base["solver"].get("storage_binary", True):
@@ -86,11 +91,13 @@ def run_da(case: DACase, verbose: bool = True, *, stage_callback=None) -> DAResu
     info["storage_simultaneous"] = scuc.storage_simultaneous(m)
     record_stage("scuc_preplan", m, info)
     incumbent = _variable_snapshot(m)
+    activity('fix_integers')
     scuc.fix_integers(m)
     allocation = regulation.clear_reservations(m)
     info["regulation_allocation"] = allocation
     if allocation is not None:
         record_stage("agc_auxiliary", m, allocation)
+    activity('sced')
     sced = scuc.solve_sced(m)
     from .hydro_spill_tiebreak import select_hydro_water
     sced["hydro_water_selection"] = select_hydro_water(m, sced)
@@ -115,6 +122,7 @@ def run_da(case: DACase, verbose: bool = True, *, stage_callback=None) -> DAResu
     source = "standard_sced"
     if cfg.mode.get("auxiliary_pricing", {}).get("enabled", False):
         from .auxiliary_pricing import run_auxiliary_pricing, numeric_diagnostics
+        activity('auxiliary_pricing')
         aux = run_auxiliary_pricing(m)
         aux["auxiliary_prices"].update(selected_for_settlement=True, settlement_applied=True,
                                        settlement_applied_meaning="selected_clipped_price_rule_not_payment_execution")

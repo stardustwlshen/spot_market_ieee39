@@ -1,5 +1,7 @@
-"""Single-day and sequential multi-day task entry."""
+"""Compatibility route for saved bookmarks; the active app is single-day only."""
+import streamlit as st
 from common import page_setup
-from series_workspace_ui import render_series_workspace
-page_setup('出清模拟')
-render_series_workspace()
+
+page_setup('单日模拟入口')
+st.info('请从单日模拟开始，依次查看场景、机组、报价、运行和结果。')
+st.page_link('pages/6_单日模拟.py', label='前往单日模拟', icon='▶️')

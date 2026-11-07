@@ -58,7 +58,7 @@ def test_actual_initial_stays_readonly(tmp_path):
 def test_advanced_parameters_remain_editable_and_default_folded(tmp_path):
     from test_series_workspace_ui import app,button
     at=app(tmp_path)
-    advanced=next(e for e in at.expander if e.label=='高级设置：预测方式、随机种子与时区')
+    advanced=next(e for e in at.expander if e.label=='更多设置（可选）')
     assert not advanced.proto.expanded
     assert {'随机种子','运行时区'} <= {t.label for t in advanced.text_input}
     button(at,'创建模拟').click().run()

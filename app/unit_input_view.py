@@ -291,7 +291,7 @@ def resource_capacity_rows(cfg):
     return list(totals.values())
 
 
-def render_network_and_units(cfg, key_prefix='network_inputs'):
+def render_network_and_units(cfg, key_prefix='network_inputs', *, bids=None):
     """Read-only pre-run system context and complete peer-unit information."""
     from smm.forecast import generate_profiles, apply_profile_overrides
     from network_view import render_input_network
@@ -333,12 +333,8 @@ def render_network_and_units(cfg, key_prefix='network_inputs'):
                 st.caption('区外来电单独计为供给注入，未加到负荷，也不作为可报价负荷。')
                 st.line_chart(pd.DataFrame({f'{uid} · 供给注入': profiles[f'{uid}_sched'].to_numpy()},
                                           index=profiles.time), y_label='功率（MW）')
-        renewable_columns = {f"{unit['id']}_{stage}": f"{unit['id']} · {'实际' if stage == 'actual' else '日前预测'}"
-                             for unit in cfg.units.get('renewable', []) for stage in ('actual', 'da')}
-        if renewable_columns:
-            st.markdown('**新能源输入曲线**')
-            chart = profiles.set_index('time')[list(renewable_columns)].rename(columns=renewable_columns).rename_axis('时间')
-            st.line_chart(chart, y_label='功率（MW）')
+        from renewable_input_view import render_renewable_inputs
+        render_renewable_inputs(cfg, profiles, bids=bids, key_prefix=key_prefix + ':renewable')
     except (OSError, ValueError, KeyError, TypeError) as exc:
         st.error(f'负荷与新能源曲线暂不能读取，请修复当前场景预测或覆盖数据：{exc}')
 
@@ -353,3 +349,17 @@ def render_network_and_units(cfg, key_prefix='network_inputs'):
         render_unit_information(cfg, uid)
     except (OSError, ValueError, KeyError, TypeError, yaml.YAMLError) as exc:
         st.error(f'机组目录暂不能读取，请检查当前场景机组档案：{exc}')
+
+
+def unit_summary_rows(cfg,uid):
+    # Small factual summary. Full, lossless parameters stay available.
+    group,unit=next((g,u) for g,rows in cfg.units.items() if isinstance(rows,list) for u in rows if isinstance(u,dict) and u.get('id')==uid)
+    fields=['bus']
+    fields += {'thermal':['pmin','pmax','ramp','ut','dt'],
+               'renewable':['cap'],'storage':['pmax','ecap','eta_c','eta_d'],
+               'hydro':['n_units','unit_pmax','ramp'],'pumped':['n_units','unit_gen_max','unit_pump']}.get(group,['pmax'])
+    return [{'参数':LABELS.get(k,k),'数值':_value(unit[k])} for k in fields if k in unit]
+
+
+def render_unit_summary(cfg,uid):
+    st.caption(' · '.join(row['参数']+'：'+row['数值'] for row in unit_summary_rows(cfg,uid)))

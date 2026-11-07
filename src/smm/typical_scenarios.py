@@ -32,7 +32,7 @@ def fingerprint(root):
     root = Path(root)
     paths = [p for folder in ('config', 'bids', 'data/case39') for p in (root/folder).rglob('*') if p.is_file()]
     paths += [root/name for name in ('current_quote.json', 'data/profile_overrides.csv', BASELINE) if (root/name).exists()]
-    return {str(p.relative_to(root)): hashlib.sha256(p.read_bytes()).hexdigest() for p in sorted(set(paths))}
+    return {p.relative_to(root).as_posix(): hashlib.sha256(p.read_bytes()).hexdigest() for p in sorted(set(paths))}
 
 
 def _digest(value):
@@ -40,7 +40,11 @@ def _digest(value):
 
 
 def _generation_basis(cfg):
-    return {'base': {k: cfg.base.get(k) for k in ('season', 'load_scale', 'seed', 'periods', 'dt_h', 'forecast', 'tie_line_mode', 'tie_load_allocation')},
+    base = {k: copy.deepcopy(cfg.base.get(k)) for k in ('season', 'load_scale', 'seed', 'periods', 'dt_h', 'forecast', 'tie_line_mode', 'tie_load_allocation')}
+    if isinstance(base.get('forecast'), dict):
+        base['forecast'].pop('error_scenarios', None)
+        base['forecast'] = base['forecast'] or None
+    return {'base': base,
             'units': cfg.units}
 
 
@@ -76,11 +80,17 @@ def _read_manifest(root):
 
 def prepare_typical(root, *, season=None, renewable_multiplier=1., load_multiplier=1.,
                     bids=None, use_current_as_baseline=False, restore=False,
-                    wind_multiplier=None, pv_multiplier=None, wind_event="none"):
+                    wind_multiplier=None, pv_multiplier=None, wind_event="none", error_scenarios=None):
     """Pure preview, using all effective override columns and bid-DA precedence."""
     root = Path(root)
     before = fingerprint(root)
     cfg = load_config(root=root)
+    from .resource_error_scenarios import normalized_scenarios, apply_error_scenarios
+    from .profile_sources import override_sources, column_source_rows
+    from .forecast_settings import generation_metadata
+    selection = normalized_scenarios(cfg if error_scenarios is None else error_scenarios)
+    source_info = override_sources(cfg)
+    protected = source_info['protected_columns']
     current_bids = _current_bids(cfg, bids)
     wind_multiplier = renewable_multiplier if wind_multiplier is None else wind_multiplier
     pv_multiplier = renewable_multiplier if pv_multiplier is None else pv_multiplier
@@ -110,7 +120,11 @@ def prepare_typical(root, *, season=None, renewable_multiplier=1., load_multipli
         baseline_availability = copy.deepcopy(prior['baseline_availability'])
         baseline_name = prior['baseline_name']
     else:
-        generated = generate_profiles(cfg)
+        # Store configured forecasts, never the last selected error recipe.
+        configured_cfg = copy.deepcopy(cfg)
+        if isinstance(configured_cfg.base.get('forecast'), dict):
+            configured_cfg.base['forecast'].pop('error_scenarios', None)
+        generated = generate_profiles(configured_cfg)
         override_path = root/'data/profile_overrides.csv'
         if override_path.exists():
             overrides = read_input_csv(override_path)
@@ -122,7 +136,7 @@ def prepare_typical(root, *, season=None, renewable_multiplier=1., load_multipli
                 expected = generated[column].tolist()
                 if len(overrides) != len(generated) or actual != expected:
                     raise ValueError(f'上传曲线的{column}顺序与当前时序不一致，不能按行静默错配')
-        baseline = apply_profile_overrides(cfg, generated)
+        baseline = apply_profile_overrides(configured_cfg, generated)
         baseline_season, baseline_load_scale = cfg.base['season'], cfg.base['load_scale']
         baseline_availability = _availability(cfg, current_bids)
         baseline_name = root.name
@@ -140,6 +154,8 @@ def prepare_typical(root, *, season=None, renewable_multiplier=1., load_multipli
         raise ValueError('水文类型须为丰水期wet或枯水期dry')
     target = copy.deepcopy(cfg)
     target.base.update(season=season, load_scale=float(baseline_load_scale)*load_multiplier)
+    if error_scenarios is not None or 'error_scenarios' in (cfg.base.get('forecast') or {}):
+        target.base['forecast'] = {**(target.base.get('forecast') or {}), 'error_scenarios': selection}
     profiles = baseline.copy()
     summary, clipped = [], []
     fixed_loads = cfg.units.get('tie', []) if cfg.base.get('tie_line_mode', 'supply') == 'fixed_load' else []
@@ -163,7 +179,15 @@ def prepare_typical(root, *, season=None, renewable_multiplier=1., load_multipli
                         '基准实际峰值（MW）': float(baseline[f'{name}_actual'].max()),
                         '组合实际峰值（MW）': float(profiles[f'{name}_actual'].max()),
                         '组合日前峰值（MW）': float(profiles[f'{name}_da'].max())})
+    # Quote availability changes only with the explicit weather transformation,
+    # never as a side effect of an error selection.
+    configured_profiles = profiles.copy(deep=True)
+    quote_columns = [f'{uid}_da' for uid, values in baseline_availability.items() if values is not None]
+    profiles = apply_error_scenarios(target, profiles, protected_columns=set(protected) | set(quote_columns))
     validate_profiles(target, profiles)
+    for row in summary:
+        name = 'load' if row['对象'] == '基础外生负荷' else row['对象']
+        row['组合日前峰值（MW）'] = float(profiles[f'{name}_da'].max())
     summary.append({'对象': '全网区内外生负荷合计', '倍率': load_multiplier,
                     '基准实际峰值（MW）': float(baseline[[f'{n}_actual' for n in load_names]].sum(axis=1).max()),
                     '组合实际峰值（MW）': float(profiles[[f'{n}_actual' for n in load_names]].sum(axis=1).max()),
@@ -171,7 +195,7 @@ def prepare_typical(root, *, season=None, renewable_multiplier=1., load_multipli
     output_bids = copy.deepcopy(current_bids)
     changed = []
     for uid, values in baseline_availability.items():
-        new = profiles[f'{uid}_da'].tolist() if values is not None else None
+        new = configured_profiles[f'{uid}_da'].tolist() if values is not None else None
         if output_bids['units'][uid].get('avail_pmax') != new:
             changed.append(uid)
             output_bids['units'][uid]['avail_pmax'] = new
@@ -186,18 +210,41 @@ def prepare_typical(root, *, season=None, renewable_multiplier=1., load_multipli
     assessment = assess_boundaries(model_case, model_data=model_data)
     assessment['designed_stress_event'] = wind_event
     assessment['forecast_model'] = target.base.get('forecast', {}).get('model', 'legacy_v1')
+    assessment['error_scenarios'] = selection
     if wind_event != 'none' and assessment['tier'] != 'pressure_required':
         assessment.update(tier='designed_stress', label='压力敏感性：傍晚持续低风，尚需出清验证')
-    assessment['caveats'].append('风电/光伏可分别调整；倍率和低风事件共同作用于四阶段，未独立增加预测误差，也不是误差尾部或季节联合分布检验。')
+    assessment['caveats'].append('倍率与低风事件先作用于基准曲线，再从最终实际值生成所选误差场景；上传预测与报价可用量优先。这是未校准离线情景，不是在线因果预测。')
     hydro = [{'电站': uid, '季节': '丰水期' if season == 'wet' else '枯水期',
               **{k: values.get(k) for k in ('qin', 'v0', 'vmin', 'vmax', 'v_end', 'qeco', 'e_day')}}
              for uid, values in model_data.hydro.items()]
     if fingerprint(root) != before:
         raise RuntimeError('输入在预览期间发生变化，请重新预览')
+    warnings = list(source_info['warnings'])
+    if quote_columns:
+        warnings.append('报价 avail_pmax 优先于日前预测：' + '、'.join(quote_columns) + '；仅更换误差场景不会改变这些申报可用量。')
+    previous_profiles = apply_profile_overrides(cfg, generate_profiles(cfg))
+    for uid, values in _availability(cfg, current_bids).items():
+        if values is not None:
+            previous_profiles[f'{uid}_da'] = values
+    effects = []
+    for name in ['load'] + [u['id'] for u in cfg.units['renewable']]:
+        for stage in ('da', 'id', 'rt'):
+            column = f'{name}_{stage}'
+            changed_count = int(np.count_nonzero(~np.isclose(profiles[column].to_numpy(), previous_profiles[column].to_numpy(), rtol=1e-12, atol=1e-9)))
+            effects.append({'对象': name, '阶段': {'da': '日前', 'id': '日内', 'rt': '实时'}[stage],
+                            '列': column, '变化时段数': changed_count,
+                            '预测减实际均值（MW）': float((profiles[column] - profiles[f'{name}_actual']).mean()),
+                            '受保护': column in set(protected) | set(quote_columns)})
+    metadata = generation_metadata(target, override_columns=profiles.columns,
+                                   protected_columns=protected, quote_columns=quote_columns)
+    metadata.update(error_effect_summary=effects, profile_source_warnings=warnings)
+    column_sources = column_source_rows(target, profiles.columns, protected, quote_columns,
+                                        limited=source_info['status'] == 'unverified_preserve_all')
     return dict(root=str(root.resolve()), fingerprint=before, bid_fingerprint=_digest(current_bids),
                 request=dict(season=None if restore else season, renewable_multiplier=renewable_multiplier,
                              load_multiplier=load_multiplier, use_current_as_baseline=use_current_as_baseline, restore=restore,
-                             wind_multiplier=wind_multiplier, pv_multiplier=pv_multiplier, wind_event=wind_event),
+                             wind_multiplier=wind_multiplier, pv_multiplier=pv_multiplier, wind_event=wind_event,
+                             error_scenarios=error_scenarios),
                 season=season, renewable_multiplier=renewable_multiplier, load_multiplier=load_multiplier,
                 wind_multiplier=wind_multiplier, pv_multiplier=pv_multiplier, wind_event=wind_event,
                 load_scale=target.base['load_scale'], baseline_name=baseline_name,
@@ -205,7 +252,12 @@ def prepare_typical(root, *, season=None, renewable_multiplier=1., load_multipli
                 baseline_availability=baseline_availability, baseline_profiles=baseline,
                 profiles=profiles, bids=output_bids, original_bids=current_bids,
                 availability_changes=changed, summary=summary, clipping=clipped, hydro=hydro, assessment=assessment,
-                inherited=inherited)
+                inherited=inherited, error_scenarios=selection, error_effect_summary=effects,
+                column_sources=column_sources, source_warnings=warnings, generation_metadata=metadata,
+                error_scenario_warnings=warnings, error_scenario_summary=effects,
+                protected_columns=protected, quote_columns=quote_columns,
+                configured_profiles=configured_profiles,
+                persist_error_scenarios='error_scenarios' in (target.base.get('forecast') or {}))
 
 
 def create_typical(name, prepared, *, bids=None, confirm_availability=False):
@@ -234,6 +286,8 @@ def create_typical(name, prepared, *, bids=None, confirm_availability=False):
         base_path = work/'config/base.yaml'
         base = y.load(base_path.read_text(encoding='utf-8'))
         base.update(season=checked['season'], load_scale=checked['load_scale'])
+        if checked['persist_error_scenarios']:
+            base['forecast'] = {**(base.get('forecast') or {}), 'error_scenarios': checked['error_scenarios']}
         with base_path.open('w', encoding='utf-8') as stream:
             y.dump(base, stream)
         objects = ['load'] + [u['id'] for u in cfg.units['renewable']]
@@ -265,6 +319,14 @@ def create_typical(name, prepared, *, bids=None, confirm_availability=False):
                         applied_availability=_availability(target_cfg, saved),
                         converted_load_policy='scale_once_with_total_load_factor_then_allocate_by_frozen_base_load_shares',
                         warning='合成研究情景；负荷是外生需求，不参与市场报价或需求响应。装机、网络、市场规则与原报价价格不变。')
+        protected = sorted((set(checked['protected_columns']) | set(checked['quote_columns'])) & set(override_columns))
+        generated = sorted(set(override_columns) - set(protected) - {'period', 'time'})
+        manifest.update(error_scenarios=checked['error_scenarios'], generation_metadata=checked['generation_metadata'],
+                        profile_sources=dict(version=1, protected_columns=protected, generated_columns=generated,
+                                             quote_columns=checked['quote_columns'],
+                                             override_sha256=manifest['applied_override_sha256'],
+                                             configured_forecasts={col: checked['configured_profiles'][col].tolist()
+                                                                   for col in generated if col.endswith(('_da', '_id', '_rt'))}))
         (work/MANIFEST).write_text(json.dumps(manifest, ensure_ascii=False, indent=2, allow_nan=False), encoding='utf-8')
         (work/'scenario.json').write_text(json.dumps({'name': name, 'source': root.name, 'note': manifest['warning'], 'created': datetime.now().isoformat(timespec='seconds'),
                                                       'typical_scenario': {key: checked[key] for key in ('season', 'renewable_multiplier', 'load_multiplier', 'wind_multiplier', 'pv_multiplier', 'wind_event')}}, ensure_ascii=False, indent=2), encoding='utf-8')

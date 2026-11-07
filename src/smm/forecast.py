@@ -111,7 +111,7 @@ def _generate_legacy_profiles(cfg: Config, seed: int | None = None) -> pd.DataFr
     rng = np.random.default_rng(cfg.base["seed"] if seed is None else seed)
     # 可选覆盖（base.yaml 的 forecast 段，网页应用“风光预测误差”用）：sigma.{wind,pv,load}.{da,id,rt}、phi.{wind,pv,load}
     fo = cfg.base.get("forecast") or {}
-    if not isinstance(fo, dict) or set(fo)-{'model','sigma','phi'}:
+    if not isinstance(fo, dict) or set(fo)-{'model','sigma','phi','error_scenarios'}:
         raise ValueError('forecast仅支持model/sigma/phi配置')
     for key in ('sigma','phi'):
         value=fo.get(key) or {}
@@ -179,14 +179,19 @@ def apply_profile_overrides(cfg: Config, df: pd.DataFrame, overrides: pd.DataFra
     显式预测列（da/id/rt）优先于推导值，仅改变对应列。所有提供列须有限、非负，风光不超过装机。网页应用的“负荷 96 点编辑 / 上传 CSV”即写这个文件。
     """
     validate_profiles(cfg, df)
+    from .resource_error_scenarios import apply_error_scenarios
+    from .profile_sources import override_sources
+    supplied = overrides is not None
     if overrides is None:
         p = cfg.root / "data" / "profile_overrides.csv"
         if not p.exists():
-            return df
+            return apply_error_scenarios(cfg, df)
         from .input_validation import read_input_csv
         overrides = read_input_csv(p)
     if len(overrides) != len(df):
         raise ValueError(f"profile_overrides 需 {len(df)} 行，实际 {len(overrides)} 行")
+    sources = (dict(protected_columns=[c for c in overrides if c not in ('period', 'time')],
+                    generated_columns=[], configured_forecasts={}) if supplied else override_sources(cfg, overrides.columns))
     out = df.copy()
     caps = {r["id"]: r["cap"] for r in cfg.units["renewable"]}
     from .fixed_load import tie_mode, tie_profiles
@@ -242,6 +247,12 @@ def apply_profile_overrides(cfg: Config, df: pd.DataFrame, overrides: pd.DataFra
             col = f"{n}_{stage}"
             if col in overrides:
                 out[col] = overrides[col].to_numpy(float)
+    # Stored typical profiles contain all stages. Only verified system columns
+    # may return to their configured baseline before the selected error recipe.
+    for col, values in sources['configured_forecasts'].items():
+        if col in sources['generated_columns'] and col.endswith(('_da', '_id', '_rt')):
+            out[col] = values
+    out = apply_error_scenarios(cfg, out, protected_columns=sources['protected_columns'])
     return validate_profiles(cfg, out)
 
 

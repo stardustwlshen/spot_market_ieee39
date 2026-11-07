@@ -5,6 +5,7 @@ from pathlib import Path
 from types import SimpleNamespace as NS
 import numpy as np
 import pandas as pd
+import psutil
 import pytest
 from smm import series,full,scuc,state_bridge as bridge,result_retention as retention
 from multiday_fixture import micro_day
@@ -12,7 +13,16 @@ from multiday_replay import replay
 
 
 def rss():
-    return int(next(x.split()[1] for x in Path('/proc/self/status').read_text().splitlines() if x.startswith('VmRSS:')))*1024
+    return psutil.Process().memory_info().rss
+
+
+def test_rss_uses_portable_process_memory_in_bytes(monkeypatch):
+    expected = 123456789
+    monkeypatch.setattr(psutil, 'Process', lambda: NS(memory_info=lambda: NS(rss=expected)))
+    def no_procfs(*args, **kwargs):
+        pytest.fail('RSS measurement must use psutil, not read /proc directly')
+    monkeypatch.setattr(Path, 'read_text', no_procfs)
+    assert rss() == expected
 
 
 def test_real_archive_two_days_and_resume(tmp_path,monkeypatch):

@@ -869,7 +869,7 @@ def checks(da_res, rr, rt_tab) -> dict:
     return out
 
 
-def run_full(cfg, case, log=print, periods: int | None = None, *, progress_callback=None, should_cancel=None, retain_id_models: bool = True, phase_callback=None) -> dict:
+def run_full(cfg, case, log=print, periods: int | None = None, *, progress_callback=None, should_cancel=None, retain_id_models: bool = True, phase_callback=None, activity_callback=None) -> dict:
     if type(retain_id_models) is not bool:
         raise ValueError("retain_id_models must be boolean")
     from .input_validation import validate_requested_periods
@@ -877,6 +877,8 @@ def run_full(cfg, case, log=print, periods: int | None = None, *, progress_callb
     if not bool(getattr(cfg, 'base', {}).get('solver', {}).get('storage_binary', True)):
         raise ValueError('storage_binary=false仅用于日前/独立LP研究对照，不支持滚动实际执行')
     def phase(name):
+        if activity_callback:
+            activity_callback(dict(phase=name))
         if phase_callback is not None:
             phase_callback(name)
     t0 = time.perf_counter()
@@ -886,7 +888,9 @@ def run_full(cfg, case, log=print, periods: int | None = None, *, progress_callb
         raise RunCancelled("Cancelled before DA")
     if progress_callback:
         progress_callback({"phase": "da_start", "completed": 0, "total": cfg.T if periods is None else min(cfg.T, periods)})
-    da = run_da(case, verbose=True, stage_callback=progress_callback) if progress_callback else run_da(case, verbose=True)
+    da = run_da(case, verbose=True,
+                **({'stage_callback': progress_callback} if progress_callback else {}),
+                **({'activity_callback': activity_callback} if activity_callback else {}))
     t_da = time.perf_counter() - t0
     if progress_callback:
         progress_callback({"phase": "da_done", "da": da})
@@ -895,7 +899,8 @@ def run_full(cfg, case, log=print, periods: int | None = None, *, progress_callb
             progress_callback(dict(event, da=da))
     phase("rolling")
     rr = rolling.run_rolling(da, periods=periods, log=log, progress_callback=emit, should_cancel=should_cancel,
-                             **({} if retain_id_models else {"retain_id_models": False}))
+                             **({} if retain_id_models else {"retain_id_models": False}),
+                             **({"activity_callback": activity_callback} if activity_callback else {}))
     from .hydro_daily_energy import audit as audit_daily_energy
     phase("daily_energy_audit")
     daily_check = audit_daily_energy(cfg, rolling.snapshot(da.model), rr, bids=getattr(da.case, "bids", None),input_registry=getattr(da.case,"input_provider",None))
@@ -1291,7 +1296,7 @@ def write_full_outputs(res, d: Path, make_plots=True) -> dict:
         id_windows=[dict(window_start=r["tau"],certificate=r["sced"]["hydro_water_selection"]) for r in res["rr"].id_rounds])
     (d/"hydro_water_selection_evidence.json").write_text(json.dumps(selection,ensure_ascii=False,allow_nan=False),encoding="utf-8")
     s["hydro_water_selection"]=audit_selection_evidence(selection,evidence,
-        json.loads((d/"stage_diagnostics.json").read_text()),da.case.cfg.units["hydro"],len(res["rr"].rt),len(res["rr"].id_rounds))
+        json.loads((d/"stage_diagnostics.json").read_text(encoding="utf-8")),da.case.cfg.units["hydro"],len(res["rr"].rt),len(res["rr"].id_rounds))
     s["operating_profit"]=dict(profits["summary"],**scope)
     provenance_path=d/"run_provenance.json"
     if provenance_path.exists():

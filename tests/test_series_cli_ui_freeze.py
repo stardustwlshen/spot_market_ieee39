@@ -88,6 +88,6 @@ def test_unstarted_editable_unconfirmed_cannot_launch(tmp_path):
     assert ws.bid_status(ws.load_task(root)['days'][0])=='待确认'
     button(at,'检查输入').click().run()
     assert not at.exception
-    assert button(at,'开始连续模拟').disabled
+    assert button(at,'开始模拟').disabled
     assert any('unconfirmed' in x.value for x in at.error)
     assert not (root/'launch.json').exists() and not (root/'run').exists()

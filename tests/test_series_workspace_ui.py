@@ -17,7 +17,9 @@ page_setup('出清任务测试')
 with patch.object(ui.sc,'SCEN_DIR',Path({str(tmp_path)!r})/'scenarios'):
     ui.render_series_workspace()
 '''
-    (tmp_path/'pages').symlink_to(ROOT/'app/pages',target_is_directory=True)
+    # Copy the small page fixtures; Windows symlinks require extra privileges.
+    import shutil
+    shutil.copytree(ROOT/'app/pages',tmp_path/'pages',ignore=shutil.ignore_patterns('__pycache__'))
     entry=tmp_path/'app.py';entry.write_text(text)
     return AppTest.from_file(str(entry),default_timeout=30).run()
 
@@ -31,12 +33,12 @@ def test_create_new_task_no_auto_bids_or_solve(tmp_path):
     # Assert direct children of the main workflow container, then its nested types.
     workflow = next(block for block in at.main.children.values() if block.type == 'tab_container')
     steps = list(workflow.children.values())
-    assert [tab.label for tab in steps] == ['1 每日场景','2 起始状态','3 每日报价','4 检查与运行','5 查看结果']
-    assert [tab.label for tab in steps[1].get('tab')] == ['火电','电池','水电','抽蓄']
+    assert [tab.label for tab in steps] == ['场景','机组与报价','全网概况','运行','结果']
+    assert [tab.label for tab in steps[0].get('tab')] == ['火电','电池','水电','抽蓄']
     assert not list(tmp_path.glob('series_tasks/*/launch.json'))
     assert any('未报价' in str(x.value) for x in at.dataframe)
     button(at,'检查输入').click().run();assert not at.exception
-    assert button(at,'开始连续模拟').disabled
+    assert button(at,'开始模拟').disabled
     assert any('引擎尚未安装' in x.value or '初态' in x.value for x in at.error)
 
 def test_bid_explicit_copy_edit_confirm_reload(tmp_path):
@@ -87,7 +89,7 @@ def test_helper_isolates_and_preserves_legacy_default(tmp_path,monkeypatch):
     button(at,'创建模拟').click().run()
     assert not at.exception
     workflow=next(block for block in at.main.children.values() if block.type=='tab_container')
-    assert [tab.label for tab in list(workflow.children.values())[1].get('tab')]==['火电','电池','水电','抽蓄']
+    assert [tab.label for tab in list(workflow.children.values())[0].get('tab')]==['火电','电池','水电','抽蓄']
     created=next((isolated/'series_tasks').iterdir())
     assert Path(ws.load_task(created)['source']['path'])==isolated/'scenarios'/sc.DEFAULT
     assert units_path.read_bytes()==before

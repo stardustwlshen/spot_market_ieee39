@@ -20,7 +20,8 @@ MODEL_LABELS = {"legacy_v1": "旧版：固定实际曲线与单尺度误差",
 
 def input_fingerprint(root):
     root = Path(root)
-    files = ("config/base.yaml", "config/units.yaml", "config/modes.yaml", "data/profile_overrides.csv")
+    files = ("config/base.yaml", "config/units.yaml", "config/modes.yaml", "data/profile_overrides.csv",
+             "config/typical_scenario.json", "data/typical_baseline_profiles.csv")
     return {name: hashlib.sha256((root / name).read_bytes()).hexdigest() if (root / name).exists() else None
             for name in files}
 
@@ -107,7 +108,7 @@ def apply_model_change(root, prepared):
                 Path(name).unlink()
 
 
-def generation_metadata(cfg, *, override_columns=None):
+def generation_metadata(cfg, *, override_columns=None, protected_columns=None, quote_columns=None):
     """Auditable assumptions for newly written results only."""
     from .forecast import PHI, SIGMA
     from .forecast_multiscale import ACTUAL, SLOW_VARIANCE_WEIGHT
@@ -115,6 +116,25 @@ def generation_metadata(cfg, *, override_columns=None):
     model = model_name(cfg)
     path = cfg.root / "data/profile_overrides.csv"
     columns = (list(pd.read_csv(path, nrows=0).columns) if path.exists() else []) if override_columns is None else list(override_columns)
+    from .profile_sources import override_sources, column_source_rows
+    from .resource_error_scenarios import scenario_metadata, normalized_scenarios
+    sources = override_sources(cfg, columns if protected_columns is None else None)
+    quote_context = 'not_evaluated' if quote_columns is None else 'effective_bids_verified'
+    quote_columns = [] if quote_columns is None else quote_columns
+    protected = sources['protected_columns'] if protected_columns is None else list(protected_columns)
+    all_columns = [f'{name}_{stage}' for name in ['load'] + [u['id'] for u in cfg.units['renewable']]
+                   for stage in ('actual', 'da', 'id', 'rt')]
+    selection = normalized_scenarios(cfg)
+    groups = {'load': ['load'], 'wind': [], 'pv': []}
+    for unit in cfg.units['renewable']:
+        groups[unit['type']].append(unit['id'])
+    application = []
+    for kind, names in groups.items():
+        candidates = [f'{name}_{stage}' for name in names for stage in ('da', 'id', 'rt')]
+        application.append({'resource': kind, 'recipe': selection[kind],
+                            'applied_columns': [c for c in candidates if c not in set(protected) | set(quote_columns)] if selection[kind] != 'configured' else [],
+                            'protected_columns': [c for c in candidates if c in protected],
+                            'quote_override_columns': [c for c in candidates if c in quote_columns]})
     return {"model": model, "model_label": MODEL_LABELS[model],
             "method": "offline_synthetic_joint_scenario_not_operational_forecasting",
             "scope": "automatic generation only; explicit override columns retain externally supplied values",
@@ -123,7 +143,19 @@ def generation_metadata(cfg, *, override_columns=None):
             "phi": {**PHI, **(fo.get("phi") or {})},
             "actual_fluctuation_assumptions": ACTUAL if model == "multiscale_v2" else None,
             "slow_error_variance_weight": SLOW_VARIANCE_WEIGHT if model == "multiscale_v2" else None,
-            "explicit_override_columns": [c for c in columns if c not in ("period", "time")],
+            "explicit_override_columns": protected,
+            "error_scenarios": selection,
+            "error_application": application,
+            "quote_context": quote_context,
+            "error_scenario_method": scenario_metadata(cfg),
+            "error_definition": "forecast_minus_actual",
+            "profile_source_status": sources['status'],
+            "profile_source_warnings": sources['warnings'],
+            "column_sources": column_source_rows(cfg, all_columns, protected, quote_columns,
+                                                   limited=sources['status'] == 'unverified_preserve_all'),
+            "priority": ["explicit_uploaded_columns", "verified_system_columns_regenerated_from_final_actual",
+                         "bid_avail_pmax_overrides_da_model_input"],
+            "quote_override_columns": list(quote_columns),
             "rt_first_period_actual": bool(cfg.mode.get("realtime", {}).get("first_period_actual", True)),
             "limitations": ["合成数据不是实测风光，也不是可上线预测器。",
                             "标准差为截断前总体假设；不按单日结果反向缩放以凑准确率。",

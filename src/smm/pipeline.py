@@ -62,12 +62,26 @@ def prepare(cfg: Config, bid_version: int | None = None, verbose=True, *, read_o
             print("   ", i)
     net = build_network(cfg)
     prof = apply_profile_overrides(cfg, generate_profiles(cfg, cfg.base["seed"]))
+    from .bids import effective_bids
+    effective = effective_bids(cfg, bids)
+    quote_columns = []
+    physical_view = prof.copy(deep=True)
+    for unit in cfg.units['renewable']:
+        uid = unit['id']
+        values = effective['units'][uid].get('avail_pmax')
+        if values is not None:
+            column = f'{uid}_da'
+            quote_columns.append(column)
+            physical_view[column] = values
+    # Enabled offline error scenarios validate the final DA input too. All
+    # columns are protected, so validation never adjusts a user's quotation.
+    from .resource_error_scenarios import apply_error_scenarios
+    apply_error_scenarios(cfg, physical_view, protected_columns=physical_view.columns)
     from .forecast_settings import generation_metadata
-    prof.attrs["generation_metadata"] = generation_metadata(cfg)
+    prof.attrs["generation_metadata"] = generation_metadata(cfg, quote_columns=quote_columns)
     if not read_only:
         save_profiles(cfg, prof)
-    from .bids import effective_bids
-    return build_da_case(cfg, net, prof, effective_bids(cfg, bids))
+    return build_da_case(cfg, net, prof, effective)
 
 
 def out_dir(cfg: Config, bids_version: int, tag: str = "") -> Path:

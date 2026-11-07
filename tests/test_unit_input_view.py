@@ -177,7 +177,8 @@ def test_network_view_uses_overrides_and_never_writes(network_cfg,tie_mode,actua
     assert metrics['日前预测负荷峰值（MW）'] == da_peak
     if tie_mode == 'supply':
         assert any('供给注入，未加到负荷' in item.value for item in at.caption)
-    assert len(at.get('vega_lite_chart')) == 3
+    assert len(at.get('vega_lite_chart')) == 2
+    assert len(at.get('plotly_chart')) == 2  # topology and selectable renewable input curves
     assert not at.button and not at.number_input and not at.text_input
     selector = next(item for item in at.selectbox if item.label == '查看其他机组参数')
     assert any('H2' in label and '未启用' in label for label in selector.options)

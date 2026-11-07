@@ -13,9 +13,14 @@ from matplotlib import font_manager  # noqa: E402
 
 
 def _setup_font():
-    for name in ("Noto Sans CJK SC", "Noto Sans CJK JP", "WenQuanYi Zen Hei", "WenQuanYi Micro Hei", "SimHei", "AR PL UMing CN"):
-        if any(name in f.name for f in font_manager.fontManager.ttflist):
-            plt.rcParams["font.sans-serif"] = [name, "DejaVu Sans"]
+    # Only select a registered family; do not assume an OS-specific font exists.
+    available = {font.name.casefold(): font.name for font in font_manager.fontManager.ttflist}
+    for name in ("Noto Sans CJK SC", "Noto Sans CJK JP", "WenQuanYi Zen Hei", "WenQuanYi Micro Hei",
+                 "SimHei", "AR PL UMing CN", "PingFang SC", "PingFang HK", "Heiti SC", "Heiti TC",
+                 "STHeiti", "Songti SC", "Microsoft YaHei", "Microsoft YaHei UI", "SimSun"):
+        family = available.get(name.casefold())
+        if family is not None:
+            plt.rcParams["font.sans-serif"] = [family, "DejaVu Sans"]
             break
     plt.rcParams["axes.unicode_minus"] = False
 

@@ -148,34 +148,53 @@ def get_scene_working_draft(state, name, cfg):
         state[key + ':manual'] = copy.deepcopy(record.get('manual', []))
         state[key + ':meta'] = {k: copy.deepcopy(v) for k, v in record.items() if k not in ('draft', 'manual')}
         state[key + ':etag'] = etag
+        # A compact editor may render immediately on a read-only visit. Keep an
+        # in-memory checkpoint so only real edits (including rerun actions) save.
+        state[key + ':checkpoint'] = _json({**state[key + ':meta'],
+            'draft': state[key], 'manual': state[key + ':manual']})
     info = state[key + ':meta']
+    if key + ':checkpoint' not in state:
+        # A session opened before checkpoint support must also remain read-only
+        # on its first compact visit, without discarding its retained edits.
+        state[key + ':checkpoint'] = _json({
+            **{k: v for k, v in info.items() if k not in ('newer_basis', 'latest_error')},
+            'draft': state[key], 'manual': state.get(key + ':manual', [])})
     # A scene's saved file may change in another tool/tab. Never swap the user's
     # current bid under live widgets; show the pinned basis instead.
     try:
-        latest, latest_label = _latest_basis(cfg)
+        latest, _ = _latest_basis(cfg)
     except (OSError, ValueError, KeyError, TypeError) as exc:
         info['latest_error'] = f'{type(exc).__name__}: {exc}'
         info['newer_basis'] = False
     else:
         info.pop('latest_error', None)
-        info['newer_basis'] = (latest_label != info['basis_label'] or
-                               quotation_changed(latest, info.get('initial_latest', info['baseline'])))
+        # Display labels also describe scene copies and technical edits; they
+        # are not source identities. An explicitly retained older version must
+        # still warn even when initial_latest already captured the newer one.
+        initial_latest = info.get('initial_latest')
+        if initial_latest is None:
+            initial_latest = info['baseline']
+        info['newer_basis'] = (latest.get('version') != info['baseline'].get('version') or
+                               quotation_changed(latest, initial_latest))
     return key, state[key], info['baseline'], info
 
 
-def persist_scene_working_draft(state, name, cfg):
+def persist_scene_working_draft(state, name, cfg, *, only_if_changed=False):
     """Atomically save only current workspace data, with concurrent-edit detection."""
     from smm.process_control import file_lock
     key = scene_draft_key(name)
     info = state[key + ':meta']
     record = {k: copy.deepcopy(v) for k, v in info.items() if k not in ('newer_basis', 'latest_error')}
     record.update(draft=copy.deepcopy(state[key]), manual=copy.deepcopy(state.get(key + ':manual', [])))
+    if only_if_changed and state.get(key + ':checkpoint') == _json(record):
+        return
     path = cfg.root / 'current_quote.json'
     with file_lock(cfg.root / 'current_quote.lock'):
         current = path.read_bytes() if path.exists() else None
         if _digest(current) != state.get(key + ':etag'):
             raise ValueError('另一页面已更新此场景的当前报价。本页编辑仍保留，但未覆盖对方；请先下载本页报价备份，再刷新核对。')
         if current is not None and _json(json.loads(current)) == _json(record):
+            state[key + ':checkpoint'] = _json(record)
             return
         record['saved_at'] = datetime.now(timezone.utc).isoformat(timespec='seconds')
         data = _json(record).encode('utf-8')
@@ -191,6 +210,7 @@ def persist_scene_working_draft(state, name, cfg):
                 os.unlink(temporary)
         state[key + ':etag'] = _digest(data)
         info['saved_at'] = record['saved_at']
+        state[key + ':checkpoint'] = _json(record)
 
 
 def quotation_backup(state, name):

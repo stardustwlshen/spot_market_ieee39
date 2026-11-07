@@ -98,7 +98,7 @@ def load_forecast_diagnostics(directory):
     try:
         path=directory/'forecast_error_status.json'
         if not path.is_file():return empty
-        status=json.loads(path.read_text())
+        status=json.loads(path.read_text(encoding='utf-8'))
         if not isinstance(status,dict):raise ValueError('诊断状态结构无效')
         if status.get('valid') is not True:
             errors=status.get('errors',[])

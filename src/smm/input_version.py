@@ -133,8 +133,12 @@ def compare_source_version(directory, root, *, options=None):
         if changes:
             return dict(status='changed', changes=changes,
                         message='输入已变化，待重新运行：此图仍是历史运行，不会随当前输入改写。')
-        if not valid_options(options) or not valid_options(evidence['run_options']):
-            return {**result, 'message': '来源无法完全核对：已保存场景与报价一致，但当前或历史运行覆盖未记录。请到运行页确认模式和范围。'}
+        if not valid_options(evidence['run_options']):
+            return {**result, 'message': '已保存场景与报价一致；历史运行缺少有效模式 / 范围记录，无法核对运行范围。'}
+        if not valid_options(options):
+            frozen = evidence['run_options']
+            scope = '仅日前' if frozen['mode'] == 'da' else ('完整单日' if frozen['periods'] is None else f"前 {frozen['periods']} 个实时时段")
+            return {**result, 'message': f'已保存场景与报价与本次冻结来源一致；冻结运行范围：{scope}。当前会话尚未确认运行范围，未比较当前运行选项；这不表示冻结来源损坏。'}
         return dict(status='equal', changes=[], message='输入一致：已保存场景、当前报价与运行模式 / 范围均与本次冻结来源相同。')
     except (OSError, ValueError, TypeError, KeyError, AttributeError, yaml.YAMLError) as exc:
         return {**result, 'message': '来源暂不能核对；仍展示冻结历史，不使用当前输入补齐。', 'detail': str(exc)}

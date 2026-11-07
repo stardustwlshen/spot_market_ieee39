@@ -338,7 +338,8 @@ def test_timer_fragment_requests_full_refresh_and_unlocks_quote_controls(scenari
 
     # Execute the actual monitor body as a timer fragment, retaining the old
     # page-level active=True. A plain AppTest.run alone would hide this bug.
-    node = next(n for n in ast.parse(PAGE.read_text()).body
+    monitor_page = ROOT / 'app/daily_run_monitor.py'
+    node = next(n for n in ast.walk(ast.parse(monitor_page.read_text(encoding='utf-8')))
                 if isinstance(n, ast.FunctionDef) and n.name == 'monitor')
     node.decorator_list = []
     refreshes = []
@@ -349,7 +350,7 @@ def test_timer_fragment_requests_full_refresh_and_unlocks_quote_controls(scenari
         raise AppRefresh()
     env = {'sc': scenario, 'run_status': run_status, 'active': True,
            'st': SimpleNamespace(rerun=request_refresh, session_state={})}
-    exec(compile(ast.Module(body=[node], type_ignores=[]), str(PAGE), 'exec'), env)
+    exec(compile(ast.Module(body=[node], type_ignores=[]), str(monitor_page), 'exec'), env)
     meta['status'] = terminal_status
     atomic_json(directory / 'meta.json', meta)
     with pytest.raises(AppRefresh):

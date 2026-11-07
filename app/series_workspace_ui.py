@@ -32,25 +32,18 @@ def scene_summary(cfg):
 def create_panel(tasks):
     with st.expander('新建模拟',expanded=not tasks):
         scenes=sc.list_scenarios()
-        source=st.selectbox('基础方案',scenes,key='series_create_source',help='已保存方案保持原样。需要本版默认配置时，可在下方另建。')
+        # Apply the selection on the next render, before its widget exists.
+        pending_source=st.session_state.pop('series_create_source_pending',None)
+        if pending_source in scenes:
+            st.session_state['series_create_source']=pending_source
+        source=st.selectbox('选择场景',scenes,key='series_create_source',help='选择已有的机组、网络和报价配置；每天的风光、负荷与来水在创建后设置。')
         cfg=scen_config(source)
-        st.caption(scene_summary(cfg))
-        with st.expander('使用新版默认方案（保留已有方案）'):
-            from smm.config import load_config
-            current=load_config(root=sc.ROOT)
-            st.caption(scene_summary(current))
-            new_name=st.text_input('新方案名称',value='新版默认_研究')
-            if st.button('另建新版默认方案'):
-                try:
-                    sc.create_scenario(new_name,source=None,note='用户明确从当前版本默认配置新建；未覆盖已有场景或手工报价')
-                    st.session_state['series_create_source']=new_name;st.rerun()
-                except (ValueError,OSError) as exc:st.error(str(exc))
         with st.form('series_create'):
             c1,c2=st.columns(2)
             start=c1.date_input('从哪天开始',value=date.fromisoformat(str(cfg.base['date'])))
             count=c2.number_input('模拟几天',min_value=1,max_value=31,value=1,step=1)
-            title=st.text_input('模拟名称',value='连续出清研究')
-            with st.expander('高级设置：预测方式、随机种子与时区'):
+            with st.expander('更多设置（可选）'):
+                title=st.text_input('模拟名称',value=source+'模拟')
                 input_model=st.selectbox('任务输入方式',['causal_physical_v3','deterministic_known_inputs_v1'],format_func=lambda x:'按时更新预测（研究模拟）' if x=='causal_physical_v3' else '预先知道全部实际曲线（仅联调）',help='不改变实际过程；因果模式仅使用发布时点已知的信息。')
                 c1,c2=st.columns(2)
                 seed=c1.text_input('随机种子',value=str(cfg.base['seed']),help='相同输入和种子可复现同一组研究情景。')
@@ -60,9 +53,22 @@ def create_panel(tasks):
                     root=ws.create_task(ROOT/'series_tasks',sc.scenario_path(source),title=title,start_date=str(start),day_count=int(count),timezone=tz,root_seed=seed,input_model=input_model)
                     st.session_state['series_task']=str(root);st.rerun()
                 except (OSError,ValueError,KeyError,TypeError) as exc:st.error(str(exc))
-    with st.expander('机组、网络与高级参数'):
-        st.page_link('pages/2_运行.py',label='编辑基础方案的机组、报价与接线图')
-        st.caption('基础方案的变化不会覆盖已建模拟；要采用变化，请新建修订。')
+        with st.expander('场景管理（可选）'):
+            st.caption('已有场景可以直接使用。只有想采用当前版本默认参数时，才需要另建场景。')
+            st.caption('所选场景：'+scene_summary(cfg))
+            if st.button('查看或修改场景机组',key='series_open_source'):
+                st.session_state['scenario']=source
+                st.session_state['_sel_scenario']=source
+                st.switch_page('pages/2_运行.py')
+            from smm.config import load_config
+            current=load_config(root=sc.ROOT)
+            st.caption('当前版本默认：'+scene_summary(current))
+            new_name=st.text_input('新方案名称',value='新版默认_研究')
+            if st.button('另建新版默认方案'):
+                try:
+                    created=sc.create_scenario(new_name,source=None,note='用户明确从当前版本默认配置新建；未覆盖已有场景或手工报价')
+                    st.session_state['series_create_source_pending']=created.name;st.rerun()
+                except (ValueError,OSError) as exc:st.error(str(exc))
 
 
 def local_time(value,timezone):
@@ -173,77 +179,83 @@ def day_panel(root,m,begun,day_date):
         else:row.update(风电倍率=d['wind_multiplier'],光伏倍率=d['pv_multiplier'],负荷倍率=d['load_multiplier'])
         row.update(报价=ws.bid_status(d))
         summary.append(row)
-    st.dataframe(pd.DataFrame(summary),hide_index=True,width='stretch')
+    if len(summary)>1:
+        with st.expander('查看全部日期安排'):
+            st.dataframe(pd.DataFrame(summary),hide_index=True,width='stretch')
     d=ws.day_by_date(m,day_date)
-    caps=adapter.capabilities();catalog=caps['causal']
-    with st.form(f'series_day:{m["task_id"]}:{day_date}'):
-        season=st.selectbox('来水季节模板',['wet','dry'],index=0 if d['season']=='wet' else 1,format_func=lambda s:'丰水' if s=='wet' else '枯水')
-        wind,pv,load=(d[k] for k in ('wind_multiplier','pv_multiplier','load_multiplier'))
-        if not causal:
-            c1,c2,c3=st.columns(3)
-            wind=c1.number_input('风电倍率',.1,2.,float(wind),format='%.15g')
-            pv=c2.number_input('光伏倍率',.1,2.,float(pv),format='%.15g')
-            load=c3.number_input('负荷倍率',.1,2.,float(load),format='%.15g')
-            st.caption('固定已知曲线联调不使用预测误差场景。')
-        specs=copy.deepcopy(d['process_specs']);policies=copy.deepcopy(d['forecast_policy'])
-        if catalog and causal:
-            cols=st.columns(2)
-            for i,kind in enumerate(ws.KINDS):
-                col=cols[i%2]
-                items=catalog['actual_presets'][kind]
-                from smm.causal_presets import DEFAULTS
-                current=specs[kind]['preset'];current=current if current in items else DEFAULTS[kind]
-                name=col.selectbox({'wind':'风电情况','pv':'光伏天气','load':'用电水平','natural_inflow':'来水情况'}[kind],items,index=items.index(current),format_func=lambda x:PRESET_CN.get(x,x))
-                specs[kind]=dict(preset=name,parameters=specs[kind]['parameters'] if name==current else {})
-            with st.expander('预测情况 · 可分别调整四类误差'):
-                st.caption('研究情形，不代表实际预测准确率。')
+    chosen=next(row for row in summary if row['日期']==day_date)
+    st.caption(' · '.join(str(value).split(' / ')[0] for key,value in chosen.items() if key not in ('日期','报价')))
+    st.caption('可直接使用上述场景；需要改变风光、负荷或来水时再展开修改。')
+    with st.expander('调整当天场景（可选）'):
+        caps=adapter.capabilities();catalog=caps['causal']
+        with st.form(f'series_day:{m["task_id"]}:{day_date}'):
+            season=st.selectbox('来水季节模板',['wet','dry'],index=0 if d['season']=='wet' else 1,format_func=lambda s:'丰水' if s=='wet' else '枯水')
+            wind,pv,load=(d[k] for k in ('wind_multiplier','pv_multiplier','load_multiplier'))
+            if not causal:
+                c1,c2,c3=st.columns(3)
+                wind=c1.number_input('风电倍率',.1,2.,float(wind),format='%.15g')
+                pv=c2.number_input('光伏倍率',.1,2.,float(pv),format='%.15g')
+                load=c3.number_input('负荷倍率',.1,2.,float(load),format='%.15g')
+                st.caption('固定已知曲线联调不使用预测误差场景。')
+            specs=copy.deepcopy(d['process_specs']);policies=copy.deepcopy(d['forecast_policy'])
+            if catalog and causal:
+                cols=st.columns(2)
                 for i,kind in enumerate(ws.KINDS):
-                    policies[kind]=st.selectbox(KIND_CN[kind]+'预测情况',catalog['forecast_policies'],index=catalog['forecast_policies'].index(policies.get(kind,'baseline')),format_func=lambda x:POLICY_CN.get(x,x))
-            if not catalog.get('consumer_integration_ready'):st.warning('新预测过程已注册，消费者联调尚未通过；现在只能保存选择，不能启动该模式。')
-            with st.expander('详细调整：四类过程参数'):
-                from smm.causal_presets import resolve_actual
-                for kind in ws.KINDS:
-                    st.markdown('**'+KIND_CN[kind]+'**')
-                    values=resolve_actual(kind,specs[kind]);bounds=catalog['parameter_schema'][kind]['bounds']
-                    for param,value in values.items():
-                        if isinstance(value,str):
-                            st.caption('云况：'+{'clear':'晴空','shaded':'遮云','switching':'晴阴交替'}.get(value,str(value)));continue
-                        lo,hi=bounds[param]
-                        help_text={'target':'风电为容量因子；负荷为需求倍率；来水为参考补给倍率。',
-                            'target_end':'事件结束的风电目标容量因子。','event_hour':'事件在当天的当地小时。',
-                            'duration_h':'事件持续小时数。','amplitude':'来水脉冲相对固定参考流量的倍率。',
-                            'clear_k':'晴态透过率，0到1。','shaded_k':'遮云透过率，0到1。',
-                            'peak_shift_h':'相对公开日形的峰时偏移小时。',
-                            'slow_sigma':'慢变化创新强度，不是输出曲线的误差百分比。','fast_sigma':'快变化创新强度，不是输出曲线的误差百分比。',
-                            'rho':'资源空间共同分量相关强度。','rho_slow':'慢过程共同分量相关强度。','rho_fast':'快过程共同分量相关强度。',
-                            'sigma':'过程状态创新强度，不是预测准确率。','noise_amplitude':'来水低频噪声相对参考流量强度。'}
-                        help_=help_text.get(param,'时间常数或驻留时长（小时）；越大变化越慢。' if param.endswith('_h') else '该预设的模型过程参数。')
-                        parameter_name={'target':'目标水平','target_end':'结束目标','event_hour':'开始时刻（当地小时）','duration_h':'持续时间（小时）','slow_h':'慢变化时间（小时）','fast_h':'快变化时间（小时）','slow_sigma':'慢变化波动强度','fast_sigma':'快变化波动强度','rho_slow':'慢变化空间相关程度','rho_fast':'快变化空间相关程度','clear_k':'晴空透过率','shaded_k':'遮云透过率','clear_h':'晴段平均时长（小时）','shaded_h':'阴段平均时长（小时）','response_h':'响应时间（小时）','sigma':'波动强度','rho':'空间相关程度','peak_shift_h':'峰时偏移（小时）','base_h':'基流响应时间（小时）','rise_h':'涨水响应时间（小时）','fall_h':'退水响应时间（小时）','route_h':'汇流响应时间（小时）','noise_h':'扰动时间（小时）','noise_amplitude':'低频扰动强度','lag_h':'到达滞后（小时）'}.get(param,param)
-                        number=st.number_input(f'{KIND_CN[kind]} · {parameter_name}',min_value=float(lo),max_value=float(hi),value=float(value),format='%.15g',help=help_,key=f'process:{day_date}:{kind}:{specs[kind]["preset"]}:{param}')
-                        specs[kind]['parameters'][param]=number
-        elif causal:st.info('四资源因果预测模块尚未安装，误差选项暂不开放。')
-        if st.form_submit_button('保存该日场景',disabled=begun):
-            new=copy.deepcopy(m);x=ws.day_by_date(new,day_date)
-            values=dict(season=season,wind_multiplier=wind,pv_multiplier=pv,load_multiplier=load)
-            x['locked']=sorted(set(x['locked'])|{k for k,v in values.items() if v!=d[k]})
-            for group,new_values in ((('process_specs',specs),('forecast_policy',policies)) if causal else ()):
-                for kind,value in new_values.items():
-                    old=d[group].get(kind)
-                    if group=='process_specs' and catalog:
-                        from smm.causal_presets import resolve_actual,DEFAULTS
-                        original=copy.deepcopy(old or {})
-                        if not original.get('preset'):original['preset']=DEFAULTS[kind]
-                        changed=resolve_actual(kind,value)!=resolve_actual(kind,original) or value['preset']!=original['preset']
-                    else:changed=value!=(old or 'baseline')
-                    if changed:x['locked']=sorted(set(x['locked'])|{f'{group}.{kind}'})
-            x.update(values);x['process_specs']=specs;x['forecast_policy']=policies;x['source']='user_edited'
-            _save(root,m,new)
-    with st.expander('应用到多天 / 随机生成'):
-        targets=st.multiselect('目标日期',[x['date'] for x in m['days']],default=[x['date'] for x in m['days']],key='series_batch_dates')
-        st.caption('随机只填未手改字段，不改变报价，也不把随机选项当逐时白噪声。')
-        c1,c2=st.columns(2)
-        if c1.button('随机生成所选天',disabled=begun or not targets):_save(root,m,ws.randomize_unlocked(m,targets))
-        if c2.button('把这天场景复制过去',disabled=begun or not targets):_save(root,m,ws.copy_day_settings(m,day_date,targets))
+                    col=cols[i%2]
+                    items=catalog['actual_presets'][kind]
+                    from smm.causal_presets import DEFAULTS
+                    current=specs[kind]['preset'];current=current if current in items else DEFAULTS[kind]
+                    name=col.selectbox({'wind':'风电情况','pv':'光伏天气','load':'用电水平','natural_inflow':'来水情况'}[kind],items,index=items.index(current),format_func=lambda x:PRESET_CN.get(x,x))
+                    specs[kind]=dict(preset=name,parameters=specs[kind]['parameters'] if name==current else {})
+                with st.expander('预测情况 · 可分别调整四类误差'):
+                    st.caption('研究情形，不代表实际预测准确率。')
+                    for i,kind in enumerate(ws.KINDS):
+                        policies[kind]=st.selectbox(KIND_CN[kind]+'预测情况',catalog['forecast_policies'],index=catalog['forecast_policies'].index(policies.get(kind,'baseline')),format_func=lambda x:POLICY_CN.get(x,x))
+                if not catalog.get('consumer_integration_ready'):st.warning('新预测过程已注册，消费者联调尚未通过；现在只能保存选择，不能启动该模式。')
+                with st.expander('详细调整：四类过程参数'):
+                    from smm.causal_presets import resolve_actual
+                    for kind in ws.KINDS:
+                        st.markdown('**'+KIND_CN[kind]+'**')
+                        values=resolve_actual(kind,specs[kind]);bounds=catalog['parameter_schema'][kind]['bounds']
+                        for param,value in values.items():
+                            if isinstance(value,str):
+                                st.caption('云况：'+{'clear':'晴空','shaded':'遮云','switching':'晴阴交替'}.get(value,str(value)));continue
+                            lo,hi=bounds[param]
+                            help_text={'target':'风电为容量因子；负荷为需求倍率；来水为参考补给倍率。',
+                                'target_end':'事件结束的风电目标容量因子。','event_hour':'事件在当天的当地小时。',
+                                'duration_h':'事件持续小时数。','amplitude':'来水脉冲相对固定参考流量的倍率。',
+                                'clear_k':'晴态透过率，0到1。','shaded_k':'遮云透过率，0到1。',
+                                'peak_shift_h':'相对公开日形的峰时偏移小时。',
+                                'slow_sigma':'慢变化创新强度，不是输出曲线的误差百分比。','fast_sigma':'快变化创新强度，不是输出曲线的误差百分比。',
+                                'rho':'资源空间共同分量相关强度。','rho_slow':'慢过程共同分量相关强度。','rho_fast':'快过程共同分量相关强度。',
+                                'sigma':'过程状态创新强度，不是预测准确率。','noise_amplitude':'来水低频噪声相对参考流量强度。'}
+                            help_=help_text.get(param,'时间常数或驻留时长（小时）；越大变化越慢。' if param.endswith('_h') else '该预设的模型过程参数。')
+                            parameter_name={'target':'目标水平','target_end':'结束目标','event_hour':'开始时刻（当地小时）','duration_h':'持续时间（小时）','slow_h':'慢变化时间（小时）','fast_h':'快变化时间（小时）','slow_sigma':'慢变化波动强度','fast_sigma':'快变化波动强度','rho_slow':'慢变化空间相关程度','rho_fast':'快变化空间相关程度','clear_k':'晴空透过率','shaded_k':'遮云透过率','clear_h':'晴段平均时长（小时）','shaded_h':'阴段平均时长（小时）','response_h':'响应时间（小时）','sigma':'波动强度','rho':'空间相关程度','peak_shift_h':'峰时偏移（小时）','base_h':'基流响应时间（小时）','rise_h':'涨水响应时间（小时）','fall_h':'退水响应时间（小时）','route_h':'汇流响应时间（小时）','noise_h':'扰动时间（小时）','noise_amplitude':'低频扰动强度','lag_h':'到达滞后（小时）'}.get(param,param)
+                            number=st.number_input(f'{KIND_CN[kind]} · {parameter_name}',min_value=float(lo),max_value=float(hi),value=float(value),format='%.15g',help=help_,key=f'process:{day_date}:{kind}:{specs[kind]["preset"]}:{param}')
+                            specs[kind]['parameters'][param]=number
+            elif causal:st.info('四资源因果预测模块尚未安装，误差选项暂不开放。')
+            if st.form_submit_button('保存该日场景',disabled=begun):
+                new=copy.deepcopy(m);x=ws.day_by_date(new,day_date)
+                values=dict(season=season,wind_multiplier=wind,pv_multiplier=pv,load_multiplier=load)
+                x['locked']=sorted(set(x['locked'])|{k for k,v in values.items() if v!=d[k]})
+                for group,new_values in ((('process_specs',specs),('forecast_policy',policies)) if causal else ()):
+                    for kind,value in new_values.items():
+                        old=d[group].get(kind)
+                        if group=='process_specs' and catalog:
+                            from smm.causal_presets import resolve_actual,DEFAULTS
+                            original=copy.deepcopy(old or {})
+                            if not original.get('preset'):original['preset']=DEFAULTS[kind]
+                            changed=resolve_actual(kind,value)!=resolve_actual(kind,original) or value['preset']!=original['preset']
+                        else:changed=value!=(old or 'baseline')
+                        if changed:x['locked']=sorted(set(x['locked'])|{f'{group}.{kind}'})
+                x.update(values);x['process_specs']=specs;x['forecast_policy']=policies;x['source']='user_edited'
+                _save(root,m,new)
+        with st.expander('应用到多天 / 随机生成'):
+            targets=st.multiselect('目标日期',[x['date'] for x in m['days']],default=[x['date'] for x in m['days']],key='series_batch_dates')
+            st.caption('随机只填未手改字段，不改变报价，也不把随机选项当逐时白噪声。')
+            c1,c2=st.columns(2)
+            if c1.button('随机生成所选天',disabled=begun or not targets):_save(root,m,ws.randomize_unlocked(m,targets))
+            if c2.button('把这天场景复制过去',disabled=begun or not targets):_save(root,m,ws.copy_day_settings(m,day_date,targets))
     return day_date
 
 
@@ -254,30 +266,44 @@ def bid_panel(root,m,day_date,begun):
     if blocked:st.info('这一天已开始出清，报价只读。')
     elif day['bid_package'] is None:st.info('先为这一天生成或复制报价，再逐机组调整并确认。')
     else:st.caption(f"报价 v{day['bid_package']['version']} · 只属于这一天，修改后须重新确认。")
-    c1,c2=st.columns(2)
-    candidate=Path(root)/'source/quote_candidate.json'
-    if c1.button('复制基础方案报价到这天',disabled=blocked or not candidate.exists()):
-        _save(root,m,ws.replace_daily_bids(m,day_date,json.loads(candidate.read_text()),source='explicit_base_copy'),changed_day=day_date,bids_only=True)
-    if c2.button('生成这天的报价草稿',disabled=blocked):
-        try:
-            from smm.bids import default_bids
-            _save(root,m,ws.replace_daily_bids(m,day_date,default_bids(cfg),source='explicit_cost_template'),changed_day=day_date,bids_only=True)
-        except Exception as exc:st.error(str(exc))
-    available=[d['date'] for d in m['days'] if d['bid_package'] is not None and d['date']!=day_date]
-    if available:
-        src=st.selectbox('从其他日期复制报价',available,key='series_bid_copy_source')
-        if st.button('明确复制所选日报价',disabled=blocked):
-            _save(root,m,ws.replace_daily_bids(m,day_date,ws.day_by_date(m,src)['bid_package'],source='explicit_day_copy:'+src),changed_day=day_date,bids_only=True)
+    from common import TYPE_CN
+    from unit_input_view import render_unit_summary,render_unit_information
+    unit_types={u['id']:u.get('type',group) for group in ('thermal','hydro','renewable','storage','pumped','tie') for u in cfg.units.get(group,[]) if u.get('enabled',True)}
     package=day['bid_package']
-    if package is None:return
-    if m['generation']['model']=='causal_physical_v3':
-        st.caption('风光可用量留空时由模型使用已发布预测；已有手工申报不会被自动覆盖。')
-        if st.button('用当日已发布预测填写风光可用量',disabled=blocked):
+    choices=list(package['units']) if package is not None else list(unit_types)
+    uid=st.selectbox('选择报价机组',choices,key='series_bid_unit',format_func=lambda u:f'{u} · {TYPE_CN.get(unit_types.get(u),"机组")}')
+    render_unit_summary(cfg,uid)
+    with st.expander('查看完整机组参数'):
+        st.caption('这里是场景设备档案；本次模拟的起始状态在“场景 → 起始状态”中核对。')
+        render_unit_information(cfg,uid,compact=True)
+    candidate=Path(root)/'source/quote_candidate.json'
+    if package is None:
+        if st.button('生成这天的报价草稿',disabled=blocked,type='primary'):
             try:
-                updated=adapter.apply_issued_bid_availability(root,m,day_date)
-                _save(root,m,ws.replace_daily_bids(m,day_date,updated,source='explicit_issued_DA_forecast'),changed_day=day_date,bids_only=True)
+                from smm.bids import default_bids
+                _save(root,m,ws.replace_daily_bids(m,day_date,default_bids(cfg),source='explicit_cost_template'),changed_day=day_date,bids_only=True)
             except Exception as exc:st.error(str(exc))
-    uid=st.selectbox('选择报价机组',list(package['units']),key='series_bid_unit')
+    with st.expander('复制或重新生成报价'):
+        if st.button('复制基础方案报价到这天',disabled=blocked or not candidate.exists()):
+            _save(root,m,ws.replace_daily_bids(m,day_date,json.loads(candidate.read_text(encoding='utf-8')),source='explicit_base_copy'),changed_day=day_date,bids_only=True)
+        if package is not None and st.button('生成这天的报价草稿',disabled=blocked):
+            try:
+                from smm.bids import default_bids
+                _save(root,m,ws.replace_daily_bids(m,day_date,default_bids(cfg),source='explicit_cost_template'),changed_day=day_date,bids_only=True)
+            except Exception as exc:st.error(str(exc))
+        available=[d['date'] for d in m['days'] if d['bid_package'] is not None and d['date']!=day_date]
+        if available:
+            src=st.selectbox('从其他日期复制报价',available,key='series_bid_copy_source')
+            if st.button('明确复制所选日报价',disabled=blocked):
+                _save(root,m,ws.replace_daily_bids(m,day_date,ws.day_by_date(m,src)['bid_package'],source='explicit_day_copy:'+src),changed_day=day_date,bids_only=True)
+        if package is not None and m['generation']['model']=='causal_physical_v3':
+            st.caption('风光可用量留空时使用已发布预测；手工申报保持原样。')
+            if st.button('用当日已发布预测填写风光可用量',disabled=blocked):
+                try:
+                    updated=adapter.apply_issued_bid_availability(root,m,day_date)
+                    _save(root,m,ws.replace_daily_bids(m,day_date,updated,source='explicit_issued_DA_forecast'),changed_day=day_date,bids_only=True)
+                except Exception as exc:st.error(str(exc))
+    if package is None:return
     b=package['units'][uid]
     with st.form(f'series_bid:{m["task_id"]}:{day_date}:{uid}:{package["version"]}'):
         edited=copy.deepcopy(b)
@@ -287,11 +313,15 @@ def bid_panel(root,m,day_date,begun):
         for curve,label in curves.items():
             if curve not in b:continue
             st.markdown('**'+label+'**')
-            st.caption(' '.join(quote_rule_notes(cfg,uid,typ,curve)))
+            notes=quote_rule_notes(cfg,uid,typ,curve)
+            st.caption(notes[0])
+            if len(notes)>1:
+                with st.expander('报价规则与分段说明'):
+                    for note in notes[1:]:st.caption(note)
             frame=st.data_editor(pd.DataFrame(b[curve]),num_rows='dynamic',hide_index=True,column_order=['p_start','p_end','price'],column_config={'p_start':st.column_config.NumberColumn('起始功率 · MW'),'p_end':st.column_config.NumberColumn('截止功率 · MW'),'price':st.column_config.NumberColumn('报价 · 元/MWh')},key=f'series_curve:{day_date}:{uid}:{curve}:{package["version"]}')
             edited[curve]=frame.to_dict('records')
         extra={k:v for k,v in b.items() if k not in curves}
-        with st.expander('其他申报字段含义'):
+        with st.expander('高级申报参数（可修改）'):
             descriptions={'mode':'price_quantity为报量报价；quantity_only为报量不报价。储能可选self_schedule自调度，抽蓄可选dispatch调度，水电可选planned计划。仅允许该类型支持的方式。',
                 'startup_cost':'冷/温/热启动申报价，元/次；不是利润核算成本。','noload_cost':'开机空载申报价，元/小时；不是利润核算成本。',
                 'soc_min':'申报最低SOC，0到1；仍受设备物理范围限制。','soc_max':'申报最高SOC，0到1；仍受设备物理范围限制。',
@@ -300,7 +330,6 @@ def bid_panel(root,m,day_date,begun):
                 'availability_provenance':'因果模式中可用量的来源：已发布预测、公开上界或明确用户声明。'}
             for name in extra:
                 if name in descriptions:st.caption(name+'：'+descriptions[name])
-        with st.expander('高级申报参数（可修改）'):
             text=st.text_area('其他申报参数（高级）',value=json.dumps(extra,ensure_ascii=False,indent=2),help='保留未改字段和继承语义；不自动用技术缺省值覆盖手工报价。')
         if st.form_submit_button('保存该主体日报价',disabled=blocked):
             try:
@@ -313,7 +342,7 @@ def bid_panel(root,m,day_date,begun):
                 _save(root,m,ws.replace_daily_bids(m,day_date,updated,source='user_edited'),changed_day=day_date,bids_only=True)
             except Exception as exc:st.error(str(exc))
     st.download_button('下载该日完整报价',json.dumps(package,ensure_ascii=False,indent=2),file_name=f'{day_date}_报价_v{package["version"]}.json',mime='application/json')
-    st.caption('修改后先保存，再确认这一天的全部报价。')
+    st.caption('默认报价可直接确认；改价后先保存。')
     if st.button('确认该日全部机组报价',disabled=blocked or ws.bid_status(day)=='已确认',type='primary'):
         try:_save(root,m,ws.confirm_daily_bids(m,day_date,cfg),changed_day=day_date,bids_only=True)
         except Exception as exc:st.error(str(exc))
@@ -369,7 +398,8 @@ def run_panel(root,m,begun):
                     with st.expander('预览来源'):
                         st.write({'实际实现指纹':preview['actual_hash'],'发布证据':preview['evidence']})
 
-    mode=st.radio('逐日报价准入',['all_ready','ready_prefix'],format_func=lambda x:'全部日期就绪后运行' if x=='all_ready' else '只运行已就绪前缀，遇未报价日暂停',key='series_admission')
+    with st.expander('运行设置（可选）'):
+        mode=st.radio('遇到未确认报价的日期',['all_ready','ready_prefix'],format_func=lambda x:'等全部日期确认后再运行' if x=='all_ready' else '先运行已确认的日期，之后暂停',key='series_admission')
     if st.button('检查输入'):
         st.session_state['series_validation:'+str(root)]=adapter.readiness(root,m,mode)
     check=st.session_state.get('series_validation:'+str(root))
@@ -380,7 +410,7 @@ def run_panel(root,m,begun):
         for warning in check['warnings']:st.warning(warning)
         if check['ready']:st.success('输入准入通过；不代表出清可行或精度通过。')
     state=adapter.launch_state(root)
-    if st.button('开始连续模拟',type='primary',disabled=not valid or not check['ready'] or state in ('alive','unknown')):
+    if st.button('开始模拟',type='primary',disabled=not valid or not check['ready'] or state in ('alive','unknown')):
         try:adapter.launch(root,expected_signature=ws.input_signature(m),mode=mode);st.rerun()
         except Exception as exc:st.error(str(exc))
     if state=='alive':
@@ -393,7 +423,7 @@ def run_panel(root,m,begun):
 def results_panel(root,m):
     root=Path(root);path=root/'run/series_status.json'
     if path.exists():
-        status=json.loads(path.read_text())
+        status=json.loads(path.read_text(encoding='utf-8'))
         labels={'completed':'所选日期计算完成','active':'运行中','awaiting_bids':'等待下一日报价','cancelled_at_day_boundary':'已在日界停止','failed_uncommitted_day':'当日失败，未形成完整提交'}
         st.info(f"{labels.get(status['status'],status['status'])} · 已完成 {status.get('completed_days',0)} / {len(m['days'])} 天")
         pending=status.get('terminal_pending_obligations',[])
@@ -402,12 +432,12 @@ def results_panel(root,m):
         st.caption('计算完成不代表全部物理、松弛或求解精度检查通过；请按日期查看诊断。')
     outcome=root/'worker_outcome.json'
     if outcome.exists():
-        o=json.loads(outcome.read_text())
+        o=json.loads(outcome.read_text(encoding='utf-8'))
         if o.get('status')=='failed':st.error(o.get('error','运行失败'))
     financial=root/'run/series_financial.json'
     if financial.exists():
         from series_financial_view import render_series_financial
-        render_series_financial(json.loads(financial.read_text()))
+        render_series_financial(json.loads(financial.read_text(encoding='utf-8')))
     records=[r for r in adapter.completed_day_metadata(root.parent) if Path(r['series_root'])==root/'run']
     if records:
         bydate={r['operating_date']:r for r in records}
@@ -422,6 +452,31 @@ def results_panel(root,m):
         st.download_button('下载任务输入清单',json.dumps(m,ensure_ascii=False,indent=2),file_name='series_manifest.json',mime='application/json')
         p=root/'run.log'
         if p.exists():st.code('\n'.join(p.read_text(errors='replace').splitlines()[-35:]))
+
+
+def system_panel(root,m,day_date):
+    from common import TYPE_CN
+    from network_view import render_input_network
+    from unit_input_view import resource_capacity_rows,scenario_unit_catalog,render_unit_information
+    cfg=adapter.day_config(root,m,day_date)
+    st.caption('本次模拟使用的设备与网络；每日风光、负荷和来水在“场景”中设置。')
+    render_input_network(cfg,'series_network:'+m['task_id'],structure_only=True)
+    with st.expander('各类资源容量'):
+        st.dataframe(pd.DataFrame(resource_capacity_rows(cfg)),hide_index=True,width='stretch')
+    catalog=scenario_unit_catalog(cfg)
+    units={u['id']:(group,u) for group,u in catalog}
+    uid=st.selectbox('查看其他机组',list(units),key='series_peer_unit',
+        format_func=lambda u:f'{u} · {TYPE_CN.get(units[u][1].get("type",units[u][0]),"机组")}')
+    render_unit_information(cfg,uid,compact=True)
+    with st.expander('修改设备或高级参数'):
+        st.caption('本次模拟保留创建时的场景。修改原场景后，请用侧栏“任务基础输入与修订”新建修订，旧输入与结果保持不变。')
+        if st.button('打开原场景参数',key='series_edit_source'):
+            source=m['source']['name']
+            if source not in sc.list_scenarios():st.error('原场景已不存在；本次模拟的输入副本仍保留。')
+            else:
+                st.session_state['scenario']=source
+                st.session_state['_sel_scenario']=source
+                st.switch_page('pages/2_运行.py')
 
 
 def render_series_workspace():
@@ -449,11 +504,14 @@ def render_series_workspace():
     initial='已确认' if m['initial_state'] is not None else '待确认'
     st.caption(f"{m['start_date']} 至 {m['days'][-1]['date']} · {len(m['days'])}天 · 起始状态{initial} · 报价已确认 {ready}/{len(m['days'])}天")
     day_date=st.selectbox('当前编辑日期',[d['date'] for d in m['days']],key='series_edit_date')
-    tabs=st.tabs(['1 每日场景','2 起始状态','3 每日报价','4 检查与运行','5 查看结果'])
-    with tabs[0]:day_panel(root,m,begun,day_date)
-    with tabs[1]:initial_panel(root,m,begun)
-    with tabs[2]:bid_panel(root,m,day_date,begun)
+    tabs=st.tabs(['场景','机组与报价','全网概况','运行','结果'])
+    with tabs[0]:
+        day_panel(root,m,begun,day_date)
+        with st.expander('起始状态 · '+initial,expanded=False):
+            initial_panel(root,m,begun)
+    with tabs[1]:bid_panel(root,m,day_date,begun)
+    with tabs[2]:system_panel(root,m,day_date)
     with tabs[3]:
-        st.caption('先完成前一天实际执行，再计算下一天日前计划；这是顺序研究，不是D−1市场时序。')
+        st.caption('多日模拟逐日接续实际状态；这是顺序研究，不是 D−1 市场时序。')
         run_panel(root,m,begun)
     with tabs[4]:results_panel(root,m)

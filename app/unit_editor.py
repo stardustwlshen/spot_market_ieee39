@@ -77,7 +77,7 @@ def _hydro_commitment_editor(candidate, prefix, disabled, active):
     candidate['commitment'] = dict(schema_version=1, mode='unit_duration_v1',
                                   initial_source='research_assumption', initial_units=rows)
     candidate['init_units_on'] = sum(r.get('online') is True for r in rows)
-    st.caption('接续实际状态在多日任务入口查看；复制修改后应作为新的研究起点，不覆盖历史。')
+    st.caption('修改后作为本次单日模拟的研究初态；已保存运行快照保持不变。')
 
 
 def _forget_quote_widgets(name):
@@ -87,7 +87,7 @@ def _forget_quote_widgets(name):
             del st.session_state[key]
 
 
-def render_unit_editor(cfg, name, *, disabled=False):
+def render_unit_editor(cfg, name, *, disabled=False, compact=False):
     session_key = 'unit_editor:' + name
     notice = st.session_state.pop(session_key + ':notice', None)
     if notice:
@@ -117,8 +117,10 @@ def render_unit_editor(cfg, name, *, disabled=False):
             buses = build_network(cfg).buses
             initial_bus = source['bus'] if source else buses[0]
             bus_options = buses if initial_bus in buses else [initial_bus, *buses]
-            bus = st.selectbox('接入节点', bus_options, index=bus_options.index(initial_bus),
-                               key=session_key+':bus:'+action+':'+(source['id'] if source else kind), disabled=disabled)
+            bus = initial_bus
+            if not compact or action != '编辑现有机组':
+                bus = st.selectbox('接入节点', bus_options, index=bus_options.index(initial_bus),
+                                   key=session_key+':bus:'+action+':'+(source['id'] if source else kind), disabled=disabled)
             if action == '新增机组':
                 capacity = st.number_input('总装机功率（MW）', value=100., min_value=.001, key=session_key+':capacity:'+kind, disabled=disabled)
                 count = st.number_input('机组台数', value=1, min_value=1, key=session_key+':count:'+kind, disabled=disabled) if family in ('hydro', 'pumped') else 1

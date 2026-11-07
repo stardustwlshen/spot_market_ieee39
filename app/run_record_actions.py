@@ -36,8 +36,13 @@ def elapsed_for_display(meta, *, now=None):
 
 
 def has_saved_result(meta):
-    return (meta.get('status') == 'done' and bool(meta.get('dir'))
-            and (Path(meta['dir']) / 'summary.json').is_file())
+    """An openable completed scope, not a claim of full-day settlement."""
+    from result_catalog import is_single_day_result
+    if meta.get('status') != 'done' or not is_single_day_result(meta):
+        return False
+    directory = Path(meta['dir'])
+    return ((directory / 'summary.json').is_file()
+            or (meta.get('mode') == 'da' and (directory / 'da/summary.json').is_file()))
 
 
 def render_open_saved_result(meta):

@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import copy
+from contextlib import nullcontext
 import hashlib
 import json
 import math
@@ -81,7 +82,7 @@ def cost_archive_recovery(cfg, name, *, disabled=False):
         business_error('当前场景不能自动补齐成本', exc, '缺少匹配的研究参数时不会估造；已有档案保持不变。')
 
 
-def quotation_workspace(cfg, name, *, disabled=False):
+def quotation_workspace(cfg, name, *, disabled=False, compact=False):
     """Return exact current draft; persist workspace without rewriting bid archives."""
     from smm.bids import default_bids, resolve_startup_bid, validate_bids
     from unit_input_view import render_unit_information
@@ -95,12 +96,15 @@ def quotation_workspace(cfg, name, *, disabled=False):
             st.warning('本会话还保留旧编辑，请先下载备份，不要刷新或关闭页面。')
             st.download_button('下载保留的旧编辑', backup, file_name=f'{name}_旧报价备份.zip', mime='application/zip')
         return None, ['无法读取报价']
-    if draft.get('default_bid_model') == 'cost_basis_v2':
+    if not compact and draft.get('default_bid_model') == 'cost_basis_v2':
         st.caption('报价来源：研究成本（非实测）；切换丰枯水不自动重报价，需重新预览并采用。')
     unit_types = {u['id']: u.get('type', family) for family in ('thermal', 'renewable', 'hydro', 'storage', 'pumped', 'tie')
                   for u in cfg.units.get(family, [])}
     uid = st.selectbox('模拟机组', list(draft['units']), key=f'quote_unit:{name}',
         format_func=lambda unit: f'{unit} · {TYPE_CN.get(unit_types.get(unit), "主体")}', disabled=disabled)
+    if compact:
+        st.caption('当前报价：' + info['basis_label'] +
+                   (' · 模拟成本报价，非真实市场申报。' if draft.get('default_bid_model') == 'cost_basis_v2' else ''))
     if info.get('latest_error'):
         st.warning('场景的外部最新报价文件暂不能读取；本页已保存的当前报价仍可使用和下载，没有被替换。')
         with st.expander('最新报价文件读取问题'):
@@ -114,46 +118,47 @@ def quotation_workspace(cfg, name, *, disabled=False):
             st.caption('历史编辑已完整备份，不作为隐藏运行输入。需要找回时下载并解压，再在下方“从文件恢复报价”中上传其中的报价 JSON。')
             st.download_button('下载保留的旧编辑', quotation_backup(st.session_state, name),
                                file_name=f'{name}_报价备份.zip', mime='application/zip')
-    with st.expander('从文件恢复报价（仅所选机组）', expanded=False):
-        st.caption('可上传“下载当前报价”保存的 JSON，或旧编辑备份中的报价 JSON。先预览，确认后只替换当前所选机组；其他机组、成本和技术参数不变，恢复前的完整当前报价会另存备份。')
-        uploaded = st.file_uploader('恢复报价 JSON（仅所选机组）', type=['json'],
-                                   key=f'quote_recovery_file:{name}', disabled=disabled)
-        if uploaded is not None:
-            try:
-                recovered = json.loads(uploaded.getvalue())['units'][uid]
-                if not isinstance(recovered, dict):
-                    raise ValueError('该机组报价不是有效对象')
-                if 'mode' in recovered and not isinstance(recovered['mode'], str):
-                    raise ValueError('申报方式须为文本，当前报价未改动')
-                for curve in CURVE_CN:
-                    rows = recovered.get(curve)
-                    if rows is not None and (not isinstance(rows, list) or any(not isinstance(row, dict) for row in rows)):
-                        raise ValueError(f'{CURVE_CN[curve]}须为分段对象列表')
-                if not isinstance(recovered.get('startup_cost', {}), dict):
-                    raise ValueError('启动报价须为分状态对象')
-                from unit_input_view import field_rows
-                st.dataframe(pd.DataFrame(field_rows(recovered))[["参数", "数值"]], hide_index=True, width='stretch')
-                if st.button('恢复文件中本机组报价', disabled=disabled, key=f'quote_recover:{key}:{uid}'):
-                    previous = copy.deepcopy(draft)
-                    stamp = hashlib.sha256(json.dumps(previous, sort_keys=True).encode()).hexdigest()[:12]
-                    info.setdefault('history', {}).setdefault(f'恢复前当前报价:{stamp}', previous)
-                    draft['units'][uid] = copy.deepcopy(recovered)
-                    st.session_state[key + ':manual'] = sorted(set(st.session_state.get(key + ':manual', [])) | {uid})
-                    st.session_state[key + ':reset_unit'] = uid
-                    st.session_state.pop(key + ':preview', None)
-                    st.rerun()
-            except (ValueError, TypeError, KeyError) as exc:
-                business_error('恢复文件不能读取，当前报价未改动', exc, '请选择包含当前机组的报价备份 JSON。')
-    reset_uid = st.session_state.pop(key + ':reset_unit', None)
-    if reset_uid is not None:
-        # Reset is requested before rerender so editors don't replay old deltas.
-        _reset_widgets(key, reset_uid)
-    if st.button('恢复该机组原报价', disabled=disabled, key=f'quote_reset:{key}:{uid}'):
-        draft['units'][uid] = copy.deepcopy(baseline['units'][uid])
-        st.session_state[key + ':manual'] = [u for u in st.session_state.get(key + ':manual', []) if u != uid]
-        st.session_state[key + ':reset_unit'] = uid
-        st.session_state.pop(key + ':preview', None)
-        st.rerun()
+    with st.expander('恢复与重置') if compact else nullcontext():
+        with st.expander('从文件恢复报价（仅所选机组）', expanded=False):
+            st.caption('可上传“下载当前报价”保存的 JSON，或旧编辑备份中的报价 JSON。先预览，确认后只替换当前所选机组；其他机组、成本和技术参数不变，恢复前的完整当前报价会另存备份。')
+            uploaded = st.file_uploader('恢复报价 JSON（仅所选机组）', type=['json'],
+                                       key=f'quote_recovery_file:{name}', disabled=disabled)
+            if uploaded is not None:
+                try:
+                    recovered = json.loads(uploaded.getvalue())['units'][uid]
+                    if not isinstance(recovered, dict):
+                        raise ValueError('该机组报价不是有效对象')
+                    if 'mode' in recovered and not isinstance(recovered['mode'], str):
+                        raise ValueError('申报方式须为文本，当前报价未改动')
+                    for curve in CURVE_CN:
+                        rows = recovered.get(curve)
+                        if rows is not None and (not isinstance(rows, list) or any(not isinstance(row, dict) for row in rows)):
+                            raise ValueError(f'{CURVE_CN[curve]}须为分段对象列表')
+                    if not isinstance(recovered.get('startup_cost', {}), dict):
+                        raise ValueError('启动报价须为分状态对象')
+                    from unit_input_view import field_rows
+                    st.dataframe(pd.DataFrame(field_rows(recovered))[["参数", "数值"]], hide_index=True, width='stretch')
+                    if st.button('恢复文件中本机组报价', disabled=disabled, key=f'quote_recover:{key}:{uid}'):
+                        previous = copy.deepcopy(draft)
+                        stamp = hashlib.sha256(json.dumps(previous, sort_keys=True).encode()).hexdigest()[:12]
+                        info.setdefault('history', {}).setdefault(f'恢复前当前报价:{stamp}', previous)
+                        draft['units'][uid] = copy.deepcopy(recovered)
+                        st.session_state[key + ':manual'] = sorted(set(st.session_state.get(key + ':manual', [])) | {uid})
+                        st.session_state[key + ':reset_unit'] = uid
+                        st.session_state.pop(key + ':preview', None)
+                        st.rerun()
+                except (ValueError, TypeError, KeyError) as exc:
+                    business_error('恢复文件不能读取，当前报价未改动', exc, '请选择包含当前机组的报价备份 JSON。')
+        reset_uid = st.session_state.pop(key + ':reset_unit', None)
+        if reset_uid is not None:
+            # Reset is requested before rerender so editors don't replay old deltas.
+            _reset_widgets(key, reset_uid)
+        if st.button('恢复该机组原报价', disabled=disabled, key=f'quote_reset:{key}:{uid}'):
+            draft['units'][uid] = copy.deepcopy(baseline['units'][uid])
+            st.session_state[key + ':manual'] = [u for u in st.session_state.get(key + ':manual', []) if u != uid]
+            st.session_state[key + ':reset_unit'] = uid
+            st.session_state.pop(key + ':preview', None)
+            st.rerun()
 
     field_errors = []
     table_changed = False
@@ -208,7 +213,8 @@ def quotation_workspace(cfg, name, *, disabled=False):
             frame = frame.rename(columns={'p_start': '起点（MW）', 'p_end': '终点（MW）', 'price': '报价（元/MWh）'})
             st.markdown(f'**{CURVE_CN[curve]}**')
             if price_enabled:
-                st.caption(' '.join(quote_rule_notes(cfg, uid, typ, curve)))
+                with st.expander('报价规则：' + CURVE_CN[curve]) if compact else nullcontext():
+                    st.caption(' '.join(quote_rule_notes(cfg, uid, typ, curve)))
             edited = st.data_editor(frame, hide_index=True, num_rows='dynamic', width='stretch',
                 key=f'quote_edit:{key}:{uid}:{curve}', disabled=quote_disabled)
             # Browsing never rewrites missing fields, extra metadata or row types.
@@ -294,55 +300,56 @@ def quotation_workspace(cfg, name, *, disabled=False):
         if ub != before:
             st.session_state[key + ':manual'] = sorted(set(st.session_state.get(key + ':manual', [])) | {uid})
 
-        protected = st.session_state.get(key + ':manual', [])
-        replace_manual = st.checkbox('允许模拟报价替换该机组手工修改', key=f'quote_replace:{key}:{uid}', disabled=quote_disabled) if uid in protected else False
-        cost_clicked = st.button('按成本生成预览', disabled=quote_disabled, key=f'quote_generate:{key}:{uid}')
-        with st.expander('随机报价（可选）', expanded=False):
-            random_basis = st.radio('随机报价依据', ['当前报价', '成本报价'], horizontal=True,
-                                    key=f'quote_random_basis:{key}:{uid}', disabled=quote_disabled)
-            seed = st.number_input('报价随机种子', 0, 2147483647, int(cfg.base['seed']),
-                                   key=f'quote_seed:{key}:{uid}', disabled=quote_disabled,
-                                   help='相同机组、输入和种子会生成相同预览；修改种子可换一组。不会修改风光预测种子。')
-            st.caption('仅预览所选机组；采用后生效。')
-            random_clicked = st.button('生成随机报价预览', disabled=quote_disabled, key=f'quote_random_generate:{key}:{uid}')
-        inputs = {filename: hashlib.sha256((cfg.root / 'config' / filename).read_bytes()).hexdigest()
-                  if (cfg.root / 'config' / filename).exists() else None for filename in ('fixed_costs.yaml', 'bid_cost_basis.yaml', 'generated_research_costs.json')}
-        cost_request = dict(uid=uid, method='按成本生成', seed=None, costs=inputs,
-                            replace_manual=replace_manual, entry='cost')
-        random_request = dict(uid=uid, method='按成本生成' if random_basis == '成本报价' else '随机策略',
-                              seed=seed, costs=inputs, replace_manual=replace_manual, entry='random')
-        if cost_clicked or random_clicked:
-            request = cost_request if cost_clicked else random_request
-            st.session_state.pop(key + ':preview', None)
-            try:
-                from smm.bid_simulation import research_cost_bid_preview, simulate_bids
-                method = request['method']
-                generator = research_cost_bid_preview if method == '按成本生成' else simulate_bids
-                seed_arg = {'strategy_seed': request['seed']} if method == '按成本生成' else {'seed': request['seed']}
-                candidate = generator(cfg, selected_unit_ids=[uid], base_bids=draft,
-                    protected_unit_ids=[u for u in protected if u != uid or not replace_manual], **seed_arg)
-                st.session_state[key + ':preview'] = dict(candidate=candidate, baseline=copy.deepcopy(draft),
-                    request=copy.deepcopy(request), config=copy.deepcopy(dict(base=cfg.base, mode=cfg.mode, units=cfg.units)))
-            except (ValueError, TypeError, KeyError, FileNotFoundError) as exc:
-                business_error('模拟报价未生成，当前草稿不变', exc, '请核对成本档案或手工修改保护。')
-        preview = st.session_state.get(key + ':preview')
-        if preview and preview['request']['uid'] == uid:
-            # Old-session previews lack the new entry marker and require regeneration.
-            request = random_request if preview['request'].get('entry') == 'random' else cost_request
-            st.markdown('**报价预览：确认后再采用**')
-            candidate = preview['candidate']
-            rows = [dict(曲线=CURVE_CN[curve], 段=i, **{'起点（MW）': seg['p_start'], '终点（MW）': seg['p_end'], '预览报价（元/MWh）': seg['price']})
-                    for curve in CURVE_CN for i, seg in enumerate(candidate['units'][uid].get(curve, []), 1)]
-            st.dataframe(pd.DataFrame(rows), hide_index=True, width='stretch')
-            stale = (preview['baseline'] != draft or preview['request'] != request or
-                     preview['config'] != dict(base=cfg.base, mode=cfg.mode, units=cfg.units))
-            if stale:
-                st.warning('报价或参数已变化，请重新生成预览。')
-            if st.button('采用预览报价', disabled=quote_disabled or stale, key=f'quote_accept:{key}:{uid}'):
-                st.session_state[key] = copy.deepcopy(candidate)
-                st.session_state[key + ':reset_unit'] = uid
+        with st.expander('生成模拟报价') if compact else nullcontext():
+            protected = st.session_state.get(key + ':manual', [])
+            replace_manual = st.checkbox('允许模拟报价替换该机组手工修改', key=f'quote_replace:{key}:{uid}', disabled=quote_disabled) if uid in protected else False
+            cost_clicked = st.button('按成本生成预览', disabled=quote_disabled, key=f'quote_generate:{key}:{uid}')
+            with st.expander('随机报价（可选）', expanded=False):
+                random_basis = st.radio('随机报价依据', ['当前报价', '成本报价'], horizontal=True,
+                                        key=f'quote_random_basis:{key}:{uid}', disabled=quote_disabled)
+                seed = st.number_input('报价随机种子', 0, 2147483647, int(cfg.base['seed']),
+                                       key=f'quote_seed:{key}:{uid}', disabled=quote_disabled,
+                                       help='相同机组、输入和种子会生成相同预览；修改种子可换一组。不会修改风光预测种子。')
+                st.caption('仅预览所选机组；采用后生效。')
+                random_clicked = st.button('生成随机报价预览', disabled=quote_disabled, key=f'quote_random_generate:{key}:{uid}')
+            inputs = {filename: hashlib.sha256((cfg.root / 'config' / filename).read_bytes()).hexdigest()
+                      if (cfg.root / 'config' / filename).exists() else None for filename in ('fixed_costs.yaml', 'bid_cost_basis.yaml', 'generated_research_costs.json')}
+            cost_request = dict(uid=uid, method='按成本生成', seed=None, costs=inputs,
+                                replace_manual=replace_manual, entry='cost')
+            random_request = dict(uid=uid, method='按成本生成' if random_basis == '成本报价' else '随机策略',
+                                  seed=seed, costs=inputs, replace_manual=replace_manual, entry='random')
+            if cost_clicked or random_clicked:
+                request = cost_request if cost_clicked else random_request
                 st.session_state.pop(key + ':preview', None)
-                st.rerun()
+                try:
+                    from smm.bid_simulation import research_cost_bid_preview, simulate_bids
+                    method = request['method']
+                    generator = research_cost_bid_preview if method == '按成本生成' else simulate_bids
+                    seed_arg = {'strategy_seed': request['seed']} if method == '按成本生成' else {'seed': request['seed']}
+                    candidate = generator(cfg, selected_unit_ids=[uid], base_bids=draft,
+                        protected_unit_ids=[u for u in protected if u != uid or not replace_manual], **seed_arg)
+                    st.session_state[key + ':preview'] = dict(candidate=candidate, baseline=copy.deepcopy(draft),
+                        request=copy.deepcopy(request), config=copy.deepcopy(dict(base=cfg.base, mode=cfg.mode, units=cfg.units)))
+                except (ValueError, TypeError, KeyError, FileNotFoundError) as exc:
+                    business_error('模拟报价未生成，当前草稿不变', exc, '请核对成本档案或手工修改保护。')
+            preview = st.session_state.get(key + ':preview')
+            if preview and preview['request']['uid'] == uid:
+                # Old-session previews lack the new entry marker and require regeneration.
+                request = random_request if preview['request'].get('entry') == 'random' else cost_request
+                st.markdown('**报价预览：确认后再采用**')
+                candidate = preview['candidate']
+                rows = [dict(曲线=CURVE_CN[curve], 段=i, **{'起点（MW）': seg['p_start'], '终点（MW）': seg['p_end'], '预览报价（元/MWh）': seg['price']})
+                        for curve in CURVE_CN for i, seg in enumerate(candidate['units'][uid].get(curve, []), 1)]
+                st.dataframe(pd.DataFrame(rows), hide_index=True, width='stretch')
+                stale = (preview['baseline'] != draft or preview['request'] != request or
+                         preview['config'] != dict(base=cfg.base, mode=cfg.mode, units=cfg.units))
+                if stale:
+                    st.warning('报价或参数已变化，请重新生成预览。')
+                if st.button('采用预览报价', disabled=quote_disabled or stale, key=f'quote_accept:{key}:{uid}'):
+                    st.session_state[key] = copy.deepcopy(candidate)
+                    st.session_state[key + ':reset_unit'] = uid
+                    st.session_state.pop(key + ':preview', None)
+                    st.rerun()
 
     filled = draft.get('_filled_default') or []
     if filled:
@@ -356,7 +363,7 @@ def quotation_workspace(cfg, name, *, disabled=False):
         st.error('报价存在违规，修正后才能运行。当前原值仍自动保留以便修复。')
     modified = quotation_changed(draft, baseline)
     try:
-        persist_scene_working_draft(st.session_state, name, cfg)
+        persist_scene_working_draft(st.session_state, name, cfg, only_if_changed=compact)
     except (OSError, ValueError, RuntimeError, TypeError) as exc:
         business_error('当前报价未自动保存，暂不能运行', exc,
                        '本页编辑仍在，请先下载备份；不要刷新或关闭。原报价版本和已有存档未被覆盖。')
@@ -367,11 +374,13 @@ def quotation_workspace(cfg, name, *, disabled=False):
             # rebase now, before the operator's next edit; otherwise the next
             # edit arrives on the old identity and Streamlit silently drops it.
             st.rerun()
-        st.caption('已自动保存；运行使用当前报价。')
+        st.caption('已自动保存；运行使用当前报价。' if st.session_state.get(key + ':etag')
+                   else '修改后自动保存；运行使用当前报价。')
         with st.expander('报价保存与来源', expanded=False):
             if draft.get('_simulation') or draft.get('_cost_basis'):
                 st.caption('生成记录仅作来源；实际报价以当前表格及本次冻结输入为准。')
             st.caption(f'{info["basis_label"]} · {"含当前编辑" if modified else "未修改"}。本次运行会冻结报价，不随之后编辑变化。')
-    st.download_button('下载当前报价', json.dumps(draft, ensure_ascii=False, indent=2),
-                       file_name=f'{name}_当前报价.json', mime='application/json')
+    with st.expander('报价文件') if compact else nullcontext():
+        st.download_button('下载当前报价', json.dumps(draft, ensure_ascii=False, indent=2),
+                           file_name=f'{name}_当前报价.json', mime='application/json')
     return draft, errors

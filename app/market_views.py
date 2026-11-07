@@ -12,12 +12,12 @@ from chinese_labels import value_label
 def frozen_bids(directory):
     d=Path(directory)
     for filename in ('resolved_bids.json', 'submitted_bids.json', 'scenario_snapshot/resolved_bids.json'):
-        if (d/filename).exists():return json.loads((d/filename).read_text())
+        if (d/filename).exists():return json.loads((d/filename).read_text(encoding='utf-8'))
     files=list((d/'scenario_snapshot/bids').rglob('bids_v*.json'))
     if not files:return None
-    meta=json.loads((d/'meta.json').read_text()) if (d/'meta.json').exists() else {}
+    meta=json.loads((d/'meta.json').read_text(encoding='utf-8')) if (d/'meta.json').exists() else {}
     match=[p for p in files if p.stem==f"bids_v{meta.get('bid_version')}"]
-    return json.loads((match[0] if match else max(files,key=lambda p:int(p.stem.split('_v')[-1]))).read_text())
+    return json.loads((match[0] if match else max(files,key=lambda p:int(p.stem.split('_v')[-1]))).read_text(encoding='utf-8'))
 
 
 def frozen_units(directory):
@@ -425,7 +425,7 @@ def operating_profit_dashboard(by_unit, by_period=None, *, prefix='operating_pro
 def _saved_json(path):
     """Missing, partial or legacy evidence is unknown, never a passing check."""
     try:
-        value=json.loads(Path(path).read_text())
+        value=json.loads(Path(path).read_text(encoding='utf-8'))
         return value if isinstance(value,dict) else {}
     except (OSError, ValueError):
         return {}
@@ -457,8 +457,8 @@ def result_quality_messages(summary, da_summary, *, directory, live=None):
     def add(level,text):messages.append((level,text))
     base={};modes={}
     try:
-        base=yaml.safe_load((d/'scenario_snapshot/config/base.yaml').read_text()) or {}
-        modes=yaml.safe_load((d/'scenario_snapshot/config/modes.yaml').read_text()) or {}
+        base=yaml.safe_load((d/'scenario_snapshot/config/base.yaml').read_text(encoding='utf-8')) or {}
+        modes=yaml.safe_load((d/'scenario_snapshot/config/modes.yaml').read_text(encoding='utf-8')) or {}
     except (OSError,ValueError,yaml.YAMLError):pass
     base=base if isinstance(base,dict) else {};modes=modes if isinstance(modes,dict) else {}
     mode=modes.get(base.get('rule_set'),{}) or {}
