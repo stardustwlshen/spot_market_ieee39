@@ -1,4 +1,4 @@
-"""结果展示（第二轮J项）：按出清阶段分块——日前 / 日内·实时滚动 / 最终结果（日前与实时直接对比）。"""
+"""Saved results organized by business question, with technical evidence on demand."""
 from pathlib import Path
 
 import numpy as np
@@ -53,13 +53,7 @@ T_da = int(R["da_nodal_prices"].period.max()) + 1
 T_rt = int(R["rt_prices"].period.max()) + 1 if FULL else 0
 N, DT = result_time_grid(R)
 from forecast_error_view import render_forecast_diagnostics
-render_forecast_diagnostics(sel)
 lbl = period_labels(N, DT)
-if not FULL:
-    st.caption('仅日前计划；无实时执行与偏差结算。')
-elif T_rt < N:
-    st.caption(f'实时仅执行前 {T_rt} / {N} 个时段，不是完整日。')
-
 # ---------------------------------------------------------------------------- 本次启用的阶段与规则（顶部一行）
 def frozen_yaml(name):
     try:
@@ -88,6 +82,27 @@ if INTRADAY and ID_TABLE is not None and 'gap_target_met' in ID_TABLE:
         st.warning(f'日内 {len(gap_misses)} 轮已取得可行计划，但未达到目标 MIP 精度（{names}）；不是物理不可行回退，详见“日内轮次与交接”。')
 
 
+def saved_reserve_rule_label(stage=None):
+    """Describe the saved run only; absent mode is the historical formula."""
+    da_rule = DS.get('reserve_rule') or {}
+    full_rule = (S.get('reserve') or {}) if FULL else {}
+    rule = da_rule if stage == 'da' or not FULL else full_rule
+    if not rule and FULL:
+        rule = full_rule  # Full-run summary records the rule shared by its stages.
+    if not isinstance(rule, dict):
+        return '上备用规则未记录'
+    mode = rule.get('up_requirement_mode') or 'formula'
+    if mode == 'fixed':
+        value = rule.get('fixed_up_mw')
+        if isinstance(value, (int, float)) and not isinstance(value, bool) and np.isfinite(value) and value >= 0:
+            return f'固定总上备用 {value:g} MW'
+        return '固定总上备用（数值未记录，不能核验）'
+    if mode == 'formula':
+        prefix = '历史' if not rule.get('up_requirement_mode') else ''
+        return prefix + '比例＋事故项公式（需求以本次已保存结果为准）'
+    return '上备用规则未识别（需求以本次已保存结果为准）'
+
+
 def rules_line():
     lim = S.get("price_limits") or MODES.get("price_limits") or {}
     floor = (f"{lim['clear_min']:g}~{lim['clear_max']:g} 元/MWh" if isinstance(lim.get('clear_min'), (int, float))
@@ -108,6 +123,7 @@ def rules_line():
         hyd = RTS.get('hydro')
         hyd_txt = f"水电 {'价值法 δ0='+str(vm.get('hydro_band_fraction'))+'（假设值）' if hyd == 'value' else (hyd or '未记录')}"
         parts.append(f"**实时** {DT * 60:g} min 滚动、{RTS.get('lookahead_h', '?')} h 前瞻，{sto}，{hyd_txt}，硬→软兜底 {RTS.get('fallback_count', '未记录')} 个窗口")
+    parts.append(saved_reserve_rule_label())
     sres = (S.get('reserve') or {}).get('storage_reserve_enabled', (MODES.get('reserve') or {}).get('storage_reserve'))
     parts.append(f"限价 {floor}" + ("（川2026总体方案 五（二）2：下限−50）" if lim.get('clear_min') == -50 else "") +
                  f"；储能/抽蓄备用 {'开' if sres else '关' if sres is not None else '未记录'}；下备用 {'开' if (S.get('reserve') or {}).get('down_enabled') else '关'}")
@@ -115,11 +131,9 @@ def rules_line():
         parts.append("结算 两部制（日前电量×日前价 + 偏差×实时价）")
     return '　|　'.join(parts)
 
-st.caption('规则：' + str(S.get('rule_set') or '未记录'))
 with st.expander('本次规则与方法', expanded=False):
     st.markdown(rules_line())
     st.caption(f'结果目录：`{sel}`')
-st.caption('蓝实线：日前；莓红虚线：实时。功率 MW · 能量 MWh · 库容 万m³ · 流量 m³/s。')
 
 
 def recorded_tracking(unit, kind):
@@ -144,14 +158,14 @@ from curtailment_views import curtailment_report, curtailment_overview, curtailm
 curtailment = curtailment_report(R)
 from result_navigation import build_result_navigation, comparison_frame
 from unit_overview import render_unit_overview
-render_unit_overview(R, diagnostics=DIAGNOSTICS, prefix='unit_overview:' + sel)
 navigation = build_result_navigation(S, DS, directory=sel, full=FULL, intraday=INTRADAY)
 with navigation['diagnostic'][0]:
     from hydro_daily_energy_views import render_hydro_daily_energy
     render_hydro_daily_energy(R)
+from result_economics_view import prepare_economics
+ECONOMICS = prepare_economics(R)
 main_tabs = navigation['main']
 advanced = navigation['advanced']
-STAGES = [('da', '日前', navigation['da'])] + ([('rt', '实时', navigation['rt'])] if FULL else [])
 SNAME = {'da': '日前', 'rt': '实时'}
 
 
@@ -239,7 +253,7 @@ def page_kpi(k):
                          'hydro_window_constraints_satisfied':'水量与库容约束检查通过','rules_satisfied_no_slack':'全部窗口无松弛或软跟踪偏差',
                          'da_line_overload_count':'日前越限记录数','rt_line_overload_count':'实时越限记录数'}
             show_df(pd.DataFrame([{'检查项目':v,'保存结果':('是' if S['checks'].get(c) is True else '否' if S['checks'].get(c) is False else '未记录' if S['checks'].get(c) is None else str(S['checks'][c]))} for c,v in check_names.items()]))
-            st.download_button('下载完整原字段核查记录（技术用途）',__import__('json').dumps(S['checks'],ensure_ascii=False,indent=2),file_name='checks.json')
+            pass  # Result download controls removed.
 
 
 # ============================================================================ 2 节点电价
@@ -254,7 +268,6 @@ def page_prices(k):
     fig.update_layout(hovermode="closest")
     fig.update_yaxes(tickfont=dict(size=10), dtick=1, autorange="reversed", type="category")
     show_fig(style_fig(fig, f"{name}节点电价热力图（{mat.shape[0]} 节点 × {mat.shape[1]} 时段）", TIME, "节点编号", 640), key=f'{k}_heat')
-    st.caption("日前与实时的同色标对比、价差热力图与价差分布见“最终结果 → 电价对比”。")
     default_b = [b for b in [16, 19, 25, 30] if b in mat.index] or list(mat.index[:3])
     bsel = st.multiselect(f"{name}节点电价曲线", list(mat.index), default=default_b, format_func=lambda b: f"节点{b}", key=f'{k}_buses')
     if bsel:
@@ -270,18 +283,18 @@ def page_prices(k):
             dd = dd.rename(columns={"period": "时段", "time": "时刻", "bus": "节点", "lmp_raw": "原始节点电价 元/MWh", "lmp": "限价后结算价 元/MWh", "energy": "能量分量 元/MWh",
                                     "congestion": "阻塞分量 元/MWh"})
             show_df(dd, "%.2f", height=300)
-            df_download(dd, "da_lmp_selected.csv", key='da_lmp_selected')
-    st.markdown("**对偶电价 vs 辅助定价电价（同一阶段，差 = 辅助 − 对偶）**")
-    render_aux_vs_dual(R, 'DA' if k == 'da' else 'RT', lbl, key=f'{k}_auxdual')
+            pass  # Result download controls removed.
+    with st.expander('对偶与辅助定价对比'):
+        render_aux_vs_dual(R, 'DA' if k == 'da' else 'RT', lbl, key=f'{k}_auxdual')
     st.subheader(f'{name}结算电价明细')
     market_prices = R['rt_prices'] if k == 'rt' else R['da_nodal_prices']
     business_prices = market_prices[[c for c in ('period','time','bus','lmp') if c in market_prices]].copy()
     show_df(business_prices,'%.2f',height=280)
-    df_download(business_prices,f'settlement_prices_{k}.csv',label='下载结算电价',key=f'{k}_business_prices')
+    pass  # Result download controls removed.
 
 
 # ============================================================================ 3 发电结构与机组出力
-def page_generation(k):
+def page_generation(k, *, compact=False):
     name = SNAME[k]
     ua = R["da_unit_awards"]
     if k == 'da':
@@ -305,8 +318,17 @@ def page_generation(k):
     if system is not None:
         fig.add_scatter(x=[lbl[t] for t in system.period], y=system.load_mw, name="负荷" if k == 'da' else "实际负荷", line=dict(color="#111", width=2))
     show_fig(style_fig(fig, f"{name}分类型出力堆叠（储能充电、抽蓄抽水为负）", TIME, "出力（MW）", 460, legend="资源类型"), key=f'{k}_stack')
-    e = (u.groupby("typ").P_mw.sum() * DT).reindex(order).dropna()
-    st.caption("分类型电量（MWh）：" + "　".join(f"{TYPE_CN.get(t, t)} {v:,.0f}" for t, v in e.items()))
+    from result_comparison import type_energy_comparison
+    energy = type_energy_comparison(R)
+    energy['type'] = energy.type.map(lambda t: TYPE_CN.get(t, t))
+    st.subheader('分类型电量 · 日前 / 实时')
+    st.caption('按相同已执行时段比较；充电、抽水为负。空白表示未记录，不按零处理。' if FULL else '仅日前计划；实时尚未执行。')
+    show_df(energy.rename(columns={'type': '资源类型'}), '%.2f')
+    if compact:
+        with st.expander('全部机组出力明细'):
+            from dispatch_detail import dispatch_detail_table
+            dispatch_detail_table(u, name, result_key=sel, period_hours=DT, prices=R['rt_prices' if k == 'rt' else 'da_nodal_prices'])
+        return
     usel = st.multiselect(f"{name}单机出力曲线" + ("（细灰线 = 日前参照）" if k == 'rt' else ""), sorted(ua.unit.unique()),
                           default=[x for x in ["C1", "CCGT", "GT", "W1"] if x in set(ua.unit)], key=f'{k}_units')
     if usel:
@@ -322,7 +344,7 @@ def page_generation(k):
     else:
         empty_state("请选择至少一台机组。", icon="👆")
     from dispatch_detail import dispatch_detail_table
-    dispatch_detail_table(u, name, result_key=sel, period_hours=DT)
+    dispatch_detail_table(u, name, result_key=sel, period_hours=DT, prices=R['rt_prices' if k == 'rt' else 'da_nodal_prices'])
 
 
 # ============================================================================ 4 储能·抽蓄·水电
@@ -472,6 +494,7 @@ def page_storage(k):
 # ============================================================================ 5 备用
 def page_reserve(k):
     from market_views import reserve_dashboard
+    st.caption(saved_reserve_rule_label(k) + '。图表直接使用本次已保存的需求，不套用当前设置。')
     rt = k == 'rt'
     system = R.get('rt_reserve_system') if rt else R.get('da_reserve_system')
     if system is not None and len(system):
@@ -502,39 +525,40 @@ def page_network(k):
     name = SNAME[k]
     st.subheader(f'{name}系统接线图')
     render_result_network(R, prefix=f'result_network:{k}:' + sel, stages=(k,))
-    st.subheader(f'{name}线路负载与阻塞')
-    ll = ll_da if k == 'da' else ll_rt
-    if ll is None:
-        empty_state("该结果没有线路潮流文件。", "命令行全流程旧输出不含 da_line_flows.csv；请在网页“运行”页重新运行。")
-    else:
-        mat = ll.pivot(index="line", columns="period", values="loading")
-        top = mat.max(axis=1).sort_values(ascending=False)
-        mat = mat.loc[top.index]
-        nshow = st.slider("热力图显示负载最高的线路数", 10, len(mat), min(20, len(mat)), 5, key=f'{k}_nlines')
-        m2 = mat.iloc[:nshow]
-        fig = px.imshow(m2.values * 100, x=[lbl[t] for t in m2.columns], y=list(m2.index), aspect="auto", zmin=0, zmax=100,
-                        color_continuous_scale=LOAD_SCALE, labels=dict(color="负载率 %", x=TIME, y="线路"))
-        fig.update_coloraxes(colorbar_title_text="负载率<br>%")
-        fig.update_layout(hovermode="closest")
-        show_fig(style_fig(fig, f"{name}线路负载率热力图（按最大负载率排序，前 {nshow} 条）", TIME, "线路", max(360, 22 * nshow + 120)), key=f'{k}_line_heat')
-        stat = ll.groupby("line").agg(最大负载率=("loading", "max"), 平均负载率=("loading", "mean"), 阻塞时段数=("congested", "sum"),
-                                      最大影子价格=("mu", "max"), 限额MW=("rate_eff", "first")).sort_values("最大负载率", ascending=False)
-        stat = stat.reset_index().rename(columns={"line": "线路", "最大影子价格": "最大影子价格 元/MWh", "限额MW": "限额 MW"})
-        stat["最大负载率"] *= 100
-        stat["平均负载率"] *= 100
-        stat = stat.rename(columns={"最大负载率": "最大负载率 %", "平均负载率": "平均负载率 %"})
-        with st.expander("线路统计表", expanded=False):
-            show_df(stat, "%.1f", height=360)
-        lsel = st.multiselect("线路潮流曲线（虚线 = ±限额）", list(top.index), default=list(top.index[:3]), key=f'{k}_lines')
-        if lsel:
-            fig = go.Figure()
-            for i, ln in enumerate(lsel):
-                col = PALETTE[i % len(PALETTE)]
-                a = ll[ll.line == ln]
-                fig.add_scatter(x=[lbl[t] for t in a.period], y=a.flow_mw, name=ln, line=dict(color=col))
-                fig.add_hline(y=a.rate_eff.iloc[0], line_dash="dot", line_color=col)
-                fig.add_hline(y=-a.rate_eff.iloc[0], line_dash="dot", line_color=col)
-            show_fig(style_fig(fig, f"{name}线路潮流", TIME, "潮流（MW）", 360, legend="线路"), key=f'{k}_line_flows')
+    with st.expander('线路负载、阻塞与潮流明细'):
+        st.subheader(f'{name}线路负载与阻塞')
+        ll = ll_da if k == 'da' else ll_rt
+        if ll is None:
+            empty_state("该结果没有线路潮流文件。", "命令行全流程旧输出不含 da_line_flows.csv；请在网页“运行”页重新运行。")
+        else:
+            mat = ll.pivot(index="line", columns="period", values="loading")
+            top = mat.max(axis=1).sort_values(ascending=False)
+            mat = mat.loc[top.index]
+            nshow = st.slider("热力图显示负载最高的线路数", 10, len(mat), min(20, len(mat)), 5, key=f'{k}_nlines')
+            m2 = mat.iloc[:nshow]
+            fig = px.imshow(m2.values * 100, x=[lbl[t] for t in m2.columns], y=list(m2.index), aspect="auto", zmin=0, zmax=100,
+                            color_continuous_scale=LOAD_SCALE, labels=dict(color="负载率 %", x=TIME, y="线路"))
+            fig.update_coloraxes(colorbar_title_text="负载率<br>%")
+            fig.update_layout(hovermode="closest")
+            show_fig(style_fig(fig, f"{name}线路负载率热力图（按最大负载率排序，前 {nshow} 条）", TIME, "线路", max(360, 22 * nshow + 120)), key=f'{k}_line_heat')
+            stat = ll.groupby("line").agg(最大负载率=("loading", "max"), 平均负载率=("loading", "mean"), 阻塞时段数=("congested", "sum"),
+                                          最大影子价格=("mu", "max"), 限额MW=("rate_eff", "first")).sort_values("最大负载率", ascending=False)
+            stat = stat.reset_index().rename(columns={"line": "线路", "最大影子价格": "最大影子价格 元/MWh", "限额MW": "限额 MW"})
+            stat["最大负载率"] *= 100
+            stat["平均负载率"] *= 100
+            stat = stat.rename(columns={"最大负载率": "最大负载率 %", "平均负载率": "平均负载率 %"})
+            with st.expander("线路统计表", expanded=False):
+                show_df(stat, "%.1f", height=360)
+            lsel = st.multiselect("线路潮流曲线（虚线 = ±限额）", list(top.index), default=list(top.index[:3]), key=f'{k}_lines')
+            if lsel:
+                fig = go.Figure()
+                for i, ln in enumerate(lsel):
+                    col = PALETTE[i % len(PALETTE)]
+                    a = ll[ll.line == ln]
+                    fig.add_scatter(x=[lbl[t] for t in a.period], y=a.flow_mw, name=ln, line=dict(color=col))
+                    fig.add_hline(y=a.rate_eff.iloc[0], line_dash="dot", line_color=col)
+                    fig.add_hline(y=-a.rate_eff.iloc[0], line_dash="dot", line_color=col)
+                show_fig(style_fig(fig, f"{name}线路潮流", TIME, "潮流（MW）", 360, legend="线路"), key=f'{k}_line_flows')
 
 
 # ============================================================================ 7 弃风弃光
@@ -548,9 +572,6 @@ def page_diagnostics(k):
     import json
     rt = k == 'rt'
     tables = stage_tables(k)
-    system_metrics(tables)
-    unit_dashboard(tables, bids=frozen_bids(sel), settlement=R.get('settlement_detail') if rt else None,
-                   prefix='result:' + sel + SNAME[k], indicative=not rt, units_config=frozen_units(sel))
     diagnostics = DIAGNOSTICS
     if not rt:
         gap = DS.get('scuc_gap')
@@ -631,7 +652,7 @@ def page_intraday(tabs):
         else:
             a = plans[plans['round'] == rsel] if rsel is not None else plans
             show_df(a, '%.3f', height=250)
-            df_download(a, 'id_selected_plan.csv', key='id_selected_plan')
+            pass  # Result download controls removed.
             g = a.groupby(['period', 'type']).P_mw.sum().unstack(fill_value=0)
             fig = go.Figure()
             for t in g:
@@ -656,7 +677,7 @@ def page_intraday(tabs):
         if not state_rows.empty:
             st.markdown('**日内储能、抽蓄、水电状态计划（未执行）**')
             show_df(state_rows, '%.4f', height=300)
-            df_download(state_rows, 'id_state_plan.csv', key='id_state_plan')
+            pass  # Result download controls removed.
         else:
             st.info('所选轮次未保存储能/水电/抽蓄状态证据，不补造轨迹。')
     with tabs[4]:
@@ -675,60 +696,155 @@ def page_intraday(tabs):
         st.caption('逐资源参考来源、日内轮次版本与失败回退以实时窗口原始记录为准；日内不产生独立结算。')
 
 
-# ============================================================================ 组装各阶段子页
-STAGE_PAGES = [page_kpi, page_prices, page_generation, page_storage, page_reserve, page_network, page_curtailment, page_diagnostics]
-for k, _name, stage_tabs in STAGES:
-    for tab, fn in zip(stage_tabs, STAGE_PAGES):
-        with tab:
-            fn(k)
-    if k == 'rt':
-        with stage_tabs[-1]:
-            page_windows()
-if INTRADAY:
-    page_intraday(navigation['id'])
+# Four business views share the selected immutable run.
+from final_views import render_final, system_price_compare, node_price_compare, kpi_compare
 
-# ============================================================================ 最终结果：日前 vs 实时直接对比
-from final_views import render_final
-final_tabs = navigation['final']
-render_final(R, buses=buses, ll_da=ll_da, ll_rt=ll_rt, report=curtailment, lbl=lbl, sel=sel, tabs=final_tabs)
-with final_tabs[0]:
-    curtailment_overview(curtailment)
+with main_tabs[0]:
     if FULL:
-        st.markdown('**全网负荷与供给对比**')
-        st.caption("日前是计划，实时只含实际执行首段；未执行时段保留空白。净供给含保存的区外来电，扣除充电与抽水，不含切负荷。")
-        try:
-            comparison = comparison_frame(R)
-        except ValueError as exc:
-            st.error(str(exc))
-            comparison = pd.DataFrame()
-        if not comparison.empty:
-            load_columns = [c for c in comparison if c.endswith("负荷 MW") and "切负荷" not in c]
-            if load_columns:
-                st.line_chart(comparison.set_index("period")[load_columns], x_label="时段序号", y_label="负荷 MW")
-            with st.expander("查看逐时段日前实时对比与下载"):
-                st.dataframe(comparison, hide_index=True, width="stretch")
-                df_download(comparison, "da_rt_system_comparison.csv", key="da_rt_system_comparison")
+        sp = S.get('spread') or {}
+        metric_grid([
+            ('日前 / 实时加权价 · 元/MWh', ' / '.join(recorded_number(sp.get(x)) for x in ('da_lw_avg', 'rt_lw_avg'))),
+            ('实时已执行时段', f'{T_rt} / {N}'),
+            ('日前 / 实时负荷峰值 · MW', ' / '.join(recorded_number(R[key].loc[R[key].period.isin(R['rt_prices'].period.unique()), 'load_mw'].max() if isinstance(R.get(key), pd.DataFrame) and 'load_mw' in R[key] else None) for key in ('da_system', 'rt_system'))),
+        ], per_row=3)
+    else:
+        metric_grid([
+            ('日前加权价 · 元/MWh', recorded_number(DS.get('lmp_load_weighted_avg'))),
+            ('日前中标电量 · MWh', f"{R['da_unit_awards'].energy_mwh.sum():,.1f}"),
+            ('日前中标收入 · 万元', wan(R['da_unit_awards'].revenue_yuan.sum())),
+        ], per_row=3)
+    if FULL:
+        st.caption('以上价格与峰值按已执行实时对应时段比较。')
+    overview_stage = st.radio('供需阶段', ['da', 'rt'] if FULL else ['da'], format_func=SNAME.get, horizontal=True, key='overview_stage')
+    page_generation(overview_stage, compact=True)
+    with st.expander('弃风弃光'):
+        curtailment_overview(curtailment)
+        page_curtailment(overview_stage)
+    with st.expander('系统指标与逐时对比'):
+        if FULL:
+            st.caption('日前与实时指标按相同已执行范围统计；空白为缺记录。')
+            show_df(kpi_compare(R, buses, ll_da, ll_rt, curtailment), '%.2f')
+        else:
+            page_kpi('da')
+        comparison = comparison_frame(R)
+        show_df(comparison, '%.2f')
+        pass  # Result download controls removed.
+    render_forecast_diagnostics(sel)
+    from result_economics_view import render_economics
+    render_economics(R, prefix='all_economics:' + sel, prepared=ECONOMICS)
+
+with main_tabs[1]:
+    render_unit_overview(R, diagnostics=DIAGNOSTICS, prefix='unit_overview:' + sel, economics=ECONOMICS)
+    with st.expander('高级状态与价值图表'):
+        kind = st.selectbox('图表', ['库存轨迹对比', '价值与前瞻', '日前完整资源状态'] + (['实时完整资源状态'] if FULL else []), key='advanced_unit_chart')
+        if kind in ('日前完整资源状态', '实时完整资源状态'):
+            page_storage('da' if kind.startswith('日前') else 'rt')
+        elif FULL:
+            render_final(R, buses=buses, ll_da=ll_da, ll_rt=ll_rt, report=curtailment, lbl=lbl, sel=sel, sections={3 if kind == '库存轨迹对比' else 4})
+        else:
+            st.info('仅日前结果，没有实时状态可对比。')
+
+with main_tabs[2]:
+    from result_comparison import reserve_price_comparison
+    reserve_prices = reserve_price_comparison(R, buses)
+    if not reserve_prices.empty:
+        st.subheader('备用缺额时段：同段电价对比')
+        primary = [c for c in reserve_prices if '调度对偶' not in c]
+        show_df(reserve_prices[primary], '%.2f')
+        st.caption('比较同一时段，不能用全天均价判断缺额时段是否低价。原始定价与限价后结算价分列；辅助模型只定价，不改变正式出力。')
+        if any('调度对偶' in c for c in reserve_prices):
+            with st.expander('正式调度对偶与辅助定价证据'):
+                show_df(reserve_prices, '%.2f')
+                st.caption('调度对偶原始价、所选定价原始价和结算价是不同口径，不互相替代。')
+    choices = (['compare', 'da'] + (['id'] if INTRADAY else []) + ['rt']) if FULL else ['da']
+    price_stage = st.radio('价格阶段', choices, format_func=lambda x: {'compare': '日前 / 实时对比', 'id': '日内参考（不结算）', **SNAME}[x], horizontal=True, key='price_stage')
+    if price_stage == 'id':
+        from unit_overview import round_inventory, saved_price_schema
+        inventory = round_inventory(R, DIAGNOSTICS)
+        if inventory.empty:
+            st.info('未保存日内轮次，不补造指示性价格。')
+        else:
+            tau = st.selectbox('价格参考轮次', list(inventory.tau),
+                               format_func=lambda t: f'{lbl[int(t)]} · {inventory.loc[inventory.tau.eq(t), "status"].iloc[0]}', key='price_id_tau')
+            item = inventory.loc[inventory.tau.eq(tau)].iloc[0]
+            rounds = R.get('id_rounds_summary')
+            selected = rounds.loc[rounds.tau.eq(tau)] if isinstance(rounds, pd.DataFrame) and 'tau' in rounds else pd.DataFrame()
+            prices = R.get('id_prices_indicative')
+            if not item['success']:
+                st.warning('所选轮次失败，无成功日内价格，不使用旧轮次替代。')
+            elif len(selected) != 1 or 'round' not in selected or not isinstance(prices, pd.DataFrame) or 'round' not in prices:
+                st.info('所选轮次价格记录缺失。')
+            else:
+                prices = prices.loc[prices['round'].eq(selected.iloc[0]['round'])]
+                field, price_label, names, _known = saved_price_schema(prices, 'id')
+                if prices.empty or not {'bus', 'period', field} <= set(prices):
+                    st.info('所选轮次价格记录缺失。')
+                else:
+                    nodes = sorted(prices.bus.unique())
+                    chosen = st.multiselect('日内节点', nodes, default=nodes[:1], key='compact_id_price_nodes')
+                    fig = go.Figure()
+                    for i, node in enumerate(chosen):
+                        rows = prices.loc[prices.bus.eq(node)].sort_values('period')
+                        fig.add_scatter(x=[lbl[int(t)] for t in rows.period], y=rows[field], name=f'节点{node}', connectgaps=False,
+                                        line=dict(color=PALETTE[i % len(PALETTE)], dash='dot'))
+                    show_fig(style_fig(fig, '日内参考价，不参与结算', TIME, price_label, 340), key='compact_id_prices')
+                    with st.expander('日内价格明细'):
+                        show_df(prices[['period', 'bus', field]].rename(columns=names), '%.2f')
+                        pass  # Result download controls removed.
+    else:
+        fig = go.Figure()
+        stages = ['da', 'rt'] if price_stage == 'compare' else [price_stage]
+        for stage in stages:
+            values = load_weighted(R['da_nodal_prices' if stage == 'da' else 'rt_prices'], buses)
+            fig.add_scatter(x=[lbl[int(t)] for t in values.index], y=values.values, name=SNAME[stage], connectgaps=False,
+                            line=dict(color=DA_COLOR if stage == 'da' else RT_COLOR, dash='solid' if stage == 'da' else 'dash'))
+        show_fig(style_fig(fig, '全网负荷加权电价', TIME, PRICE, 320), key='compact_system_prices')
+        nodes = sorted(R['da_nodal_prices'].bus.unique())
+        chosen_nodes = st.multiselect('节点', nodes, default=nodes[:1], key='compact_price_nodes')
+        fig = go.Figure()
+        for i, node in enumerate(chosen_nodes):
+            for stage in stages:
+                rows = R['da_nodal_prices' if stage == 'da' else 'rt_prices']
+                rows = rows[rows.bus.eq(node)].sort_values('period')
+                fig.add_scatter(x=[lbl[int(t)] for t in rows.period], y=rows.lmp, name=f'节点{node} · {SNAME[stage]}', connectgaps=False,
+                                line=dict(color=PALETTE[i % len(PALETTE)], dash='solid' if stage == 'da' else 'dash'))
+        if fig.data:
+            show_fig(style_fig(fig, '节点电价', TIME, PRICE, 340), key='compact_node_prices')
+        with st.expander('价格明细'):
+            for stage in stages:
+                prices = R['da_nodal_prices' if stage == 'da' else 'rt_prices']
+                business = prices[[c for c in ('period', 'time', 'bus', 'lmp') if c in prices]]
+                st.markdown('**' + SNAME[stage] + '**')
+                show_df(business, '%.2f', height=280)
+                pass  # Result download controls removed.
+        with st.expander('高级价格图表与定价来源'):
+            advanced_price = st.selectbox('价格图表', ['日前'] + (['实时', '价差分布与排名'] if FULL else []), key='advanced_price_chart')
+            if advanced_price == '价差分布与排名':
+                render_final(R, buses=buses, ll_da=ll_da, ll_rt=ll_rt, report=curtailment, lbl=lbl, sel=sel, sections={1})
+            else:
+                page_prices('da' if advanced_price == '日前' else 'rt')
+
+with main_tabs[3]:
+    network_stage = st.radio('电网阶段', ['da', 'rt'] if FULL else ['da'], format_func=SNAME.get, horizontal=True, key='network_stage')
+    page_network(network_stage)
+    with st.expander('备用供需与缺额'):
+        page_reserve(network_stage)
+    if FULL:
+        with st.expander('实时窗口与前瞻约束'):
+            page_windows()
+        with st.expander('结算恒等式与资金核对'):
+            render_final(R, buses=buses, ll_da=ll_da, ll_rt=ll_rt, report=curtailment, lbl=lbl, sel=sel, sections={7})
+    with advanced:
+        options = ['DA'] + (['ID'] if INTRADAY else []) + (['RT'] if FULL else [])
+        chosen_stage = st.radio('完整出清阶段', options, horizontal=True, key='advanced_stage')
+        if chosen_stage == 'ID':
+            id_sections = [st.expander(label) for label in ['日内轮次与交接', '指示性价格', '计划出力', '库存状态', 'SCUC/SCED与定价结果']]
+            page_intraday(id_sections)
+        else:
+            page_diagnostics(chosen_stage.lower())
 
 # ============================================================================ 结算
-with final_tabs[8]:
-    st.caption("先核对两级电能量结算，再看独立成本与利润。结算是现金收支，报价目标不是成本，利润允许为负；缺成本不按零补齐。")
-    financial_tabs = st.tabs(["电能量结算", "成本与利润"])
-with financial_tabs[1]:
-    from profit_recovery import historical_profit_recovery
-    profit_supplement = historical_profit_recovery(R)
-    from market_views import operating_profit_dashboard
-    if profit_supplement:
-        st.info('以下为单独保存的派生报告，核算口径与成本来源见上方；原始结果未改写。')
-        operating_profit_dashboard(profit_supplement['by_unit'], profit_supplement['by_period'], prefix='supplement_profit:'+sel)
-        with st.expander('查看原始成本记录（补算前）'):
-            original_costs = R.get('operating_profit_by_unit')
-            if original_costs is not None:
-                st.dataframe(original_costs, hide_index=True, width='stretch')
-            else:
-                st.caption('原始运行未保存逐主体成本记录。')
-    else:
-        operating_profit_dashboard(R.get('operating_profit_by_unit'), R.get('operating_profit_by_period'), prefix='profit:'+sel)
-with financial_tabs[0]:
+with main_tabs[3], st.expander('系统资金核对与结算明细', expanded=False):
     if not FULL:
         st.info("仅日前结果：显示日前中标收入（电量 × 日前节点电价）。全流程结果才有偏差结算。")
         ua = R["da_unit_awards"]
@@ -738,7 +854,7 @@ with financial_tabs[0]:
         t1["type"] = t1.type.map(lambda x: TYPE_CN.get(x, x))
         show_df(t1.rename(columns={"unit": "机组", "type": "类型", "日前电量MWh": "日前电量 MWh"}), "%.1f",
                 overrides={"日前收入 万元": "%.2f"})
-        df_download(t1, "da_revenue_by_unit.csv")
+        pass  # Result download controls removed.
     else:
         money = ["da_amount", "rt_amount", "total", "dev_pnl"]
 
@@ -759,7 +875,7 @@ with financial_tabs[0]:
         st.subheader("按资源类型")
         st.caption("发电为正（收入），负荷为负（支付）；金额单位：万元")
         show_df(to_wan(bt).rename(columns=cn), "%.1f", overrides=wfmt)
-        df_download(R["settlement_by_type"], "settlement_by_type.csv", key="dl_t")
+        pass  # Result download controls removed.
         b2 = bt[bt.type != TYPE_CN["slack"]]
         fig = go.Figure()
         fig.add_bar(x=b2.type, y=b2.da_amount / 1e4, name="日前电费", marker_color=DA_COLOR)
@@ -775,7 +891,7 @@ with financial_tabs[0]:
             bb = to_wan(be[be.type.isin(tsel)])
             bb["type"] = bb.type.map(lambda x: TYPE_CN.get(x, x))
             show_df(bb.rename(columns=cn), "%.1f", overrides=wfmt)
-            df_download(R["settlement_by_entity"], "settlement_by_entity.csv", key="dl_e")
+            pass  # Result download controls removed.
         with st.expander("资金平衡校核（盈余 = 阻塞项 + 限价修正 + 残差）与线路阻塞项", expanded=False):
             c1, c2 = st.columns(2)
             with c1:
@@ -788,7 +904,7 @@ with financial_tabs[0]:
         with st.expander("逐时段结算明细"):
             ent = st.selectbox("主体", sorted(R["settlement_detail"].entity.unique()))
             show_df(R["settlement_detail"][R["settlement_detail"].entity == ent], "%.2f", height=320)
-            df_download(R["settlement_detail"], "settlement_detail.csv", "下载全部明细 CSV", key="dl_d")
+            pass  # Result download controls removed.
 
 
 # Historical regulation outputs remain on disk, not a current market feature.
@@ -799,7 +915,6 @@ if S.get('regulation',{}).get('enabled',False):
         if R.get('rt_regulation') is not None:show_df(R['rt_regulation'])
 
 with navigation['diagnostic'][1]:
-    st.caption('逐主体与逐求解阶段结果位于“日前 → SCUC/SCED与定价结果”和“日内·实时滚动 → 日内轮次与交接／实时执行与前瞻 → SCUC/SCED与定价结果”；此处汇总求解记录与兜底记录。')
     sw = R.get('solver_windows') if isinstance(R.get('solver_windows'), pd.DataFrame) else None
     if sw is None and (Path(sel) / 'solver_windows.csv').exists():
         try:
@@ -839,8 +954,7 @@ with navigation['diagnostic'][2]:
                 else:
                     st.caption('本次CLI运行前已冻结源码逐文件校验表：' + str(len(hashes)) + '个文件；采集时间：' +
                                str(provenance.get('recorded_at_utc', '未知')) + '。这是运行前存档，不表示当前界面版本已重新求解。')
-                    st.download_button('下载本次CLI冻结源码校验表', cli_source.read_bytes(), file_name='source_fingerprint.json',
-                                       key='cli_source_fingerprint:' + sel)
+                    pass  # Result download controls removed.
             else:
                 st.caption('历史运行未保存源码指纹，不借用当前版本作为来源。')
         ui_root=Path(__file__).parents[1]

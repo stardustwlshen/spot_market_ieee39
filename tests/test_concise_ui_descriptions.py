@@ -90,10 +90,13 @@ assert (summary, da) == before
     at = AppTest.from_string(code, default_timeout=30).run()
     assert not at.exception
     captions = outside_expanders(at, 'caption')
-    assert '日前为计划' in captions and '辅助模型仅定价' in captions
-    assert '缺失记录不按零处理' in captions
     if full:
-        assert '日内为参考、不结算' in captions and '实时仅执行首段' in captions
+        assert '已保存 2 时段' in captions and '未确认全天结算' in captions
+        assert '日内未启用或未记录' in captions
+    else:
+        assert '仅日前计划' in captions and '无实时执行与偏差结算' in captions
+    assert len(at.tabs) == 4
+    assert all(not detail.proto.expanded for detail in at.expander)
     alerts = outside_expanders(at, 'error') + outside_expanders(at, 'warning')
     for token in ('线路越限', '5.0000 MW', '备用缺额', '0.2500 MW', '3.000%', '1.000%'):
         assert token in alerts

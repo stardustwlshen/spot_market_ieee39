@@ -248,4 +248,5 @@ def test_apptest_legacy_not_presented_as_verified(source):
     code=f"import sys\nsys.path.insert(0,{str(ROOT/'app')!r})\nfrom forecast_error_view import render_forecast_diagnostics\nrender_forecast_diagnostics({str(source)!r})"
     at=AppTest.from_string(code,default_timeout=30).run();assert not at.exception
     assert not at.get('plotly_chart') and not at.metric
-    assert any('历史' in x.value and '不可核验' in x.value for x in at.info)
+    assert any('历史' in x.value and '未通过核验' in x.value for x in at.warning)
+    assert not at.expander

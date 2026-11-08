@@ -47,7 +47,8 @@ if not re.fullmatch(r"[\w.-]*", a.tag):
 if a.periods is not None and a.periods <= 0:
     ap.error("--periods 必须为正整数")
 
-cfg = load_config(season=a.season)
+from smm.reserve_policy import for_new_run
+cfg = for_new_run(load_config(season=a.season))
 if a.id_interval_h is not None:
     cfg.mode["intraday"]["interval_h"] = a.id_interval_h
 if a.rt_lookahead_h is not None:

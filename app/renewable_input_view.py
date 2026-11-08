@@ -129,7 +129,7 @@ def selected_curves(data, *, kinds, stages, view='total', unit_ids=None):
     return table, warnings
 
 
-def renewable_figure(table):
+def renewable_figure(table, *, yaxis_title='可用功率（MW）'):
     fig = go.Figure()
     for name in table.columns[2:]:
         fig.add_trace(go.Scatter(
@@ -140,7 +140,7 @@ def renewable_figure(table):
     fig.update_layout(
         hovermode='x unified', hoverdistance=-1, height=430,
         hoverlabel=dict(namelength=-1), margin=dict(l=55, r=20, t=20, b=95),
-        xaxis_title='时间', yaxis_title='可用功率（MW）',
+        xaxis_title='时间', yaxis_title=yaxis_title,
         legend=dict(orientation='h', x=0, y=-.2, yanchor='top'),
     )
     times = table['时间'].tolist()

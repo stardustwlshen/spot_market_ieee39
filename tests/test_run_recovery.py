@@ -17,15 +17,32 @@ sys.path.insert(0, str(ROOT / 'app'))
 import common
 
 
+TEST_BOOT_SESSION = {'version': 1, 'source': 'test-kernel-boot-session', 'sha256': 'a' * 64}
+
+
+@pytest.fixture(autouse=True)
+def simulated_boot_session(monkeypatch):
+    """Algorithm premise only, never a claim of native Windows reboot support.
+
+    Actual OS process identities, machine ownership and file locks remain real.
+    Native evidence support/failure is tested independently in machine-identity tests.
+    """
+    real = pc.process_scope
+    monkeypatch.setattr(pc, 'process_scope', lambda: {**real(), 'boot_identity': dict(TEST_BOOT_SESSION)})
+
+
 def record(tmp_path, *, previous_boot=True, status='running'):
     directory = tmp_path / 'runs' / 'scene' / 'interrupted'
     directory.mkdir(parents=True)
     identity = pc.process_identity()
-    # Synthetic prior boot with coherent process-creation and kernel session IDs.
+    # Coherent synthetic prior session; this is not a real reboot test.
     if previous_boot:
+        session = identity['scope'].get('boot_identity')
+        from smm.machine_identity import valid_evidence
+        assert valid_evidence(session), 'test requires the explicit simulated-session fixture'
         identity['scope']['boot_time'] -= 100000
         identity['create_time'] = identity['scope']['boot_time'] + 100
-        identity['scope']['boot_identity'] = {'version': 1, 'source': 'linux-boot-id', 'sha256': '1' * 64}
+        identity['scope']['boot_identity'] = {**session, 'sha256': ('2' if session['sha256'] == '1' * 64 else '1') * 64}
     meta = {'scenario': '默认', 'mode': 'full', 'status': status, 'stage': 'RT',
             'process_identity': identity, 'started': '2026-01-01T00:00:00', 'bid_version': 3,
             'periods': None, 'executed_periods': 3}
@@ -203,7 +220,7 @@ def test_real_app_reboot_cancel_recovery_and_legacy_guidance(tmp_path, monkeypat
     assert not at.exception
     button = lambda label: next(b for b in at.button if b.label == label)
     assert button('▶ 开始运行').disabled
-    button('请求取消（窗口边界）').click().run()
+    button('请求取消（安全边界）').click().run()
     assert not at.exception
     assert button('▶ 开始运行').disabled
     assert (directory / 'cancel.request').exists()
@@ -218,19 +235,30 @@ def test_real_app_reboot_cancel_recovery_and_legacy_guidance(tmp_path, monkeypat
         button('确认进程已不存在并恢复').click().run()
         assert not at.exception
         assert not button('▶ 开始运行').disabled
-        assert not any(b.label == '请求取消（窗口边界）' for b in at.button)
+        assert not any(b.label == '请求取消（安全边界）' for b in at.button)
         assert json.loads((directory / 'meta.json').read_text())['status'] == 'failed'
 
 
-def test_changed_worker_and_symlink_escape_are_rejected(tmp_path):
+def test_changed_worker_is_rejected_before_recovery(tmp_path):
     directory, meta = record(tmp_path)
     expected = recovery.inspect_recovery(directory)['revision']
     atomic_json(directory / 'worker.json', pc.process_identity())
     with pytest.raises(RuntimeError, match='已变化'):
         recovery.recover_run(directory, directory.parent.parent, expected_revision=expected)
+
+
+def test_symlink_escape_is_rejected(tmp_path):
+    directory, meta = record(tmp_path, previous_boot=False)
+    expected = recovery.inspect_recovery(directory)['revision']
     outside = tmp_path / 'elsewhere';outside.mkdir()
     atomic_json(outside / 'meta.json', meta)
-    link = directory.parent / 'linked';link.symlink_to(outside, target_is_directory=True)
+    link = directory.parent / 'linked'
+    try:
+        link.symlink_to(outside, target_is_directory=True)
+    except OSError as exc:
+        if os.name == 'nt' and getattr(exc, 'winerror', None) == 1314:
+            pytest.skip('Windows lacks symlink-creation privilege (WinError 1314); no security settings changed; verified separately on Linux')
+        raise
     with pytest.raises(ValueError, match='当前项目'):
         recovery.recover_run(link, directory.parent.parent, expected_revision=expected)
     assert json.loads((outside / 'meta.json').read_text()) == meta
@@ -244,7 +272,11 @@ def test_real_process_recovery_owns_launch_lock(tmp_path):
     helper.write_text('''import sys,time
 from pathlib import Path
 sys.path.insert(0,sys.argv[1]+'/src')
-from smm import run_recovery as r
+from smm import run_recovery as r, process_control as pc
+import json
+real_scope=pc.process_scope
+test_boot=json.loads(sys.argv[4])
+pc.process_scope=lambda:{**real_scope(),'boot_identity':test_boot}
 original=r.atomic_json
 def delayed(path,value):
     Path(sys.argv[3]).touch()
@@ -254,7 +286,7 @@ r.atomic_json=delayed
 d=Path(sys.argv[2]);proof=r.inspect_recovery(d)
 r.recover_run(d,d.parent.parent,expected_revision=proof['revision'])
 ''')
-    with subprocess.Popen([sys.executable, str(helper), str(ROOT), str(directory), str(ready)]) as child:
+    with subprocess.Popen([sys.executable, str(helper), str(ROOT), str(directory), str(ready), json.dumps(TEST_BOOT_SESSION)]) as child:
         import time
         deadline = time.monotonic() + 10
         while not ready.exists() and time.monotonic() < deadline:
@@ -274,3 +306,37 @@ def test_legacy_same_boot_scope_never_proves_machine_ownership(tmp_path, monkeyp
     monkeypatch.setattr(psutil, 'Process', lambda *a: pytest.fail('legacy ownership must not query arbitrary PID'))
     assert pc.process_state(meta['process_identity']) == 'unknown'
     assert recovery.inspect_recovery(directory)['reason'] == 'legacy_machine_identity'
+
+
+
+def test_missing_current_boot_evidence_never_releases_old_session(tmp_path, monkeypatch):
+    directory, meta = record(tmp_path, previous_boot=False)
+    identity=meta['process_identity']
+    identity['scope']['boot_time']-=100000
+    identity['create_time']=identity['scope']['boot_time']+100
+    identity['scope']['boot_identity']={'version':1,'source':'test-prior-boot','sha256':'1'*64}
+    atomic_json(directory/'meta.json',meta)
+    current=copy.deepcopy(pc.process_scope());current['boot_identity']=None
+    monkeypatch.setattr(pc,'process_scope',lambda:current)
+    monkeypatch.setattr(pc,'process_state',lambda _:pytest.fail('Unverified prior boot must not inspect a reused PID'))
+    before=(directory/'meta.json').read_bytes()
+    proof=recovery.inspect_recovery(directory)
+    assert not proof['eligible'] and proof['reason']=='unproven_boot'
+    with pytest.raises(RuntimeError,match='缺少可验证'):
+        recovery.recover_run(directory,directory.parent.parent,expected_revision=proof['revision'])
+    assert (directory/'meta.json').read_bytes()==before
+
+
+def test_old_archive_without_boot_session_is_not_upgraded(tmp_path):
+    directory,meta=record(tmp_path,previous_boot=False)
+    identity=meta['process_identity']
+    identity['scope']['boot_time']-=100000
+    identity['create_time']=identity['scope']['boot_time']+100
+    identity['scope'].pop('boot_identity',None)
+    atomic_json(directory/'meta.json',meta)
+    before=(directory/'meta.json').read_bytes()
+    proof=recovery.inspect_recovery(directory)
+    assert not proof['eligible'] and proof['reason']=='unproven_boot'
+    with pytest.raises(RuntimeError):
+        recovery.recover_run(directory,directory.parent.parent,expected_revision=proof['revision'])
+    assert (directory/'meta.json').read_bytes()==before

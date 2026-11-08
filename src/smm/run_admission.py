@@ -39,6 +39,8 @@ def _reservation(directory, expected):
     allowed = {'meta.json', '.meta.lock', '.execution.lock', 'scenario_snapshot',
                'run.log', 'worker.json', 'worker.pid', 'submitted_bids.json',
                'frozen_input_provenance.json', 'cancel.request',
+               # The launcher writes these before spawning for legacy 400 MW adoption.
+               'reserve_policy_migration.json', 'reserve_source_modes.yaml',
                'launch_warning.json', 'launch_error.log',
                f'worker.json.{os.getppid()}.tmp',
                f'launch_warning.json.{os.getppid()}.tmp'}

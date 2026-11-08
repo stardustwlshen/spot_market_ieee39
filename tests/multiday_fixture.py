@@ -18,7 +18,7 @@ def micro_day(date='2026-07-15',*,second_day=False,reverse_price=False,with_hydr
     cfg.mode['regulation']['enabled']=False
     cfg.mode['bid_rules']={'profile':'generic','default':{'segments_min':1,'price_step':None,'min_segment_fraction':0}}
     cfg.mode['coal_first_segment']=None
-    cfg.mode['reserve'].update(rho_L=0.,rho_RE=0.,rho_L_dn=0.,rho_RE_dn=0.,include_ctg=False,providers=[],storage_reserve=False,down_enabled=True,mu_RE=0.)
+    cfg.mode['reserve'].update(up_requirement_mode='formula',rho_L=0.,rho_RE=0.,rho_L_dn=0.,rho_RE_dn=0.,include_ctg=False,providers=[],storage_reserve=False,down_enabled=True,mu_RE=0.)
     cfg.mode['realtime'].update(interval_min=60,lookahead_h=2.,lock_types=['coal','gas_ccgt'])
     cfg.mode['realtime']['storage'].update(mode='value')
     cfg.mode['realtime']['hydro']='value'

@@ -41,7 +41,7 @@ class DACase:
 
 
 def reserve_requirement(cfg: Config, load_total: np.ndarray, ren_total: np.ndarray, extra_n1: float | None = None):
-    """工程备用规则 (12)：R⁺ = ρ_L·D̂ + ρ_RE·P̂_RE + R_ctg；R⁻ = ρ⁻_L·D̂ + ρ⁻_RE·P̂_RE。"""
+    """显式固定总上备用，或历史比例加事故公式；下备用策略独立。"""
     from .input_validation import validate_reserve_configuration, _nonnegative
     validate_reserve_configuration(cfg)
     if extra_n1 is not None:
@@ -51,12 +51,16 @@ def reserve_requirement(cfg: Config, load_total: np.ndarray, ren_total: np.ndarr
         + [max(u["unit_gen_max"], u["unit_pump"]) for u in cfg.units.get("pumped", [])]   # 抽蓄单机发电/抽水失去同样构成功率缺额
     max_unit = float(max(units, default=0.0))
     n1 = float(cfg.base.get("n1_loss_mw") or 0.0) if extra_n1 is None else extra_n1
-    r_ctg = max(n1, max_unit) if r["include_ctg"] else 0.0
-    up = r["rho_L"] * load_total + r["rho_RE"] * ren_total + r_ctg
+    requirement_mode = r.get("up_requirement_mode", "formula")
+    r_ctg = max(n1, max_unit) if requirement_mode == "formula" and r["include_ctg"] else 0.0
+    up = (np.full_like(load_total, float(r["fixed_up_mw"]), dtype=float)
+          if requirement_mode == "fixed"
+          else r["rho_L"] * load_total + r["rho_RE"] * ren_total + r_ctg)
     # An explicitly upward-only research scenario procures no downward reserve.
     dn = (r["rho_L_dn"] * load_total + r["rho_RE_dn"] * ren_total
           if bool(r.get("down_enabled", True)) else np.zeros_like(load_total, dtype=float))
-    return up, dn, dict(max_unit=max_unit, n1_loss=n1, R_ctg=r_ctg, **r)
+    return up, dn, dict(max_unit=max_unit, n1_loss=n1, R_ctg=r_ctg,
+                        **{**r, "up_requirement_mode": requirement_mode})
 
 
 def build_da_case(cfg: Config, net: Network, profiles: pd.DataFrame, bids: dict, *, init: dict | None = None,

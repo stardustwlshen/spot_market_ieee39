@@ -22,12 +22,12 @@ def test_high_pv_capacity_quotes_costs_and_input_ratios_are_consistent():
     for uid,spec in pv.items():
         assert bids['units'][uid]['segments'][0]['p_start']==0
         assert bids['units'][uid]['segments'][-1]['p_end']==spec['cap']
-    old=json.loads((ROOT/'bids/2026-07-15/MKT/bids_v2.json').read_text())
-    archived_v4=json.loads((ROOT/'bids/2026-07-15/MKT/bids_v4.json').read_text())
+    old=json.loads((ROOT/'bids/2026-07-15/MKT/bids_v2.json').read_text(encoding='utf-8'))
+    archived_v4=json.loads((ROOT/'bids/2026-07-15/MKT/bids_v4.json').read_text(encoding='utf-8'))
     for uid,quote in old['units'].items():assert archived_v4['units'][uid]==quote
     assert bids['version']==5  # New cost baseline; old expansion archives stay unchanged
-    fixed=yaml.safe_load((ROOT/'config/fixed_costs.yaml').read_text())['units']
-    sheet=yaml.safe_load((ROOT/'config/bid_cost_basis.yaml').read_text())
+    fixed=yaml.safe_load((ROOT/'config/fixed_costs.yaml').read_text(encoding='utf-8'))['units']
+    sheet=yaml.safe_load((ROOT/'config/bid_cost_basis.yaml').read_text(encoding='utf-8'))
     for uid in pv:
         assert fixed[uid]['scalar_marginal_cost_yuan_per_mwh']==sheet['renewable_vom'][uid]==5
     profiles=generate_profiles(cfg)
@@ -47,22 +47,22 @@ def test_high_pv_capacity_quotes_costs_and_input_ratios_are_consistent():
 def test_old_scenario_copy_preserves_assets_profiles_and_old_quotes(tmp_path,monkeypatch):
     monkeypatch.setattr(scenario,'SCEN_DIR',tmp_path/'scenarios')
     old=scenario.create_scenario('old')
-    path=old/'config/units.yaml';units=yaml.safe_load(path.read_text())
+    path=old/'config/units.yaml';units=yaml.safe_load(path.read_text(encoding='utf-8'))
     units['renewable']=[u for u in units['renewable'] if u['id'] not in {'PV2','PV3'}]
-    path.write_text(yaml.safe_dump(units,allow_unicode=True))
+    path.write_text(yaml.safe_dump(units,allow_unicode=True), encoding='utf-8')
     for filename in ('fixed_costs.yaml','bid_cost_basis.yaml'):
-        p=old/'config'/filename;d=yaml.safe_load(p.read_text())
+        p=old/'config'/filename;d=yaml.safe_load(p.read_text(encoding='utf-8'))
         target=d['units'] if filename=='fixed_costs.yaml' else d['renewable_vom']
         for uid in ('PV2','PV3'):target.pop(uid,None)
-        p.write_text(yaml.safe_dump(d,allow_unicode=True))
+        p.write_text(yaml.safe_dump(d,allow_unicode=True), encoding='utf-8')
     for p in (old/'bids/2026-07-15/MKT').glob('bids_v*.*'):
         if int(p.stem.split('_v')[-1]) >= 3:p.unlink()
     cfg=load_config(root=old);profiles=generate_profiles(cfg);profiles[['W1_actual','PV1_da']].to_csv(old/'data/profile_overrides.csv',index=False)
-    before={str(p.relative_to(old)):p.read_bytes() for p in old.rglob('*') if p.is_file()}
+    before={p.relative_to(old).as_posix():p.read_bytes() for p in old.rglob('*') if p.is_file()}
     copied=scenario.create_scenario('old_copy',source='old')
     new_cfg=load_config(root=copied)
     assert {u['id'] for u in new_cfg.units['renewable']}=={'W1','W2','PV1'}
     assert sum(u['cap'] for u in new_cfg.units['renewable'] if u['type']=='pv')==652
     assert load_bids(new_cfg)['version']==2
     assert (copied/'data/profile_overrides.csv').read_bytes()==before['data/profile_overrides.csv']
-    assert before=={str(p.relative_to(old)):p.read_bytes() for p in old.rglob('*') if p.is_file()}
+    assert before=={p.relative_to(old).as_posix():p.read_bytes() for p in old.rglob('*') if p.is_file()}

@@ -233,4 +233,4 @@ def curtailment_dashboard(report, stage=None, key_prefix=''):
     export = chosen[['period', 'time', 'unit', 'type', 'bus', *VALUE_COLUMNS, 'curtail_mwh', 'reason']].rename(
         columns={'curtail_mwh': '分时弃电量 MWh', 'reason': '数据说明'})
     show_df(export, '%.4f', height=320)
-    df_download(export, f'{"da" if stage == "日前" else "rt"}_curtailment.csv', label='下载所选场站分时弃电', key=key_prefix+'curtailment_detail')
+    pass  # Result download controls removed.

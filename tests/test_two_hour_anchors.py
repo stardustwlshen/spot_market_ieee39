@@ -101,7 +101,7 @@ def combined_case(T=16):
     cfg.mode['pumped']['mode_step_periods']=1
     cfg.mode['realtime']['storage']['anchor']='two_hour_eq'
     cfg.mode['realtime']['tracking_policy']=dict(mode='soft_deliverable_energy',penalty_yuan_per_discharge_mwh=1000.)
-    cfg.mode['reserve'].update(storage_reserve=False,include_ctg=False,rho_L=0.,rho_RE=0.,rho_L_dn=0.,rho_RE_dn=0.)
+    cfg.mode['reserve'].update(up_requirement_mode='formula',storage_reserve=False,include_ctg=False,rho_L=0.,rho_RE=0.,rho_L_dn=0.,rho_RE_dn=0.)
     cfg.base['solver'].update(time_limit_s=10.)
     cfg.mode['realtime'].update(time_limit_s=10.,mip_rel_gap=0.)
     c.bids['units']['ES1']=deepcopy(b.bids['units']['ES1']);c.bids['units']['ES1']['soc_end']=.5

@@ -1,5 +1,6 @@
 """Curtailment comes from physical dispatch, not prices, overlapping windows or deficits."""
 from copy import deepcopy
+import ast
 import json
 from pathlib import Path
 import sys
@@ -19,10 +20,10 @@ from curtailment_views import curtailment_report, _summary_table
 def result(tmp_path):
     config = tmp_path / 'scenario_snapshot' / 'config'
     config.mkdir(parents=True)
-    (config / 'base.yaml').write_text(yaml.safe_dump(dict(dt_h=.25, periods=2, rule_set='MKT')))
+    (config / 'base.yaml').write_text(yaml.safe_dump(dict(dt_h=.25, periods=2, rule_set='MKT')), encoding='utf-8')
     (config / 'units.yaml').write_text(yaml.safe_dump({'renewable': [
-        dict(id='W1', type='wind'), dict(id='W2', type='wind'), dict(id='PV1', type='pv')]}))
-    (config / 'modes.yaml').write_text(yaml.safe_dump({'MKT': {'realtime': {'first_period_actual': True}}}))
+        dict(id='W1', type='wind'), dict(id='W2', type='wind'), dict(id='PV1', type='pv')]}), encoding='utf-8')
+    (config / 'modes.yaml').write_text(yaml.safe_dump({'MKT': {'realtime': {'first_period_actual': True}}}), encoding='utf-8')
     rows = [dict(period=t, unit=u, type=typ, bus=30, avail_mw=a, P_mw=p, curtail_mw=a-p)
             for t, u, typ, a, p in [(0, 'W1', 'wind', 100., 80.), (1, 'W1', 'wind', 60., 30.),
                                   (0, 'W2', 'wind', 40., 40.), (1, 'W2', 'wind', 20., 20.),
@@ -56,7 +57,7 @@ def test_wind_solar_energy_rate_and_executed_scope(result):
 
 def test_rt_forecast_flag_never_claims_actual(result):
     p = Path(result['snapshot_root']) / 'config' / 'modes.yaml'
-    p.write_text(yaml.safe_dump({'MKT': {'realtime': {'first_period_actual': False}}}))
+    p.write_text(yaml.safe_dump({'MKT': {'realtime': {'first_period_actual': False}}}), encoding='utf-8')
     assert '超短期预测' in curtailment_report(result)['stages']['实时']['basis']
     p.unlink()
     assert '口径未记录' in curtailment_report(result)['stages']['实时']['basis']
@@ -64,7 +65,7 @@ def test_rt_forecast_flag_never_claims_actual(result):
 
 def test_uses_frozen_non_quarter_hour_duration(result):
     p = Path(result['snapshot_root']) / 'config' / 'base.yaml'
-    p.write_text(yaml.safe_dump(dict(dt_h=.5, periods=2, rule_set='MKT')))
+    p.write_text(yaml.safe_dump(dict(dt_h=.5, periods=2, rule_set='MKT')), encoding='utf-8')
     report = curtailment_report(result)
     assert item(report).curtail_mwh == pytest.approx(25.)
 
@@ -72,7 +73,7 @@ def test_uses_frozen_non_quarter_hour_duration(result):
 @pytest.mark.parametrize('duration', [None, 0, -1, float('nan'), float('inf'), 'bad'])
 def test_unknown_duration_never_uses_live_config_or_zero(result, duration):
     p = Path(result['snapshot_root']) / 'config' / 'base.yaml'
-    p.write_text(yaml.safe_dump(dict(dt_h=duration, periods=2, rule_set='MKT')))
+    p.write_text(yaml.safe_dump(dict(dt_h=duration, periods=2, rule_set='MKT')), encoding='utf-8')
     report = curtailment_report(result)
     assert np.isnan(item(report).curtail_mwh)
     assert item(report).rate_pct == pytest.approx(50 / 220 * 100)
@@ -153,7 +154,7 @@ def test_missing_snapshot_retains_unknown_mwh_and_rt_basis(result):
 
 def test_no_configured_solar_is_not_missing_solar(result):
     p = Path(result['snapshot_root']) / 'config' / 'units.yaml'
-    p.write_text(yaml.safe_dump({'renewable': [dict(id='W1', type='wind'), dict(id='W2', type='wind')]}))
+    p.write_text(yaml.safe_dump({'renewable': [dict(id='W1', type='wind'), dict(id='W2', type='wind')]}), encoding='utf-8')
     for key in ('da_unit_awards', 'rt_units'):
         result[key] = result[key].query("type == 'wind'")
     assert item(curtailment_report(result), kind='pv').status == '未配置'
@@ -161,13 +162,14 @@ def test_no_configured_solar_is_not_missing_solar(result):
     assert item(curtailment_report(result), kind='pv').status == '数据缺失或异常'
 
 
-def render(result):
+def render(result, mount_code=None):
     metadata = {key: value for key, value in result.items() if not isinstance(value, pd.DataFrame)}
     code = f"import sys, json, pandas as pd\nsys.path.insert(0, {str(ROOT / 'app')!r})\nR = json.loads({json.dumps(metadata)!r})\n"
     for key, value in result.items():
         if isinstance(value, pd.DataFrame):
             code += f"R[{key!r}] = pd.DataFrame(json.loads({value.to_json(orient='records')!r}))\n"
-    code += 'from curtailment_views import curtailment_report, curtailment_overview, curtailment_dashboard\nreport = curtailment_report(R)\ncurtailment_overview(report)\ncurtailment_dashboard(report)'
+    code += 'from curtailment_views import curtailment_report, curtailment_overview, curtailment_dashboard\nreport = curtailment_report(R)\n'
+    code += mount_code if mount_code is not None else 'curtailment_overview(report)\ncurtailment_dashboard(report)'
     return AppTest.from_string(code, default_timeout=30).run()
 
 
@@ -217,13 +219,47 @@ def test_empty_history_renders_unknown_without_exception():
     assert any('不能推断弃电为零' in i.value for i in at.info)
 
 
-def test_result_page_mounts_visible_overview_and_dedicated_tab():
-    text = (ROOT / 'app/pages/3_结果.py').read_text()
-    assert 'curtailment_overview(curtailment)' in text
-    # 第二轮J项：每个阶段（日前/实时）都有“弃风弃光”子页，按 STAGE_SECTIONS 顺序由 STAGE_PAGES 填充
-    from result_navigation import STAGE_SECTIONS
-    index = STAGE_SECTIONS.index('弃风弃光')
-    pages = text.split('STAGE_PAGES = [', 1)[1].split(']', 1)[0].replace(' ', '').split(',')
-    assert pages[index] == 'page_curtailment'
-    assert "curtailment_dashboard(curtailment, stage=SNAME[k]" in text
+@pytest.mark.parametrize('full', [True, False])
+def test_result_page_mounts_curtailment_in_system_overview(result, full):
+    text = (ROOT / 'app/pages/3_结果.py').read_text(encoding='utf-8')
+    tree = ast.parse(text)
+    from result_navigation import MAIN_SECTIONS
+    assert MAIN_SECTIONS[0] == '系统总览'
+    main_tabs = next(node for node in tree.body if isinstance(node, ast.Assign)
+                     and any(isinstance(target, ast.Name) and target.id == 'main_tabs' for target in node.targets))
+    assert ast.unparse(main_tabs.value) == "navigation['main']"
+    # Extract the real mount's direct children from the system-overview tab,
+    # not a same-named call elsewhere. This focused AppTest runs those source
+    # nodes, not the full results page.
+    overview = next(node for node in tree.body if isinstance(node, ast.With)
+                    and ast.unparse(node.items[0].context_expr) == 'main_tabs[0]')
+    selector = next(node for node in overview.body if isinstance(node, ast.Assign)
+                    and any(isinstance(target, ast.Name) and target.id == 'overview_stage' for target in node.targets))
+    section = next(node for node in overview.body if isinstance(node, ast.With)
+                   and ast.unparse(node.items[0].context_expr) == "st.expander('弃风弃光')")
+    dashboard = next(node for node in tree.body if isinstance(node, ast.FunctionDef) and node.name == 'page_curtailment')
+    mount = ast.With(items=deepcopy(overview.items), body=[selector, section], type_comment=None)
+    mount_code = (
+        "import streamlit as st\nfrom result_navigation import MAIN_SECTIONS\n"
+        "main_tabs = st.tabs(MAIN_SECTIONS)\nFULL = R['full']\n"
+        "SNAME = {'da': '日前', 'rt': '实时'}\ncurtailment = report\n"
+        + ast.unparse(dashboard) + '\n' + ast.unparse(ast.fix_missing_locations(mount)))
+    if not full:
+        result.update(full=False, rt_units=None, rt_prices=None)
+    at = render(result, mount_code)
+    assert not at.exception
+    assert [tab.label for tab in at.tabs] == MAIN_SECTIONS
+    block = next(item for item in at.tabs[0].expander if item.label == '弃风弃光')
+    assert next(item for item in block.metric if item.label == '日前弃风 · MWh').value == '12.50'
+    assert block.dataframe[0].value.loc[0, '弃电量 MWh'] == pytest.approx(12.5)
+    assert len(block.get('plotly_chart')) == 2
+    assert at.radio(key='overview_stage').options == (['日前', '实时'] if full else ['日前'])
+    for stage in (['rt', 'da', 'rt'] if full else ['da']):
+        at.radio(key='overview_stage').set_value(stage).run()
+        assert not at.exception
+        block = next(item for item in at.tabs[0].expander if item.label == '弃风弃光')
+        assert block.dataframe[0].value.loc[0, '弃电量 MWh'] == pytest.approx(5. if stage == 'rt' else 12.5)
+        scope = '实时已执行 1 段' if stage == 'rt' else '日前计划'
+        assert any(scope in caption.value for caption in block.caption)
+        assert len(block.get('plotly_chart')) == 2
     assert 'DS.get(\'curtailment_mwh\', 0)' not in text

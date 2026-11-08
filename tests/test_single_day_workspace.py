@@ -65,7 +65,10 @@ def test_initial_state_is_explicit_and_editable_not_measured(scene):
     at = step(app(), '2 机组')
     assert not at.exception
     assert any('不自动接续前一天' in c.value and '未核验为实测' in c.value for c in at.caption)
-    rows = item(at.expander, '查看日初状态明细').dataframe[0].value
+    assert item(at.selectbox, '当前机组').value == 'C1'
+    assert any('初始状态 / 在线' in str(frame.value) for frame in at.dataframe)
+    item(at.checkbox, '加载全网汇总').check().run()
+    rows = item(at.expander, '全网资源汇总与日初状态').dataframe[-1].value
     assert {'火电','水电','电池','抽蓄'} <= set(rows['类型'])
     assert not item(at.expander, '编辑或新增机组').proto.expanded
     item(at.button, '核对技术参数').click().run()
@@ -392,9 +395,10 @@ def test_capacity_display_uses_chinese_na_without_changing_values(scene):
     before = files(scene.SCEN_DIR)
     at = step(app(), '2 机组')
     assert not at.exception
-    table = at.dataframe[0]
+    item(at.checkbox, '加载全网汇总').check().run()
+    table = item(at.expander, '全网资源汇总与日初状态').dataframe[0]
     displayed = table.value
-    energy_columns = ('储能额定能量（MWh）', '抽蓄可用发电能量（MWh）')
+    energy_columns = ('储能额定能量（MWh）', '抽蓄有效库容发电容量（MWh）')
     assert_frame_equal(displayed.drop(columns=list(energy_columns)),
                        expected.drop(columns=list(energy_columns)), check_exact=True)
     for column in energy_columns:
@@ -405,3 +409,87 @@ def test_capacity_display_uses_chinese_na_without_changing_values(scene):
     assert_frame_equal(pd.DataFrame(resource_capacity_rows(cfg)), expected, check_exact=True)
     assert json.loads(table.proto.columns)['状态']['width'] == 'medium'
     assert files(scene.SCEN_DIR) == before
+
+
+
+def failed_run(scene, status='failed'):
+    d=scene.RUNS_DIR/'默认'/'old_failed';d.mkdir(parents=True)
+    (d/'meta.json').write_text(json.dumps(dict(scenario='默认', mode='full', status=status,
+        bid_version=1, periods=None, started='2026-11-08T11:50:19', error='admission rejected')), encoding='utf-8')
+    (d/'scenario_snapshot').mkdir();(d/'scenario_snapshot'/'original.txt').write_text('frozen old input')
+    return d
+
+
+def test_failed_run_retry_uses_current_inputs_and_new_directory(scene, monkeypatch):
+    import common
+    from smm.process_control import process_identity
+    old=failed_run(scene);before=files(old)
+    at=step(app(),'3 报价')
+    item(at.number_input, '空载报价（元/h）').set_value(6102.).run()
+    expected=deepcopy(at.session_state['quote_current:默认'])
+    step(at,'5 结果')
+    assert any('当前场景' in c.value and '当前已保存报价' in c.value and '原快照保留' in c.value for c in at.caption)
+    real=common.subprocess.Popen
+    calls=[]
+    def spawn(*args, **kwargs):
+        if args and args[0][0]=='git': return real(*args, **kwargs)
+        calls.append((args, kwargs));return SimpleNamespace(pid=os.getpid())
+    monkeypatch.setattr(common.subprocess,'Popen',spawn)
+    item(at.button,'按当前输入重新计算').click().run()
+    assert not at.exception
+    assert len(calls)==1
+    new=Path(at.session_state['watch_run'])
+    assert new != old and at.session_state['run_sel']==str(new)
+    assert json.loads((new/'submitted_bids.json').read_text(encoding='utf-8')) == expected
+    assert files(old)==before
+    # An old failure cannot offer a second launch while the new worker owns admission.
+    item(at.selectbox,'查看运行').set_value(str(old)).run()
+    assert item(at.button,'按当前输入重新计算').disabled
+    at.run(); assert len(calls)==1
+
+
+@pytest.mark.parametrize('block', ['quote', 'conditions', 'physical'])
+def test_retry_revalidates_current_inputs_without_touching_history(scene, block):
+    old=failed_run(scene);before=files(old)
+    at=step(app(),'5 结果')
+    if block=='quote':
+        (scene.scenario_path('默认')/'current_quote.json').write_text('{broken', encoding='utf-8')
+        # A fresh session must not rescue the bad saved file from a cached draft.
+        at=step(app(),'5 结果')
+    elif block=='physical':
+        data=scene.read_yaml('默认','units');data['storage'][0]['soc0']=9
+        scene.write_yaml('默认','units',data)
+    else:
+        at.session_state['day_condition_pending:默认']=True
+        at.run()
+        assert item(at.button,'按当前输入重新计算').disabled
+        assert files(old)==before
+        return
+    item(at.button,'按当前输入重新计算').click().run()
+    assert not at.exception and at.error
+    assert files(old)==before
+    assert len(list(scene.RUNS_DIR.glob('*/*/meta.json')))==1
+
+
+@pytest.mark.parametrize('incompatible', ['fixed_load', 'regulation'])
+def test_retry_keeps_primary_start_compatibility_guards(scene, incompatible):
+    old=failed_run(scene);before=files(old)
+    at=step(app(),'5 结果')
+    if incompatible=='fixed_load':
+        data=scene.read_yaml('默认','base');data['tie_line_mode']='fixed_load'
+        scene.write_yaml('默认','base',data)
+    else:
+        data=scene.read_yaml('默认','modes');data['MKT']['regulation']['enabled']=True
+        scene.write_yaml('默认','modes',data)
+    item(at.button,'按当前输入重新计算').click().run()
+    assert not at.exception and at.error
+    assert files(old)==before
+    assert len(list(scene.RUNS_DIR.glob('*/*/meta.json')))==1
+
+
+def test_admission_failure_card_identifies_pre_solver_stage(scene):
+    old=failed_run(scene)
+    (old/'run.log').write_text('smm.run_admission.RunDirectoryError: 运行预留中已有结果或未知文件，禁止覆盖', encoding='utf-8')
+    at=step(app(),'5 结果')
+    assert not at.exception
+    assert any('尚未进入出清求解' in e.value for e in at.error)

@@ -35,7 +35,7 @@ def indexed_artifacts(directory):
 
 
 def render_output_browser(directory):
-    with st.expander('完整结果文件：筛选、核对与下载', expanded=False):
+    with st.expander('完整结果文件：筛选与核对', expanded=False):
         try:
             base, items = indexed_artifacts(directory)
         except (OSError, ValueError, TypeError):
@@ -59,7 +59,7 @@ def render_output_browser(directory):
             except pd.errors.EmptyDataError:
                 st.info('此项没有记录。')
             except (pd.errors.ParserError, UnicodeError, OSError) as exc:
-                st.error('此文件无法解析，暂不能预览或筛选；可切换其他文件。原文件下载仍保留，未补值或改写。')
+                st.error('此文件无法解析，暂不能预览或筛选；可切换其他文件。原存档未补值或改写。')
                 with st.expander('文件读取详情'):
                     st.code(str(exc))
             else:
@@ -72,8 +72,8 @@ def render_output_browser(directory):
                             filtered = filtered[filtered[field].isin(selected)]
                 st.caption(f'当前 {len(filtered)} 行 / 文件共 {len(frame)} 行；空白表示未记录或不适用。')
                 st.dataframe(display_frame(filtered), hide_index=True, width='stretch')
-                st.download_button('下载筛选后表格（原字段）', filtered.to_csv(index=False).encode('utf-8-sig'), file_name='filtered_'+name, key='output_filtered:'+str(directory)+name)
+                pass  # Result download controls removed.
         elif name.endswith('.png'):
             st.image(content)
-        st.download_button('下载此存档原文件', content, file_name=name, key='output_raw:'+str(directory)+name)
-        st.download_button('下载完整文件索引', (base/'output_manifest.json').read_bytes(), file_name='output_manifest.json', key='output_index:'+str(directory))
+        pass  # Result download controls removed.
+        pass  # Result download controls removed.

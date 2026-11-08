@@ -117,13 +117,13 @@ def test_ui_search_multiselect_time_range_empty_and_reset():
     assert shown["主体"].tolist() == ["ES1", "ES1"]
     assert shown["时段序号"].tolist() == [1, 2]
     assert any("2 / 12 条" in c.value for c in at.caption)
-    assert all("当前筛选结果" in b.proto.label for b in at.get("download_button"))
+    assert not at.get("download_button")
 
     at.multiselect[0].set_value(["C1"]).run()
     assert not at.exception
     assert at.dataframe[0].value.empty
     assert any("没有符合条件" in i.value for i in at.info)
-    assert all(b.proto.disabled for b in at.get("download_button"))
+    assert not at.get("download_button")
     at.button[0].click().run()
     assert not at.exception
     assert len(at.dataframe[0].value) == 12

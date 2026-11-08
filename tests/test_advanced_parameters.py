@@ -226,7 +226,7 @@ def test_model_objective_and_reserve_consumers_use_saved_changes(scene):
     from smm.forecast import generate_profiles
     from smm.network import build_network
     from smm.scuc import build_model
-    edit(scene,{'mode.reserve.rho_L':.045,'mode.penalties.line':12345.})
+    edit(scene,{'mode.reserve.up_requirement_mode':'formula','mode.reserve.rho_L':.045,'mode.penalties.line':12345.})
     cfg=load_config(root=scene);bids=json.loads((scene/'current_quote.json').read_bytes())['draft']
     case=build_da_case(cfg,build_network(cfg),generate_profiles(cfg),bids)
     expected=.045*case.profiles.load_da.to_numpy()+cfg.mode['reserve']['rho_RE']*sum(case.ren_fc.values())+case.reserve_info['R_ctg']

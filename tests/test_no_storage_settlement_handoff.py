@@ -15,7 +15,7 @@ def test_no_batteries_all_storage_policies_complete_settlement(storage_mode, int
     assert case.cfg.units['storage'] == []
     case.cfg.mode['realtime']['storage']['mode'] = storage_mode
     case.cfg.mode['intraday']['enabled'] = intraday
-    case.cfg.mode['reserve'].update(include_ctg=False, rho_L=0., rho_RE=0.)
+    case.cfg.mode['reserve'].update(up_requirement_mode='formula',include_ctg=False, rho_L=0., rho_RE=0.)
     case.profiles = pd.DataFrame({'period': [1], 'time': ['00:00'],
         **{f'load_{stage}': [100.] for stage in ('actual', 'da', 'id', 'rt')}})
     validate_physical_inputs(case.cfg)

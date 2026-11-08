@@ -9,7 +9,7 @@ from run_record_actions import elapsed_for_display, render_open_saved_result
 from smm.time_grid import result_time_grid
 
 
-def render_run_monitor(active, compact=False):
+def render_run_monitor(active, compact=False, retry_renderer=None):
     @st.fragment(run_every=2)
     def monitor():
         runs = sc.list_runs()
@@ -50,12 +50,19 @@ def render_run_monitor(active, compact=False):
             st.rerun()
         if s == "failed":
             failure_detail = m.get("error") or "运行失败，见日志"
+            admission_failed = 'smm.run_admission.RunDirectoryError:' in log
+            if admission_failed:
+                cause = next((line for line in reversed(log.splitlines()) if line.startswith('smm.run_admission.RunDirectoryError:')), '')
+                failure_detail = '后台启动检查拒绝了本次运行，尚未进入出清求解。' + cause.split(':', 1)[-1]
             # Keep actionable resource context visible without presenting a solver
             # traceback as the business summary or asserting an unverified cause.
-            failure_summary = ("运行失败，请核对水电状态与约束；不能视为完整日结果"
+            failure_summary = ("启动检查未通过，尚未进入出清求解" if admission_failed else
+                               "运行失败，请核对水电状态与约束；不能视为完整日结果"
                                if "水电" in str(failure_detail)
                                else "运行失败，不能视为完整日结果")
             business_error(failure_summary, failure_detail, "请展开技术诊断查看原因；已执行前缀仍可查看。")
+        if retry_renderer is not None:
+            retry_renderer(m, active=now_active)
         if s == "done":
             st.info("所选范围计算结束，不代表精度或物理检查通过。" + (" 注意：这是调试截断范围，不是完整日。" if m.get("periods") and m["periods"] < result_time_grid({"snapshot_root": str(Path(sel) / "scenario_snapshot")})[0] else ""))
             render_open_saved_result(m)

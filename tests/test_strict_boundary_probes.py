@@ -20,6 +20,7 @@ def test_half_hour_time_labels_follow_validated_grid():
 def test_no_conventional_resources_when_contingency_disabled():
     c=load_config()
     for family in ('thermal','hydro','pumped'):c.units[family]=[]
+    c.mode['reserve']['up_requirement_mode']='formula'
     c.mode['reserve']['include_ctg']=False
     validate_physical_inputs(c)
     up,dn,info=reserve_requirement(c,np.array([100.]),np.array([20.]))
@@ -67,6 +68,7 @@ def test_invalid_clearing_limits_rejected_before_model_build(lo, hi):
 def test_empty_conventional_contingency_preserves_explicit_n1(include,n1,expected):
     c=load_config()
     for family in ('thermal','hydro','pumped'):c.units[family]=[]
+    c.mode['reserve']['up_requirement_mode']='formula'
     c.mode['reserve']['include_ctg']=include;c.base['n1_loss_mw']=n1
     up,dn,info=reserve_requirement(c,np.array([100.]),np.array([20.]))
     assert info['max_unit']==0 and info['R_ctg']==expected
@@ -116,7 +118,7 @@ def test_zero_load_full_chain_summary_uses_null_for_undefined_type_prices():
     case.load_bus = {2: np.zeros(1)}
     case.profiles = pd.DataFrame({'period': [1], 'time': ['00:00'],
                                  **{f'load_{stage}': [0.] for stage in ('actual', 'da', 'id', 'rt')}})
-    case.cfg.mode['reserve'].update(include_ctg=False, rho_L=0., rho_RE=0.)
+    case.cfg.mode['reserve'].update(up_requirement_mode='formula',include_ctg=False, rho_L=0., rho_RE=0.)
     result = run_full(case.cfg, case, periods=1, log=lambda *a: None)
     summary = summarize_full(result)
     json.dumps(summary, allow_nan=False)

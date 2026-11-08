@@ -204,7 +204,8 @@ def prepare_typical(root, *, season=None, renewable_multiplier=1., load_multipli
     from .case import build_da_case
     from .network import build_network
     from .scuc import prepare
-    model_case = build_da_case(target, build_network(target), profiles, output_bids)
+    from .reserve_policy import for_new_run
+    model_case = build_da_case(for_new_run(target), build_network(target), profiles, output_bids)
     model_data = prepare(model_case)
     from .scenario_assessment import assess_boundaries
     assessment = assess_boundaries(model_case, model_data=model_data)

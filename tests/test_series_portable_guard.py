@@ -11,14 +11,19 @@ from multiday_fixture import micro_day
 def test_import_does_not_require_fcntl():
     import subprocess,sys
     code="""import builtins
+import sys
+from pathlib import Path
+sys.path.insert(0, sys.argv[1])
 original=builtins.__import__
 def without_fcntl(name,*args,**kwargs):
     if name=='fcntl': raise ImportError('Windows has no fcntl')
     return original(name,*args,**kwargs)
 builtins.__import__=without_fcntl
 from smm import series
+assert Path(series.__file__).resolve().parent == Path(sys.argv[1]).resolve() / 'smm'
 """
-    subprocess.run([sys.executable,'-c',code],check=True)
+    source = Path(__file__).resolve().parents[1] / 'src'
+    subprocess.run([sys.executable,'-c',code,str(source)],check=True)
 
 
 def test_existing_lock_excludes_runner(tmp_path):

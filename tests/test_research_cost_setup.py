@@ -4,6 +4,7 @@ import copy
 import json
 from pathlib import Path
 import shutil
+import sys
 
 import pytest
 import yaml
@@ -160,8 +161,15 @@ def test_missing_cash_record_and_preserved_quote_have_separate_evidence(scene):
 def test_linked_config_directory_is_never_written(scene, tmp_path):
     alias = tmp_path / 'alias'
     alias.mkdir()
-    (alias / 'config').symlink_to(scene / 'config', target_is_directory=True)
     before = originals(scene)
+    try:
+        (alias / 'config').symlink_to(scene / 'config', target_is_directory=True)
+    except OSError as exc:
+        if sys.platform == 'win32' and getattr(exc, 'winerror', None) == 1314:
+            assert originals(scene) == before
+            assert not (scene / 'config' / FILENAME).exists()
+            pytest.skip('Windows user lacks symbolic-link privilege (WinError 1314)')
+        raise
     with pytest.raises(ValueError, match='目录链接'):
         prepare_generated_cost_setup(load_config(root=alias))
     assert originals(scene) == before

@@ -34,7 +34,6 @@ def render_typical_scenarios(cfg, name, *, bids=None, disabled=False):
                 pv = separate[1].selectbox('光伏水平', list(RENEWABLE_LEVELS), key=key+':pv', disabled=disabled)
                 wind_multiplier, pv_multiplier = RENEWABLE_LEVELS[wind], RENEWABLE_LEVELS[pv]
             event = st.selectbox('附加时序压力', list(WIND_EVENTS), key=key+':wind_event', disabled=disabled)
-        st.caption('倍率与低风压力均为合成假设，不代表真实典型日或发生概率。')
         st.caption('actual / DA / ID / RT 同步缩放；风光按装机限幅，区外来电计划不变。' if cfg.base.get('tie_line_mode', 'supply') == 'supply' else '旧转换场景四阶段的基础负荷与独立TIE需求各缩放一次；建议先恢复区外来电，再创建新组合。')
         request = dict(season={'保持基准': None, '丰水期': 'wet', '枯水期': 'dry'}[season],
                        renewable_multiplier=RENEWABLE_LEVELS[renewable], load_multiplier=LOAD_LEVELS[load],
@@ -70,7 +69,7 @@ def render_typical_scenarios(cfg, name, *, bids=None, disabled=False):
         elif assessment['tier'] == 'designed_stress':
             st.warning('已选择持续低风压力事件；供需必要条件通过不代表压力测试已通过，仍需全天出清。')
         else:
-            st.info('供需必要条件通过，仅为常规候选。仍需全天日前和96段实时出清验证，不能据此声称无切负荷或无线路越限。')
+            st.info('供需初筛通过，待全天出清验证。')
         with st.expander('供需必要条件与场景层级'):
             st.caption(assessment['label'] + '。上界已乐观计入全部可调装机；不把储能充电当作新增电源。')
             st.dataframe(pd.DataFrame(assessment['stages']).rename(columns={
@@ -92,7 +91,6 @@ def render_typical_scenarios(cfg, name, *, bids=None, disabled=False):
                 'vmin': '最小库容（万m³）', 'vmax': '最大库容（万m³）', 'v_end': '日末库容下限（万m³）',
                 'qeco': '生态流量（m³/s）', 'e_day': '日电量上限（MWh）'}), hide_index=True, width='stretch')
             st.dataframe(preview['profiles'], hide_index=True, width='stretch')
-            st.caption('输入采用所选季节的水文与日电量边界，不代表出清可行。')
         changed = preview['availability_changes']
         confirmed = False
         if changed:

@@ -13,24 +13,52 @@ from smm.typical_scenarios import prepare_typical, create_typical, fingerprint
 from smm import scenario
 
 
-def case(mode='supply',season='wet'):
+def case(mode='supply',season='wet', *, reserve_policy=None):
     cfg=load_config(season=season);cfg.base['tie_line_mode']=mode
+    if reserve_policy is not None:
+        assert reserve_policy in ('formula', 'fixed400')
+        cfg.mode=copy.deepcopy(cfg.mode)
+        cfg.mode['reserve']['up_requirement_mode']='formula' if reserve_policy=='formula' else 'fixed'
+        cfg.mode['reserve']['fixed_up_mw']=400.
     return build_da_case(cfg,build_network(cfg),generate_profiles(cfg),default_bids(cfg))
 
 
-def test_supply_conversion_difference_is_twice_tie_not_a_storage_solution():
-    supply=case();fixed=case('fixed_load')
+@pytest.mark.parametrize('reserve_policy', ['formula', 'fixed400'])
+def test_supply_conversion_difference_is_twice_tie_not_a_storage_solution(reserve_policy):
+    before=fingerprint(ROOT)
+    supply=case(reserve_policy=reserve_policy);fixed=case('fixed_load',reserve_policy=reserve_policy)
     a,b=assess_boundaries(supply),assess_boundaries(fixed)
     assert not a['physical_feasibility_certified'] and not b['physical_feasibility_certified']
     assert all(row['net_energy_upper_mwh']==0 for row in a['storage_net_energy_bounds'])
     assert a['hydro_energy_bounds'][0]['upper_mwh']==pytest.approx(11200)
-    dry=assess_boundaries(case(season='dry'))
+    dry=assess_boundaries(case(season='dry',reserve_policy=reserve_policy))
     assert dry['hydro_energy_bounds'][0]['upper_mwh']==pytest.approx(4400)
     astage=next(r for r in a['stages'] if r['stage']=='actual')
     bstage=next(r for r in b['stages'] if r['stage']=='actual')
     assert bstage['demand_mwh']-astage['demand_mwh']==pytest.approx(supply.profiles.TIE_sched.sum()*.25)
     assert astage['optimistic_supply_energy_upper_mwh']-bstage['optimistic_supply_energy_upper_mwh']==pytest.approx(supply.profiles.TIE_sched.sum()*.25)
-    assert b['tier']=='pressure_required'
+    # TIE conversion changes the energy balance under either reserve policy.
+    # Tier differences below are reserve-pressure screens, not feasibility proofs.
+    energy_keys=('unavoidable_energy_shortfall_lower_mwh','instantaneous_shortfall_lower_mw')
+    reserve_key='energy_or_up_reserve_shortfall_lower_mw'
+    for assessment in (a,b):
+        assert all(row[key]==pytest.approx(0.) for row in assessment['stages'] for key in energy_keys)
+        assert not assessment['physical_feasibility_certified']
+    assert a['tier']=='unverified_candidate'
+    assert all(row[reserve_key]==pytest.approx(0.) and row['energy_or_up_reserve_deficient_periods']==0
+               for row in a['stages'])
+    if reserve_policy=='formula':
+        assert np.all(supply.R_up>400.) and np.all(fixed.R_up>400.)
+        assert b['tier']=='pressure_required'
+        assert all(row[reserve_key]>0. and row['energy_or_up_reserve_deficient_periods']>0
+                   for row in b['stages'])
+    else:
+        for model in (supply,fixed):
+            np.testing.assert_array_equal(model.R_up,np.full(len(model.R_up),400.))
+        assert b['tier']=='unverified_candidate'
+        assert all(row[reserve_key]==pytest.approx(0.) and row['energy_or_up_reserve_deficient_periods']==0
+                   for row in b['stages'])
+    assert fingerprint(ROOT)==before
 
 
 def test_screen_cannot_certify_network_and_all_factorial_cells_present():

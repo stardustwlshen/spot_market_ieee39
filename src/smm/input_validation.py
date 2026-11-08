@@ -121,6 +121,11 @@ def validate_reserve_configuration(cfg):
     reserve = cfg.mode.get('reserve')
     if not isinstance(reserve, dict):
         raise ValueError('reserve须为配置对象')
+    requirement_mode = reserve.get('up_requirement_mode', 'formula')
+    if requirement_mode not in ('fixed', 'formula'):
+        raise ValueError('reserve.up_requirement_mode须为fixed或formula')
+    if requirement_mode == 'fixed' or 'fixed_up_mw' in reserve:
+        _nonnegative(reserve.get('fixed_up_mw'), 'reserve.fixed_up_mw')
     for key, default in (('include_ctg', None), ('storage_reserve', False), ('down_enabled', True)):
         _boolean(reserve.get(key, default), f'reserve.{key}')
     for key in ('rho_L', 'rho_RE', 'rho_L_dn', 'rho_RE_dn'):

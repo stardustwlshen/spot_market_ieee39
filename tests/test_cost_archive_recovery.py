@@ -1,6 +1,7 @@
 """Old scenes can explicitly adopt missing research archives, never overwrite."""
 from pathlib import Path
 import shutil
+import sys
 
 import pytest
 import yaml
@@ -131,9 +132,9 @@ def test_failed_stage_write_leaves_no_partial_destination(roots, monkeypatch):
 def test_custom_resource_mismatch_fails_without_creating_any_files(roots):
     target, source = roots
     path = target / 'config/units.yaml'
-    data = yaml.safe_load(path.read_text())
+    data = yaml.safe_load(path.read_text(encoding='utf-8'))
     data['thermal'][0]['id'] = 'custom_unit'
-    path.write_text(yaml.safe_dump(data))
+    path.write_text(yaml.safe_dump(data), encoding='utf-8')
     before = snapshot(target)
     with pytest.raises(ValueError, match='custom_unit'):
         ca.prepare_cost_archive_import(target, source)
@@ -145,14 +146,19 @@ def test_invalid_archive_or_occupied_path_is_not_replaced(roots, kind):
     target, source = roots
     path = target / 'config/fixed_costs.yaml'
     if kind == 'malformed':
-        path.write_text('user: broken archive\n')
+        path.write_text('user: broken archive\n', encoding='utf-8')
     elif kind == 'bad_yaml':
-        path.write_text('units: [invalid: YAML:\n')
+        path.write_text('units: [invalid: YAML:\n', encoding='utf-8')
     elif kind == 'not_assumptions':
         other = source / 'config/fixed_costs.yaml'
-        other.write_text(other.read_text().replace('research_assumption_not_observed_plant_data', 'unknown'))
+        other.write_text(other.read_text(encoding='utf-8').replace('research_assumption_not_observed_plant_data', 'unknown'), encoding='utf-8')
     else:
-        path.symlink_to(target / 'does-not-exist')
+        try:
+            path.symlink_to(target / 'does-not-exist')
+        except OSError as exc:
+            if sys.platform == 'win32' and getattr(exc, 'winerror', None) == 1314:
+                pytest.skip('Windows user lacks symbolic-link privilege (WinError 1314)')
+            raise
     before = snapshot(target)
     with pytest.raises(ValueError):
         ca.prepare_cost_archive_import(target, source)

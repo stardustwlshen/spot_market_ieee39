@@ -16,14 +16,16 @@ LABELS = {
     'noload_cost': '空载报价（元/h）', 'cost_yuan': '费用（元）',
     'hydro_bid': '水电申报参数', 'method': '申报方法', 'season': '适用季节',
     'soc_end': '申报日末荷电状态', 'vup_end': '申报日末上库库容（万m³）',
-    'id': '主体编号', 'type': '资源类型', 'bus': '接入节点', 'enabled': '是否启用',
+    'id': '主体编号', 'type': '资源类型', 'bus': '接入节点', 'enabled': '参与模拟',
     'pmax': '最大功率（MW）', 'pmin': '最小技术出力（MW）', 'cap': '装机容量（MW）',
     'profile': '预测曲线', 'schedule_pu_file': '计划曲线', 'ramp': '爬坡率（MW/min；水电为每台）',
     'ut': '最小开机时间（h）', 'dt': '最小停机时间（h）',
     'noload': '技术档案空载参数（元/h，非独立核算成本）',
     'startup': '技术档案启动参数（元/次，非独立核算成本）',
     'cold': '冷态', 'warm': '温态', 'hot': '热态', 'very_hot': '极热态',
-    'init': '初始状态', 'online': '在线', 'p0': '初始功率（MW）', 'hours': '已持续时间（h）',
+    'commitment': '逐台开停约束', 'schema_version': '声明版本', 'initial_source': '初态来源',
+    'initial_units': '逐台初态', 'unit_id': '单机编号', 'elapsed_h': '已持续时间（h）',
+    'elapsed_kind': '时长口径', 'init': '初始状态', 'online': '在线', 'p0': '初始功率（MW）', 'hours': '已持续时间（h）',
     'regulation': '水电调节类型', 'n_units': '机组台数', 'unit_pmax': '单机最大功率（MW）',
     'zones': '稳定运行区间（MW）', 'water_rate': '耗水率（m³/s/MW）',
     'init_units_on': '初始在线台数', 'init_p_unit': '初始单机功率（MW）',
@@ -84,6 +86,8 @@ VALUE_LABELS = {
     'uniform_per_unit': '每台机组单次启动报价', 'legacy_hot_migration': '沿用该机组历史热态启动报价',
     'explicit_scalar': '显式单次启动报价', 'segments': '分段报价',
     'wet': '丰水期', 'dry': '枯水期', 'reservoir': '库容型', 'run_of_river': '径流式',
+    'unit_duration_v1': '逐台最小开停时间', 'legacy_aggregate': '聚合模式',
+    'research_assumption': '研究假设（非实测）', 'exact': '声明时长', 'lower_bound': '保守下界',
     'gen': '发电', 'pump': '抽水', 'idle': '空闲',
     'cost_basis_v2': '独立成本与报价策略（新版研究基准）', 'legacy_v1': '历史固定价格模板',
     'incremental_hhv_excludes_separate_online_intercept': '增量高位热耗，不含单列在线截距',
@@ -119,7 +123,7 @@ _RETIRED_PAYMENT_FIELDS = frozenset({'capacity_price', 'capacity_fee_per_day',
 
 
 def field_rows(value):
-    return [{'参数': ' / '.join(LABELS.get(part, part) for part in path),
+    return [{'参数': ' / '.join('约束模式' if part == 'mode' and 'commitment' in path else LABELS.get(part, part) for part in path),
              '数值': _value(raw), '原始字段': '.'.join(path)} for path, raw in _flatten(value)
             if not any(part in _RETIRED_PAYMENT_FIELDS for part in path)]
 
@@ -269,7 +273,7 @@ def resource_capacity_rows(cfg):
         key = (kind, status)
         row = totals.setdefault(key, {'资源类型': VALUES.get(kind, kind), '状态': status,
                                      '主体数': 0, '发电/放电容量（MW）': 0., '充电/抽水容量（MW）': 0.,
-                                     '储能额定能量（MWh）': None, '抽蓄可用发电能量（MWh）': None})
+                                     '储能额定能量（MWh）': None, '抽蓄有效库容发电容量（MWh）': None})
         row['主体数'] += 1
         if group == 'hydro':
             output = float(unit['n_units']) * float(unit['unit_pmax'])
@@ -279,7 +283,7 @@ def resource_capacity_rows(cfg):
             # Both reservoirs constrain usable upper-reservoir water.
             lower = max(float(unit['vup_min']), float(unit['v_total']) - float(unit['vdn_max']))
             upper = min(float(unit['vup_max']), float(unit['v_total']) - float(unit['vdn_min']))
-            row['抽蓄可用发电能量（MWh）'] = (row['抽蓄可用发电能量（MWh）'] or 0.) + (upper - lower) * float(unit['e_gen'])
+            row['抽蓄有效库容发电容量（MWh）'] = (row['抽蓄有效库容发电容量（MWh）'] or 0.) + (upper - lower) * float(unit['e_gen'])
         elif group == 'renewable':
             output = float(unit['cap'])
         else:
@@ -363,3 +367,77 @@ def unit_summary_rows(cfg,uid):
 
 def render_unit_summary(cfg,uid):
     st.caption(' · '.join(row['参数']+'：'+row['数值'] for row in unit_summary_rows(cfg,uid)))
+
+
+def selected_unit_rows(cfg, uid):
+    """Read factual technical and initial-state summaries, including disabled units."""
+    group, unit = next((g, u) for g, u in scenario_unit_catalog(cfg) if u['id'] == uid)
+    fields = {
+        'thermal': ['pmax', 'pmin', 'ramp', 'ut', 'dt'],
+        'renewable': ['cap', 'profile'],
+        'storage': ['pmax', 'ecap', 'eta_c', 'eta_d', 'soc_min', 'soc_max'],
+        'hydro': ['regulation', 'n_units', 'unit_pmax', 'ramp', 'ut', 'dt', 'water_rate', 'zones'],
+        'pumped': ['n_units', 'unit_gen_max', 'unit_gen_min', 'unit_pump', 'variable_speed',
+                   'e_gen', 'e_pump', 'switch_gap'],
+    }.get(group, ['pmax'])
+    operation = parameter_rows({key: unit[key] for key in fields if key in unit})
+    initial = {}
+    if group == 'thermal':
+        initial = {'init': unit.get('init', {})}
+    elif group == 'hydro':
+        season = unit.get('seasons', {}).get(cfg.base['season'], {})
+        initial = {key: unit[key] for key in ('init_units_on', 'init_p_unit') if key in unit}
+        initial['v0'] = season.get('v0')
+        if 'commitment' in unit:
+            initial['commitment'] = unit['commitment']
+        operation += parameter_rows({'seasons': {cfg.base['season']: {
+            key: value for key, value in season.items() if key != 'v0'}}})
+    elif group == 'storage':
+        initial = {'soc0': unit.get('soc0')}
+        initial['日初库存电量（MWh）'] = unit['soc0'] * unit['ecap']
+        initial['高于技术SOC下限的可放电量（MWh）'] = (
+            unit['soc0'] - unit['soc_min']) * unit['ecap'] * unit['eta_d']
+    elif group == 'pumped':
+        lower = max(unit['vup_min'], unit['v_total'] - unit['vdn_max'])
+        upper = min(unit['vup_max'], unit['v_total'] - unit['vdn_min'])
+        operation += parameter_rows({'有效上库下限（万m³）': lower, '有效上库上限（万m³）': upper,
+            '有效库容发电容量（MWh）': (upper - lower) * unit['e_gen']})
+        mode = unit.get('init_mode', 'idle')
+        initial = {'init_mode': mode, 'vup0': unit['vup0'],
+                   '日初下库库容（万m³）': unit['v_total'] - unit['vup0'],
+                   'init_gen': unit['n_units'] if mode == 'gen' else 0,
+                   'init_pump': unit['n_units'] if mode == 'pump' else 0,
+                   '日初高于有效下限的可发电量（MWh）': (unit['vup0'] - lower) * unit['e_gen']}
+    else:
+        initial = {'日初状态': '无独立开停初态；按场景预测曲线和当前申报确定可用出力。'}
+    return group, unit, operation, parameter_rows(initial)
+
+
+def render_selected_unit(cfg, uid):
+    """Selected unit first; complete type-specific technical input stays on demand."""
+    group, unit, operation, initial = selected_unit_rows(cfg, uid)
+    st.markdown('**' + uid + ' · ' + VALUES.get(unit.get('type', group), group) + '**')
+    columns = st.columns(2)
+    columns[0].metric('接入节点', str(unit['bus']))
+    columns[1].metric('参与模拟（已保存）', '是' if unit.get('enabled', True) else '否')
+    if not unit.get('enabled', True):
+        st.info('该机组不参与下一次出清；以下仍可查看、编辑并保存其技术档案。')
+    columns = st.columns(2)
+    with columns[0]:
+        st.markdown('**关键运行参数**')
+        st.dataframe(pd.DataFrame(operation), hide_index=True, width='stretch')
+    with columns[1]:
+        st.markdown('**日初状态**')
+        st.dataframe(pd.DataFrame(initial), hide_index=True, width='stretch')
+        st.caption('初态来自场景配置，未核验为实测状态，不自动接续前一天；参与模拟不等于日初开机。')
+    if group == 'storage':
+        st.caption('日初可放电量按技术SOC下限与放电效率折算；实际出清还受当前报价SOC范围、功率和日末要求约束。')
+    if group == 'pumped':
+        st.caption('有效库容发电容量是上下库约束共同允许的全部水量区间折算，不是日初可用电量；实际出清还受功率、工况和日末要求约束。')
+    with st.expander('完整技术参数（当前机组）'):
+        if st.checkbox('查看完整技术参数', key='unit_full_parameters:' + str(cfg.root) + ':' + uid):
+            sections = unit_information_sections(cfg, uid)
+            for title in ('主体信息', '技术与运行约束', '初始状态', '季节约束', '技术档案费用参数（不是独立核算成本）'):
+                if title in sections:
+                    st.markdown('**' + title + '**')
+                    st.dataframe(pd.DataFrame(sections[title])[['参数', '数值']], hide_index=True, width='stretch')

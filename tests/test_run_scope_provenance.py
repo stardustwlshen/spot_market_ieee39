@@ -1,4 +1,5 @@
 import json
+import sys
 import pytest
 from smm.live_runner import completion_metadata,file_fingerprint,capture_provenance
 
@@ -14,7 +15,8 @@ def test_prefix_computed_settlement_is_not_full_day_settled():
     assert not completion_metadata(96,8,calculated=False)['settlement_calculated']
 
 
-def test_fingerprint_is_bounded_content_addressed_and_not_later_state(tmp_path):
+@pytest.mark.parametrize('include_symlink', [False, True], ids=['regular', 'symlink_filter'])
+def test_fingerprint_is_bounded_content_addressed_and_not_later_state(tmp_path, include_symlink):
     root=tmp_path/'repo';out=tmp_path/'out';out.mkdir()
     for name in ('src','app','scripts','config','data','bids','src/.hidden','src/__pycache__','.venv'):
         (root/name).mkdir(parents=True,exist_ok=True)
@@ -25,7 +27,13 @@ def test_fingerprint_is_bounded_content_addressed_and_not_later_state(tmp_path):
     (root/'src/.hidden/secret.py').write_text('secret')
     (root/'src/__pycache__/cached.py').write_text('ignore')
     (root/'.venv/v.py').write_text('ignore')
-    (root/'src/leak.py').symlink_to(root/'.venv/v.py')
+    if include_symlink:
+        try:
+            (root/'src/leak.py').symlink_to(root/'.venv/v.py')
+        except OSError as exc:
+            if sys.platform == 'win32' and getattr(exc, 'winerror', None) == 1314:
+                pytest.skip('Windows user lacks symbolic-link privilege (WinError 1314)')
+            raise
     captured=capture_provenance(out,root,source_root=root)
     assert set(captured['source']['files'])=={'src/a.py','app/u.py','scripts/r.py'}
     assert set(captured['inputs']['files'])=={'config/m.yaml'}

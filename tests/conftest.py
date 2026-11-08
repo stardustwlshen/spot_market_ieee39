@@ -30,6 +30,7 @@ def da_result():
     # Current default integration is tested independently in test_auxiliary_pipeline.
     cfg.mode['auxiliary_pricing']['enabled'] = False
     cfg.mode['realtime'].pop('tracking_policy', None)
+    cfg.mode['reserve']['up_requirement_mode'] = 'formula'
     cfg.mode['reserve']['storage_reserve'] = False
     cfg.mode['reserve']['down_enabled'] = True
     # Preserve the original energy-only regression contract when new markets default on.

@@ -6,6 +6,8 @@ import pandas as pd
 import pytest
 from smm import pipeline
 ROOT=Path(pipeline.__file__).resolve().parents[2]
+sys.path.insert(0, str(ROOT / 'app'))
+from result_navigation import MAIN_SECTIONS
 spec=importlib.util.spec_from_file_location('render_validator_probe',ROOT/'scripts/validate_runs.py')
 validator=importlib.util.module_from_spec(spec);spec.loader.exec_module(validator)
 
@@ -49,7 +51,7 @@ def test_unrequested_render_is_not_invented_and_successful_render_passes(monkeyp
     assert validator.main()==0 and len(seen)==1
 
 
-@pytest.mark.parametrize('missing', [None, '日前', '日内·实时滚动', '最终结果'])
+@pytest.mark.parametrize('missing', [None, *MAIN_SECTIONS])
 def test_render_check_uses_current_shared_main_sections(monkeypatch, tmp_path, missing):
     from types import SimpleNamespace
     from streamlit.testing.v1 import AppTest

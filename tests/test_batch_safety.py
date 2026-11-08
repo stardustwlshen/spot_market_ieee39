@@ -1,6 +1,9 @@
 """Batch orchestration tests use a fake entry point, never market solves."""
 import ast
 import importlib.util
+import hashlib
+import os
+import shutil
 import json
 from pathlib import Path
 import subprocess
@@ -65,7 +68,7 @@ def test_real_subprocess_failures_preserve_inputs_and_old_outputs(isolated_root)
     before = {path: path.read_bytes() for path in sentinels}
     assert batch.main(["2", "--skip-negative"]) == 1
     files = list((isolated_root / "outputs/k_batches").glob("*/batch_manifest.json"))
-    report = json.loads(files[0].read_text())
+    report = json.loads(files[0].read_text(encoding='utf-8'))
     assert len(report["jobs"]) == 9 and not report["all_processes_succeeded"]
     assert next(r for r in report["jobs"] if r["name"] == "nops")["returncode"] == 7
     for record in report["jobs"]:
@@ -81,7 +84,7 @@ def test_repeated_batches_have_unique_tags_and_preserve_logs(isolated_root):
     before = {p: p.read_bytes() for p in (isolated_root / "outputs/k_batches").rglob("*") if p.is_file()}
     assert batch.main(["3", "--skip-negative"]) == 1
     files = list((isolated_root / "outputs/k_batches").glob("*/batch_manifest.json"))
-    tags = [{j["output_tag"] for j in json.loads(f.read_text())["jobs"]} for f in files]
+    tags = [{j["output_tag"] for j in json.loads(f.read_text(encoding='utf-8'))["jobs"]} for f in files]
     assert len(files) == 2 and not (tags[0] & tags[1])
     assert all(p.read_bytes() == contents for p, contents in before.items())
 
@@ -91,7 +94,7 @@ def test_negative_path_spaces_preserved(isolated_root):
     path.write_text('{"units": {}}', encoding="utf-8")
     assert batch.main(["--negative-bids", str(path)]) == 1
     manifest = next((isolated_root / "outputs/k_batches").glob("*/batch_manifest.json"))
-    report = json.loads(manifest.read_text())
+    report = json.loads(manifest.read_text(encoding='utf-8'))
     record = next(j for j in report["jobs"] if j["name"] == "negprice")
     assert record["command"][record["command"].index("--bid-file") + 1] == str(path)
     assert report["negative_bids_sha256"]
@@ -103,13 +106,13 @@ def test_launch_failure_is_recorded(isolated_root, monkeypatch):
     monkeypatch.setattr(batch.subprocess, "Popen", fail)
     assert batch.main(["--skip-negative"]) == 1
     manifest = next((isolated_root / "outputs/k_batches").glob("*/batch_manifest.json"))
-    report = json.loads(manifest.read_text())
+    report = json.loads(manifest.read_text(encoding='utf-8'))
     assert len(report["jobs"]) == 9
     assert all(j["status"] == "launch_failed" for j in report["jobs"])
 
 
 def test_cancellation_terminates_only_owned_child_and_records_status(isolated_root, monkeypatch):
-    (isolated_root / "scripts/main_full.py").write_text("import time\ntime.sleep(20)\n")
+    (isolated_root / "scripts/main_full.py").write_text("import time\ntime.sleep(20)\n", encoding='utf-8')
     monkeypatch.setattr(batch, "job_specs", lambda negative: [("owned", [])])
     original = subprocess.Popen
     started, owned = threading.Event(), []
@@ -127,30 +130,70 @@ def test_cancellation_terminates_only_owned_child_and_records_status(isolated_ro
     assert batch.main(["--skip-negative"]) == 130
     assert len(owned) == 1 and owned[0].poll() is not None
     manifest = next((isolated_root / "outputs/k_batches").glob("*/batch_manifest.json"))
-    report = json.loads(manifest.read_text())
+    report = json.loads(manifest.read_text(encoding='utf-8'))
     assert report["interrupted"] and not report["all_processes_succeeded"]
 
 
 def test_concurrent_input_change_is_detected_not_reverted(isolated_root, monkeypatch):
     (isolated_root / "scripts/main_full.py").write_text(
-        "from pathlib import Path\nPath('data/profiles/user.csv').write_text('external edit')\n")
+        "from pathlib import Path\nPath('data/profiles/user.csv').write_text('external edit')\n", encoding='utf-8')
     monkeypatch.setattr(batch, "job_specs", lambda negative: [("change", [])])
     assert batch.main(["--skip-negative"]) == 1
     manifest = next((isolated_root / "outputs/k_batches").glob("*/batch_manifest.json"))
-    report = json.loads(manifest.read_text())
+    report = json.loads(manifest.read_text(encoding='utf-8'))
     assert report["all_processes_succeeded"] and not report["source_inputs_unchanged"]
-    assert (isolated_root / "data/profiles/user.csv").read_text() == "external edit"
+    assert (isolated_root / "data/profiles/user.csv").read_text(encoding='utf-8') == "external edit"
 
 
 def test_launcher_does_not_call_git_or_use_shared_jobs_file():
-    text = (ROOT / "scripts/k_batch.sh").read_text()
+    text = (ROOT / "scripts/k_batch.sh").read_text(encoding='utf-8')
     assert "git checkout" not in text and "/tmp/k_jobs" not in text and "/workspace/review_logs" not in text
-    result = subprocess.run(["bash", "-n", str(ROOT / "scripts/k_batch.sh")], capture_output=True)
+
+
+def test_shell_launcher_syntax_with_available_bash():
+    bash = shutil.which("bash")
+    if bash is None:
+        pytest.skip("Bash runtime unavailable; static launcher safeguards are tested separately")
+    # System32 bash.exe is a WSL relay, not a native Bash. Do not start WSL to test
+    # a POSIX launcher; the native Python entry point has its own subprocess test.
+    if sys.platform == "win32" and Path(bash).parent == Path(os.environ.get("SystemRoot", "C:/Windows")) / "System32":
+        pytest.skip("PATH resolves to the Windows WSL relay; native Bash syntax validation was not run")
+    probe = subprocess.run([bash, "-c", "exit 0"], capture_output=True)
+    if probe.returncode != 0:
+        pytest.skip(f"Bash runtime unavailable: {probe.stderr!r}")
+    result = subprocess.run([bash, "-n", str(ROOT / "scripts/k_batch.sh")], capture_output=True)
     assert result.returncode == 0, result.stderr
 
 
+def test_native_python_launcher_dry_run_is_read_only(tmp_path):
+    before = batch.source_hashes(ROOT)
+    env = dict(os.environ, PYTHONIOENCODING="utf-8")
+    result = subprocess.run(
+        [sys.executable, str(ROOT / "scripts/k_batch.py"), "--skip-negative", "--dry-run"],
+        cwd=tmp_path, capture_output=True, text=True, encoding="utf-8", env=env)
+    assert result.returncode == 0, result.stderr
+    report = json.loads(result.stdout)
+    assert len(report["jobs"]) == 9 and report["read_only_inputs"] is True
+    assert "未验证" in report["skipped"][0]
+    assert batch.source_hashes(ROOT) == before
+    assert not list(tmp_path.iterdir())
+
+
+def test_source_hashes_use_portable_unicode_path_keys(isolated_root):
+    path = isolated_root / "config/中文 空格.yaml"
+    path.parent.mkdir()
+    content = "说明: 保持原始字节\n".encode("utf-8")
+    path.write_bytes(content)
+    hashes = batch.source_hashes(isolated_root)
+    assert hashes["config/中文 空格.yaml"] == hashlib.sha256(content).hexdigest()
+    assert hashes["data/profiles/user.csv"] == hashlib.sha256(
+        (isolated_root / "data/profiles/user.csv").read_bytes()).hexdigest()
+    assert all("\\" not in key for key in hashes)
+    assert not any(key.startswith("outputs/") for key in hashes)
+
+
 def test_main_full_passes_explicit_read_only_flag():
-    tree = ast.parse((ROOT / "scripts/main_full.py").read_text())
+    tree = ast.parse((ROOT / "scripts/main_full.py").read_text(encoding='utf-8'))
     calls = [n for n in ast.walk(tree) if isinstance(n, ast.Call) and isinstance(n.func, ast.Name) and n.func.id == "prepare"]
     assert len(calls) == 1
     keyword = next(k for k in calls[0].keywords if k.arg == "read_only")
@@ -173,34 +216,40 @@ def test_cli_effective_config_is_frozen_and_prior_run_never_replaced(tmp_path):
     from smm.run_input_provenance import freeze_cli_inputs
     cfg = load_config()
     cfg.mode["intraday"]["enabled"] = True
-    output = tmp_path / "new_run"
+    output = tmp_path / "新 快照"
+    legacy = tmp_path / "old_run/scenario_snapshot/source_fingerprint.json"
+    legacy.parent.mkdir(parents=True)
+    legacy_bytes = (json.dumps({'sha256': {r'src\smm\rolling.py': 'historical'}}) + '\n').encode('utf-8')
+    legacy.write_bytes(legacy_bytes)
     case = SimpleNamespace(bids={"version": 1, "units": {}}, profiles=pd.DataFrame({"period": [0], "load_da": [10]}))
     snapshot = freeze_cli_inputs(cfg, case, output)
-    modes = yaml.safe_load((snapshot / "config/modes.yaml").read_text())
+    modes = yaml.safe_load((snapshot / "config/modes.yaml").read_text(encoding='utf-8'))
     assert modes[cfg.rule_set]["intraday"]["enabled"] is True
     assert (snapshot / "resolved_bids.json").is_file()
     import hashlib
-    manifest = json.loads((snapshot / "source_fingerprint.json").read_text())
+    manifest = json.loads((snapshot / "source_fingerprint.json").read_text(encoding='utf-8'))
     assert manifest['recorded_before_solve'] is True
     assert manifest['sha256']['src/smm/rolling.py'] == hashlib.sha256((ROOT/'src/smm/rolling.py').read_bytes()).hexdigest()
     assert not any('__pycache__' in name for name in manifest['sha256'])
+    assert all('\\' not in name for name in manifest['sha256'])
     assert (snapshot / "data/case39/buses.csv").read_bytes() == (cfg.root / "data/case39/buses.csv").read_bytes()
     assert (snapshot / "data/case39/branches.csv").is_file()
     before = {p: p.read_bytes() for p in snapshot.rglob("*") if p.is_file()}
     with pytest.raises(FileExistsError):
         freeze_cli_inputs(cfg, case, output)
     assert all(p.read_bytes() == data for p, data in before.items())
+    assert legacy.read_bytes() == legacy_bytes
 
 
 def test_external_negative_bid_change_is_detected_not_reverted(isolated_root, monkeypatch):
     negative = isolated_root.parent / "external_bids.json"
-    negative.write_text('{"units": {}}')
+    negative.write_text('{"units": {}}', encoding='utf-8')
     (isolated_root / "scripts/main_full.py").write_text(
-        f"from pathlib import Path\nPath({str(negative)!r}).write_text('external edit')\n")
+        f"from pathlib import Path\nPath({str(negative)!r}).write_text('external edit')\n", encoding='utf-8')
     monkeypatch.setattr(batch, "job_specs", lambda path: [("change", [])])
     assert batch.main(["--negative-bids", str(negative)]) == 1
     manifest = next((isolated_root / "outputs/k_batches").glob("*/batch_manifest.json"))
-    report = json.loads(manifest.read_text())
+    report = json.loads(manifest.read_text(encoding='utf-8'))
     assert report["all_processes_succeeded"] and not report["source_inputs_unchanged"]
     assert report["negative_bids_sha256_after"] != report["negative_bids_sha256"]
-    assert negative.read_text() == "external edit"
+    assert negative.read_text(encoding='utf-8') == "external edit"

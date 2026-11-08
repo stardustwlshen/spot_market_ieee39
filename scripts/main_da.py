@@ -27,7 +27,8 @@ if not re.fullmatch(r"[\w.-]*", a.tag):
     ap.error("--tag 只能含中文、字母、数字、下划线、点或短横线，不能包含路径分隔符")
 if a.time_limit is not None and (not math.isfinite(a.time_limit) or a.time_limit <= 0):
     ap.error("--time-limit 必须为有限正数")
-cfg = load_config(season=a.season)
+from smm.reserve_policy import for_new_run
+cfg = for_new_run(load_config(season=a.season))
 if a.time_limit is not None:
     cfg.base["solver"]["time_limit_s"] = a.time_limit
 case = prepare(cfg, a.bid_version, read_only=True)

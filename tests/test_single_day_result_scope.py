@@ -218,13 +218,27 @@ def test_saved_single_day_stages_remain_available(scene, tmp_path, monkeypatch, 
     assert not any('连续出清' in option for e in at.selectbox for option in e.options)
     assert not any(e.label == '该日来源与接续凭据' for e in at.expander)
     assert not any('本次结果缺失或损坏' in e.value for e in at.error)
-    tabs = {t.label for t in at.tabs}
-    assert {'日前', '最终结果', '节点电价', 'SCUC/SCED与定价结果'} <= tabs
+    sections = ['系统总览', '机组分析', '价格分析', '网络与安全']
+    assert [t.label for t in at.tabs] == sections
     if scope == 'full':
-        assert {'日内·实时滚动', '日内轮次与交接', '实时执行与前瞻',
-                '两部制结算恒等式', '收入与成本'} <= tabs
+        assert at.radio(key='advanced_stage').options == ['DA', 'ID', 'RT']
+        assert '日内参考（不结算）' in at.radio(key='price_stage').options
+        assert {'实时窗口与前瞻约束', '结算恒等式与资金核对'} <= {e.label for e in at.expander}
+        saved = common.get_result(record)
+        assert not saved['id_rounds_summary'].empty
+        assert not saved['rt_prices'].empty
+        assert not saved['settlement_detail'].empty
+        for stage in ['ID', 'RT', 'DA']:
+            at.radio(key='advanced_stage').set_value(stage).run()
+            assert not at.exception, [e.message for e in at.exception]
+            assert [t.label for t in at.tabs] == sections
+            if stage == 'ID':
+                assert '日内轮次与交接' in {e.label for e in at.expander}
     else:
-        assert '日内·实时滚动' not in tabs
+        assert at.radio(key='advanced_stage').options == ['DA']
+        for key in ['overview_stage', 'price_stage', 'network_stage']:
+            assert len(at.radio(key=key).options) == 1
+        assert '实时窗口与前瞻约束' not in {e.label for e in at.expander}
         assert any('仅日前计划' in e.value for e in at.caption)
     assert has_saved_result(record)
     assert snapshot(evidence) == before

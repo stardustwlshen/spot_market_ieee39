@@ -42,7 +42,7 @@ def source_hashes(root: Path) -> dict[str, str]:
     for folder in ("config", "data", "bids", "src", "scripts"):
         for path in sorted((root / folder).rglob("*")):
             if path.is_file() and "__pycache__" not in path.parts and path.suffix != ".pyc":
-                result[str(path.relative_to(root))] = hashlib.sha256(path.read_bytes()).hexdigest()
+                result[path.relative_to(root).as_posix()] = hashlib.sha256(path.read_bytes()).hexdigest()
     return result
 
 

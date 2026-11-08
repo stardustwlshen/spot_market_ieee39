@@ -32,6 +32,7 @@ def snapshot(root):
 @pytest.fixture
 def gbk_default(tmp_path, monkeypatch):
     original = Path.open
+    original_read_text = Path.read_text
 
     def open_as_windows(path, mode='r', buffering=-1, encoding=None,
                         errors=None, newline=None):
@@ -39,14 +40,49 @@ def gbk_default(tmp_path, monkeypatch):
             encoding = 'gbk'
         return original(path, mode, buffering, encoding, errors, newline)
 
+    def read_as_windows(path, encoding=None, errors=None, *args, **kwargs):
+        # Intercept the caller's choice before read_text resolves None to UTF-8
+        # in UTF-8 mode. Explicit utf-8/utf-8-sig and outside paths stay intact.
+        if path.is_relative_to(tmp_path) and encoding in (None, 'locale'):
+            encoding = 'gbk'
+        return original_read_text(path, encoding, errors, *args, **kwargs)
+
     monkeypatch.setattr(Path, 'open', open_as_windows)
+    monkeypatch.setattr(Path, 'read_text', read_as_windows)
     # This fails exactly like the original read_text() even under PYTHONUTF8=1.
     probe = tmp_path / 'gbk-probe.json'
     write_json(probe, {'note': '开'})
     with pytest.raises(UnicodeDecodeError, match='gbk'):
         probe.read_text()
     assert json.loads(probe.read_text(encoding='utf-8')) == {'note': '开'}
+    with pytest.raises(UnicodeDecodeError, match='gbk'):
+        with probe.open() as stream:
+            stream.read()
     return tmp_path
+
+
+def test_gbk_fixture_is_scoped_and_preserves_explicit_encodings(gbk_default):
+    bom = gbk_default / 'explicit-bom.json'
+    bom.write_text('{"note": "开"}', encoding='utf-8-sig')
+    assert bom.read_bytes().startswith(b'\xef\xbb\xbf')
+    assert json.loads(bom.read_text(encoding='utf-8-sig')) == {'note': '开'}
+    assert bom.read_text(encoding='utf-8').startswith('\ufeff')
+    outside = gbk_default.parent / (gbk_default.name + '-outside.json')
+    write_json(outside, {'note': '开'})
+
+    def builtin_default():
+        with open(outside) as stream:
+            return stream.read()
+
+    def outcome(read):
+        try:
+            return ('decoded', read())
+        except UnicodeDecodeError as exc:
+            return ('decode_error', exc.encoding)
+
+    # Outside the fixture directory, match the real native default in either
+    # UTF-8 mode or locale mode. The fixture must not affect app/source loading.
+    assert outcome(outside.read_text) == outcome(builtin_default)
 
 
 @pytest.fixture

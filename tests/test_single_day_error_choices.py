@@ -21,7 +21,14 @@ def test_three_error_choices_are_direct_optional_and_readonly(scene):
     assert not at.exception and not at.number_input
     for label in ('负荷预测误差', '风电预测误差', '光伏预测误差'):
         assert item(at.selectbox, label).value == 'configured'
-    assert any('未按历史数据标定' in c.value for c in at.caption)
+    details = item(at.expander, '误差方法与参数')
+    assert not details.proto.expanded
+    assert any('未按历史数据标定' in c.value for c in details.caption)
+    detail_captions = {c.value for c in details.caption}
+    assert not any('未按历史数据标定' in c.value for c in at.caption if c.value not in detail_captions)
+    assert not any('误差情景为' in c.value for c in at.caption)
+    for label in ('负荷预测误差', '风电预测误差', '光伏预测误差'):
+        assert '上传预测和实际曲线保持不变' in item(at.selectbox, label).proto.help
     item(at.button, '下一步').click().run()
     assert not at.exception and files(scene.SCEN_DIR) == before
 
@@ -81,7 +88,8 @@ def test_uploaded_forecast_limit_is_visible_before_apply(scene):
     at = app()
     item(at.selectbox, '负荷预测误差').set_value('overestimate').run()
     assert not at.exception
-    assert any('load_da' in w.value and ('不' in w.value or '保留' in w.value) for w in at.warning)
+    assert any('负荷·日前' in w.value and ('不' in w.value or '保留' in w.value) for w in at.warning)
+    assert not any('load_da' in w.value for w in at.warning)
     assert upload.read_bytes() == before
 
 
@@ -94,4 +102,26 @@ def test_malformed_error_configuration_blocks_apply_without_replacing_it(scene):
     assert not at.exception
     assert any('预测误差配置不能读取' in e.value for e in at.error)
     assert item(at.button, '下一步').disabled
+    assert files(scene.SCEN_DIR) == before
+
+
+@pytest.mark.parametrize('choice', ['normal', 'overestimate', 'underestimate', 'lag', 'volatile'])
+def test_error_details_remain_optional_with_baselines_and_source_columns(scene, choice):
+    before = files(scene.SCEN_DIR)
+    at = app()
+    for label in ('负荷预测误差', '风电预测误差', '光伏预测误差'):
+        item(at.selectbox, label).set_value(choice)
+    at.run()
+    assert not at.exception
+    details = item(at.expander, '误差方法与参数')
+    assert not details.proto.expanded
+    table = details.dataframe[0].value
+    assert {'日前幅度基准', '日内幅度基准', '实时幅度基准', '15分钟持续性基准'} <= set(table.columns)
+    assert set(table['对象']) == {'负荷', '风电', '光伏'}
+    assert any('实际误差可能与上表幅度不同' in c.value for c in details.caption)
+    assert len(details.dataframe) >= 2  # Keep parameter baselines and preview error summary.
+    assert len(item(at.expander, "曲线数据与来源").dataframe) >= 2
+    assert not any('误差情景为' in c.value for c in at.caption)
+    at.run()
+    assert not at.exception and not item(at.expander, '误差方法与参数').proto.expanded
     assert files(scene.SCEN_DIR) == before

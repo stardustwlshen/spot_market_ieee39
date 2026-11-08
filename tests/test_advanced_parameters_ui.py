@@ -129,7 +129,7 @@ def test_ui_saved_parameters_freeze_and_complete_real_short_da_rt(scene,tmp_path
     base['solver'].update(time_limit_s=20,mip_rel_gap=0.)
     (scene/'config/base.yaml').write_text(yaml.safe_dump(base))
     modes=yaml.safe_load((scene/'config/modes.yaml').read_bytes())
-    modes['MKT']['reserve'].update(include_ctg=False,rho_L=0.,rho_RE=0.,rho_L_dn=0.,rho_RE_dn=0.)
+    modes['MKT']['reserve'].update(up_requirement_mode='formula',include_ctg=False,rho_L=0.,rho_RE=0.,rho_L_dn=0.,rho_RE_dn=0.)
     modes['MKT']['intraday']['enabled']=False
     (scene/'config/modes.yaml').write_text(yaml.safe_dump(modes))
     (scene/'data/case39/buses.csv').write_text('bus,load_mw\n31,50\n32,50\n')

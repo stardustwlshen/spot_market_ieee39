@@ -62,6 +62,8 @@ def _freeze_inputs_unlocked(root, directory, bids=None, regulation=None, *, run_
         raise FileExistsError('运行输入快照已存在，禁止覆盖')
     for folder in ('config', 'data', 'bids'):
         if (root/folder).exists(): shutil.copytree(root/folder, snap/folder)
+    from .reserve_policy import freeze_new_run_policy
+    freeze_new_run_policy(snap, directory)
     if regulation is not None:
         import yaml
         from .config import load_config
@@ -78,6 +80,8 @@ def _freeze_inputs_unlocked(root, directory, bids=None, regulation=None, *, run_
         dest = bid_dir(cfg);dest.mkdir(parents=True, exist_ok=True)
         atomic_json(dest/f"bids_v{bids['version']}.json", bids)
         atomic_json(directory/'submitted_bids.json', bids)
+    from .reserve_policy import finalize_frozen_policy
+    finalize_frozen_policy(snap, directory)
     capture_provenance(directory, snap, filename="frozen_input_provenance.json", source_version=source)
     return snap
 

@@ -355,7 +355,9 @@ def reserve_snapshot(m) -> dict:
                 formulation='period_end_stock',qualification_semantics='derived_eligibility_not_decision_variable',
                 scope='capacity_constraint_only_no_reserve_payment;incremental_reserve_energy_from_period_end_stock;not_full_baseline_plus_activation_delivery_guarantee',
                 battery_response_assumption='ideal_inverter_activation_can_cross_zero_and_idle;not_certified_response',
-                reserve_requirement_parameters={k:rc[k] for k in ('rho_L','rho_RE','rho_L_dn','rho_RE_dn','include_ctg','mu_RE')})
+                reserve_requirement_parameters={**{k:rc[k] for k in ('rho_L','rho_RE','rho_L_dn','rho_RE_dn','include_ctg','mu_RE')},
+                    'up_requirement_mode':rc.get('up_requirement_mode','formula'),
+                    **({'fixed_up_mw':rc['fixed_up_mw']} if 'fixed_up_mw' in rc else {})})
 
 
 def tracking_results(m) -> pd.DataFrame:

@@ -18,6 +18,7 @@ from smm.rolling import make_window_case, initial_state
 
 def inputs():
     cfg = load_config()
+    cfg.mode['reserve']['up_requirement_mode']='formula'
     cfg.base.update(tie_line_mode="fixed_load", tie_load_allocation="base_load_share")
     return cfg, build_network(cfg), generate_profiles(cfg)
 
@@ -96,7 +97,7 @@ def test_real_da_rt_solve_records_shed_and_settles_only_node_demand():
     cfg = tiny.cfg
     cfg.base.update(tie_line_mode="fixed_load", tie_load_allocation="base_load_share")
     cfg.units['tie'] = [dict(id='TIE', bus=2, pmax=400)]
-    cfg.mode['reserve'].update(rho_L=0., rho_RE=0., rho_L_dn=0., rho_RE_dn=0., include_ctg=False)
+    cfg.mode['reserve'].update(up_requirement_mode='formula',rho_L=0., rho_RE=0., rho_L_dn=0., rho_RE_dn=0., include_ctg=False)
     prof = pd.DataFrame({f'{n}_{s}':[v] for n,v in [('load',100.),('TIE',400.)] for s in ('actual','da','id','rt')})
     prof['TIE_sched'] = 400.
     case = build_da_case(cfg, tiny.net, prof, tiny.bids)

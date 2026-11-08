@@ -343,7 +343,7 @@ def kpi_compare(R, buses=None, ll_da=None, ll_rt=None, report=None):
 
 
 # ================================================================= render
-def render_final(R, *, buses, ll_da, ll_rt, report, lbl, sel, tabs=None):
+def render_final(R, *, buses, ll_da, ll_rt, report, lbl, sel, tabs=None, sections=None):
     import plotly.express as px
     import plotly.graph_objects as go
     import streamlit as st
@@ -359,16 +359,18 @@ def render_final(R, *, buses, ll_da, ll_rt, report, lbl, sel, tabs=None):
         else:
             st.info('本次为仅日前结果，没有实时执行，日前与实时的对比不适用。')
         return tabs
+    selected_sections = set(range(8)) if sections is None else set(sections)
     if tabs is None:
         from result_navigation import FINAL_SECTIONS
-        tabs = st.tabs(FINAL_SECTIONS)
-    with tabs[0]:
-        scope = _execution_scope(R)
-        if not scope['full_day']:
-            expected = scope['expected'] if scope['expected'] is not None else '未记录'
-            st.warning(f'实时已保存 {len(periods)} 段 / 预期 {expected} 段，未核实为完整日；'
-                       f"状态比较截至{_state_end_label(scope)}。以下日前值也只取同一批时段，不外推全天。")
-        st.caption('最终结果以日前与实时的直接对比为核心：每张图表同时给出 日前、实时、实时−日前；偏差最大的时段和主体排序列出，便于定位。')
+        tabs = st.tabs(FINAL_SECTIONS) if sections is None else [st.container() for _ in FINAL_SECTIONS]
+    if 0 in selected_sections:
+        with tabs[0]:
+            scope = _execution_scope(R)
+            if not scope['full_day']:
+                expected = scope['expected'] if scope['expected'] is not None else '未记录'
+                st.warning(f'实时已保存 {len(periods)} 段 / 预期 {expected} 段，未核实为完整日；'
+                           f"状态比较截至{_state_end_label(scope)}。以下日前值也只取同一批时段，不外推全天。")
+
 
     def diff_fig(frame, title, ylab, x=None, key=None, height=380, xlab=TIME):
         x = x if x is not None else [lbl[int(t)] for t in frame.index]
@@ -379,154 +381,162 @@ def render_final(R, *, buses, ll_da, ll_rt, report, lbl, sel, tabs=None):
         fig.update_layout(yaxis2=dict(overlaying='y', side='right', title=f'实时−日前 · {ylab}', showgrid=False, zeroline=True))
         show_fig(style_fig(fig, title, xlab, ylab, height), key=key)
 
-    with tabs[0]:
-        k = kpi_compare(R, buses, ll_da, ll_rt, report)
-        if k[[DA, RT]].isna().any().any():
-            st.caption('空白值表示未记录或证据不完整，不按零值计算偏差。')
-        show_df(k, '%.2f')
-        df_download(k, 'final_kpi_da_rt.csv', key='final_kpi')
-    with tabs[1]:
-        sp = system_price_compare(R, buses)
-        diff_fig(sp, '全网节点负荷加权电价：日前、实时与价差', '电价（元/MWh）', key='final_sys_price')
-        c1, c2 = st.columns(2)
-        with c1:
-            fig = px.histogram(sp.dropna(), x=DIFF, nbins=40, labels={DIFF: '价差 实时−日前（元/MWh）'})
-            fig.add_vline(x=0, line_dash='dot')
-            show_fig(style_fig(fig, '全网价差分布（逐时段）', '价差（元/MWh）', '时段数', 320), key='final_sys_hist')
-        with c2:
-            st.markdown('**全网价差最大的时段**')
-            top = rank_abs(sp).reset_index()
-            top.insert(1, '时刻', [lbl[int(t)] for t in top.period])
-            show_df(top.rename(columns={'period': '时段', DA: '日前 元/MWh', RT: '实时 元/MWh', DIFF: '实时−日前 元/MWh'}), '%.1f')
-        nl = node_price_compare(R)
-        buses_all = sorted(nl.bus.unique())
-        default = [b for b in (16, 19, 25, 30) if b in buses_all][:2] or buses_all[:2]
-        bsel = st.multiselect('选定节点（日前实线 / 实时虚线 / 价差柱）', buses_all, default=default, format_func=lambda b: f'节点{b}', key='final_nodes')
-        for i, b in enumerate(bsel):
-            f = nl[nl.bus == b].set_index('period')[[DA, RT, DIFF]]
-            diff_fig(f, f'节点{b} 电价：日前、实时与价差', '电价（元/MWh）', key=f'final_node_{b}', height=320)
-        if bsel:
-            sub = nl[nl.bus.isin(bsel)]
-            fig = px.box(sub, x=sub.bus.map(lambda b: f'节点{b}'), y=DIFF, points='outliers', labels={'x': '节点', DIFF: '价差（元/MWh）'})
-            show_fig(style_fig(fig, '选定节点价差分布', '节点', '价差 实时−日前（元/MWh）', 320), key='final_node_box')
-        piv = nl.pivot(index='bus', columns='period', values=DIFF)
-        fig = px.imshow(piv.values, x=[lbl[int(t)] for t in piv.columns], y=[str(b) for b in piv.index], aspect='auto',
-                        color_continuous_scale=DIFF_SCALE, color_continuous_midpoint=0, labels=dict(color='元/MWh'))
-        fig.update_yaxes(type='category', autorange='reversed', dtick=1, tickfont=dict(size=9))
-        show_fig(style_fig(fig, '节点价差热力图（实时−日前）', TIME, '节点编号', 560), key='final_node_heat')
-        c1, c2 = st.columns(2)
-        with c1:
-            st.markdown('**节点按 |价差| 均值排序**')
-            show_df(node_spread_ranking(nl), '%.1f')
-        with c2:
-            st.markdown('**价差最大的 时段×节点**')
-            t = rank_abs(nl, n=15)
-            t.insert(1, '时刻', [lbl[int(p)] for p in t.period])
-            show_df(t.rename(columns={'period': '时段', 'bus': '节点', DA: '日前 元/MWh', RT: '实时 元/MWh', DIFF: '实时−日前 元/MWh'}), '%.1f')
-        df_download(nl, 'final_node_price_da_rt_diff.csv', key='final_nl')
-    with tabs[2]:
-        ee = entity_energy_compare(R)
-        st.markdown('**逐主体电量（已执行时段）：日前中标 / 实时执行 / 偏差，按逐时段|偏差|合计排序**')
-        show_df(ee.reset_index().rename(columns={'unit': '主体', DA: '日前 MWh', RT: '实时 MWh', DIFF: '实时−日前 MWh'}), '%.1f')
-        top = ee.head(12)
-        fig = go.Figure()
-        fig.add_bar(x=top.index, y=top[DA], name='日前', marker_color=DA_COLOR)
-        fig.add_bar(x=top.index, y=top[RT], name='实时', marker_color=RT_COLOR)
-        fig.add_bar(x=top.index, y=top[DIFF], name='实时−日前', marker_color='#9ca3af')
-        fig.update_layout(barmode='group')
-        show_fig(style_fig(fig, '偏差最大的主体电量对比', '主体', '电量（MWh）', 360), key='final_energy_bar')
-        pe = period_entity_deviation(R)
-        u = st.selectbox('查看主体逐时段出力（日前/实时/偏差）', list(ee.index), key='final_energy_unit')
-        f = pe[pe.unit == u].set_index('period').rename(columns={'日前 MW': DA, '实时 MW': RT, '偏差 MW': DIFF})
-        diff_fig(f, f'{u} 出力：日前、实时与偏差', '出力（MW）', key='final_energy_curve', height=320)
-        st.markdown('**偏差最大的 时段×主体**')
-        t = pe.sort_values('|偏差| MW', ascending=False).head(15).copy()
-        t.insert(1, '时刻', [lbl[int(p)] for p in t.period])
-        show_df(t.rename(columns={'period': '时段', 'unit': '主体', 'type': '类型'}), '%.1f')
-        df_download(pe, 'final_entity_period_deviation.csv', key='final_pe')
-    with tabs[3]:
-        stt = state_compare(R)
-        if stt.empty:
-            st.info('本次没有储能、抽蓄或水电状态记录。')
-        else:
-            st.markdown('**各主体状态偏差排序（时段末状态）**')
-            show_df(state_ranking(stt).rename(columns={'kind': '类别', 'entity': '主体'}), '%.2f')
-            for (kind, ent), f in stt.groupby(['kind', 'entity']):
-                diff_fig(f.set_index('period'), f'{ent} {kind}（{f.单位.iloc[0]}）：日前、实时与偏差', f'{kind}（{f.单位.iloc[0]}）',
-                         key=f'final_state_{ent}', height=300)
-            df_download(stt, 'final_state_da_rt_diff.csv', key='final_st')
-    with tabs[4]:
-        vc = value_compare(R)
-        if vc.empty:
-            st.info('本次实时未使用价值法（或为旧结果），没有窗口末价值记录。')
-        else:
-            st.caption('日前价值曲线来自日前 SCED 状态约束对偶；实时每个窗口只在窗口末 τ 计入 −v·X。'
-                       '实时实际使用值直接读取本次保存的窗口记录；轨迹与价值参考按各资源、各窗口的实际来源区分，'
-                       '可为日前、日内轮次或回退，不能仅因开启日内就认定全部取最新日内轮次。'
-                       '请核对本次 rt_value_windows.csv：reference_source 为轨迹来源，value_source 为价值来源，'
-                       'reference_round 为日内轮次起点时段，reference_fallback_reason 为参考回退原因；缺失字段为未记录，不自行推断。'
-                       '正值=多存省报价目标；负值不是符号反了，而是自身充电买价/放电报价高于电价'
-                       '（报价目标口径，已有限差分核对），见方法说明。')
-            for (kind, ent), f in vc.groupby(['类别', '主体']):
-                f = f.sort_values('窗口末τ')
-                x = [lbl[int(t)] for t in f['窗口末τ']]
-                fig = go.Figure()
-                curve = R['da_value_curves']; curve = curve[curve.unit == ent].sort_values('period')
-                fig.add_scatter(x=[lbl[int(t)] for t in curve.period], y=curve.value_yuan_per_mwh, name='日前价值曲线', line=dict(color=DA_COLOR))
-                fig.add_scatter(x=x, y=f['窗口末实际使用 元/MWh'], name='实时窗口末实际使用', mode='markers', marker=dict(color=RT_COLOR, size=7))
-                fig.add_bar(x=x, y=f['实际使用−日前 元/MWh'], name='价值差 实际使用−日前（元/MWh，右轴）', yaxis='y2', marker_color='#9ca3af')
-                fig.update_layout(yaxis2=dict(overlaying='y', side='right', title='价值差（元/MWh）', showgrid=False))
-                window_time = '窗口末时段τ（时段起点）'
-                show_fig(style_fig(fig, f'{ent} {kind} 价值：日前 vs 窗口末实际使用', window_time, '价值（元/MWh）', 320), key=f'final_value_{ent}')
-                unit = f['状态单位'].iloc[0]
-                if unit == '未记录':
-                    st.info(f'{ent} 状态单位未记录，不把库存偏差画到价值轴上；保存数值见下表。')
-                else:
-                    state = f.rename(columns={'窗口末状态 日前': DA, '窗口末状态 实时': RT, 'ΔE/ΔV（实时−日前）': DIFF})
-                    diff_fig(state, f'{ent} {kind} 窗口末状态：日前 vs 实时前瞻计划', f'状态（{unit}）',
-                             x=x, key=f'final_value_state_{ent}', height=300, xlab=window_time)
-            st.caption('窗口末状态来自各窗口前瞻计划，不等于该时段已经执行；价值差为元/MWh，状态及状态差按各类原生单位另图展示。')
-            for unit, f in vc.groupby('状态单位', sort=False):
-                st.markdown(f'**|窗口末状态偏差| 最大的窗口（{unit}）**')
-                show_df(rank_abs(f, 'ΔE/ΔV（实时−日前）', 15), '%.2f')
-            df_download(vc, 'final_value_da_vs_used.csv', key='final_vc')
-    with tabs[5]:
-        by_t, by_u = curtail_compare(report, dt)
-        if by_t.empty:
-            st.info('没有可对比的风光弃电记录。')
-        else:
-            diff_fig(by_t, '分时弃风弃光功率：日前、实时与差值', '弃电功率（MW）', key='final_curt')
+    if 0 in selected_sections:
+        with tabs[0]:
+            k = kpi_compare(R, buses, ll_da, ll_rt, report)
+            if k[[DA, RT]].isna().any().any():
+                st.caption('空白值表示未记录或证据不完整，不按零值计算偏差。')
+            show_df(k, '%.2f')
+            pass  # Result download controls removed.
+    if 1 in selected_sections:
+        with tabs[1]:
+            sp = system_price_compare(R, buses)
+            diff_fig(sp, '全网节点负荷加权电价：日前、实时与价差', '电价（元/MWh）', key='final_sys_price')
             c1, c2 = st.columns(2)
             with c1:
-                st.markdown('**分场站弃电量（MWh），按 |差值| 排序**')
-                show_df(by_u.reset_index().rename(columns={'unit': '场站'}), '%.1f')
+                fig = px.histogram(sp.dropna(), x=DIFF, nbins=40, labels={DIFF: '价差 实时−日前（元/MWh）'})
+                fig.add_vline(x=0, line_dash='dot')
+                show_fig(style_fig(fig, '全网价差分布（逐时段）', '价差（元/MWh）', '时段数', 320), key='final_sys_hist')
             with c2:
-                st.markdown('**弃电差值最大的时段（MW）**')
-                t = rank_abs(by_t).reset_index(); t.insert(1, '时刻', [lbl[int(p)] for p in t.period])
-                show_df(t.rename(columns={'period': '时段'}), '%.1f')
-    with tabs[6]:
-        cc = congestion_compare(ll_da, ll_rt)
-        if cc.empty:
-            st.info('日前与实时均无阻塞或高负载线路（≥90%）。')
-        else:
-            st.markdown('**阻塞或高负载线路：日前 / 实时 / 差值，按阻塞时段差排序**')
-            show_df(cc, '%.1f')
-            lsel = st.multiselect('线路负载率曲线', list(cc['线路']), default=list(cc['线路'][:2]), key='final_lines')
-            for ln in lsel:
-                a = ll_da[ll_da.line == ln].set_index('period').loading * 100
-                b = ll_rt[ll_rt.line == ln].set_index('period').loading * 100
-                diff_fig(_triple(a.reindex(periods), b.reindex(periods)), f'{ln} 负载率：日前、实时与差值', '负载率（%）', key=f'final_line_{ln}', height=300)
-    with tabs[7]:
-        ident = settlement_identity(R)
-        st.caption('两部制：日前电费 = 日前电量×日前价；偏差电费 = (实际−日前)×实时价；合计 = 二者之和。下列误差应 < 1 元（CSV 保留4位小数造成的舍入误差约 0.01 元）。')
-        if '未验证项' in ident:
-            st.warning('结算恒等式未完整验证：' + ident['未验证项'] + '。缺失项不按零误差或通过处理。')
-        show_df(pd.DataFrame([{'检查项': k, '值': '未验证' if v is None else v} for k, v in ident.items() if k != 'worst']).astype(str))
-        if 'worst' in ident:
-            st.markdown('**误差最大的 主体×时段**')
-            show_df(ident['worst'], '%.4f')
-        rc = R.get('settlement_reconciliation')
-        if rc is not None:
-            st.markdown('**资金平衡校核（元）**')
-            show_df(rc, '%.2f')
+                st.markdown('**全网价差最大的时段**')
+                top = rank_abs(sp).reset_index()
+                top.insert(1, '时刻', [lbl[int(t)] for t in top.period])
+                show_df(top.rename(columns={'period': '时段', DA: '日前 元/MWh', RT: '实时 元/MWh', DIFF: '实时−日前 元/MWh'}), '%.1f')
+            nl = node_price_compare(R)
+            buses_all = sorted(nl.bus.unique())
+            default = [b for b in (16, 19, 25, 30) if b in buses_all][:2] or buses_all[:2]
+            bsel = st.multiselect('选定节点（日前实线 / 实时虚线 / 价差柱）', buses_all, default=default, format_func=lambda b: f'节点{b}', key='final_nodes')
+            for i, b in enumerate(bsel):
+                f = nl[nl.bus == b].set_index('period')[[DA, RT, DIFF]]
+                diff_fig(f, f'节点{b} 电价：日前、实时与价差', '电价（元/MWh）', key=f'final_node_{b}', height=320)
+            if bsel:
+                sub = nl[nl.bus.isin(bsel)]
+                fig = px.box(sub, x=sub.bus.map(lambda b: f'节点{b}'), y=DIFF, points='outliers', labels={'x': '节点', DIFF: '价差（元/MWh）'})
+                show_fig(style_fig(fig, '选定节点价差分布', '节点', '价差 实时−日前（元/MWh）', 320), key='final_node_box')
+            piv = nl.pivot(index='bus', columns='period', values=DIFF)
+            fig = px.imshow(piv.values, x=[lbl[int(t)] for t in piv.columns], y=[str(b) for b in piv.index], aspect='auto',
+                            color_continuous_scale=DIFF_SCALE, color_continuous_midpoint=0, labels=dict(color='元/MWh'))
+            fig.update_yaxes(type='category', autorange='reversed', dtick=1, tickfont=dict(size=9))
+            show_fig(style_fig(fig, '节点价差热力图（实时−日前）', TIME, '节点编号', 560), key='final_node_heat')
+            c1, c2 = st.columns(2)
+            with c1:
+                st.markdown('**节点按 |价差| 均值排序**')
+                show_df(node_spread_ranking(nl), '%.1f')
+            with c2:
+                st.markdown('**价差最大的 时段×节点**')
+                t = rank_abs(nl, n=15)
+                t.insert(1, '时刻', [lbl[int(p)] for p in t.period])
+                show_df(t.rename(columns={'period': '时段', 'bus': '节点', DA: '日前 元/MWh', RT: '实时 元/MWh', DIFF: '实时−日前 元/MWh'}), '%.1f')
+            pass  # Result download controls removed.
+    if 2 in selected_sections:
+        with tabs[2]:
+            ee = entity_energy_compare(R)
+            st.markdown('**逐主体电量（已执行时段）：日前中标 / 实时执行 / 偏差，按逐时段|偏差|合计排序**')
+            show_df(ee.reset_index().rename(columns={'unit': '主体', DA: '日前 MWh', RT: '实时 MWh', DIFF: '实时−日前 MWh'}), '%.1f')
+            top = ee.head(12)
+            fig = go.Figure()
+            fig.add_bar(x=top.index, y=top[DA], name='日前', marker_color=DA_COLOR)
+            fig.add_bar(x=top.index, y=top[RT], name='实时', marker_color=RT_COLOR)
+            fig.add_bar(x=top.index, y=top[DIFF], name='实时−日前', marker_color='#9ca3af')
+            fig.update_layout(barmode='group')
+            show_fig(style_fig(fig, '偏差最大的主体电量对比', '主体', '电量（MWh）', 360), key='final_energy_bar')
+            pe = period_entity_deviation(R)
+            u = st.selectbox('查看主体逐时段出力（日前/实时/偏差）', list(ee.index), key='final_energy_unit')
+            f = pe[pe.unit == u].set_index('period').rename(columns={'日前 MW': DA, '实时 MW': RT, '偏差 MW': DIFF})
+            diff_fig(f, f'{u} 出力：日前、实时与偏差', '出力（MW）', key='final_energy_curve', height=320)
+            st.markdown('**偏差最大的 时段×主体**')
+            t = pe.sort_values('|偏差| MW', ascending=False).head(15).copy()
+            t.insert(1, '时刻', [lbl[int(p)] for p in t.period])
+            show_df(t.rename(columns={'period': '时段', 'unit': '主体', 'type': '类型'}), '%.1f')
+            pass  # Result download controls removed.
+    if 3 in selected_sections:
+        with tabs[3]:
+            stt = state_compare(R)
+            if stt.empty:
+                st.info('本次没有储能、抽蓄或水电状态记录。')
+            else:
+                st.markdown('**各主体状态偏差排序（时段末状态）**')
+                show_df(state_ranking(stt).rename(columns={'kind': '类别', 'entity': '主体'}), '%.2f')
+                for (kind, ent), f in stt.groupby(['kind', 'entity']):
+                    diff_fig(f.set_index('period'), f'{ent} {kind}（{f.单位.iloc[0]}）：日前、实时与偏差', f'{kind}（{f.单位.iloc[0]}）',
+                             key=f'final_state_{ent}', height=300)
+                pass  # Result download controls removed.
+    if 4 in selected_sections:
+        with tabs[4]:
+            vc = value_compare(R)
+            if vc.empty:
+                st.info('本次实时未使用价值法（或为旧结果），没有窗口末价值记录。')
+            else:
+                st.caption('日前价值曲线来自日前 SCED 状态约束对偶；实时每个窗口只在窗口末 τ 计入 −v·X。'
+                           '实时实际使用值直接读取本次保存的窗口记录；轨迹与价值参考按各资源、各窗口的实际来源区分，'
+                           '可为日前、日内轮次或回退，不能仅因开启日内就认定全部取最新日内轮次。'
+                           '请核对本次 rt_value_windows.csv：reference_source 为轨迹来源，value_source 为价值来源，'
+                           'reference_round 为日内轮次起点时段，reference_fallback_reason 为参考回退原因；缺失字段为未记录，不自行推断。'
+                           '正值=多存省报价目标；负值不是符号反了，而是自身充电买价/放电报价高于电价'
+                           '（报价目标口径，已有限差分核对），见方法说明。')
+                for (kind, ent), f in vc.groupby(['类别', '主体']):
+                    f = f.sort_values('窗口末τ')
+                    x = [lbl[int(t)] for t in f['窗口末τ']]
+                    fig = go.Figure()
+                    curve = R['da_value_curves']; curve = curve[curve.unit == ent].sort_values('period')
+                    fig.add_scatter(x=[lbl[int(t)] for t in curve.period], y=curve.value_yuan_per_mwh, name='日前价值曲线', line=dict(color=DA_COLOR))
+                    fig.add_scatter(x=x, y=f['窗口末实际使用 元/MWh'], name='实时窗口末实际使用', mode='markers', marker=dict(color=RT_COLOR, size=7))
+                    fig.add_bar(x=x, y=f['实际使用−日前 元/MWh'], name='价值差 实际使用−日前（元/MWh，右轴）', yaxis='y2', marker_color='#9ca3af')
+                    fig.update_layout(yaxis2=dict(overlaying='y', side='right', title='价值差（元/MWh）', showgrid=False))
+                    window_time = '窗口末时段τ（时段起点）'
+                    show_fig(style_fig(fig, f'{ent} {kind} 价值：日前 vs 窗口末实际使用', window_time, '价值（元/MWh）', 320), key=f'final_value_{ent}')
+                    unit = f['状态单位'].iloc[0]
+                    if unit == '未记录':
+                        st.info(f'{ent} 状态单位未记录，不把库存偏差画到价值轴上；保存数值见下表。')
+                    else:
+                        state = f.rename(columns={'窗口末状态 日前': DA, '窗口末状态 实时': RT, 'ΔE/ΔV（实时−日前）': DIFF})
+                        diff_fig(state, f'{ent} {kind} 窗口末状态：日前 vs 实时前瞻计划', f'状态（{unit}）',
+                                 x=x, key=f'final_value_state_{ent}', height=300, xlab=window_time)
+                st.caption('窗口末状态来自各窗口前瞻计划，不等于该时段已经执行；价值差为元/MWh，状态及状态差按各类原生单位另图展示。')
+                for unit, f in vc.groupby('状态单位', sort=False):
+                    st.markdown(f'**|窗口末状态偏差| 最大的窗口（{unit}）**')
+                    show_df(rank_abs(f, 'ΔE/ΔV（实时−日前）', 15), '%.2f')
+                pass  # Result download controls removed.
+    if 5 in selected_sections:
+        with tabs[5]:
+            by_t, by_u = curtail_compare(report, dt)
+            if by_t.empty:
+                st.info('没有可对比的风光弃电记录。')
+            else:
+                diff_fig(by_t, '分时弃风弃光功率：日前、实时与差值', '弃电功率（MW）', key='final_curt')
+                c1, c2 = st.columns(2)
+                with c1:
+                    st.markdown('**分场站弃电量（MWh），按 |差值| 排序**')
+                    show_df(by_u.reset_index().rename(columns={'unit': '场站'}), '%.1f')
+                with c2:
+                    st.markdown('**弃电差值最大的时段（MW）**')
+                    t = rank_abs(by_t).reset_index(); t.insert(1, '时刻', [lbl[int(p)] for p in t.period])
+                    show_df(t.rename(columns={'period': '时段'}), '%.1f')
+    if 6 in selected_sections:
+        with tabs[6]:
+            cc = congestion_compare(ll_da, ll_rt)
+            if cc.empty:
+                st.info('日前与实时均无阻塞或高负载线路（≥90%）。')
+            else:
+                st.markdown('**阻塞或高负载线路：日前 / 实时 / 差值，按阻塞时段差排序**')
+                show_df(cc, '%.1f')
+                lsel = st.multiselect('线路负载率曲线', list(cc['线路']), default=list(cc['线路'][:2]), key='final_lines')
+                for ln in lsel:
+                    a = ll_da[ll_da.line == ln].set_index('period').loading * 100
+                    b = ll_rt[ll_rt.line == ln].set_index('period').loading * 100
+                    diff_fig(_triple(a.reindex(periods), b.reindex(periods)), f'{ln} 负载率：日前、实时与差值', '负载率（%）', key=f'final_line_{ln}', height=300)
+    if 7 in selected_sections:
+        with tabs[7]:
+            ident = settlement_identity(R)
+            st.caption('两部制：日前电费 = 日前电量×日前价；偏差电费 = (实际−日前)×实时价；合计 = 二者之和。下列误差应 < 1 元（CSV 保留4位小数造成的舍入误差约 0.01 元）。')
+            if '未验证项' in ident:
+                st.warning('结算恒等式未完整验证：' + ident['未验证项'] + '。缺失项不按零误差或通过处理。')
+            show_df(pd.DataFrame([{'检查项': k, '值': '未验证' if v is None else v} for k, v in ident.items() if k != 'worst']).astype(str))
+            if 'worst' in ident:
+                st.markdown('**误差最大的 主体×时段**')
+                show_df(ident['worst'], '%.4f')
+            rc = R.get('settlement_reconciliation')
+            if rc is not None:
+                st.markdown('**资金平衡校核（元）**')
+                show_df(rc, '%.2f')
     return tabs

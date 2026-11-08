@@ -238,9 +238,14 @@ def audit(payload,tol=1e-5):
                 shortage=number(sr[f'R_{direction}_short']);req=number(sr[f'R_{direction}_req'])
                 margin(shortage,stage+'/shortage_nonnegative');margin(supply+shortage-req,stage+'/requirement_'+direction)
                 equal(sr[f'R_{direction}_balance_mw'],supply+shortage-req,stage+'/balance_'+direction)
-            if e.get('contingency_mw') is not None:
+            if params.get('up_requirement_mode')=='fixed' or e.get('contingency_mw') is not None:
                 load=number(sr['load_mw']);renewable=number(sr['renewable_available_mw'])
-                equal(sr['R_up_req'],number(e['contingency_mw'])+params['rho_L']*load+params['rho_RE']*renewable,stage+'/unchanged_requirement_up')
+                requirement_mode=params.get('up_requirement_mode','formula')
+                if requirement_mode not in ('fixed','formula'):
+                    raise ValueError('unknown upward reserve requirement mode')
+                expected_up=(number(params['fixed_up_mw']) if requirement_mode=='fixed' else
+                             number(e['contingency_mw'])+params['rho_L']*load+params['rho_RE']*renewable)
+                equal(sr['R_up_req'],expected_up,stage+'/requirement_up')
                 equal(sr['R_dn_req'],params['rho_L_dn']*load+params['rho_RE_dn']*renewable if down_enabled else 0.,stage+'/requirement_down')
             if stage.startswith('RT') and t==0:
                 out['rt_executed_reserve_up_short_max_mw']=max(out['rt_executed_reserve_up_short_max_mw'],sr['R_up_short'])

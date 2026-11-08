@@ -117,8 +117,62 @@ def _navigation(step, locked=False):
         right.button('下一步', on_click=_go, args=(STEPS[index+1],), disabled=locked, type='primary')
 
 
+def launch_current_inputs(name, mode='full', periods=None):
+    """The start and retry paths share validation and the atomic launcher."""
+    if any(key in st.session_state for key in ('unit_editor:' + name, 'advanced_parameters:' + name)):
+        raise ValueError('请先保存或取消正在编辑的参数。')
+    if st.session_state.get('day_condition_pending:' + name):
+        raise ValueError('场景条件尚未应用，请返回场景点击下一步，或恢复原选项。')
+    cfg = scen_config(name)
+    if cfg.mode.get('regulation', {}).get('enabled', False) or cfg.base.get('tie_line_mode', 'supply') == 'fixed_load':
+        raise ValueError('历史调频或联络线转负荷场景不能按当前电能量主流程启动。请切换兼容场景或核对运行设置，旧输入不自动修改。')
+    validate_day(cfg)
+    draft, _, errors = read_quote(cfg, name)
+    if errors:
+        raise ValueError('当前报价校验未通过：' + '；'.join(getattr(e, 'msg', str(e)) for e in errors))
+    persist_scene_working_draft(st.session_state, name, cfg)
+    return start_run(name, mode, int(draft['version']), periods, bids=draft)
+
+
+def _launch_current(name, mode, periods):
+    try:
+        directory = launch_current_inputs(name, mode, periods)
+    except Exception as exc:
+        if getattr(exc, 'process_started', False) and getattr(exc, 'directory', None) is not None:
+            st.session_state['watch_run'] = str(exc.directory)
+            st.session_state['single_day_requested_run'] = str(exc.directory)
+        launch_error(exc)
+    else:
+        st.session_state['watch_run'] = str(directory)
+        st.session_state['single_day_requested_run'] = str(directory)
+        st.session_state['single_day_started'] = True
+        st.rerun(scope='app')
+
+
+def render_retry_current_inputs(meta, *, active=False):
+    """A failed run is evidence, never an output directory to reuse."""
+    if meta.get('status') not in ('failed', 'stopped', 'cancelled', 'timeout', 'timed_out'):
+        return
+    name = st.session_state.get('scenario', sc.DEFAULT)
+    mode = st.session_state.get('single_day_mode:' + name, 'full')
+    short = mode == 'full' and st.session_state.get('single_day_short:' + name, False)
+    periods = int(st.session_state.get('single_day_periods:' + name, 8)) if short else None
+    scope = '仅日前计划（无实时与结算）' if mode == 'da' else (f'前 {periods} 个实时时段（非完整日）' if periods is not None else '完整单日')
+    st.caption(f'重新计算使用当前场景“{name}”及当前已保存报价，范围：{scope}。会新建运行并冻结当前输入；本次失败记录和原快照保留，不续算或复用失败目录。')
+    locked = any(key in st.session_state for key in ('unit_editor:' + name, 'advanced_parameters:' + name))
+    pending = bool(st.session_state.get('day_condition_pending:' + name))
+    if pending:
+        st.warning('当前场景条件尚未应用，请返回场景点击下一步或恢复原选项，再重新计算。')
+    if st.button('按当前输入重新计算', type='primary', key='retry_current_inputs:' + str(meta['dir']),
+                 disabled=active or locked or pending or bool(st.session_state.get('runtime_needs_restart'))):
+        _launch_current(name, mode, periods)
+
+
 def render_single_day():
     page_setup('单日市场出清模拟')
+    requested_run = st.session_state.pop('single_day_requested_run', None)
+    if requested_run is not None:
+        st.session_state['run_sel'] = requested_run
     for notice_key in ('typical_created_notice',):
         notice = st.session_state.pop(notice_key, None)
         if notice:
@@ -169,7 +223,7 @@ def render_single_day():
     if step == STEPS[4]:
         st.subheader('进度与结果')
         from daily_run_monitor import render_run_monitor
-        render_run_monitor(active, compact=True)
+        render_run_monitor(active, compact=True, retry_renderer=render_retry_current_inputs)
         _navigation(step)
         return
     try:
@@ -215,25 +269,28 @@ def render_single_day():
                 st.rerun()
     elif step == STEPS[1]:
         st.subheader('机组')
-        from unit_input_view import resource_capacity_rows, render_network_and_units
-        energy_columns = ('储能额定能量（MWh）', '抽蓄可用发电能量（MWh）')
-        capacities = pd.DataFrame([
-            {key: ('不适用' if value is None else str(value)) if key in energy_columns else value
-             for key, value in row.items()}
-            for row in resource_capacity_rows(cfg)
-        ])
-        st.dataframe(capacities, hide_index=True, width='stretch',
-                     column_config={'状态': st.column_config.TextColumn(width='medium')})
-        with st.expander('查看日初状态明细'):
-            st.caption('初态来自场景配置，未核验为实测状态，不自动接续前一天。')
-            if input_error is None:
-                st.dataframe(pd.DataFrame(initial_rows(cfg)), hide_index=True, width='stretch')
-            else:
-                st.warning('初态尚未通过检查，暂不显示可用状态汇总。请先修复原始参数。')
-            st.caption('初态在下方“编辑或新增机组”的技术参数中修改，检查后保存才生效。')
+        from unit_input_view import resource_capacity_rows, render_network_and_units, render_selected_unit
+        from unit_selection import render_unit_selector
+        uid = render_unit_selector(cfg, name, disabled=locked)
+        st.caption('选中仅决定查看和编辑哪台机组；所有已启用机组仍参与全网出清。参与设置只在编辑后保存才改变。')
+        if uid is not None:
+            render_selected_unit(cfg, uid)
         from unit_editor import render_unit_editor
-        render_unit_editor(cfg, name, disabled=active, compact=True)
-        with st.expander('系统接线图、曲线与完整机组参数'):
+        render_unit_editor(cfg, name, disabled=active, compact=True, selected_uid=uid)
+        with st.expander('全网资源汇总与日初状态'):
+            if st.checkbox('加载全网汇总', key='single_day_summary:' + name):
+                energy_columns = ('储能额定能量（MWh）', '抽蓄有效库容发电容量（MWh）')
+                capacities = pd.DataFrame([
+                    {key: ('不适用' if value is None else str(value)) if key in energy_columns else value
+                     for key, value in row.items()} for row in resource_capacity_rows(cfg)])
+                st.dataframe(capacities, hide_index=True, width='stretch',
+                             column_config={'状态': st.column_config.TextColumn(width='medium')})
+                st.caption('抽蓄有效库容发电容量是上下库约束共同允许的水量区间折算，不是日初可用电量。')
+                if input_error is None:
+                    st.dataframe(pd.DataFrame(initial_rows(cfg)), hide_index=True, width='stretch')
+                else:
+                    st.warning('初态尚未通过检查，暂不显示可用状态汇总。请先修复原始参数。')
+        with st.expander('系统接线图与输入曲线'):
             if st.checkbox('加载系统与机组详情', key='single_day_network:' + name):
                 render_network_and_units(cfg, key_prefix='daily_network:' + name, bids=draft)
     elif step == STEPS[2]:
@@ -274,6 +331,8 @@ def render_single_day():
                 st.caption('初态来自场景配置；启动冻结配置与当前报价。参数检查不代表求解可行或精度达标。')
                 st.caption('实时每窗只执行首段，再传递机组状态、SOC与库容；前瞻计划不计作执行结果。')
         with primary_run:
+            from reserve_policy_controls import render_reserve_policy
+            render_reserve_policy(cfg)
             st.caption('实际执行阶段')
             stage_flow(cfg, mode, periods)
             if mode == 'da':
@@ -289,18 +348,5 @@ def render_single_day():
             if not active or 'network_run_options:' + name in st.session_state:
                 st.session_state['network_run_options:' + name] = run_options(mode, periods)
             if st.button('开始单日出清', type='primary', width='stretch', disabled=active or incompatible or locked or conditions_pending or bool(input_error) or bool(bid_errors) or draft is None):
-                try:
-                    # Detect concurrent quote writes before launch; never freeze a stale unpersisted edit.
-                    persist_scene_working_draft(st.session_state, name, cfg)
-                    directory = start_run(name, mode, int(draft['version']), int(periods) if periods is not None else None, bids=draft)
-                except Exception as exc:
-                    if getattr(exc, 'process_started', False) and getattr(exc, 'directory', None) is not None:
-                        st.session_state['watch_run'] = str(exc.directory)
-                        st.session_state['run_sel'] = str(exc.directory)
-                    launch_error(exc)
-                else:
-                    st.session_state['watch_run'] = str(directory)
-                    st.session_state['run_sel'] = str(directory)
-                    st.session_state['single_day_started'] = True
-                    st.rerun()
+                _launch_current(name, mode, int(periods) if periods is not None else None)
     _navigation(step, locked=locked)

@@ -75,11 +75,11 @@ def unit_dashboard(tables, *, bids=None, settlement=None, prefix='unit', indicat
                 for k,segment in enumerate(entry.get(kind) or []):curves.append({'curve':kind,'segment':k+1,**segment})
             if curves:st.dataframe(display_frame(pd.DataFrame(curves)),hide_index=True,width='stretch')
     with tab_state:
-        st.plotly_chart(localize_figure(px.line(u,x='period',y=[c for c in ('P_mw',) if c in u],title='该阶段净出力 MW')),width='stretch',key=prefix+':power')
-        if 'soc' in u:st.plotly_chart(localize_figure(px.line(u,x='period',y='soc',title='储能荷电状态（比例）')),width='stretch',key=prefix+':soc')
-        if 'E_mwh' in u:st.plotly_chart(localize_figure(px.line(u,x='period',y='E_mwh',title='储能能量 MWh')),width='stretch',key=prefix+':energy')
+        st.plotly_chart(localize_figure(px.line(u,x='period',y=[c for c in ('P_mw',) if c in u],title='该阶段净出力 MW')),width='stretch',key=prefix+':power', config={'modeBarButtonsToRemove': ['toImage']})
+        if 'soc' in u:st.plotly_chart(localize_figure(px.line(u,x='period',y='soc',title='储能荷电状态（比例）')),width='stretch',key=prefix+':soc', config={'modeBarButtonsToRemove': ['toImage']})
+        if 'E_mwh' in u:st.plotly_chart(localize_figure(px.line(u,x='period',y='E_mwh',title='储能能量 MWh')),width='stretch',key=prefix+':energy', config={'modeBarButtonsToRemove': ['toImage']})
         st.dataframe(display_frame(u),hide_index=True,width='stretch')
-        df_download(unit_export, f'{uid}_{"indicative" if indicative else "executed"}.csv', label='下载当前主体筛选CSV', key=prefix+':download')
+        pass  # Result download controls removed.
     with tab_revenue:
         q=_frame(settlement)
         idcol=next((c for c in ('unit','entity') if c in q),None)
@@ -119,8 +119,8 @@ def stages_dashboard(stages, *, prefix='stages', market_stage='DA', window_start
     st.caption('正式能量调度固定启停计划的整数决策；连续变量可因退化或限时近优方案变化。启用辅助定价时，数量仍来自正式调度，价格来自独立辅助模型，不能混为同一目标函数。' if not historical else '历史实验辅助LP不执行；此三阶段不属于当前纯电能量范围。')
     st.dataframe(display_frame(chosen),hide_index=True,width='stretch')
     if 'P_mw' in chosen:
-        st.plotly_chart(localize_figure(px.line(chosen,x='period',y='P_mw',color='stage',markers=True,title='正式调度与辅助模型的出力对照（辅助数量不执行）')),width='stretch',key=prefix+':plot')
-    df_download(chosen, f'{uid}_stage_diagnostics.csv', label='下载当前阶段对照CSV', key=prefix+':download')
+        st.plotly_chart(localize_figure(px.line(chosen,x='period',y='P_mw',color='stage',markers=True,title='正式调度与辅助模型的出力对照（辅助数量不执行）')),width='stretch',key=prefix+':plot', config={'modeBarButtonsToRemove': ['toImage']})
+    pass  # Result download controls removed.
     with st.expander('整数决策与原始诊断（技术核验）'):
         stage_name=st.selectbox('整数决策阶段',list(stages),format_func=lambda x:names.get(x,x),key=prefix+':integer_stage')
         integers=(stages[stage_name] or {}).get('integer_values')
@@ -129,8 +129,7 @@ def stages_dashboard(stages, *, prefix='stages', market_stage='DA', window_start
             integer_table=pd.DataFrame(integers)
             if 'index' in integer_table:integer_table['index']=integer_table['index'].map(lambda x:json.dumps(x,ensure_ascii=False))
             st.dataframe(display_frame(integer_table),hide_index=True,width='stretch')
-        st.download_button('下载原字段阶段诊断文件（技术用途）',json.dumps(stages,ensure_ascii=False,default=str).encode('utf-8'),
-                           file_name='stage_diagnostics.json',mime='application/json',key=prefix+':json')
+        pass  # Result download controls removed.
 
 
 
@@ -201,7 +200,7 @@ def hydro_window_dashboard(history, *, prefix='hydro_window'):
     if row.get('ramp_violation_max_mw',0)>1e-5:
         st.error('聚合端点爬坡诊断存在超限；此表不是逐台动态可行性证明。')
     st.dataframe(display_frame(selected),hide_index=True,width='stretch')
-    df_download(selected, f'{uid}_hydro_window_targets.csv', label='下载所选电站水电窗口诊断CSV', key=prefix+':download')
+    pass  # Result download controls removed.
 
 
 def reserve_dashboard(tables, *, prefix='reserve', indicative=False):
@@ -224,9 +223,9 @@ def reserve_dashboard(tables, *, prefix='reserve', indicative=False):
     if missing:st.info('未记录：'+'、'.join(missing)+'。不以0代替缺失数据。')
     if available and 'period' in system:
         selected=system[['period',*available]].sort_values('period').rename(columns=names)
-        st.plotly_chart(localize_figure(px.line(selected,x='period',y=list(selected.columns[1:]),title='系统安全备用：需求、分配与短缺（MW）')),width='stretch',key=prefix+':systemplot')
+        st.plotly_chart(localize_figure(px.line(selected,x='period',y=list(selected.columns[1:]),title='系统安全备用：需求、分配与短缺（MW）')),width='stretch',key=prefix+':systemplot', config={'modeBarButtonsToRemove': ['toImage']})
         st.dataframe(display_frame(selected),hide_index=True,width='stretch')
-        df_download(system[[c for c in system if c=='period' or c.startswith('R_') or c in ('reserve_down_enabled','down_enabled')]], 'safety_reserve_system.csv', label='下载系统安全备用CSV', key=prefix+':systemcsv')
+        pass  # Result download controls removed.
     units=_frame(tables.get('units'))
     if units.empty or 'unit' not in units:
         st.info('逐主体安全备用：未记录。');return
@@ -239,7 +238,7 @@ def reserve_dashboard(tables, *, prefix='reserve', indicative=False):
     incremental=('reserve_formulation' in selected and selected.reserve_formulation.notna().all()
                  and selected.reserve_formulation.isin(['incremental_current_stock','period_end_stock']).all())
     display=selected[[c for c in ('period','unit','type','P_mw','on','reserve_formulation','reserve_eligible','reserve_qualified',*columns) if c in selected]].copy()
-    st.plotly_chart(localize_figure(px.line(display,x='period',y=columns,title=f'{uid} 安排的备用容量 MW')),width='stretch',key=prefix+':unitplot')
+    st.plotly_chart(localize_figure(px.line(display,x='period',y=columns,title=f'{uid} 安排的备用容量 MW')),width='stretch',key=prefix+':unitplot', config={'modeBarButtonsToRemove': ['toImage']})
     st.caption(('本场景仅展示r_up上备用；r_dn已停用。' if down_disabled else '')+'上备用／下备用是优化安排的预留容量，不代表已发生备用激活。设计资格为工况允许参与；记录的资格不等于供给容量。缺失值保持空缺，备用未设独立采购成本，供给约束为≥需求，可能存在超配/退化；不自动证明全网络可交付。')
     if incremental:
         stock_basis=('时段末 SOC/库容（第二轮F项）' if selected.reserve_formulation.eq('period_end_stock').all()
@@ -252,7 +251,7 @@ def reserve_dashboard(tables, *, prefix='reserve', indicative=False):
     st.dataframe(display_frame(display),hide_index=True,width='stretch')
     export_awards=selected[[c for c in ('period','unit','type','P_mw','on','reserve_formulation','reserve_eligible','reserve_qualified','r_up','r_dn') if c in selected]].copy()
     if down_flag:export_awards=export_awards.merge(system[['period',down_flag]],on='period',how='left')
-    df_download(export_awards, f'{uid}_safety_reserve.csv', label='下载所选主体安全备用CSV', key=prefix+':unitcsv')
+    pass  # Result download controls removed.
 
     resource_kind=selected['type'].iloc[0] if 'type' in selected else None
     if resource_kind=='hydro':
@@ -272,7 +271,7 @@ def reserve_dashboard(tables, *, prefix='reserve', indicative=False):
                 'reserve_duration_up_margin_1e4m3':'上备用水量余量 万m³'}
         keep=[key for key in fields if key in ability]
         st.dataframe(ability[keep].rename(columns=fields),hide_index=True,width='stretch')
-        df_download(ability[keep],f'{uid}_hydro_reserve_water.csv',label='下载水电备用水量CSV',key=prefix+':hydrowatercsv')
+        pass  # Result download controls removed.
         if 'hydro_reserve_outflow_checked' not in ability:
             st.info('历史结果未记录备用激活出库筛查，不由水量检查通过推断出库检查通过。')
         elif not ability.hydro_reserve_outflow_checked.eq(True).all():
@@ -289,7 +288,7 @@ def reserve_dashboard(tables, *, prefix='reserve', indicative=False):
                 'reserve_up_ecological_margin_m3s':'激活生态下泄余量 m³/s'}
             cols=[key for key in flow_fields if key in ability]
             st.dataframe(ability[cols].rename(columns=flow_fields),hide_index=True,width='stretch')
-            df_download(ability[cols],f'{uid}_hydro_reserve_outflow.csv',label='下载水电备用出库CSV',key=prefix+':hydrooutflowcsv')
+            pass  # Result download controls removed.
         return
     if resource_kind not in ('storage','pumped'):return
     st.subheader('储能/抽蓄备用筛选诊断（不是已激活轨迹）')
@@ -340,7 +339,7 @@ def reserve_dashboard(tables, *, prefix='reserve', indicative=False):
         st.caption('历史资格为0时持续能力约束未参与，显示未记录（表中空值）；历史下界／上界字段保留其原有激活口径。')
     st.caption('筛选时长单位小时；功率余量单位 MW；电池能量余量 MWh、抽蓄库容余量万m³，不混合相加。空值表示未启用或未记录，并非0；非负余量只验证所列能力约束，不证明全网络或动态可交付。')
     st.dataframe(display_frame(ability),hide_index=True,width='stretch')
-    df_download(export_ability, f'{uid}_reserve_capability.csv', label='下载所选主体备用能力诊断CSV', key=prefix+':capabilitycsv')
+    pass  # Result download controls removed.
 
 
 def operating_profit_dashboard(by_unit, by_period=None, *, prefix='operating_profit'):
@@ -390,7 +389,7 @@ def operating_profit_dashboard(by_unit, by_period=None, *, prefix='operating_pro
                        color_discrete_map={'亏损':'#b13e53','非负':'#168178'},title='逐主体运营盈亏 · 负值完整保留',
                        labels={'unit':'主体'})
             fig.update_layout(height=max(320,28*len(visible)),legend_title_text='收益符号（非调度阶段）')
-            st.plotly_chart(localize_figure(fig),width='stretch',key=prefix+':profitplot')
+            st.plotly_chart(localize_figure(fig),width='stretch',key=prefix+':profitplot', config={'modeBarButtonsToRemove': ['toImage']})
     uid=st.selectbox('运营利润明细主体',list(rows.unit),key=prefix+':unit')
     selected_unit=rows[rows.unit==uid].iloc[0]
     def amount(key):
@@ -406,7 +405,7 @@ def operating_profit_dashboard(by_unit, by_period=None, *, prefix='operating_pro
         st.caption('购买电量列是净结算的组成项，不是再次计入运营成本的费用。库存变化使用库存单位列，非现金利润调整。')
     with st.expander('完整核算证据与下载'):
         st.dataframe(display_frame(rows.rename(columns=names)),hide_index=True,width='stretch')
-        df_download(rows, 'operating_profit_by_unit.csv', label='下载逐主体运营利润CSV', key=prefix+':download')
+        pass  # Result download controls removed.
         detail=_frame(by_period)
         if not detail.empty:
             try:
@@ -419,7 +418,7 @@ def operating_profit_dashboard(by_unit, by_period=None, *, prefix='operating_pro
             valid=selected.get('cost_available',pd.Series(False,index=selected.index)).eq(True)
             selected.loc[~valid,[c for c in monetary_costs if c in selected]]=float('nan')
             st.dataframe(display_frame(selected.rename(columns=names)),hide_index=True,width='stretch')
-            df_download(selected, f'{uid}_operating_profit_by_period.csv', label='下载所选主体逐时核算CSV', key=prefix+':perioddownload')
+            pass  # Result download controls removed.
 
 
 def _saved_json(path):

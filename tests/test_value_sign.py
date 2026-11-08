@@ -2,7 +2,8 @@
 
 1. 有限差分：在日前最终 SCED 的动态约束 X[t+1] == X[t] + 流量 右端加 ε（= 时段 t 末多 ε 存量），
    v[t] 必须落在 −ΔObj/ε 的左右导数区间内（ES/PS/H 各一）。正 v = 多存 1 单位使报价目标下降。
-2. 方向：RT 窗口末目标项为 −v·X_τ，v 取很大正值时 X_τ 不低于日前值，取很大负值时不高于日前值。
+2. 方向：同一 RT 可行集仅改变一个资产的窗口末价值，比较负、零、正价值的库存响应。
+   原生价值按能量单位换算；不把不同预测/整数约束下的日前库存当作零价值反事实。
 """
 import copy
 from dataclasses import replace
@@ -10,6 +11,7 @@ from dataclasses import replace
 import numpy as np
 import pyomo.environ as pyo
 import pytest
+from pyomo.repn import generate_standard_repn
 
 from smm import rolling, scuc
 
@@ -92,32 +94,105 @@ def test_value_sign_decomposition_bid_vs_system(da_result):
     assert np.isfinite([v, v_total, v_sys, v_own]).all()
 
 
-@pytest.mark.parametrize("sign", [1., -1.])
-def test_rt_window_end_direction_with_extreme_value(da_result, sign):
-    """v 很大为正 → RT 窗口末 X_τ ≥ 日前值（多存）；v 很大为负 → X_τ ≤ 日前值。"""
+def _unsolved_window_signature(m):
+    """Capture the feasible set before SCUC fixes any selected integer decisions."""
+    V = pyo.value
+    variables = tuple((v.name, str(v.domain), V(v.lb) if v.has_lb() else None,
+                       V(v.ub) if v.has_ub() else None, V(v) if v.fixed else None)
+                      for v in m.component_data_objects(pyo.Var, active=True))
+    constraints = tuple((c.name, str(c.expr))
+                        for c in m.component_data_objects(pyo.Constraint, active=True))
+    repn = generate_standard_repn(m.obj.expr)
+    assert repn.is_linear()
+    coefficients = {v.name: float(V(c)) for v, c in zip(repn.linear_vars, repn.linear_coefs)}
+    return (variables, constraints), coefficients, float(V(repn.constant))
+
+
+def _assert_window_feasible(m, tolerance=1e-6):
+    """Check every active row and variable bound, not just the target stock."""
+    V = pyo.value
+    for v in m.component_data_objects(pyo.Var, active=True):
+        x = float(V(v))
+        assert np.isfinite(x), v.name
+        assert not v.has_lb() or x >= V(v.lb) - tolerance, (v.name, x, v.lb)
+        assert not v.has_ub() or x <= V(v.ub) + tolerance, (v.name, x, v.ub)
+    for c in m.component_data_objects(pyo.Constraint, active=True):
+        x = float(V(c.body))
+        assert np.isfinite(x), c.name
+        assert not c.has_lb() or x >= V(c.lower) - tolerance, (c.name, x, c.lower)
+        assert not c.has_ub() or x <= V(c.upper) + tolerance, (c.name, x, c.upper)
+    assert not m._state_band_soft_indices
+    for kind, unit, rel, lo, hi, _ in m._state_bands:
+        x = V(getattr(m, kind)[unit, rel])
+        assert lo - tolerance <= x <= hi + tolerance, (kind, unit, x, lo, hi)
+    assert all(abs(value) <= tolerance for value in scuc.slack_summary(m).values())
+
+
+@pytest.mark.parametrize("kind,unit", [("E", "ES1"), ("E", "ES2"), ("E", "ES3"), ("Vu", "PS1")])
+def test_rt_window_end_direction_with_extreme_value(da_result, monkeypatch, kind, unit):
+    """Single-asset comparative statics on an identical, strictly solved RT case.
+
+    A negative native value of 2000 yuan/10^4 m3 is only 208.33 yuan/MWh
+    for PS1, so it need not outweigh its pumping bid. DA is also a different
+    feasible set. Neither a finite negative value nor jointly changing all
+    resources implies that each RT stock must be below its DA reference.
+    """
     da2 = _value_da(da_result)
-    cfg = da2.case.cfg
+    base = copy.deepcopy(da2.case.cfg.base)
+    base["solver"].update(mip_rel_gap=1e-8, warm_start=False)
+    cfg = replace(da2.case.cfg, base=base)
+    da2 = replace(da2, case=replace(da2.case, cfg=cfg))
     plan = rolling._da_plan_arrays(da2)
     t, t1 = 0, 8
-    terms = rolling.value_method_terms(cfg, plan, t, t1)
-    terms["state_value"] = [(k, u, rel, sign * 2000. if k in ("E", "Vu") else v) for k, u, rel, v in terms["state_value"]]
-    state = rolling.initial_state(cfg)
-    case = rolling.make_window_case(da2.case, cfg, t, t1, t, True, state, {}, dict(terms), "RT")
-    r = rolling.clear_window(case)
-    m = r["model"]
     rel = t1 - 1 - t
-    checked, at_bound = 0, 0
-    for k, u, rel_b, lo, hi, label in terms["state_band"]:
-        if k not in ("E", "Vu"):
-            continue
-        x = pyo.value(getattr(m, k)[u, rel])
-        x_da = float(plan[k][u][t1 - 1])
-        if sign > 0:
-            assert x >= x_da - 1e-6, (k, u, x, x_da, lo, hi)
-            at_bound += abs(x - hi) < 1e-4
-        else:
-            assert x <= x_da + 1e-6, (k, u, x, x_da, lo, hi)
-            at_bound += abs(x - lo) < 1e-4
-        checked += 1
-    # 抽蓄定速抽水只能按台阶调整库容，不要求贴边；至少储能应贴到偏差带边界
-    assert checked and at_bound
+    terms = rolling.value_method_terms(cfg, plan, t, t1)
+    target = (kind, unit, rel)
+    assert sum((k, u, tau) == target for k, u, tau, _ in terms["state_value"]) == 1
+    band = next(row for row in terms["state_band"] if tuple(row[:3]) == target)
+    assert band[4] > band[3]
+    # E is already MWh; one native Vu unit stores e_gen MWh of generation.
+    energy_per_native = (1. if kind == "E" else
+                         float(next(d for d in cfg.units["pumped"] if d["id"] == unit)["e_gen"]))
+    magnitude_native = 2000. * energy_per_native
+    case = rolling.make_window_case(da2.case, cfg, t, t1, t, True,
+                                    rolling.initial_state(cfg), {}, copy.deepcopy(terms), "RT")
+    signatures, coefficients, constants, stocks = {}, {}, {}, {}
+    original_build = scuc.build_model
+    target_name = f"{kind}[{unit},{rel}]"
+    for sign in (-1, 0, 1):
+        terminal = copy.deepcopy(terms)
+        terminal["state_value"] = [(k, u, tau, sign * magnitude_native if (k, u, tau) == target else v)
+                                   for k, u, tau, v in terms["state_value"]]
+        observed = []
+
+        def inspect_build(window_case):
+            model = original_build(window_case)
+            observed.append(_unsolved_window_signature(model))
+            return model
+
+        with monkeypatch.context() as patch:
+            patch.setattr(scuc, "build_model", inspect_build)
+            result = rolling.clear_window(replace(case, terminal=terminal))
+        assert len(observed) == 1
+        signatures[sign], coefficients[sign], constants[sign] = observed[0]
+        mip, lp = result["mip"], result["sced"]
+        assert mip["termination"].lower() == "optimal", mip
+        assert np.isfinite([mip["objective"], mip["best_bound"], mip["gap"]]).all(), mip
+        assert abs(mip["gap"]) <= 1e-7, mip
+        assert lp["termination"].lower() == "optimal", lp
+        _assert_window_feasible(result["model"])
+        stocks[sign] = pyo.value(getattr(result["model"], kind)[unit, rel])
+
+    assert signatures[-1] == signatures[0] == signatures[1]
+    assert constants[-1] == constants[0] == constants[1]
+    names = set().union(*(row.keys() for row in coefficients.values()))
+    names.add(target_name)  # Missing terms must fail even when absent from every map.
+    for sign in (-1, 0, 1):
+        for name in names:
+            expected = -sign * magnitude_native if name == target_name else coefficients[0].get(name, 0.)
+            assert coefficients[sign].get(name, 0.) == pytest.approx(expected, abs=1e-9, rel=0.), (sign, name)
+    assert stocks[-1] <= stocks[0] + 1e-6, stocks
+    assert stocks[0] <= stocks[1] + 1e-6, stocks
+    # A reversed or missing value term must not pass through flat/degenerate
+    # dispatch: require at least 1 MWh of actual response, far above residuals.
+    assert (stocks[1] - stocks[-1]) * energy_per_native > 1., stocks

@@ -87,7 +87,7 @@ def _forget_quote_widgets(name):
             del st.session_state[key]
 
 
-def render_unit_editor(cfg, name, *, disabled=False, compact=False):
+def render_unit_editor(cfg, name, *, disabled=False, compact=False, selected_uid=None):
     session_key = 'unit_editor:' + name
     notice = st.session_state.pop(session_key + ':notice', None)
     if notice:
@@ -104,8 +104,18 @@ def render_unit_editor(cfg, name, *, disabled=False, compact=False):
                 if not labels:
                     st.info('当前没有可编辑机组，请选择新增机组。')
                     return
-                selected = st.selectbox('机组模板' if action == '复制机组' else '要编辑的机组',
-                    list(labels), key=session_key+':source', disabled=disabled)
+                if selected_uid in labels:
+                    selected = selected_uid
+                    st.caption(('复制来源：' if action == '复制机组' else '当前编辑：') + selected)
+                else:
+                    from unit_selection import selection_key, _remember
+                    shared = st.session_state.get(selection_key(name))
+                    source_key = session_key+':source'
+                    if shared in labels and st.session_state.get(source_key) != shared:
+                        st.session_state[source_key] = shared
+                    selected = st.selectbox('机组模板' if action == '复制机组' else '要编辑的机组',
+                        list(labels), key=source_key, disabled=disabled,
+                        on_change=_remember, args=(name, source_key))
                 family, source = labels[selected]
             else:
                 kind = st.selectbox('新增类型', list(TYPES), format_func=lambda x: TYPES[x][1],
@@ -161,6 +171,10 @@ def render_unit_editor(cfg, name, *, disabled=False, compact=False):
                 help='每台分别约束最小开停时间；跨午夜未完成部分继续保留。此处只改草稿，保存后生效。')
         with st.form(session_key+':form'):
             candidate = copy.deepcopy(original)
+            candidate['enabled'] = st.checkbox('参与模拟', value=original.get('enabled', True),
+                key=prefix+':enabled', disabled=disabled,
+                help='勾选表示参与全网出清；与当前选中机组、日初开停状态独立。只在保存机组后生效。')
+            st.caption('参与模拟决定是否进入出清；日初开停表示模拟开始前的状态。取消不改变任何设置。')
             buses = build_network(cfg).buses
             bus_options = buses if original['bus'] in buses else [original['bus'], *buses]
             candidate['bus'] = st.selectbox('接入节点', bus_options,
@@ -171,7 +185,7 @@ def render_unit_editor(cfg, name, *, disabled=False, compact=False):
                 _hydro_commitment_editor(candidate, prefix, disabled, hydro_enabled)
             with st.expander('其余技术参数与初始状态（可修改）'):
                 for field, value in original.items():
-                    if field not in {'id', 'type', 'bus', 'commitment', *_PRIMARY[family]}:
+                    if field not in {'id', 'type', 'bus', 'enabled', 'commitment', *_PRIMARY[family]}:
                         if family == 'hydro' and field == 'init_units_on' and candidate.get('commitment', {}).get('mode') == 'unit_duration_v1':
                             st.caption(f"初始在线台数：{candidate['init_units_on']}（由逐台状态计算）")
                             continue
@@ -200,6 +214,8 @@ def render_unit_editor(cfg, name, *, disabled=False, compact=False):
                 if save:
                     apply_unit_edit(plan)
                     _forget_quote_widgets(name)
+                    from unit_selection import select_unit
+                    select_unit(st.session_state, name, candidate['id'])
                     st.session_state.pop(session_key, None)
                     st.session_state[session_key+':token'] = editor['token']+1
                     st.session_state[session_key+':notice'] = f"已保存 {candidate['id']} 到场景“{name}”。历史结果未改变。"

@@ -216,10 +216,14 @@ def load_forecast_diagnostics(directory):
 
 
 def render_forecast_diagnostics(directory):
+    data=load_forecast_diagnostics(directory)
+    if not data['valid']:
+        # No empty diagnostic card for old runs. A present-but-invalid record is
+        # still actionable evidence and remains a visible reliability warning.
+        if (Path(directory)/'forecast_error_status.json').is_file():
+            st.warning('预测误差记录未通过核验：'+data['reason'])
+        return data
     with st.expander('预测与已执行实际输入',expanded=False):
-        data=load_forecast_diagnostics(directory)
-        if not data['valid']:
-            st.info('不可核验：'+data['reason']);return data
         status=data['status'];detail=data['detail'];summary=data['summary']
         st.caption(f"{status['operating_date']} · 已执行 {status['executed_periods']} / {status.get('expected_periods',96)} 段；未执行段不显示实际值。")
         st.caption('风光为可用功率，不是机组发电出力。实时误差对比原发布预测，不把首段完美测量当零误差。')
@@ -241,7 +245,7 @@ def render_forecast_diagnostics(directory):
         fig.add_trace(go.Scatter(x=selected.period,y=selected.forecast_input,name='原发布预测',mode='lines',line=dict(color='#2563eb',dash='dash')))
         fig.add_trace(go.Scatter(x=selected.period,y=selected.actual_input,name='已执行实际输入',mode='lines',line=dict(color='#dc2626')))
         fig.update_layout(height=360,margin=dict(l=15,r=15,t=25,b=20),xaxis_title='运行日时段（从0开始）',yaxis_title=unit,legend=dict(orientation='h'))
-        st.plotly_chart(fig,width='stretch',key='forecast_error_chart:'+str(directory)+':'+uid+':'+stage)
+        st.plotly_chart(fig,width='stretch',key='forecast_error_chart:'+str(directory)+':'+uid+':'+stage, config={'modeBarButtonsToRemove': ['toImage']})
         overall=summary[(summary.resource_id==uid)&(summary.stage==stage)&(summary.lead_bucket=='all')]
         st.markdown('**该资源本阶段整体误差**')
         if len(overall)==1:
@@ -258,5 +262,6 @@ def render_forecast_diagnostics(directory):
         with st.expander('按提前时间与完整数据'):
             st.dataframe(summary[summary.resource_id==uid],hide_index=True,width='stretch')
             for name,frame in [('实际输入',data['actual']),('预测误差明细',detail),('阶段与提前时间汇总',summary)]:
-                st.download_button('下载'+name,frame.to_csv(index=False).encode('utf-8-sig'),file_name=name+'.csv',mime='text/csv',key='forecast_download:'+str(directory)+':'+name)
+                st.caption(name)
+                st.dataframe(frame, hide_index=True, width='stretch')
         return data

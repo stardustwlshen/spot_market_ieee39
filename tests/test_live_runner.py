@@ -1,4 +1,5 @@
 import json
+import datetime as dt
 from types import SimpleNamespace
 import pandas as pd
 import pytest
@@ -183,3 +184,172 @@ def test_immediate_restart_uses_distinct_run_directory(tmp_path,monkeypatch):
     first=scenario.new_run_dir('retry','full')
     second=scenario.new_run_dir('retry','full')
     assert first != second and first.exists() and second.exists()
+
+
+# Freeze only the scenario module's clock, not the shared datetime module.
+class _FixedRunDatetime(dt.datetime):
+    @classmethod
+    def now(cls, tz=None):
+        return cls(2026, 11, 8, 12, 34, 56, 123456, tzinfo=tz)
+
+
+def _freeze_run_allocation_clock(monkeypatch, tmp_path):
+    from smm import scenario
+    monkeypatch.setattr(scenario, 'RUNS_DIR', tmp_path)
+    monkeypatch.setattr(scenario, '_dt', SimpleNamespace(datetime=_FixedRunDatetime))
+    return scenario
+
+
+@pytest.mark.parametrize('count', [2, 32])
+def test_fixed_clock_restarts_preserve_first_run(tmp_path, monkeypatch, count):
+    scenario = _freeze_run_allocation_clock(monkeypatch, tmp_path)
+    first = scenario.new_run_dir('retry', 'full')
+    assert first.name == '20261108-123456-123456_full'
+    sentinel = first / 'saved-result.bin'
+    sentinel.write_bytes(b'original result\x00must not change')
+    original = sentinel.read_bytes()
+    directories = [first] + [scenario.new_run_dir('retry', 'full') for _ in range(count - 1)]
+    assert len(set(directories)) == count
+    assert all(directory.is_dir() for directory in directories)
+    assert sentinel.read_bytes() == original
+    assert all(not list(directory.iterdir()) for directory in directories[1:])
+    assert set(first.parent.iterdir()) == set(directories)
+
+
+@pytest.mark.parametrize('existing_kind', ['directory', 'file'])
+def test_fixed_clock_collision_preserves_existing_evidence(tmp_path, monkeypatch, existing_kind):
+    scenario = _freeze_run_allocation_clock(monkeypatch, tmp_path)
+    existing = tmp_path / 'retry' / '20261108-123456-123456_full'
+    existing.parent.mkdir()
+    if existing_kind == 'directory':
+        existing.mkdir()
+        sentinel = existing / 'saved-result.bin'
+    else:
+        sentinel = existing
+    sentinel.write_bytes(b'historical evidence\x00unchanged')
+    original = sentinel.read_bytes()
+    created = scenario.new_run_dir('retry', 'full')
+    assert created != existing and created.is_dir()
+    assert created.name.startswith('20261108-123456-123456-')
+    assert created.name.endswith('_full')
+    assert sentinel.read_bytes() == original
+    assert not list(created.iterdir())
+
+
+def _allocate_fixed_clock_runs(root, barrier, result_queue, worker):
+    import os
+    import traceback
+    from pathlib import Path
+    from smm import scenario
+    scenario.RUNS_DIR = Path(root)
+    scenario._dt = SimpleNamespace(datetime=_FixedRunDatetime)
+    try:
+        records = []
+        for index in range(8):
+            barrier.wait(timeout=45)
+            directory = scenario.new_run_dir('retry', 'full')
+            owner = f'{worker}:{index}'
+            (directory / 'owner.txt').write_text(owner, encoding='utf-8')
+            records.append((str(directory), owner))
+        result_queue.put(('ok', os.getpid(), records))
+    except BaseException:
+        result_queue.put(('error', os.getpid(), traceback.format_exc()))
+        raise
+
+
+def test_fixed_clock_concurrent_processes_claim_distinct_runs(tmp_path):
+    import multiprocessing
+    from pathlib import Path
+    context = multiprocessing.get_context('spawn')
+    barrier = context.Barrier(4)
+    result_queue = context.Queue()
+    processes = [context.Process(target=_allocate_fixed_clock_runs,
+                                 args=(str(tmp_path), barrier, result_queue, worker))
+                 for worker in range(4)]
+    try:
+        for process in processes:
+            process.start()
+        results = [result_queue.get(timeout=90) for _ in processes]
+        for process in processes:
+            process.join(timeout=30)
+        assert all(process.exitcode == 0 for process in processes), results
+        assert all(result[0] == 'ok' for result in results), results
+        assert len({result[1] for result in results}) == 4
+        records = [record for _, _, batch in results for record in batch]
+        assert len(records) == len({directory for directory, _ in records}) == 32
+        for directory, owner in records:
+            assert (Path(directory) / 'owner.txt').read_text(encoding='utf-8') == owner
+        assert {str(path) for path in (tmp_path / 'retry').iterdir()} == {
+            directory for directory, _ in records}
+    finally:
+        # Only these test-owned children can be cleaned up; never inspect or
+        # signal a process belonging to an application or another test run.
+        for process in processes:
+            if process.pid is not None:
+                if process.is_alive():
+                    process.terminate()
+                process.join(timeout=30)
+                assert not process.is_alive()
+                process.close()
+        result_queue.close()
+        result_queue.join_thread()
+
+
+def test_fixed_clock_new_names_keep_history_readable_and_sorted(tmp_path, monkeypatch):
+    scenario = _freeze_run_allocation_clock(monkeypatch, tmp_path)
+    legacy = tmp_path / 'retry' / '20200101-000000_full'
+    legacy.mkdir(parents=True)
+    historical = {'scenario': 'retry', 'mode': 'full', 'status': 'failed',
+                  'started': '2020-01-01T00:00:00'}
+    atomic_json(legacy / 'meta.json', historical)
+    original = (legacy / 'meta.json').read_bytes()
+    normal = scenario.new_run_dir('retry', 'full')
+    collision = scenario.new_run_dir('retry', 'full')
+    for directory, started in [(normal, '2026-11-08T12:34:57'),
+                               (collision, '2026-11-08T12:34:56')]:
+        atomic_json(directory / 'meta.json',
+                    {**historical, 'status': 'done', 'started': started})
+    rows = scenario.list_runs('retry')
+    assert [row['dir'] for row in rows] == [str(normal), str(collision), str(legacy)]
+    assert [row['status'] for row in rows] == ['done', 'done', 'failed']
+    assert (legacy / 'meta.json').read_bytes() == original
+
+
+@pytest.mark.parametrize('error_type', [PermissionError, OSError])
+def test_run_directory_noncollision_errors_propagate(tmp_path, monkeypatch, error_type):
+    from pathlib import Path
+    scenario = _freeze_run_allocation_clock(monkeypatch, tmp_path)
+    error = error_type('allocation denied')
+    calls = []
+    def fail_mkdir(path, *args, **kwargs):
+        calls.append(path)
+        raise error
+    monkeypatch.setattr(Path, 'mkdir', fail_mkdir)
+    with pytest.raises(error_type) as caught:
+        scenario.new_run_dir('retry', 'full')
+    assert caught.value is error
+    assert len(calls) == 1
+
+
+
+@pytest.mark.parametrize('error_type', [PermissionError, OSError])
+def test_run_directory_fallback_errors_preserve_existing_run(tmp_path, monkeypatch, error_type):
+    scenario = _freeze_run_allocation_clock(monkeypatch, tmp_path)
+    existing = scenario.new_run_dir('retry', 'full')
+    sentinel = existing / 'saved-result.bin'
+    sentinel.write_bytes(b'historical evidence\x00unchanged')
+    original = sentinel.read_bytes()
+    error = error_type('fallback allocation denied')
+    calls = []
+    def fail_mkdtemp(*args, **kwargs):
+        calls.append((args, kwargs))
+        raise error
+    monkeypatch.setattr(scenario.tempfile, 'mkdtemp', fail_mkdtemp)
+    with pytest.raises(error_type) as caught:
+        scenario.new_run_dir('retry', 'full')
+    assert caught.value is error
+    assert calls == [((), {'prefix': '20261108-123456-123456-',
+                          'suffix': '_full', 'dir': existing.parent})]
+    assert sentinel.read_bytes() == original
+    assert list(existing.iterdir()) == [sentinel]
+    assert list(existing.parent.iterdir()) == [existing]

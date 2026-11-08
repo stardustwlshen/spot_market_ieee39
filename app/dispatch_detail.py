@@ -100,9 +100,11 @@ def _reset_filters(keys: dict[str, str]):
         st.session_state.pop(key, None)
 
 
-def dispatch_detail_table(source: pd.DataFrame | None, stage: str, *, result_key: str, period_hours: float = 0.25) -> pd.DataFrame:
-    """Render one searchable table; both downloads use exactly its filtered rows."""
+def dispatch_detail_table(source: pd.DataFrame | None, stage: str, *, result_key: str, period_hours: float = 0.25, prices=None) -> pd.DataFrame:
+    """Render quantities and their node price with one filtered download."""
     frame = dispatch_plan_frame(source, period_hours=period_hours)
+    if prices is not None:
+        frame = dispatch_with_prices(frame, prices, stage)
     st.subheader("逐主体实际出力与执行电量" if stage == "实时" else "逐主体出力与中标电量")
     st.caption(
         ("实时仅显示已执行时段；区外来电沿用同一时段的日前固定计划。" if stage == "实时"
@@ -146,7 +148,7 @@ def dispatch_detail_table(source: pd.DataFrame | None, stage: str, *, result_key
     # silently hiding incomplete historical records on the default view.
     active_range = tuple(period_range) if periods and tuple(period_range) != (periods[0], periods[-1]) else None
     filtered = filter_dispatch_plan(frame, units=units, resource_types=types, period_range=active_range)
-    st.caption(f"当前显示 {len(filtered):,} / {len(frame):,} 条 · {stage} · 下载仅含下表筛选结果")
+    st.caption(f"当前显示 {len(filtered):,} / {len(frame):,} 条 · {stage}")
     missing = [column_label(c) for c in ("unit", "type", "period", "P_mw") if c not in frame]
     if missing:
         st.caption("未记录字段：" + "、".join(missing) + "；缺失值保持未知。")
@@ -154,11 +156,20 @@ def dispatch_detail_table(source: pd.DataFrame | None, stage: str, *, result_key
         st.info("没有符合条件的记录。可调整筛选，或点击“显示全部”。")
     show_df(dispatch_display_frame(filtered, stage), "%.2f", height=280)
     basename = f"dispatch_{'rt_executed' if stage == '实时' else 'da_awarded'}_filtered"
-    st.download_button("下载当前筛选结果（中文 CSV）", dispatch_csv_bytes(filtered, stage),
-                       file_name=basename + "_中文.csv", mime="text/csv", key=f"{prefix}:download",
-                       disabled=filtered.empty)
-    with st.expander("原始字段兼容下载（同一筛选范围）"):
-        st.download_button("下载当前筛选结果（原字段 CSV）", dispatch_csv_bytes(filtered, stage, chinese=False),
-                           file_name=basename + ".csv", mime="text/csv", key=f"{prefix}:download_raw",
-                           disabled=filtered.empty)
+    pass  # Result download controls removed.
     return filtered
+
+
+def dispatch_with_prices(frame, prices, stage):
+    """A quantity is priced at its own saved node and period, never an average."""
+    from unit_overview import saved_price_schema
+    out = frame.copy()
+    prices = prices.copy() if isinstance(prices, pd.DataFrame) else pd.DataFrame()
+    field, label, _names, _known = saved_price_schema(prices, 'rt' if stage == '实时' else 'da')
+    if not {'bus', 'period'} <= set(out) or not {'bus', 'period', field} <= set(prices):
+        out[label] = float('nan')
+        return out
+    if prices.duplicated(['bus', 'period']).any():
+        raise ValueError('节点电价的时段与节点记录重复，不能合并到机组电量')
+    return out.merge(prices[['bus', 'period', field]].rename(columns={field: label}),
+                     on=['bus', 'period'], how='left', validate='many_to_one', sort=False)

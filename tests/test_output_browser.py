@@ -36,7 +36,7 @@ def test_output_browser_filter_and_unknown_history(tmp_path):
     assert not app.exception
     assert len(app.dataframe[0].value)==1
     assert '理想化研究假设' in ' '.join(x.value for x in app.caption)
-    assert len(app.get('download_button'))==3
+    assert not app.get('download_button')
     # Altering an archived file is reported, not silently trusted.
     (tmp_path/'rt_units.csv').write_text('period,unit,P_mw\n0,TIE,99\n')
     app.run()
@@ -46,7 +46,7 @@ def test_output_browser_filter_and_unknown_history(tmp_path):
     assert not history.exception and not history.selectbox
 
 
-def test_broken_optional_csv_keeps_selector_and_raw_download(tmp_path):
+def test_broken_optional_csv_keeps_selector_without_downloads(tmp_path):
     archive(tmp_path)
     broken = tmp_path / 'diagnostic.csv'
     broken.write_text('period,unit,value\n0,C1,"unclosed')
@@ -56,7 +56,7 @@ def test_broken_optional_csv_keeps_selector_and_raw_download(tmp_path):
     app = AppTest.from_string(f"from output_browser import render_output_browser\nrender_output_browser({str(tmp_path)!r})").run()
     assert not app.exception
     assert any('此文件无法解析' in x.value for x in app.error)
-    assert len(app.get('download_button')) == 2  # raw file and index, not a fabricated parsed table
+    assert not app.get('download_button')  # Preserve on-screen evidence, no downloads requested.
     app.selectbox[0].set_value('rt_units.csv').run()
     assert not app.exception and not app.error
     assert len(app.dataframe[0].value) == 2

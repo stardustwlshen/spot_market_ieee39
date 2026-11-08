@@ -270,145 +270,146 @@ def build_unit_overview(result, uid, *, id_tau=None, diagnostics=None):
     return out
 
 
-def comparison_figure(comparison):
-    """Keep the same stage colors/line styles as the rest of the result page."""
+COMPACT_PROFIT_COLUMNS = {
+    'da_cash_revenue_yuan': '日前现金 · 元',
+    'rt_deviation_cash_revenue_yuan': '实时偏差现金 · 元',
+    'cash_revenue_yuan': '总收入 · 元',
+    'cash_operating_cost_yuan': '成本 · 元',
+    'simulated_operating_profit_yuan': '利润 · 元',
+}
+
+
+def compact_profit_table(data):
+    """Six presentation columns; preserve missing evidence and archived details."""
+    cash, detail = data['cash'], data['profit_period']
+    base = detail if not detail.empty else cash
+    if base.empty:
+        return pd.DataFrame(columns=['时间', *COMPACT_PROFIT_COLUMNS.values()])
+    table = base[['period']].copy()
+    for field in COMPACT_PROFIT_COLUMNS:
+        if field in base:
+            table[field] = base[field]
+        elif field in cash:
+            table[field] = table.period.map(cash.set_index('period')[field])
+        else:
+            table[field] = np.nan
+    labels = data['comparison'].set_index('period')['时刻']
+    table.insert(0, '时间', table.period.map(labels))
+    return table.drop(columns='period').rename(columns=COMPACT_PROFIT_COLUMNS)
+
+
+def comparison_figure(comparison, stages=('da', 'id', 'rt')):
+    """Saved stage traces, with gaps left visible."""
     import plotly.graph_objects as go
     figure = go.Figure()
     styles = {'da': (DA_COLOR, 'solid'), 'id': ('#2e8b80', 'dot'), 'rt': (RT_COLOR, 'dash')}
-    for stage, label in POWER.items():
+    for stage in stages:
+        label = POWER[stage]
         color, dash = styles[stage]
         figure.add_scatter(x=comparison['时刻'], y=comparison[label], name=label,
                            mode='lines', connectgaps=False, line=dict(color=color, dash=dash, width=2))
-    return style_fig(figure, x='时刻', y='净出力 MW', height=330, hover='x unified')
+    return style_fig(figure, x='时间', y='净出力 MW', height=330, hover='x unified')
 
 
-def render_unit_overview(result, *, diagnostics=None, prefix='unit_overview'):
-    """Add one independent entry without changing any existing stage tabs or outputs."""
+def render_unit_overview(result, *, diagnostics=None, prefix='unit_overview', economics=None):
+    """Primary unit analysis, with saved technical evidence available on demand."""
     try:
         catalog = unit_catalog(result)
     except (ValueError, TypeError, KeyError) as exc:
-        st.warning('逐主体总览不可用：' + str(exc))
+        st.warning('机组目录不可用：' + str(exc))
         return
     if catalog.empty:
+        st.info('未保存机组结果。')
         return
-    with st.expander('机组/电站总览：日前、日内、实时与利润', expanded=True):
-        st.caption('一次选择同一主体，查看本次保存的跨阶段出清与最终现金核算。日前是计划，日内是参考，实时仅含已执行首段。')
-        uid = st.selectbox('总览机组/电站', catalog.unit.tolist(), key=prefix + ':unit')
-        try:
-            inv = round_inventory(result, diagnostics)
-        except (ValueError, TypeError, KeyError, AttributeError):
-            inv = pd.DataFrame()
-            st.warning('日内轮次清单无法核对；不猜测参考轮次。')
-        tau = None
-        if not inv.empty:
-            n, dt = result_time_grid(result)
-            time_labels = period_labels(n, dt)
-            taus = list(inv.tau)
-            tau = st.selectbox('总览日内轮次（参考，不结算）', taus,
+    uid = st.selectbox('机组/电站', catalog.unit.tolist(), key=prefix + ':unit')
+    try:
+        inv = round_inventory(result, diagnostics)
+    except (ValueError, TypeError, KeyError, AttributeError):
+        inv = pd.DataFrame()
+        st.warning('日内轮次清单无法核对，不猜测参考轮次。')
+    has_rt = not frame(result.get('rt_units')).empty
+    available = ['da'] + (['id'] if not inv.empty else []) + (['rt'] if has_rt else [])
+    choices = (['对比'] if len(available) > 1 else []) + [{'da': '日前', 'id': '日内', 'rt': '实时'}[stage] for stage in available]
+    stage_choice = st.radio('出力视图', choices, horizontal=True, key=prefix + ':stage')
+    if inv.empty:
+        st.caption('日内未启用或未保存轮次。')
+    tau = None
+    if not inv.empty:
+        n, dt = result_time_grid(result)
+        time_labels = period_labels(n, dt)
+        taus = list(inv.tau)
+        saved_tau = st.session_state.get(prefix + ':saved_id_tau', taus[0])
+        tau = saved_tau if saved_tau in taus else taus[0]
+        if stage_choice in ('对比', '日内'):
+            tau = st.selectbox('日内轮次（参考，不结算）', taus, index=taus.index(tau),
                                format_func=lambda t: f'{time_labels[int(t)]} · {inv.loc[inv.tau.eq(t), "status"].iloc[0]}', key=prefix + ':id_tau')
-        else:
-            st.caption('日内未启用或未保存轮次；对应列保持空白。')
-        try:
-            data = build_unit_overview(result, uid, id_tau=tau, diagnostics=diagnostics)
-        except (ValueError, TypeError, KeyError, AttributeError) as exc:
-            st.warning('所选主体总览不可用，其他结果入口仍可查看：' + str(exc))
-            return
-        identity = data['identity']; kind = identity['type']
-        st.markdown(f'**{uid} · {TYPE_CN.get(kind, kind)} · 节点 {identity.get("bus", "未记录")}**')
-        if kind in ('hydro', 'pumped'):
-            st.info('这是电站聚合主体：台数是工况信息，出清和利润不是逐台转子结果。')
-        if kind == 'tie':
-            st.info('区外来电为固定外生计划；可看保存的出力和结算，不参加SCUC/SCED主体优化，不纳入当前运营成本与利润核算。')
-        for notice in data['notices']:
-            st.warning(notice)
-        scope = []
-        for stage, rows in data['stage_rows'].items():
-            scope.append(f'{STAGE[stage]}：' + (f'{len(rows)} 段，序号 {int(rows.period.min())}–{int(rows.period.max())}' if not rows.empty else '未提供'))
-        st.caption('；'.join(scope) + '。空白不等于0，日内轮次不累加，实时前瞻量不冒充已执行量。')
-        tabs = st.tabs(['同主体出清对照', '同主体状态明细', '同主体结算与利润', '同主体数据来源'])
-        with tabs[0]:
-            comparison = data['comparison']
-            show_fig(comparison_figure(comparison), key=prefix + ':comparison_chart')
-            st.dataframe(display_frame(comparison), hide_index=True, width='stretch')
-            df_download(comparison, f'{uid}_DA_ID_RT_comparison.csv', label='下载所选主体跨阶段CSV', key=prefix + ':comparison')
-            st.caption('功率和电量均为带符号净值，充电/抽水为负。ID价格是指示价；日前与实时仅在已保存字段/来源可确认时标为选用结算价，否则明确标注口径未记录。价格和出力不同于利润。')
-        with tabs[1]:
-            for stage in ('da', 'id', 'rt'):
-                st.markdown('**' + STAGE[stage] + '**')
-                states = data['states'].get(stage)
-                if states is None or states.empty:
-                    st.caption('该主体本阶段状态明细未提供，不反推或补造。')
-                else:
-                    names = {'units_on': '水电开机台数', 'units_start': '水电期初开机台数', 'P_start_mw': '水电时段初出力 MW'}
-                    st.dataframe(display_frame(states.rename(columns=names)), hide_index=True, width='stretch')
-            st.caption('储能电量单位MWh，水电/抽蓄库容单位万m³，流量单位m³/s。日内状态是参考计划，不是实际执行轨迹。')
-        with tabs[2]:
-            cash = data['cash']; profit = data['profit']; detail = data['profit_period']
-            st.caption('模拟运营利润 = 日前现金结算 + 实时偏差现金结算 − 按实际RT执行量核算的运营成本。ID、SCUC及辅助定价没有独立实际利润。')
-            if cash.empty:
-                st.info('本主体现金结算未提供或尚未执行结算；不以现价×功率推算实际收入。')
-                da = data['stage_rows']['da']
-                if not da.empty and 'revenue_yuan' in da:
-                    values = pd.to_numeric(da.revenue_yuan, errors='coerce')
-                    if np.isfinite(values.to_numpy()).all():
-                        st.metric('日前中标计划金额（非实际利润）· 元', f'{values.sum():,.2f}')
+        st.session_state[prefix + ':saved_id_tau'] = tau
+    try:
+        data = build_unit_overview(result, uid, id_tau=tau, diagnostics=diagnostics)
+    except (ValueError, TypeError, KeyError, AttributeError) as exc:
+        st.warning('所选主体结果不可用：' + str(exc))
+        return
+    identity = data['identity']; kind = identity['type']
+    st.caption(f'{TYPE_CN.get(kind, kind)} · 节点 {identity.get("bus", "未记录")}')
+    if kind in ('hydro', 'pumped'):
+        st.info('电站聚合主体，台数仅为工况信息。')
+    if kind == 'tie':
+        st.caption('固定交换计划；成本和利润不纳入当前核算。')
+    for notice in data['notices']:
+        st.warning(notice)
+    expected, _ = result_time_grid(result)
+    executed = len(data['stage_rows']['rt'])
+    settled = len(data['cash'])
+    summary = result.get('summary') or {}
+    verified_full_day = (summary.get('completed_scope') == 'full_day'
+                         and summary.get('settlement_scope') == 'full_day'
+                         and summary.get('settlement_calculated') is True
+                         and summary.get('settled') is True
+                         and summary.get('executed_periods') == expected
+                         and summary.get('expected_periods') == expected
+                         and executed == expected and settled == expected)
+    if not has_rt:
+        st.caption('仅日前计划，无实时执行与偏差结算。')
+    elif verified_full_day:
+        st.caption(f'全天结算已完成 · {settled} 段')
+    elif executed != expected or settled != expected:
+        st.warning(f'尚未完成全天结算：实时执行 {executed}/{expected} 段，现金结算 {settled}/{expected} 段。')
+    else:
+        st.warning('全天结算状态未核实：缺少完整的全天完成记录。')
+    comparison = data['comparison']
+    stages = {'对比': tuple(available), '日前': ('da',), '日内': ('id',), '实时': ('rt',)}[stage_choice]
+    show_fig(comparison_figure(comparison, stages), key=prefix + ':comparison_chart')
+    st.caption('日前为计划，日内仅供参考，实时为实际执行；空白不等于 0。')
+    cash, profit, detail = data['cash'], data['profit'], data['profit_period']
+    if kind != 'tie':
+        from result_economics_view import render_economics
+        render_economics(result, uid=uid, prefix=prefix + ':economics', prepared=economics)
+    with st.expander('完整明细'):
+        st.dataframe(display_frame(comparison), hide_index=True, width='stretch')
+        pass  # Result download controls removed.
+        if not data['inventory'].empty:
+            st.dataframe(display_frame(data['inventory']), hide_index=True, width='stretch')
+        st.caption('利润 = 日前现金 + 实时偏差现金 − 实际执行成本。充电/抽水结算已计入现金，不重复扣除；库存不估值。不含资本、融资、税费及补贴等，不等于企业净利润。')
+    with st.expander('运行状态'):
+        for stage in ('da', 'id', 'rt'):
+            st.markdown('**' + STAGE[stage] + '**')
+            states = data['states'].get(stage)
+            if states is None or states.empty:
+                st.caption('该主体本阶段状态明细未提供，不反推或补造。')
             else:
-                columns = st.columns(3)
-                for col, field, title in zip(columns, ('da_cash_revenue_yuan', 'rt_deviation_cash_revenue_yuan', 'cash_revenue_yuan'), ('日前现金结算 · 元', '实时偏差结算 · 元', '净能量现金结算 · 元')):
-                    col.metric(title, f'{cash[field].sum():,.2f}')
-            if kind == 'tie':
-                st.caption('TIE运营成本与利润：不纳入当前核算，不显示为0。')
-            elif profit.empty:
-                st.info('本次未提供可核实的主体运营成本与利润；不能用报价或零成本代替。原有“收入与成本”页可查看历史补算入口。')
+                names = {'units_on': '水电开机台数', 'units_start': '水电期初开机台数', 'P_start_mw': '水电时段初出力 MW'}
+                st.dataframe(display_frame(states.rename(columns=names)), hide_index=True, width='stretch')
+        st.caption('储能电量单位MWh，水电/抽蓄库容单位万m³，流量单位m³/s。日内状态是参考计划，不是实际执行轨迹。')
+    with st.expander('价格与成本来源'):
+        st.caption('仅使用当前选定结果的存档；界面更新不表示重新出清。')
+        for stage in ('da', 'id', 'rt'):
+            st.markdown('**' + STAGE[stage] + '价格与来源**')
+            prices = data['price_sources'].get(stage)
+            if prices is None or prices.empty:
+                st.caption('未保存可核对的本主体节点价格。')
             else:
-                row = profit.iloc[0]
-                cols = st.columns(2)
-                for col, field, label in zip(cols, ('cash_operating_cost_yuan', 'simulated_operating_profit_yuan'), ('现金运营成本 · 元', '模拟运营利润 · 元')):
-                    value = row.get(field)
-                    col.metric(label, '未提供' if pd.isna(value) else f'{value:,.2f}')
-                if not profit.cost_available.eq(True).all():
-                    st.warning('成本参数不完整，成本和利润未提供；现金结算仍可查看。')
-                show = [c for c in ('unit', 'type', *MONEY, 'charging_settlement_yuan', 'cost_available', 'cost_missing_reason') if c in profit]
-                st.dataframe(display_frame(profit[show]), hide_index=True, width='stretch')
-                if not data['inventory'].empty:
-                    st.dataframe(display_frame(data['inventory']), hide_index=True, width='stretch')
-            st.caption('充电/抽水结算已在净现金内，不重复扣除；库存变化单列且不货币化。成本独立于报价，不含调度松弛罚值、水机会价、资本、融资、税费、容量/调频收益和补偿，不是企业净利润。')
-            if not detail.empty:
-                st.dataframe(display_frame(detail), hide_index=True, width='stretch')
-                df_download(detail, f'{uid}_operating_profit_by_period.csv', label='下载所选主体逐时利润CSV', key=prefix + ':profit')
-            elif not cash.empty:
-                st.dataframe(display_frame(cash), hide_index=True, width='stretch')
-            if not cash.empty:
-                df_download(cash, f'{uid}_cash_by_period.csv', label='下载所选主体逐时现金CSV', key=prefix + ':cash')
-        with tabs[3]:
-            st.caption('仅使用当前选定结果的存档；界面更新不表示重新出清。')
-            for stage in ('da', 'id', 'rt'):
-                st.markdown('**' + STAGE[stage] + '价格与来源**')
-                prices = data['price_sources'].get(stage)
-                if prices is None or prices.empty:
-                    st.caption('未保存可核对的本主体节点价格。')
-                else:
-                    if 'pricing_source' not in prices:
-                        st.caption('定价来源字段未记录，不推断原始对偶或辅助定价。')
-                    st.dataframe(display_frame(prices), hide_index=True, width='stretch')
-            if kind != 'tie':
-                source = data['cost_source']
-                st.caption('成本数据来源：' + (str(value_label(source)) if isinstance(source, str) and source else '未提供'))
-                cost_hash = data['cost_hash']
-                st.caption('存档成本校验指纹：' + (str(cost_hash) if isinstance(cost_hash, str) and cost_hash else '未提供'))
-                directory = Path(result.get('dir', ''))
-                path = directory / 'fixed_cost_profile.json'
-                if result.get('dir') and path.is_file():
-                    try:
-                        profile = json.loads(path.read_text(encoding='utf-8'))
-                        params = profile.get('units', {}).get(uid)
-                        if params and profile.get('sha256') == cost_hash:
-                            labels = {'type': '资源类型', 'scalar_marginal_cost_yuan_per_mwh': '固定单位运营成本 元/MWh', 'fixed_online_cost_yuan_per_h': '在线成本 元/h', 'fixed_startup_cost_yuan_per_start': '启动成本 元/次', 'discharge_degradation_yuan_per_mwh': '放电损耗成本 元/MWh', 'generation_vom_yuan_per_mwh': '抽蓄发电运维成本 元/MWh', 'gen_start_yuan_per_unit_start': '抽蓄发电启动成本 元/台次', 'pump_start_yuan_per_unit_start': '抽蓄抽水启动成本 元/台次'}
-                            st.dataframe(pd.DataFrame([{'参数': labels.get(k, k), '值': str(value_label(v))} for k, v in params.items()]), hide_index=True, width='stretch')
-                            st.caption('参数来自本次保存的解析后固定成本副本；指纹一致性不等同于重新验证原始成本文件字节。')
-                        else:
-                            st.caption('解析后成本副本缺本主体或指纹不一致，不作为该利润的核算参数展示。')
-                    except (OSError, ValueError, TypeError, AttributeError):
-                        st.caption('解析后成本副本无法读取；不借用当前场景成本。')
-                else:
-                    st.caption('未保存解析后成本参数副本，不借用当前场景成本。')
+                if 'pricing_source' not in prices:
+                    st.caption('定价来源字段未记录，不推断原始对偶或辅助定价。')
+                st.dataframe(display_frame(prices), hide_index=True, width='stretch')
+        if kind != 'tie':
+            st.caption('成本参数见上方本次成本口径；旧历史混合成本不作为当前现货利润依据。')

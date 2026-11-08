@@ -15,6 +15,7 @@ import datetime as _dt
 import json
 import re
 import shutil
+import tempfile
 from pathlib import Path
 
 from .config import ROOT
@@ -216,5 +217,11 @@ def list_runs(scenario: str | None = None) -> list[dict]:
 def new_run_dir(scenario: str, mode: str) -> Path:
     ts = _dt.datetime.now().strftime("%Y%m%d-%H%M%S-%f")
     d = RUNS_DIR / _check_name(scenario) / f"{ts}_{mode}"
-    d.mkdir(parents=True, exist_ok=False)
+    try:
+        d.mkdir(parents=True, exist_ok=False)
+    except FileExistsError:
+        # Wall-clock microseconds are not unique, especially on Windows. Keep
+        # existing evidence untouched and let the OS claim a fresh directory
+        # exclusively, including competing launches in other processes.
+        d = Path(tempfile.mkdtemp(prefix=f"{ts}-", suffix=f"_{mode}", dir=d.parent))
     return d

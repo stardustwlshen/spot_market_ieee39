@@ -22,7 +22,7 @@ def thermal_case():
         init=dict(online=False,p0=0.,hours=48.))
     c.bids['units']['LOCAL']['startup_cost']={k:1. for k in ['hot','warm','cold']}
     c.bids['units']['LOCAL']['noload_cost']=10.
-    cfg.mode['reserve'].update(include_ctg=False,rho_L=0.,rho_RE=0.,rho_L_dn=0.,rho_RE_dn=0.)
+    cfg.mode['reserve'].update(up_requirement_mode='formula',include_ctg=False,rho_L=0.,rho_RE=0.,rho_L_dn=0.,rho_RE_dn=0.)
     cfg.mode['intraday'].update(enabled=True,interval_h=1,time_limit_s=10,mip_rel_gap=0,lead_issue_periods=1)
     cfg.mode['realtime'].update(lookahead_h=.25,time_limit_s=10,mip_rel_gap=0,hydro='value')
     cfg.mode['realtime']['storage']['mode']='value'

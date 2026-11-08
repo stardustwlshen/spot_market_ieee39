@@ -4,6 +4,7 @@ from concurrent.futures import ThreadPoolExecutor
 import json
 from pathlib import Path
 import shutil
+import sys
 import threading
 
 import pytest
@@ -237,7 +238,7 @@ def test_saved_all_types_complete_small_market_pipeline(scene):
     base['solver'].update(time_limit_s=20, mip_rel_gap=0.)  # Keep suite-wide HiGHS thread pool size.
     (scene / 'config/base.yaml').write_text(yaml.safe_dump(base))
     modes = yaml.safe_load((scene / 'config/modes.yaml').read_bytes())
-    modes['MKT']['reserve'].update(include_ctg=False, rho_L=0., rho_RE=0., rho_L_dn=0., rho_RE_dn=0.)
+    modes['MKT']['reserve'].update(up_requirement_mode='formula',include_ctg=False, rho_L=0., rho_RE=0., rho_L_dn=0., rho_RE_dn=0.)
     modes['MKT']['intraday']['enabled'] = False
     (scene / 'config/modes.yaml').write_text(yaml.safe_dump(modes))
     (scene / 'data/case39/buses.csv').write_text('bus,load_mw\n31,50\n32,50\n')
@@ -283,7 +284,8 @@ def test_disabling_and_reenabling_keeps_prior_quote_in_history(scene):
     assert 'ES1' in json.loads((scene / 'current_quote.json').read_bytes())['draft']['units']
 
 
-def test_no_id_or_type_change_during_edit_and_no_symlink_write(scene, tmp_path):
+def test_no_id_or_type_change_during_edit(scene):
+    before = input_bytes(scene)
     unit = next(u for g,u in catalog(scene) if u['id'] == 'C1')
     unit['id'] = 'OTHER'
     with pytest.raises(ValueError, match='不能改编号'):
@@ -291,11 +293,21 @@ def test_no_id_or_type_change_during_edit_and_no_symlink_write(scene, tmp_path):
     unit.update(id='C1', type='gas_gt')
     with pytest.raises(ValueError, match='不能改类型'):
         prepare_unit_edit(scene, 'thermal', unit, original_id='C1')
+    assert input_bytes(scene) == before
+
+
+def test_no_symlink_write_during_unit_edit(scene, tmp_path):
     original = input_bytes(scene)
     external = tmp_path / 'external-cost.yaml'
     external.write_bytes((scene / 'config/fixed_costs.yaml').read_bytes())
     (scene / 'config/fixed_costs.yaml').unlink()
-    (scene / 'config/fixed_costs.yaml').symlink_to(external)
+    try:
+        (scene / 'config/fixed_costs.yaml').symlink_to(external)
+    except OSError as exc:
+        if sys.platform == 'win32' and getattr(exc, 'winerror', None) == 1314:
+            assert external.read_bytes() == original['config/fixed_costs.yaml']
+            pytest.skip('Windows user lacks symbolic-link privilege (WinError 1314)')
+        raise
     with pytest.raises(ValueError, match='符号链接'):
         prepare_unit_edit(scene, 'storage', unit_template('storage','NEW',31))
     assert external.read_bytes() == original['config/fixed_costs.yaml']

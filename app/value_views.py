@@ -185,7 +185,7 @@ def render_hydro_terminal_lookahead(R, key, window_start=None):
                '进入日末窗口后不重复添加该项，改由上述日末软目标计罚；它也不属于紧急回退。'
                '时段序号从0起，缺字段保持未记录或缺失。')
     show_df(hydro_lookahead_details(frame), '%.3f', height=300)
-    df_download(frame, 'rt_hydro_terminal_lookahead.csv', key=key + ':hydro-lookahead-dl')
+    pass  # Result download controls removed.
 
 
 def _bus_of(R, unit):
@@ -236,7 +236,7 @@ def render_da_values(R, lbl, key):
             with st.expander('终态目标对偶与日末延续价值（不同口径）', expanded=False):
                 st.caption('终态目标对偶衡量改变终态目标的边际影响；不是实时日末的额外留能奖励。未记录的对偶不补零。')
                 show_df(terminal[[c for c in columns if c in terminal]].rename(columns=columns), '%.3f')
-    df_download(vc, 'da_value_curves.csv', key=key + ':dl')
+    pass  # Result download controls removed.
 
 
 def render_rt_values(R, lbl, key):
@@ -285,8 +285,8 @@ def render_rt_values(R, lbl, key):
             show = hit.copy(); show.insert(1, '时刻', [lbl[int(t)] for t in show.period])
             with st.expander(f'候选时段明细（{len(hit)} 行）'):
                 show_df(show, '%.2f', height=300)
-        df_download(ps, 'rt_value_price_setting.csv', key=key + ':ps')
-    df_download(w, 'rt_value_windows.csv', key=key + ':dl')
+        pass  # Result download controls removed.
+    pass  # Result download controls removed.
 
 
 def render_window_browser(R, lbl, key):
@@ -430,4 +430,4 @@ def render_value_compare(RA, RB, lbl, key, names=('方案甲', '方案乙')):
         summary.append({'主体': u, f'{names[0]} 均值 元/MWh': a.mean(), f'{names[1]} 均值 元/MWh': b.mean(),
                         '差值均值 元/MWh': d.mean(), '最大绝对差 元/MWh': d.abs().max()})
     show_df(pd.DataFrame(summary), '%.2f')
-    df_download(rows, f'compare_value_curve_{unit}.csv', key=key + ':dl')
+    pass  # Result download controls removed.

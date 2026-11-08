@@ -153,7 +153,7 @@ def test_network_capacity_separates_disabled_and_storage_energy(network_cfg):
     assert storage['发电/放电容量（MW）'] == 700.
     pumped = next(r for r in rows if r['资源类型'] == '抽水蓄能')
     assert pumped['发电/放电容量（MW）'] == pumped['充电/抽水容量（MW）'] == 600.
-    assert pumped['抽蓄可用发电能量（MWh）'] == 3744.
+    assert pumped['抽蓄有效库容发电容量（MWh）'] == 3744.
     assert any(unit['id'] == 'H2' and not unit['enabled'] for _, unit in scenario_unit_catalog(network_cfg))
 
 

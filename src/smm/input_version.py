@@ -66,7 +66,9 @@ def source_version(root, *, bids=None, bid_version=None, options=None, quote_pol
         else:
             bids = default_bids(cfg)
     resolved = effective_bids(cfg, fill_missing_bids(cfg, bids))
-    return dict(schema=SCHEMA, source=file_fingerprint(root, ('config', 'data', 'bids')),
+    from .reserve_policy import for_new_run, policy_record
+    return dict(schema=SCHEMA, reserve_policy=policy_record(for_new_run(cfg)),
+                source=file_fingerprint(root, ('config', 'data', 'bids')),
                 current_quote=digest(quote), resolved_bids=bid_digest(resolved),
                 quote_policy=quote_policy, bid_version=bid_version,
                 run_options=copy.deepcopy(options),
@@ -126,6 +128,15 @@ def compare_source_version(directory, root, *, options=None):
                             message='输入已变化，待重新运行：此图仍是历史运行，不会随当前输入改写。')
             current = source_version(root, bid_version=evidence.get('bid_version'),
                                      quote_policy=evidence['quote_policy'], options=options)
+        saved_policy=evidence.get('reserve_policy')
+        if saved_policy is None:
+            frozen_root=Path(directory)/'scenario_snapshot'
+            if (frozen_root/'config/modes.yaml').is_file():
+                from .config import load_config
+                from .reserve_policy import policy_record
+                saved_policy=policy_record(load_config(root=frozen_root))
+        if saved_policy != current['reserve_policy']:
+            changes.append('新运行备用策略 / 历史冻结备用策略')
         if current['resolved_bids'] != evidence['resolved_bids']:
             changes.append('实际解析报价')
         if valid_options(options) and valid_options(evidence['run_options']) and options != evidence['run_options']:

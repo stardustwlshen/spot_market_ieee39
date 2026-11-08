@@ -12,7 +12,8 @@ def test_linux_reads_system_not_project_identity(monkeypatch):
     monkeypatch.setattr(mi, 'sys', SimpleNamespace(platform='linux'))
     calls = []
     def read(path, *args, **kw):
-        calls.append(str(path))
+        # Preserve the exact system paths while ignoring host path separators.
+        calls.append(path.as_posix())
         return UUID
     monkeypatch.setattr(mi.Path, 'read_text', read)
     machine, boot = mi.machine_identity(), mi.boot_identity()

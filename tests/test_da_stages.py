@@ -23,7 +23,7 @@ def tiny_case(reserve=500.0, local_price=700.0):
     cfg.mode["auxiliary_pricing"]["rt_tracking_policy"] = "preserve"
     cfg.mode["auxiliary_pricing"].pop("anchor_penalty_yuan_per_discharge_mwh", None)
     cfg.mode["realtime"].pop("tracking_policy", None)
-    cfg.mode["reserve"].update(storage_reserve=False, down_enabled=True)
+    cfg.mode["reserve"].update(up_requirement_mode='formula', storage_reserve=False, down_enabled=True)
     # Preserve the original energy-only regression contract when new markets default on.
     if "regulation" in cfg.mode:
         cfg.mode["regulation"]["enabled"] = False

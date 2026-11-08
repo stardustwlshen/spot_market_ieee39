@@ -9,7 +9,7 @@ from smm.advanced_parameters import (fields, get_value, prepare_parameter_edit,
     apply_parameter_edit, effective_rows, price_rows, inactive_reason, readonly_rows, _update)
 from smm.unit_editor import scene_fingerprint
 
-CHOICES={'wet':'丰水期','dry':'枯水期','value':'价值法','sced_anchor':'锚定日前',
+CHOICES={'fixed':'固定总量','formula':'比例与事故公式','wet':'丰水期','dry':'枯水期','value':'价值法','sced_anchor':'锚定日前',
          'fixed_da':'固定日前','window_end_da':'窗口末跟踪日前','sced':'自由SCED',
          'two_hour_eq':'偶数整点等式','hourly_eq':'每小时等式','window_end_pct':'窗口末比例带',
          'hard':'硬约束','soft':'软目标','off':'关闭','reference_continuation':'参考续程',

@@ -1,6 +1,7 @@
 """Independent operator review regressions, isolated from all real scene/run writes."""
 from copy import deepcopy
 import hashlib
+import os
 import json
 from pathlib import Path
 import shutil
@@ -168,6 +169,11 @@ def test_launch_guard_blocks_same_scene_before_new_directory_or_spawn(tmp_path, 
 
 @pytest.fixture
 def archive():
+    supplied = os.environ.get('IEEE39_SAVED_RUN_FOR_UI')
+    if supplied:
+        path = Path(supplied)
+        assert (path / 'summary.json').is_file()
+        return path
     paths = sorted((ROOT / 'outputs').glob('full_*_hydro_final_id_off_*/summary.json'))
     if not paths:
         pytest.skip('latest completed archive not distributed')

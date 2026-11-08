@@ -8,17 +8,16 @@ import streamlit as st
 
 from smm.time_grid import result_time_grid
 
-# 第二轮J项：按出清阶段分块（日前 / 日内·实时滚动 / 最终结果），各阶段子页结构一致
-MAIN_SECTIONS = ['日前', '日内·实时滚动', '最终结果']
+# One business navigation; historical comparison labels remain for optional charts.
+MAIN_SECTIONS = ['系统总览', '机组分析', '价格分析', '网络与安全']
 MAIN_SECTIONS_INTRADAY = MAIN_SECTIONS
-MAIN_SECTIONS_DA_ONLY = ['日前', '最终结果']
+MAIN_SECTIONS_DA_ONLY = MAIN_SECTIONS
 STAGE_SECTIONS = ['关键指标', '节点电价', '发电结构与机组出力', '储能·抽蓄·水电', '备用', '电网与阻塞', '弃风弃光', 'SCUC/SCED与定价结果']
 RT_SECTIONS = STAGE_SECTIONS + ['窗口浏览']
-INTRADAY_SECTIONS = ['关键指标', '节点电价（指示性）', '发电结构与机组出力', '储能·抽蓄·水电', 'SCUC/SCED与定价结果']
-FINAL_SECTIONS = ['关键指标对比', '电价对比', '中标与实际', 'SOC/库容轨迹', '价值曲线', '弃电', '阻塞线路',
-                  '两部制结算恒等式', '收入与成本', '诊断']
-DIAGNOSTIC_SECTIONS = ['未满足项与求解质量', '主体与求解阶段', '完整存档与来源']
-OPERATION_SECTIONS = STAGE_SECTIONS   # 旧名兼容
+INTRADAY_SECTIONS = ['轮次与交接', '指示性价格', '计划出力', '库存状态', '求解阶段']
+FINAL_SECTIONS = ['关键指标对比', '电价对比', '中标与实际', 'SOC/库容轨迹', '价值曲线', '弃电', '阻塞线路', '两部制结算恒等式', '收入与成本', '诊断']
+DIAGNOSTIC_SECTIONS = ['运行检查详情', '求解与兜底记录', '完整存档与来源']
+OPERATION_SECTIONS = []
 
 
 def recorded_number(value, format_spec='.1f'):
@@ -342,44 +341,36 @@ def comparison_frame(result):
 
 
 def build_result_navigation(summary, da_summary, *, directory, full=True, intraday=False):
-    """Stage blocks: DA, (intraday,) RT rolling, final DA-vs-RT comparison with diagnostics."""
+    """Four business sections, with safety warnings visible before navigation."""
     from market_views import result_health_dashboard, result_quality_messages
     from output_browser import render_output_browser
     messages = result_quality_messages(summary, da_summary, directory=directory)
     important = [(level, text) for level, text in messages if level in ('error', 'warning')]
     if important:
         render = st.error if any(level == 'error' for level, _ in important) else st.warning
-        render('本次运行有需要注意的结果：\n\n' + '\n\n'.join('• '+text.split('。')[0]+'。' for _, text in important) + '\n\n完整检查范围与原因见“最终结果 → 诊断”。')
-    st.caption('日前为计划；日内为参考、不结算；实时仅执行首段；辅助模型仅定价。缺失记录不按零处理。'
-               if full else '日前为计划，辅助模型仅定价；缺失记录不按零处理。')
-    sections = MAIN_SECTIONS if full else MAIN_SECTIONS_DA_ONLY
-    main = st.tabs(sections)
-    out = dict(main=main, sections=sections)
-    with main[0]:
-        out['da'] = st.tabs(STAGE_SECTIONS)
+        render('\n\n'.join('• ' + text.split('。')[0] + '。' for _, text in important))
     if full:
-        with main[1]:
-            rolling_tabs = st.tabs(['日内轮次与交接', '实时执行与前瞻'])
-        with rolling_tabs[0]:
-            if not intraday:
-                st.info('本次未启用日内滚动，或旧档未记录启用状态；不虚构日内轮次。实时参考以逐窗口记录为准。')
-            else:
-                out['id'] = st.tabs(INTRADAY_SECTIONS)
-        with rolling_tabs[1]:
-            out['rt'] = st.tabs(RT_SECTIONS)
-    with main[-1]:
-        out['final'] = st.tabs(FINAL_SECTIONS)
-    with out['final'][-1]:
-        diagnostic = st.tabs(DIAGNOSTIC_SECTIONS)
-    with diagnostic[0]:
-        result_health_dashboard(summary, da_summary, directory=directory, messages=messages)
+        expected = summary.get('expected_periods')
+        executed = summary.get('executed_periods', summary.get('periods'))
+        complete = (summary.get('completed_scope') == 'full_day' and expected is not None and executed == expected
+                    and summary.get('settlement_scope') == 'full_day'
+                    and summary.get('settlement_calculated') is True and summary.get('settled') is True)
+        st.caption((f'已完成 {executed}/{expected} 时段 · 全天结算' if complete else
+                    f'已保存 {executed if executed is not None else "未记录"} 时段 · 未确认全天结算') +
+                   (' · 日内为参考，不结算' if intraday else ' · 日内未启用或未记录'))
+    else:
+        st.caption('仅日前计划 · 无实时执行与偏差结算')
+    main = st.tabs(MAIN_SECTIONS)
+    with main[3]:
+        diagnostic = [st.expander(label, expanded=False) for label in DIAGNOSTIC_SECTIONS]
+        with diagnostic[0]:
+            result_health_dashboard(summary, da_summary, directory=directory, messages=messages)
         advanced = st.expander('高级诊断与技术记录（按需查看）', expanded=False)
         with advanced:
             if da_summary.get('pricing_source') == 'bounded_auxiliary_pricing':
-                st.caption('物理出力与状态来自正式调度；结算价采用独立辅助定价并经市场限价。辅助模型数量不执行。')
+                st.caption('正式调度决定出力；辅助模型仅定价，辅助模型数量不执行。')
             gap = da_summary.get('scuc_gap')
-            st.caption('日前混合整数相对间隙：'+('未记录' if gap is None else f'{gap:.2%}'))
-    with diagnostic[2]:
-        render_output_browser(directory)
-    out.update(diagnostic=diagnostic, advanced=advanced)
-    return out
+            st.caption('日前混合整数相对间隙：' + ('未记录' if gap is None else f'{gap:.2%}'))
+        with diagnostic[2]:
+            render_output_browser(directory)
+    return dict(main=main, sections=MAIN_SECTIONS, diagnostic=diagnostic, advanced=advanced)

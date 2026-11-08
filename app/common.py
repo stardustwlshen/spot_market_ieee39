@@ -140,7 +140,10 @@ def style_fig(fig, title: str | None = None, x: str | None = None, y: str | None
 
 
 def show_fig(fig, key=None):
-    st.plotly_chart(localize_figure(fig), width="stretch", key=key, config={"displaylogo": False, "responsive": True})
+    config = {"displaylogo": False, "responsive": True}
+    if st.session_state.get("_hide_result_exports", False):
+        config["modeBarButtonsToRemove"] = ["toImage"]
+    st.plotly_chart(localize_figure(fig), width="stretch", key=key, config=config)
 
 
 def sidebar_nav():
@@ -164,7 +167,11 @@ def sidebar_nav():
 def page_setup(title: str, subtitle: str | None = None):
     st.set_page_config(page_title=f"{title}｜IEEE39 现货出清", page_icon="⚡", layout="wide",
                        initial_sidebar_state="auto")   # 宽屏展开、窄屏自动收起
+    st.session_state["_hide_result_exports"] = title == "运行与出清结果"
     st.markdown(_CSS, unsafe_allow_html=True)
+    if title == "运行与出清结果":
+        # Dataframes and some diagnostic charts have built-in export controls.
+        st.markdown('<style>[data-testid="stDataFrame"] [data-testid="stElementToolbar"] {display:none !important;} a.modebar-btn[data-title*="Download"], a.modebar-btn[data-title*="下载"], a.modebar-btn[data-title*="Save"] {display:none !important;}</style>', unsafe_allow_html=True)
     sidebar_nav()
     from runtime_notices import render_runtime_notice
     render_runtime_notice(ROOT)

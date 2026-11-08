@@ -75,6 +75,9 @@ from advanced_parameters import render_advanced_parameters, render_effective_par
 render_advanced_parameters(cfg, name, disabled=active)
 render_effective_parameters(cfg)
 
+from reserve_policy_controls import render_reserve_policy
+render_reserve_policy(cfg)
+
 c1, c2 = st.columns(2)
 mode = c1.radio("运行模式", ["full", "da"], format_func=lambda value: {"da": "仅日前", "full": "全天：日前→实时→结算"}[value], horizontal=True, disabled=active)
 short_run = c2.checkbox("短时试跑", value=False, disabled=active or mode == 'da')

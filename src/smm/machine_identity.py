@@ -50,6 +50,8 @@ def machine_identity():
 def boot_identity():
     """Kernel boot session, independent of adjustable wall-clock boot_time.
 
+Windows SystemBootEnvironmentInformation.BootIdentifier has no verified per-boot
+uniqueness contract here; a boot-loader identifier is not session evidence.
 No Windows fallback to timestamp/registry heuristics: without a verified session
 identifier reboot recovery remains unavailable, though same-boot inspection works.
 """

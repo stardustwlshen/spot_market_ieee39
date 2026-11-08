@@ -30,15 +30,15 @@ def test_failed_only_id_inventory_and_unknown_old_evidence():
     assert both.tau.tolist()==[0,4] and both.success.tolist()==[False,True]
 
 
-def test_three_main_blocks_for_enabled_id_and_failure_only(tmp_path):
+def test_four_business_sections_for_enabled_id_and_failure_only(tmp_path):
     for intraday in (True,False):
         code=f"import sys\nsys.path.insert(0,{str(ROOT/'app')!r})\nfrom result_navigation import build_result_navigation\nbuild_result_navigation({{}},{{}},directory={str(tmp_path)!r},intraday={intraday})"
         at=AppTest.from_string(code,default_timeout=30).run()
         assert not at.exception
         labels=[x.label for x in at.tabs]
-        assert [x for x in labels if x in ('日前','日内·实时滚动','最终结果')]==['日前','日内·实时滚动','最终结果']
-        assert '日内轮次与交接' in labels and '实时执行与前瞻' in labels
-        assert '实时' not in labels
+        assert labels == ['系统总览', '机组分析', '价格分析', '网络与安全']
+        assert all(not x.proto.expanded for x in at.expander)
+        assert any(x.label == '完整存档与来源' for x in at.expander)
 
 
 def test_id_progress_does_not_execute_or_settle(tmp_path):

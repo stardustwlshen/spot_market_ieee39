@@ -22,7 +22,7 @@ def hydro_case(T=10):
     cfg.mode['realtime']['hydro']='window_end_da'
     cfg.mode['realtime']['storage']['mode']='sced_anchor'  # 第二轮：默认价值法；历史水电滚动夹具显式保留锚点模式
     cfg.mode['realtime']['lookahead_h']=2.
-    cfg.mode['reserve'].update(include_ctg=False,rho_L=0.,rho_RE=0.,rho_L_dn=0.,rho_RE_dn=0.)
+    cfg.mode['reserve'].update(up_requirement_mode='formula',include_ctg=False,rho_L=0.,rho_RE=0.,rho_L_dn=0.,rho_RE_dn=0.)
     h=deepcopy(load_config().units['hydro'][0])
     h.pop('commitment', None)  # Historical aggregate fixture, not the new identified default.
     h.update(id='H1',bus=2,n_units=1,unit_pmax=100.,zones=[[0.,100.]],ramp=1.,

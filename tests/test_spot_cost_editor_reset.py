@@ -23,7 +23,7 @@ render_spot_cost_editor(load_config(root=Path({str(root)!r})), {uid!r})
 
 
 def files(root):
-    return {str(p.relative_to(root)): p.read_bytes() for folder in ('config', 'bids')
+    return {p.relative_to(root).as_posix(): p.read_bytes() for folder in ('config', 'bids')
             for p in (root / folder).rglob('*') if p.is_file()}
 
 

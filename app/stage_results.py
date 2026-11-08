@@ -45,14 +45,14 @@ def stage_result_view(stages, *, prefix, market_stage='DA', window_start=None):
         st.info('本阶段未保存逐主体出力/状态。')
     else:
         st.dataframe(display_frame(units),hide_index=True,width='stretch',height=300)
-        df_download(units, f'{market_stage}_{name}_units.csv', key=prefix+':stage_units')
+        pass  # Result download controls removed.
     prices=pd.DataFrame(data.get('prices',[]))
     if prices.empty:
         st.caption('本阶段未保存独立节点价格记录；SCUC 不据整数模型目标推算节点电价。')
     else:
         st.markdown('**本阶段节点价格：原始对偶与限价后值**')
         st.dataframe(display_frame(prices),hide_index=True,width='stretch',height=220)
-        df_download(prices,f'{market_stage}_{name}_prices.csv',key=prefix+':stage_prices')
+        pass  # Result download controls removed.
     hydro=pd.DataFrame(data.get('hydro_states',[]))
     if not hydro.empty:
         st.markdown('**本阶段水电库容与出库流量计划**')

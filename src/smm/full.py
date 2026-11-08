@@ -1311,7 +1311,9 @@ def write_full_outputs(res, d: Path, make_plots=True) -> dict:
     s["price_limits"] = {k: float(v) for k, v in da.case.cfg.mode["price_limits"].items() if isinstance(v, (int, float))}
     from .reserve_checks import audit as audit_reserve_evidence
     s["reserve"] = audit_reserve_evidence(reserve_evidence)
-    s["reserve"].update(evidence_version=reserve_evidence["da"]["evidence_version"],
+    s["reserve"].update(up_requirement_mode=da.case.reserve_info.get("up_requirement_mode", "formula"),
+                          fixed_up_mw=da.case.cfg.mode["reserve"].get("fixed_up_mw"),
+                          evidence_version=reserve_evidence["da"]["evidence_version"],
                         hydro_reserve_outflow_formulation=reserve_evidence["da"]["hydro_reserve_outflow_formulation"],
                         hydro_reserve_outflow_enabled=reserve_evidence["da"]["hydro_reserve_outflow_enabled"],
                         hydro_reserve_water_formulation=reserve_evidence["da"]["hydro_reserve_water_formulation"],

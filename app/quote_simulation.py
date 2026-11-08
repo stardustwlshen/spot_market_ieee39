@@ -100,8 +100,20 @@ def quotation_workspace(cfg, name, *, disabled=False, compact=False):
         st.caption('报价来源：研究成本（非实测）；切换丰枯水不自动重报价，需重新预览并采用。')
     unit_types = {u['id']: u.get('type', family) for family in ('thermal', 'renewable', 'hydro', 'storage', 'pumped', 'tie')
                   for u in cfg.units.get(family, [])}
-    uid = st.selectbox('模拟机组', list(draft['units']), key=f'quote_unit:{name}',
-        format_func=lambda unit: f'{unit} · {TYPE_CN.get(unit_types.get(unit), "主体")}', disabled=disabled)
+    from unit_selection import render_unit_selector
+    uid = render_unit_selector(cfg, name, quote=True, disabled=disabled or 'unit_editor:' + name in st.session_state)
+    st.caption('当前选择只决定查看和编辑哪台机组；其他参与模拟的机组仍按各自报价参与全网出清。')
+    if uid is None or uid not in unit_types:
+        if uid is not None:
+            st.info(f'{uid} 当前不参与模拟。可返回机组页编辑“参与模拟”并保存；其余启用机组仍参与出清。')
+        errors = [issue for issue in validate_bids(cfg, draft, require_complete=True) if issue.level == 'error']
+        if errors:
+            st.error('报价存在违规，修正后才能运行。请选择相关机组核对。')
+        st.caption('当前报价：' + info['basis_label'])
+        return draft, errors
+    if uid not in draft['units']:
+        st.error(f'{uid} 缺少当前报价，请修复报价后继续。')
+        return draft, ['当前机组缺少报价']
     if compact:
         st.caption('当前报价：' + info['basis_label'] +
                    (' · 模拟成本报价，非真实市场申报。' if draft.get('default_bid_model') == 'cost_basis_v2' else ''))

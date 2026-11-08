@@ -441,7 +441,7 @@ def render_explorer(data, prefix):
         del st.session_state[branch_key]
     branch = right.selectbox('查看相连支路', connected.branch_id.tolist(), key=branch_key) if len(connected) else None
     st.plotly_chart(topology_figure(data, bus, branch, layer), width='stretch', key=prefix+':graph',
-                    config={'displaylogo': False, 'scrollZoom': False})
+                    config={'displaylogo': False, 'scrollZoom': False, 'modeBarButtonsToRemove': ['toImage']})
     if runtime:
         if layer == 'loading':
             st.caption('箭头为本时段潮流方向；线路橙色 ≥80%，红色 ≥100% 额定限额，灰色线路表示未知。负载率不等同于定价阻塞，约束影子价见支路详情。')

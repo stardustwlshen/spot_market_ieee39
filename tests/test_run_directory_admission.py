@@ -144,3 +144,48 @@ def test_cli_starting_cancel_preserves_request_and_stops_before_freeze(tmp_path)
     assert saved['status']=='stopped' and saved['executed_periods']==0
     assert (d/'cancel.request').read_text()=='cancel before launch'
     assert not (d/'scenario_snapshot').exists()
+
+
+@pytest.mark.parametrize('name', ['reserve_policy_migration.json', 'reserve_source_modes.yaml'])
+def test_fixed_reserve_launch_audit_files_are_allowed(tmp_path, monkeypatch, name):
+    d = tmp_path/'reserved'; reserve(d)
+    (d/name).write_bytes(b'preserved reserve audit')
+    monkeypatch.setattr(admission, 'process_state', lambda _: 'alive')
+    with enter(d) as meta:
+        assert meta['status'] == 'starting'
+    assert (d/name).read_bytes() == b'preserved reserve audit'
+
+
+def test_real_freeze_and_child_admission_with_legacy_400_policy(tmp_path):
+    import shutil
+    import yaml
+    from smm.live_runner import freeze_inputs
+    from smm.config import load_config
+    from smm.bids import default_bids
+    scene = tmp_path/'scene'
+    for folder in ('config', 'data', 'bids'):
+        shutil.copytree(ROOT/folder, scene/folder)
+    modes = scene/'config/modes.yaml'
+    doc = yaml.safe_load(modes.read_text(encoding='utf-8'))
+    doc['MKT']['reserve'].pop('up_requirement_mode', None)
+    doc['MKT']['reserve'].pop('fixed_up_mw', None)
+    modes.write_text(yaml.safe_dump(doc, allow_unicode=True), encoding='utf-8')
+    original = tree(scene)
+    d = tmp_path/'new'; reserve(d, launcher_identity=process_identity())
+    freeze_inputs(scene, d, bids=default_bids(load_config(root=scene)))
+    assert (d/'reserve_policy_migration.json').exists()
+    assert (d/'reserve_source_modes.yaml').read_bytes() == modes.read_bytes()
+    assert tree(scene) == original
+    script = """from smm.run_admission import admit_run_directory
+from smm.config import load_config
+import sys
+with admit_run_directory(sys.argv[1], scenario='默认', mode='full'):
+    cfg = load_config(root=sys.argv[1]+'/scenario_snapshot')
+    assert cfg.mode['reserve']['fixed_up_mw'] == 400.
+    assert cfg.mode['reserve']['up_requirement_mode'] == 'fixed'
+print('frozen 400 MW input admitted by real child')
+"""
+    result = subprocess.run([sys.executable, '-c', script, str(d)],
+                            env={**os.environ, 'PYTHONPATH': str(ROOT/'src'), 'PYTHONUTF8': '1'},
+                            capture_output=True, text=True, encoding='utf-8')
+    assert result.returncode == 0, result.stderr

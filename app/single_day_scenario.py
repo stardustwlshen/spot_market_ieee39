@@ -56,8 +56,7 @@ def _error_choices(cfg, key, *, disabled=False):
         names = SCENARIO_LABELS[kind]
         selected[kind] = column.selectbox(label, list(names), index=list(names).index(current[kind]),
             format_func=lambda value, names=names: names[value], key=key+":error:"+kind,
-            disabled=disabled, help="独立选择研究情景；仅重生成系统预测，不替换上传预测或实际曲线。")
-    st.caption("误差情景为未按历史数据标定的研究假设；不修改实际曲线。")
+            disabled=disabled, help="仅重新生成系统预测；上传预测和实际曲线保持不变。")
     return current, selected
 
 
@@ -66,10 +65,10 @@ def _error_details(cfg, selected, *, preview=None):
     forecast = dict(cfg.base.get("forecast") or {})
     forecast["error_scenarios"] = selected
     metadata = scenario_metadata({"forecast": forecast})
-    with st.expander("误差方法与参数"):
-        st.caption("这是离线联合情景，不是在线预测或实测误差规律。误差定义为预测减实际，正值表示高估。")
-        st.write("新误差情景中，负荷按同时段负荷水平缩放；风电按装机容量缩放并包含同类场站共同变化；光伏按声明的日照时段变化，夜间为零。各类误差具有持续性，滞后情景分别反映峰谷、爬坡和云团变化。")
-        st.write("日前、日内、实时共享部分误差并逐步修正；不保证每一天都按阶段变得更准。上传预测与报价可用量优先，具体适用范围见下方提示。")
+    with st.expander("误差方法与参数", expanded=False):
+        st.caption("离线合成误差，未按历史数据标定。误差＝预测－实际，正值为高估。")
+        st.write("负荷误差按同期负荷缩放，风电按装机缩放并包含场站共同变化，光伏夜间为零。误差具有持续性；滞后项分别对应负荷峰谷、风电爬坡和光伏云团变化。")
+        st.write("日前、日内、实时共享部分误差，精度不保证逐阶段改善。上传预测与报价申报可用量优先。")
         rows = []
         for kind, item in metadata["scenarios"].items():
             rows.append({"对象": RESOURCE_LABELS[kind], "情景": item["label"],
@@ -79,13 +78,42 @@ def _error_details(cfg, selected, *, preview=None):
                          "15分钟持续性基准": item["phi_baseline_15min"]})
         st.dataframe(pd.DataFrame(rows), hide_index=True, width="stretch")
         day = metadata["pv_daylight"]
-        st.caption(f"随机种子：{cfg.base.get('seed', '沿用配置')}；光伏日照假设：{day['sunrise']:g}–{day['sunset']:g} 时。相同输入与种子可复现，装机和日照边界约束后的实际误差不等于上表幅度。")
-        st.caption("幅度、持续性与种子可在运行页高级设置中修改；情景系数与日照窗口是假设，不代表真实统计估计。")
+        st.caption(f"随机种子：{cfg.base.get('seed', '沿用配置')}；光伏日照假设：{day['sunrise']:g}–{day['sunset']:g} 时。限幅后的实际误差可能与上表幅度不同。")
+        st.caption("幅度、持续性与种子在运行页“高级设置”中调整。")
         if preview is not None:
             if preview.get("error_scenario_summary"):
                 st.dataframe(pd.DataFrame(preview["error_scenario_summary"]), hide_index=True, width="stretch")
-            if preview.get("column_sources"):
-                st.dataframe(pd.DataFrame(preview["column_sources"]), hide_index=True, width="stretch")
+
+
+def _curve_preview(cfg, key, bids, *, preview=None):
+    from scenario_curve_view import render_scenario_curves
+    from smm.forecast import generate_profiles, apply_profile_overrides
+    from smm.profile_sources import override_sources, column_source_rows
+    try:
+        if preview is None:
+            profiles = apply_profile_overrides(cfg, generate_profiles(cfg, cfg.base.get("seed", 42)))
+            sources = override_sources(cfg)
+            quote_columns = [f"{uid}_da" for uid, bid in (bids or {}).get("units", {}).items()
+                             if isinstance(bid, dict) and bid.get("avail_pmax") is not None]
+            rows = column_source_rows(cfg, profiles.columns, sources["protected_columns"], quote_columns,
+                                      limited=sources["status"] == "unverified_preserve_all")
+        else:
+            profiles, bids = preview["profiles"], preview["bids"]
+            rows = preview.get("column_sources", [])
+        render_scenario_curves(cfg, profiles, bids=bids, source_rows=rows, key_prefix=key + ":curves")
+    except (ValueError, TypeError, KeyError, AttributeError, OSError, RuntimeError) as exc:
+        business_error("曲线暂不能显示", exc)
+
+
+def _curve_warning(cfg, message):
+    names = {"load": "负荷", **{unit["id"]: unit["id"] for unit in cfg.units.get("renewable", [])}}
+    labels = {"actual": "实际", "da": "日前", "id": "日内", "rt": "实时"}
+    replacements = {f"{name}_{stage}": f"{label}·{stage_label}" for name, label in names.items()
+                    for stage, stage_label in labels.items()}
+    text = str(message).replace("avail_pmax", "申报可用功率")
+    for column in sorted(replacements, key=len, reverse=True):
+        text = text.replace(column, replacements[column])
+    return text
 
 
 def _current_error_limits(cfg, selected, bids):
@@ -96,7 +124,7 @@ def _current_error_limits(cfg, selected, bids):
     from smm.profile_sources import override_sources
     source = override_sources(cfg)
     for message in source["warnings"]:
-        st.warning(message)
+        st.warning(_curve_warning(cfg, message))
     quoted = [u["id"] for u in cfg.units["renewable"] if u["type"] in active
               and bids and bids.get("units", {}).get(u["id"], {}).get("avail_pmax") is not None]
     if quoted:
@@ -144,6 +172,7 @@ def render_conditions(cfg, name, *, bids=None, disabled=False):
     if not changed:
         try:
             _current_error_limits(cfg, selected_errors, bids)
+            _curve_preview(cfg, key, bids)
             _error_details(cfg, selected_errors)
         except (ValueError, TypeError, KeyError, OSError) as exc:
             business_error("预测误差来源暂不能核验", exc, "原输入保留，请核对后再运行。")
@@ -163,7 +192,8 @@ def render_conditions(cfg, name, *, bids=None, disabled=False):
         return None, True, True
     st.caption("点击下一步应用所选条件并另存场景副本；原场景与报价保留。")
     for message in preview.get("error_scenario_warnings", []):
-        st.warning(message)
+        st.warning(_curve_warning(cfg, message))
+    _curve_preview(cfg, key, bids, preview=preview)
     _error_details(cfg, selected_errors, preview=preview)
     if preview["availability_changes"]:
         st.warning("将同步这些机组的日前申报可用出力：" + "、".join(preview["availability_changes"]) + "。价格与分段量不变；点击下一步即采用此调整。")
@@ -176,7 +206,7 @@ def render_conditions(cfg, name, *, bids=None, disabled=False):
     if clipped:
         st.warning(f"风光可用出力有 {clipped} 个点触及装机上限，实际增幅会低于设定倍率。")
     with st.expander("查看调整明细"):
-        st.caption("合成研究情景，不代表实测典型日；供需检查不代表物理可行。")
+        st.caption("合成场景；供需表为出清前初筛。")
         st.dataframe(preview["summary"], hide_index=True, width="stretch")
         st.dataframe(pd.DataFrame(preview["hydro"]).rename(columns=_HYDRO_PREVIEW_COLUMNS),
                      hide_index=True, width="stretch")

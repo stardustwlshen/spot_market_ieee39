@@ -93,6 +93,8 @@ def fields(cfg):
         for side,cn in (('min','下限'),('max','上限')):
             mode('bid_rules.'+scope+'.price_'+side,'报价限价覆盖',label+cn+'（元/MWh）',
                 '只覆盖报价限价；优先级为全局→默认覆盖→分类型覆盖。取消设置恢复继承，不改出清结算限价。',optional=True)
+    add('mode.reserve.up_requirement_mode','备用','上备用需求方式','固定总量不叠加比例或事故项；公式保留历史系数。400MW为用户研究设定。',kind='choice',options=('fixed','formula'),default='fixed')
+    add('mode.reserve.fixed_up_mw','备用','固定上备用总量（MW）','各时段DA/ID/RT采用同一固定总量。仅固定模式生效。',default=400.,minimum=0.)
     for key,label in (('rho_L','上备用负荷比例'),('rho_RE','上备用新能源比例'),
                       ('rho_L_dn','下备用负荷比例'),('rho_RE_dn','下备用新能源比例')):
         mode('reserve.'+key,'备用',label,'与相应负荷或新能源预测相乘形成需求；下备用关闭时下备用比例不使用。',minimum=0.)
@@ -218,6 +220,11 @@ def prepare_parameter_edit(root, changes, *, expected=None):
             _validate_value(registry[key],value)
         changes={k:copy.deepcopy(v) for k,v in changes.items()
                  if v!=get_value(old,k,registry[k].default)}
+        if any(k.startswith('mode.reserve.') for k in changes) and 'up_requirement_mode' not in old.mode['reserve']:
+            changes.setdefault('mode.reserve.up_requirement_mode', 'fixed')
+            if changes['mode.reserve.up_requirement_mode']=='fixed':
+                changes.setdefault('mode.reserve.fixed_up_mw',400.)
+                changes.setdefault('mode.reserve.down_enabled',False)
         with tempfile.TemporaryDirectory(prefix='advanced-parameters-') as tmp:
             stage=Path(tmp)
             for path in _paths(root):
@@ -249,7 +256,8 @@ def prepare_parameter_edit(root, changes, *, expected=None):
             from .input_validation import validate_case_inputs
             profiles=apply_profile_overrides(candidate,generate_profiles(candidate))
             net=build_network(candidate)
-            case=build_da_case(candidate,net,profiles,record['draft'])
+            from .reserve_policy import for_new_run
+            case=build_da_case(for_new_run(candidate),net,profiles,record['draft'])
             validate_case_inputs(case)
             replacements={'config/'+name:(stage/'config'/name).read_bytes() for name in touched}
             # A scenario without a current quote must retain the pre-edit quotes,
@@ -300,6 +308,11 @@ def inactive_reason(cfg, key):
     tracking_active=(hydro=='window_end_da' and (rt.get('tracking_policy') or {}).get('mode')=='soft_deliverable_energy')
     if key.startswith('mode.auxiliary_pricing.') and key!='mode.auxiliary_pricing.enabled':
         if not cfg.mode.get('auxiliary_pricing',{}).get('enabled',False):return '辅助算价未开启'
+    fixed_up=cfg.mode['reserve'].get('up_requirement_mode','fixed')=='fixed'
+    if key in ('mode.reserve.rho_L','mode.reserve.rho_RE','mode.reserve.include_ctg') and fixed_up:
+        return '固定总上备用不叠加比例或事故项'
+    if key=='mode.reserve.fixed_up_mw' and not fixed_up:
+        return '上备用采用比例与事故公式'
     if key in ('mode.reserve.rho_L_dn','mode.reserve.rho_RE_dn'):
         if not cfg.mode['reserve'].get('down_enabled',True):return '下备用采购未开启'
     if key.startswith('mode.intraday.') and key!='mode.intraday.enabled':
@@ -337,6 +350,8 @@ def effective_rows(cfg):
     rows=[]
     def add(label,value,source):rows.append({'参数':label,'有效值':str(value),'来源':source})
     add('时间栅格',f'{cfg.T}段 × {cfg.dt*60:g}分钟','base；本编辑器只读')
+    from .reserve_policy import reserve_policy_label
+    add('上备用需求',reserve_policy_label(cfg),'mode.reserve；下一次运行冻结，DA/ID/RT共用')
     extra=cfg.base.get('solver',{}).get('highs_extra') or {}
     for stage,cn in (('da','日前'),('realtime','实时'),('intraday','日内')):
         source=cfg.base['solver'] if stage=='da' else cfg.mode.get(stage,{})
