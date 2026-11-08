@@ -116,6 +116,37 @@ def _boolean(value, label):
     return value
 
 
+def reserve_duration_facts(reserve):
+    """Separate a missing key from an explicit value. The check itself stays strict."""
+    if not isinstance(reserve, dict):
+        return dict(present=False, value=None, state='备用配置不是对象')
+    present = 'T_dur_h' in reserve
+    value = reserve.get('T_dur_h')
+    if not present:
+        state = '缺键'
+    elif value is None:
+        state = '显式空值'
+    else:
+        state = '已有值'
+    return dict(present=present, value=value, state=state, value_type=type(value).__name__)
+
+
+def require_reserve_duration(reserve):
+    """Reject every non-positive duration without rewriting the caller's mapping."""
+    facts = reserve_duration_facts(reserve)
+    try:
+        number(facts['value'], 'reserve.T_dur_h', positive=True)
+    except ValueError:
+        raise ValueError(
+            'reserve.T_dur_h 必须为有限正数；'
+            '配置路径 config/modes.yaml 当前规则 reserve.T_dur_h；'
+            f"状态 {facts['state']}；当前值 {facts['value']!r}；类型 {facts['value_type']}。"
+            '0.25 小时是仓库模板已有的 15 分钟研究假设，加载时不会自动改写。'
+            '只有键完全缺失时才可在备份后单独补上；0、字符串、显式空值和非有限数保持原样。'
+        ) from None
+    return facts['value']
+
+
 def validate_reserve_configuration(cfg):
     """Reject malformed rules before truthiness or coefficients alter procurement."""
     reserve = cfg.mode.get('reserve')
@@ -143,7 +174,7 @@ def validate_reserve_configuration(cfg):
         raise ValueError('reserve.providers须为不重复的受支持常规资源类型列表')
     if (reserve.get('storage_reserve', False)
             or ('hydro' in providers and bool(_active(cfg, 'hydro')))):
-        number(reserve.get('T_dur_h'), 'reserve.T_dur_h', positive=True)
+        require_reserve_duration(reserve)
     n1 = cfg.base.get('n1_loss_mw')
     if n1 is not None:
         _nonnegative(n1, 'n1_loss_mw')

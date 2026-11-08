@@ -24,6 +24,8 @@ except (ValueError, KeyError, TypeError, AttributeError, OSError, yaml.YAMLError
     business_error('当前场景配置不能读取或校验未通过，原文件已保留', exc,
                    '可在侧边栏切换其他场景，或按技术详情修复此场景后重试；不会自动重置。')
     from smm.unit_edit_transaction import JOURNAL, recover_scene_unit_edit
+    from reserve_duration_ui import render_duration_repair
+    render_duration_repair(name)
     if (sc.scenario_path(name) / JOURNAL).exists():
         st.caption('上次机组保存意外中断时，可恢复到保存前的完整输入。外部修改冲突不会被覆盖。')
         if st.button('恢复未完成的机组保存'):

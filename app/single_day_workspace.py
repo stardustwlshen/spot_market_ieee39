@@ -230,6 +230,8 @@ def render_single_day():
         cfg = scen_config(name)
     except (ValueError, KeyError, TypeError, AttributeError, OSError, yaml.YAMLError) as exc:
         business_error('场景配置不能读取，原文件保留', exc, '请切换场景，或在完整报价工作台恢复未完成的机组保存。')
+        from reserve_duration_ui import render_duration_repair
+        render_duration_repair(name)
         st.page_link('pages/2_运行.py', label='打开完整报价工作台')
         return
     conditions_pending = bool(st.session_state.get('day_condition_pending:' + name))
