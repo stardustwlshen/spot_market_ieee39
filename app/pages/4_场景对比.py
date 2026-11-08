@@ -13,6 +13,8 @@ from result_navigation import validate_display_result
 page_setup("场景对比", "任选两次运行结果（方案甲 / 方案乙），对比指标、电价、出力结构与结算")
 from result_catalog import is_single_day_result
 res = [m for m in all_results() if is_single_day_result(m)]
+from result_story_view import render_experiment_matrix_guide
+render_experiment_matrix_guide()
 if len(res) < 2:
     empty_state("至少需要两个完成的结果才能对比。", "请到 **报价模拟** 页另建或修改场景，分别运行后再来对比。")
     st.stop()
