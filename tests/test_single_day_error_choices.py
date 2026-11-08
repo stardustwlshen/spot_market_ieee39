@@ -76,6 +76,7 @@ def test_unapplied_error_selection_cannot_run_old_inputs(scene, monkeypatch):
     assert item(at.selectbox, '负荷预测误差').value == 'lag'
     item(at.selectbox, '负荷预测误差').set_value('configured').run()
     step(at, '4 运行')
+    item(at.checkbox, '已核对合约卡，确认按此启动').check().run()
     assert not item(at.button, '开始单日出清').disabled and not calls
 
 

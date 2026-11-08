@@ -233,9 +233,11 @@ def test_result_page_mounts_curtailment_in_system_overview(result, full):
     # nodes, not the full results page.
     overview = next(node for node in tree.body if isinstance(node, ast.With)
                     and ast.unparse(node.items[0].context_expr) == 'main_tabs[0]')
-    selector = next(node for node in overview.body if isinstance(node, ast.Assign)
+    saved = next(node for node in tree.body if isinstance(node, ast.FunctionDef) and node.name == '_render_saved_overview')
+    assert '_render_saved_overview()' in ast.unparse(overview)
+    selector = next(node for node in saved.body if isinstance(node, ast.Assign)
                     and any(isinstance(target, ast.Name) and target.id == 'overview_stage' for target in node.targets))
-    section = next(node for node in overview.body if isinstance(node, ast.With)
+    section = next(node for node in saved.body if isinstance(node, ast.With)
                    and ast.unparse(node.items[0].context_expr) == "st.expander('弃风弃光')")
     dashboard = next(node for node in tree.body if isinstance(node, ast.FunctionDef) and node.name == 'page_curtailment')
     mount = ast.With(items=deepcopy(overview.items), body=[selector, section], type_comment=None)

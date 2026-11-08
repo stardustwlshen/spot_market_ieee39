@@ -238,6 +238,12 @@ def render_single_day():
         st.button('返回场景', on_click=_go, args=(STEPS[0],), disabled=locked)
     if step != STEPS[0]:
         st.caption(f"{name} · {cfg.base['date']} · {cfg.T} × {cfg.dt*60:g} 分钟")
+    if step != STEPS[4]:
+        from experiment_contract import render_experiment_layers
+        try:
+            render_experiment_layers(cfg, name, pending=conditions_pending)
+        except (ValueError, KeyError, TypeError, AttributeError, OSError) as exc:
+            st.warning('实验分层摘要暂不能显示，原场景未改。' + str(exc))
     draft, info, bid_errors = None, {}, []
     try:
         draft, info, bid_errors = read_quote(cfg, name)
@@ -341,12 +347,18 @@ def render_single_day():
                 st.warning(f'本次只执行前 {int(periods)} / {cfg.T} 个实时时段，仍先求全天日前计划；不是完整日结算。')
             else:
                 st.caption(f'完整单日 · {cfg.T} 个实时时段')
+            from experiment_contract import render_contract_card
+            try:
+                confirmed = render_contract_card(cfg, name, draft, info, mode=mode, periods=periods, pending=conditions_pending)
+            except (ValueError, KeyError, TypeError, AttributeError, OSError) as exc:
+                confirmed = False
+                st.warning('合约卡暂不能生成，因此不能启动。原场景未改。' + str(exc))
             incompatible = bool(cfg.mode.get('regulation', {}).get('enabled', False)) or cfg.base.get('tie_line_mode', 'supply') == 'fixed_load'
             if incompatible:
                 st.error('历史调频或联络线转负荷场景不能按当前电能量主流程启动。请切换兼容场景或核对运行设置，旧输入不自动修改。')
             from smm.input_version import run_options
             if not active or 'network_run_options:' + name in st.session_state:
                 st.session_state['network_run_options:' + name] = run_options(mode, periods)
-            if st.button('开始单日出清', type='primary', width='stretch', disabled=active or incompatible or locked or conditions_pending or bool(input_error) or bool(bid_errors) or draft is None):
+            if st.button('开始单日出清', type='primary', width='stretch', disabled=active or incompatible or locked or conditions_pending or bool(input_error) or bool(bid_errors) or draft is None or not confirmed):
                 _launch_current(name, mode, int(periods) if periods is not None else None)
     _navigation(step, locked=locked)

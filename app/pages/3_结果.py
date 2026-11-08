@@ -158,6 +158,11 @@ from curtailment_views import curtailment_report, curtailment_overview, curtailm
 curtailment = curtailment_report(R)
 from result_navigation import build_result_navigation, comparison_frame
 from unit_overview import render_unit_overview
+from result_story_view import render_credibility
+try:
+    render_credibility(R)
+except (ValueError, KeyError, TypeError, AttributeError, OSError) as exc:
+    st.warning('可信度条暂不能汇总，其余已保存结果仍可查看。' + str(exc))
 navigation = build_result_navigation(S, DS, directory=sel, full=FULL, intraday=INTRADAY)
 with navigation['diagnostic'][0]:
     from hydro_daily_energy_views import render_hydro_daily_energy
@@ -699,7 +704,8 @@ def page_intraday(tabs):
 # Four business views share the selected immutable run.
 from final_views import render_final, system_price_compare, node_price_compare, kpi_compare
 
-with main_tabs[0]:
+
+def _render_saved_overview():
     if FULL:
         sp = S.get('spread') or {}
         metric_grid([
@@ -732,6 +738,18 @@ with main_tabs[0]:
     render_forecast_diagnostics(sel)
     from result_economics_view import render_economics
     render_economics(R, prefix='all_economics:' + sel, prepared=ECONOMICS)
+
+
+with main_tabs[0]:
+    from result_story_view import render_difference_narrative, render_mechanism_audit, render_story_export
+    try:
+        render_difference_narrative(R, buses=buses, labels=lbl, curtailment=curtailment)
+        render_mechanism_audit(R, labels=lbl)
+        render_story_export(R, curtailment=curtailment, buses=buses)
+    except (ValueError, KeyError, TypeError, AttributeError, OSError) as exc:
+        st.warning('差异叙事暂不能汇总，阶段结果仍可在下方查看。' + str(exc))
+    with st.expander('阶段结果与主体经济', expanded=False):
+        _render_saved_overview()
 
 with main_tabs[1]:
     render_unit_overview(R, diagnostics=DIAGNOSTICS, prefix='unit_overview:' + sel, economics=ECONOMICS)

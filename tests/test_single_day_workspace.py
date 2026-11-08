@@ -35,6 +35,13 @@ def step(at, value):
     return item(at.radio, '执行流程').set_value(value).run()
 
 
+def confirm_contract(at):
+    box = item(at.checkbox, '已核对合约卡，确认按此启动')
+    if not box.value:
+        box.check().run()
+    return at
+
+
 def files(root):
     return {str(p.relative_to(root)): p.read_bytes() for p in root.rglob('*') if p.is_file()}
 
@@ -104,6 +111,7 @@ def test_full_day_launch_uses_exact_quote_and_navigates_to_monitor(scene, monkey
     at = step(app(), '4 运行')
     expected = deepcopy(at.session_state['quote_current:默认'])
     assert not item(at.expander, '高级设置').proto.expanded
+    confirm_contract(at)
     item(at.button, '开始单日出清').click().run()
     assert not at.exception
     assert len(calls) == 1
@@ -126,6 +134,7 @@ def test_full_day_real_launch_freezes_current_quote(scene, monkeypatch):
     item(at.number_input,'空载报价（元/h）').set_value(6100.).run()
     expected=deepcopy(at.session_state['quote_current:默认'])
     step(at,'4 运行')
+    confirm_contract(at)
     item(at.button,'开始单日出清').click().run()
     assert not at.exception and len(calls)==1
     directory=Path(at.session_state['watch_run'])
@@ -146,6 +155,7 @@ def test_debug_scope_is_visible_and_explicit(scene, monkeypatch, mode, short, ex
     item(at.checkbox,'仅试跑前几个实时时段').set_value(short).run()
     assert not at.exception
     assert any('不是完整日结算' in w.value or '没有实时执行' in w.value for w in at.warning)
+    confirm_contract(at)
     item(at.button,'开始单日出清').click().run()
     assert calls[0][1] == mode and calls[0][3] == expected
 
@@ -227,6 +237,7 @@ def test_concurrent_quote_write_blocks_launch(scene,monkeypatch):
     other=json.loads(p.read_text(encoding='utf-8'))
     other['draft']['units']['C1']['noload_cost']=6001
     p.write_text(json.dumps(other,ensure_ascii=False),encoding='utf-8')
+    confirm_contract(at)
     item(at.button,'开始单日出清').click().run()
     assert not at.exception and not calls
     assert any('启动前输入校验未通过' in e.value for e in at.error)
@@ -240,6 +251,7 @@ def test_next_keeps_inputs_and_does_not_require_editors(scene):
     assert not at.exception
     assert item(at.radio,'执行流程').value=='2 机组'
     step(at, '4 运行')
+    confirm_contract(at)
     assert not item(at.button,'开始单日出清').disabled
     assert files(scene.SCEN_DIR)==before
     assert not scene.RUNS_DIR.exists()
@@ -362,6 +374,7 @@ def test_unapplied_conditions_cannot_be_silently_bypassed(scene, monkeypatch):
     item(at.button,'返回场景').click().run()
     item(at.selectbox,'风电').set_value(1.).run()
     step(at,'4 运行')
+    confirm_contract(at)
     assert not item(at.button,'开始单日出清').disabled
     assert files(scene.SCEN_DIR)==before
 

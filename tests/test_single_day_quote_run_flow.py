@@ -63,6 +63,9 @@ def test_direct_table_edits_keep_invalid_values_then_save_corrections(scene, uid
         assert saved == at.session_state[key]
         assert all(saved['units'][other] == bid for other, bid in original['units'].items() if other != uid)
         step(at, '4 运行')
+        box = item(at.checkbox, '已核对合约卡，确认按此启动')
+        if not box.value:
+            box.check().run()
         assert item(at.button, '开始单日出清').disabled == (price < -50)
         step(at, '3 报价')
 
@@ -105,6 +108,7 @@ def test_failed_autosave_keeps_editor_and_does_not_create_default_archive(scene,
     assert at.session_state['quote_current:默认'] == expected
     assert any('未自动保存' in error.value for error in at.error)
     step(at, '4 运行')
+    item(at.checkbox, '已核对合约卡，确认按此启动').check().run()
     item(at.button, '开始单日出清').click().run()
     assert not at.exception and not starts
     assert at.session_state['quote_current:默认'] == expected
