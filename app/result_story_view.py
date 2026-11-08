@@ -9,7 +9,7 @@ import streamlit as st
 
 from result_story import (
     coverage_note, credibility_summary, export_payload, handoff_audit, hydro_lookahead,
-    issue_detail, reserve_balance, soft_terminal_rows, top_issues, value_audit,
+    issue_detail, narrative_tracks, reserve_balance, soft_terminal_rows, top_issues, value_audit,
 )
 
 
@@ -33,36 +33,54 @@ def render_credibility(result):
     st.caption("跑完不等于无松弛，也不等于备用缺额或软日末偏差为零。")
 
 
-def _price_figure(result, buses, labels):
-    if not result.get("full"):
-        return None
+def _axis(periods, labels):
     try:
-        from final_views import system_price_compare
-        frame = system_price_compare(result, buses)
-    except (KeyError, ValueError, TypeError, AttributeError):
-        return None
-    if not isinstance(frame, pd.DataFrame) or frame.empty or not {"日前", "实时"} <= set(frame.columns):
-        return None
-    figure = go.Figure()
-    periods = list(frame.index)
-    try:
-        axis = [labels[int(period)] for period in periods]
+        return [labels[int(period)] for period in periods]
     except (KeyError, TypeError, ValueError, IndexError):
-        axis = [str(period) for period in periods]
-    figure.add_scatter(x=axis, y=frame["日前"], name="日前", line=dict(color="#1f5fa8", width=2.2))
-    figure.add_scatter(x=axis, y=frame["实时"], name="实时", line=dict(color="#d1495b", width=2, dash="dash"))
-    return figure
+        return [str(period) for period in periods]
+
+
+def _track_figure(track, labels):
+    frame = track.get("frame")
+    if not isinstance(frame, pd.DataFrame) or frame.empty:
+        return None, "未记录"
+    figure = go.Figure()
+    missing = []
+    if track["kind"] == "wide":
+        for stage, color, dash in (("日前", "#1f5fa8", "solid"), ("实时", "#d1495b", "dash")):
+            if stage not in frame or not pd.to_numeric(frame[stage], errors="coerce").notna().any():
+                missing.append(stage)
+                continue
+            figure.add_scatter(x=_axis(frame.index, labels), y=frame[stage], name=stage,
+                               line=dict(color=color, width=2.2, dash=dash))
+    else:
+        present = set(frame["stage"].astype(str))
+        missing = [stage for stage in ("日前", "实时") if stage not in present]
+        for (name, stage), part in frame.groupby(["name", "stage"], sort=True):
+            part = part.sort_values("period")
+            figure.add_scatter(x=_axis(part["period"], labels), y=part["value"], name=f"{name} · {stage}",
+                               line=dict(dash="dash" if stage == "实时" else "solid"))
+    if not figure.data:
+        return None, "未记录"
+    note = "、".join(missing) + "未记录，未用另一侧或零填上。" if missing else ""
+    return figure, note
 
 
 def render_difference_narrative(result, *, buses, labels, curtailment):
     from common import show_fig, style_fig
     st.subheader("差异叙事")
-    st.caption("先看日前和实时的负荷加权电价，再按类别查看绝对偏差最大的记录。不同物理量不跨类比较。")
-    figure = _price_figure(result, buses, labels)
+    st.caption("切换一条关键轨迹。下面的问题清单仍按类别内绝对偏差排序，不同物理量不跨类比较。")
+    tracks = narrative_tracks(result, buses=buses, curtailment=curtailment)
+    labels_by_id = {track["label"]: track for track in tracks}
+    selected = st.radio("关键轨迹", list(labels_by_id), horizontal=True, key="story_track:" + str(result.get("dir")))
+    track = labels_by_id[selected]
+    figure, note = _track_figure(track, labels)
     if figure is None:
-        st.info("没有可对齐的日前与实时负荷加权电价，不补曲线。")
+        st.info(f"{track['label']}未记录，不补曲线。")
     else:
-        show_fig(style_fig(figure, "日前与实时负荷加权电价", "时段", "元/MWh", 320), key="story_price")
+        if note:
+            st.caption(note)
+        show_fig(style_fig(figure, f"日前与实时 · {track['label']}", "时段", track["unit"], 320), key="story_track_fig:" + track["id"])
     issues = top_issues(result, buses=buses, curtailment=curtailment)
     st.caption(coverage_note(issues))
     if issues.empty:
@@ -78,8 +96,7 @@ def render_difference_narrative(result, *, buses, labels, curtailment):
 
 def render_mechanism_audit(result, *, labels):
     del labels
-    st.subheader("机制审计")
-    st.caption("展开后按单选查看。缺表的那一块写未记录，不影响其他块。")
+    st.caption("机制审计默认收起。展开后按单选查看；缺表写未记录，不影响其他块。")
     with st.expander("机制审计", expanded=False):
         page = st.radio(
             "机制审计页",

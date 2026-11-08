@@ -238,12 +238,19 @@ def render_single_day():
         st.button('返回场景', on_click=_go, args=(STEPS[0],), disabled=locked)
     if step != STEPS[0]:
         st.caption(f"{name} · {cfg.base['date']} · {cfg.T} × {cfg.dt*60:g} 分钟")
-    if step != STEPS[4]:
-        from experiment_contract import render_experiment_layers
+    if step == STEPS[0]:
+        from experiment_contract import render_intraday_status, scenario_facts
         try:
-            render_experiment_layers(cfg, name, pending=conditions_pending)
+            render_intraday_status(scenario_facts(cfg))
+            st.caption("日内开或关以上面已保存配置为准。水文和误差在下面选择，点下一步才写入。")
         except (ValueError, KeyError, TypeError, AttributeError, OSError) as exc:
-            st.warning('实验分层摘要暂不能显示，原场景未改。' + str(exc))
+            st.warning('日内状态暂不能显示，原场景未改。' + str(exc))
+    elif step in (STEPS[1], STEPS[2]):
+        from experiment_contract import saved_status_line
+        try:
+            st.caption(saved_status_line(cfg))
+        except (ValueError, KeyError, TypeError, AttributeError, OSError) as exc:
+            st.warning('已保存场景状态暂不能显示，原场景未改。' + str(exc))
     draft, info, bid_errors = None, {}, []
     try:
         draft, info, bid_errors = read_quote(cfg, name)
@@ -309,6 +316,11 @@ def render_single_day():
                 st.dataframe(pd.DataFrame(quote_rows(draft)), hide_index=True, width='stretch')
     elif step == STEPS[3]:
         st.subheader('运行')
+        from experiment_contract import render_experiment_layers
+        try:
+            render_experiment_layers(cfg, name, pending=conditions_pending)
+        except (ValueError, KeyError, TypeError, AttributeError, OSError) as exc:
+            st.warning('实验分层摘要暂不能显示，原场景未改。' + str(exc))
         if active_records:
             from run_progress_view import render_active_progress
             render_active_progress(active_records[0]['dir'])

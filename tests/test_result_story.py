@@ -9,8 +9,8 @@ from streamlit.testing.v1 import AppTest
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "app"))
-from result_story import (credibility_summary, export_payload, reserve_shortage, terminal_deviations,
-                          top_issues)
+from result_story import (credibility_summary, curtail_series, export_payload, narrative_tracks,
+                          reserve_shortage, state_series, terminal_deviations, top_issues)
 
 
 def _result(**extra):
@@ -102,6 +102,48 @@ def test_saved_blank_fallback_is_zero_not_missing():
     assert unknown.empty
 
 
+def test_tracks_keep_price_and_curtailment_and_list_only_saved_states():
+    empty = narrative_tracks(_result(), curtailment={"stages": {}})
+    assert [track["label"] for track in empty] == ["负荷加权电价", "弃电"]
+    assert all(track["frame"] is None for track in empty)
+    curtailment = {"stages": {"日前": {"detail": pd.DataFrame({
+        "period": [0, 1], "curtail_mwh": [1.5, 0.0], "valid": [True, True],
+    })}}}
+    series = curtail_series(curtailment)
+    assert list(series.columns) == ["日前"]
+    assert "实时" not in series.columns
+    assert series.loc[0, "日前"] == 1.5
+    stored = _result(
+        full=True,
+        da_storage=pd.DataFrame({"period": [0], "unit": ["ES1"], "E_mwh": [4.0]}),
+        rt_storage=pd.DataFrame({"period": [0], "unit": ["ES1"], "E_mwh": [3.0]}),
+        da_hydro=pd.DataFrame({"period": [0], "station": ["H1"], "V_1e4m3": [float("nan")]}),
+    )
+    labels = [track["label"] for track in narrative_tracks(stored)]
+    assert labels == ["负荷加权电价", "弃电", "储能电量"]
+    state = state_series(stored, "storage")
+    assert set(state["stage"]) == {"日前", "实时"}
+    assert state_series(stored, "hydro") is None
+    assert state_series(stored, "pumped") is None
+
+
+def test_overview_kpis_stay_outside_the_stage_block():
+    import ast
+    tree = ast.parse((ROOT / "app/pages/3_结果.py").read_text(encoding="utf-8"))
+    overview = next(node for node in tree.body if isinstance(node, ast.With)
+                    and ast.unparse(node.items[0].context_expr) == "main_tabs[0]")
+    text = ast.unparse(overview)
+    assert "_render_overview_kpis()" in text
+    stage = next(node for node in ast.walk(overview) if isinstance(node, ast.Call)
+                 and ast.unparse(node.func) == "st.expander" and node.args
+                 and ast.unparse(node.args[0]) == "'阶段结果与主体经济'")
+    expanded = {keyword.arg: ast.unparse(keyword.value) for keyword in stage.keywords}
+    assert expanded.get("expanded") == "True"
+    saved = next(node for node in tree.body if isinstance(node, ast.FunctionDef) and node.name == "_render_saved_overview")
+    assert "_render_overview_kpis" not in ast.unparse(saved)
+    assert "overview_stage" in ast.unparse(saved)
+
+
 def test_prefix_is_not_called_a_finished_96():
     summary = credibility_summary(_result(full=True, summary={"expected_periods": 96, "executed_periods": 8, "completed_scope": "debug_prefix"}))
     assert summary["periods"]["label"] == "否"
@@ -136,6 +178,8 @@ render_mechanism_audit(empty, labels={{}})
 rich = {{
     'summary': {{'expected_periods': 96, 'executed_periods': 96, 'completed_scope': 'full_day'}},
     'full': True, 'dir': {str(tmp_path)!r}, 'snapshot_root': {str(tmp_path / 'scenario_snapshot')!r},
+    'da_storage': pd.DataFrame({{'period': [0], 'unit': ['ES1'], 'E_mwh': [4.]}}),
+    'rt_storage': pd.DataFrame({{'period': [0], 'unit': ['ES1'], 'E_mwh': [3.]}}),
     'rt_reserve_system': pd.DataFrame({{'period': [0], 'R_up_req': [400.], 'R_up_supply': [400.], 'R_up_short': [0.]}}),
     'rt_value_windows': pd.DataFrame({{
         'window_start': [95], 'tau': [95], 'unit': ['H1'], 'kind': ['V'], 'label': ['day_end'],
@@ -156,7 +200,15 @@ render_experiment_matrix_guide()
     assert "软日末偏差" in labels
     assert not any("间隙" in label for label in labels)
     assert any("差异叙事" in item.value for item in at.subheader)
-    assert any("机制审计" in item.value for item in at.subheader)
+    assert not any("机制审计" in item.value for item in at.subheader)
+    tracks = [radio for radio in at.radio if radio.label == "关键轨迹"]
+    assert [list(radio.options) for radio in tracks] == [
+        ["负荷加权电价", "弃电"],
+        ["负荷加权电价", "弃电", "储能电量"],
+    ]
+    at.radio(key="story_track:" + str(tmp_path / "old")).set_value("弃电").run()
+    assert not at.exception
+    assert any("弃电未记录" in item.value for item in at.info)
     audit = next(item for item in at.expander if item.label == "机制审计")
     assert audit.proto.expanded is False
     guide = next(item for item in at.expander if item.label.startswith("实验矩阵取向"))

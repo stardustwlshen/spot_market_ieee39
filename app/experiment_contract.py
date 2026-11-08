@@ -252,12 +252,18 @@ def render_intraday_status(facts):
         st.info("日内市场：关闭。" + facts["intraday_note"])
 
 
+def saved_status_line(cfg):
+    """One line for the unit and quote steps. Not a second copy of the three layers."""
+    facts = scenario_facts(cfg)
+    return f"已保存场景状态：{facts['date']} · {facts['season_label']} · 日内{facts['intraday_label']} · {facts['reserve']}"
+
+
 def render_experiment_layers(cfg, name, *, pending=False):
-    """Scenario strip is always visible. Resource and research blocks start closed."""
+    """Full three-layer summary. Call this on the run step only."""
     import pandas as pd
     import streamlit as st
     facts = scenario_facts(cfg)
-    st.markdown("**场景层 · 已保存**")
+    st.markdown(f"**场景层 · 已保存**（{name}）")
     render_intraday_status(facts)
     minutes = "未记录" if facts["minutes"] is None else f"{facts['minutes']:g} 分钟"
     periods = "未记录" if facts["periods"] is None else f"{facts['periods']} 段"
@@ -268,15 +274,14 @@ def render_experiment_layers(cfg, name, *, pending=False):
     if pending:
         st.caption("场景选择尚未应用。上面是已保存场景，不是待启动条件。")
     else:
-        st.caption("日内与备用显示已保存配置。要修改请到运行步骤的高级参数；这里不另存一份。")
+        st.caption("日内与备用显示已保存配置。要修改请到本步高级参数；这里不另存一份。")
     with st.expander("资源层（按需）", expanded=False):
-        st.caption("编辑仍在「2 机组」。这里只读容量摘要，不改参与标志，也不保存。")
-        if st.checkbox("加载资源容量摘要", key="experiment_resources:" + name):
-            try:
-                from unit_input_view import resource_capacity_rows
-                st.dataframe(pd.DataFrame(resource_capacity_rows(cfg)), hide_index=True, width="stretch")
-            except (OSError, ValueError, TypeError, KeyError, AttributeError) as exc:
-                st.warning("资源摘要暂不能读取，原场景未改。" + str(exc))
+        st.caption("编辑仍在「2 机组」。这里只读容量，不改参与标志，也不保存。")
+        try:
+            from unit_input_view import resource_capacity_rows
+            st.dataframe(pd.DataFrame(resource_capacity_rows(cfg)), hide_index=True, width="stretch")
+        except (OSError, ValueError, TypeError, KeyError, AttributeError) as exc:
+            st.warning("资源摘要暂不能读取，原场景未改。" + str(exc))
     with st.expander("研究开关（默认折叠）", expanded=False):
         st.caption("只读。保存仍只发生在运行步骤的高级参数，下次启动才进入合约卡。")
         st.dataframe(pd.DataFrame(research_rows(cfg)), hide_index=True, width="stretch")

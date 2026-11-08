@@ -236,6 +236,90 @@ def _issue(category, subject, period, before, after, delta, note):
     }
 
 
+_STATE_SPECS = (
+    ("storage", "da_storage", "rt_storage", "unit", "E_mwh", "储能电量", "MWh"),
+    ("pumped", "da_pumped", "rt_pumped", "unit", "V_up", "抽蓄上库", "万m³"),
+    ("hydro", "da_hydro", "rt_hydro", "station", "V_1e4m3", "水电库容", "万m³"),
+)
+
+
+def price_series(result, buses=None):
+    """Load-weighted DA/RT prices. None means the curve is unrecorded, not zero."""
+    if not result.get("full"):
+        return None
+    if not isinstance(result.get("da_nodal_prices"), pd.DataFrame) or not isinstance(result.get("rt_prices"), pd.DataFrame):
+        return None
+    try:
+        from final_views import system_price_compare
+        frame = system_price_compare(result, buses)
+    except (KeyError, ValueError, TypeError, AttributeError):
+        return None
+    if not isinstance(frame, pd.DataFrame) or frame.empty:
+        return None
+    keep = [column for column in ("日前", "实时") if column in frame and pd.to_numeric(frame[column], errors="coerce").notna().any()]
+    return None if not keep else frame.loc[:, keep]
+
+
+def curtail_series(curtailment):
+    """Period curtailment (MWh) from saved valid rows. A missing stage stays out of the frame."""
+    stages = (curtailment or {}).get("stages") or {}
+    columns = {}
+    for stage in ("日前", "实时"):
+        detail = (stages.get(stage) or {}).get("detail")
+        if not isinstance(detail, pd.DataFrame) or not {"period", "curtail_mwh", "valid"} <= set(detail):
+            continue
+        valid = detail[detail["valid"].fillna(False).astype(bool)]
+        if valid.empty:
+            continue
+        values = pd.to_numeric(valid["curtail_mwh"], errors="coerce")
+        periods = pd.to_numeric(valid["period"], errors="coerce")
+        usable = valid.assign(_mwh=values, _period=periods).dropna(subset=["_mwh", "_period"])
+        if usable.empty:
+            continue
+        columns[stage] = usable.groupby("_period")["_mwh"].sum()
+    if not columns:
+        return None
+    return pd.DataFrame(columns).sort_index()
+
+
+def state_series(result, kind):
+    """One saved state family. None when neither stage has a finite series, so the option is omitted."""
+    spec = next((row for row in _STATE_SPECS if row[0] == kind), None)
+    if spec is None:
+        return None
+    _, da_key, rt_key, identifier, column, _label, _unit = spec
+    pieces = []
+    for stage, key in (("日前", da_key), ("实时", rt_key)):
+        frame = _frame(result.get(key))
+        if frame is None or not {identifier, "period", column} <= set(frame):
+            continue
+        part = frame[[identifier, "period", column]].copy()
+        part["value"] = pd.to_numeric(part[column], errors="coerce")
+        part["period"] = pd.to_numeric(part["period"], errors="coerce")
+        part = part.dropna(subset=["value", "period", identifier])
+        if part.empty:
+            continue
+        part = part.rename(columns={identifier: "name"})
+        part["stage"] = stage
+        pieces.append(part[["period", "name", "stage", "value"]])
+    if not pieces:
+        return None
+    return pd.concat(pieces, ignore_index=True)
+
+
+def narrative_tracks(result, *, buses=None, curtailment=None):
+    """Price and curtailment are always offered. State tracks appear only when saved."""
+    tracks = [
+        {"id": "price", "label": "负荷加权电价", "unit": "元/MWh", "kind": "wide", "frame": price_series(result, buses)},
+        {"id": "curtail", "label": "弃电", "unit": "MWh", "kind": "wide", "frame": curtail_series(curtailment)},
+    ]
+    for kind, _da, _rt, _identifier, _column, label, unit in _STATE_SPECS:
+        frame = state_series(result, kind)
+        if frame is not None:
+            tracks.append({"id": kind, "label": label, "unit": unit, "kind": "state", "frame": frame})
+    return tracks
+
+
 def _price_issues(result, buses):
     if not result.get("full"):
         return []

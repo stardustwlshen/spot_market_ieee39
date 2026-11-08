@@ -62,15 +62,28 @@ def test_fingerprint_tracks_saved_intraday_and_quote_without_writing():
     assert (ROOT / "config/modes.yaml").read_bytes() == original
 
 
+def _layer_labels(at):
+    return {expander.label for expander in at.expander}
+
+
 def test_layers_and_contract_confirmation_are_visible(scene):
     before = (scene.scenario_path("默认") / "config/modes.yaml").read_bytes()
     at = app()
     assert not at.exception
     assert any("日内市场：关闭" in item.value and "甘肃模式" in item.value for item in at.info)
+    assert not {"研究开关（默认折叠）", "假设值一览", "资源层（按需）"} & _layer_labels(at)
+    step(at, "2 机组")
+    assert any(caption.value.startswith("已保存场景状态：") and "日内关闭" in caption.value for caption in at.caption)
+    assert "资源层（按需）" not in _layer_labels(at)
+    step(at, "3 报价")
+    assert any(caption.value.startswith("已保存场景状态：") for caption in at.caption)
+    assert "研究开关（默认折叠）" not in _layer_labels(at)
+    step(at, "4 运行")
     assert not item(at.expander, "研究开关（默认折叠）").proto.expanded
     assert not item(at.expander, "假设值一览").proto.expanded
     assert not item(at.expander, "资源层（按需）").proto.expanded
-    step(at, "4 运行")
+    assert not any(box.label == "加载资源容量摘要" for box in at.checkbox)
+    assert len(item(at.expander, "资源层（按需）").dataframe) >= 1
     assert any("将要生效的合约卡" in title.value for title in at.subheader)
     assert item(at.button, "开始单日出清").disabled
     confirm_contract(at)
