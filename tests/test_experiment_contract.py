@@ -4,6 +4,7 @@ from pathlib import Path
 import sys
 
 import yaml
+import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "app"))
@@ -89,3 +90,71 @@ def test_layers_and_contract_confirmation_are_visible(scene):
     confirm_contract(at)
     assert not item(at.button, "开始单日出清").disabled
     assert (scene.scenario_path("默认") / "config/modes.yaml").read_bytes() == before
+
+
+def test_run_has_one_saved_summary_and_one_assumption_table(scene):
+    at = step(app(), "4 运行")
+    assert not at.exception
+    assert len([notice for notice in at.info if "日内市场：关闭" in notice.value]) == 1
+    assert len([expander for expander in at.expander if "假设值" in expander.label]) == 1
+    assert not any("场景层 · 已保存" in value.value for value in at.markdown)
+    # Optional inspection never becomes another setup task.
+    for label in ("资源层（按需）", "研究开关（默认折叠）", "假设值一览", "高级设置"):
+        assert not item(at.expander, label).proto.expanded
+    confirm_contract(at)
+    at.run()
+    assert not item(at.button, "开始单日出清").disabled
+
+
+@pytest.mark.parametrize("source", ["units", "base", "network", "profile", "costs"])
+def test_confirmation_invalidates_after_saved_physical_input_edit(scene, source):
+    root = scene.scenario_path("默认")
+    if source == "profile":
+        import shutil
+        directory = root / "data/profiles"
+        directory.mkdir(parents=True, exist_ok=True)
+        profile = next((ROOT / "data/profiles").glob("*.csv"))
+        shutil.copy2(profile, directory / profile.name)
+    at = step(app(), "4 运行")
+    confirm_contract(at)
+    assert not item(at.button, "开始单日出清").disabled
+    if source in ("units", "base"):
+        path = root / "config" / f"{source}.yaml"
+        data = yaml.safe_load(path.read_text(encoding="utf-8"))
+        if source == "units":
+            data["storage"][0]["soc0"] = .55
+        else:
+            data["load_scale"] = float(data["load_scale"]) * .99
+        path.write_text(yaml.safe_dump(data, allow_unicode=True), encoding="utf-8")
+    elif source in ("network", "profile"):
+        import pandas as pd
+        path = root / "data/case39/branches.csv" if source == "network" else next((root / "data/profiles").glob("*.csv"))
+        data = pd.read_csv(path)
+        column = "rate_mw" if source == "network" else next(c for c in data.columns if "load" in c.lower())
+        data.loc[0, column] = float(data.loc[0, column]) * .99
+        data.to_csv(path, index=False)
+    else:
+        path = root / "config/spot_market_costs.yaml"
+        data = yaml.safe_load(path.read_text(encoding="utf-8"))
+        data["units"]["C1"]["fuel_cost_yuan_per_mwh"] += 1
+        path.write_text(yaml.safe_dump(data, allow_unicode=True), encoding="utf-8")
+    after = path.read_bytes()
+    at.run()
+    assert not at.exception
+    assert not item(at.checkbox, "已核对合约卡，确认按此启动").value
+    assert item(at.button, "开始单日出清").disabled
+    assert path.read_bytes() == after
+
+
+def test_fingerprint_is_content_based_not_location_or_modification_time(scene, tmp_path):
+    import shutil
+    from smm.config import load_config
+    root = scene.scenario_path("默认")
+    cfg = load_config(root=root)
+    draft = {"version": 1, "units": {}}
+    first = input_fingerprint(cfg, draft)
+    (root / "config/units.yaml").touch()
+    assert input_fingerprint(cfg, draft) == first
+    other = tmp_path / "copied-scene"
+    shutil.copytree(root, other)
+    assert input_fingerprint(load_config(root=other), draft) == first

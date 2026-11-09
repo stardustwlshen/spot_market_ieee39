@@ -318,11 +318,6 @@ def render_single_day():
                 st.dataframe(pd.DataFrame(quote_rows(draft)), hide_index=True, width='stretch')
     elif step == STEPS[3]:
         st.subheader('运行')
-        from experiment_contract import render_experiment_layers
-        try:
-            render_experiment_layers(cfg, name, pending=conditions_pending)
-        except (ValueError, KeyError, TypeError, AttributeError, OSError) as exc:
-            st.warning('实验分层摘要暂不能显示，原场景未改。' + str(exc))
         if active_records:
             from run_progress_view import render_active_progress
             render_active_progress(active_records[0]['dir'])

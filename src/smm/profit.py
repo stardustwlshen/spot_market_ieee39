@@ -116,13 +116,17 @@ def analyze(res, *, policy=None):
         if (not np.allclose(detail.da_amount, expected_da, atol=1e-6, rtol=1e-10)
                 or not np.allclose(detail.rt_amount, expected_rt, atol=1e-6, rtol=1e-10)):
             raise ValueError('settlement cash disagrees with quantity × price × dt')
+    # Partition once without sorting rows: signed charge/discharge summation
+    # retains the original order while avoiding a full-day scan per unit/period.
+    cash_by_period = {t: group for t, group in detail.groupby('period', sort=False)}
     for uid,typ in specs:
         params,reason=(spot_costs.parameters(profile,uid,typ) if spot else _parameters(profile,uid,typ))
-        names=[uid] if typ not in ('storage','pumped') else ([uid+'_放电',uid+'_充电'] if typ=='storage' else [uid+'_发电',uid+'_抽水'])
+        names=names_by_unit[uid]
         charge=uid+('_充电' if typ=='storage' else '_抽水')
         for k,r in enumerate(rr.rt):
             t=int(r['t']);sn=r['snap'];state=rr.states[k]
-            cash=detail[(detail.entity.isin(names)) & (detail.period==t)]
+            period_cash=cash_by_period[t]
+            cash=period_cash[period_cash.entity.isin(names)]
             if cash.empty:raise ValueError(f'missing formal settlement evidence for {uid} period {t}')
             if has_economic_evidence:
                 if typ == 'storage':

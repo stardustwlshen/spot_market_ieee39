@@ -191,16 +191,21 @@ def _canonical(value):
 
 def contract_material(cfg, draft):
     """Stable identity of the saved scene and quote. Display labels are excluded."""
-    return {
-        "date": _base(cfg).get("date"),
-        "season": _base(cfg).get("season"),
-        "errors": (_base(cfg).get("forecast") or {}).get("error_scenarios"),
-        "intraday_enabled": bool((_mode(cfg).get("intraday") or {}).get("enabled", False)),
-        "reserve": _mode(cfg).get("reserve"),
-        "realtime": _mode(cfg).get("realtime"),
-        "solver": _base(cfg).get("solver"),
+    material = {
+        "base": _base(cfg),
+        "mode": _mode(cfg),
+        "units": getattr(cfg, "units", None),
         "quote": draft,
     }
+    root = getattr(cfg, "root", None)
+    if root is not None:
+        # Physical inputs and curves can change without changing the displayed
+        # policy summary. Any such edit must invalidate an earlier confirmation.
+        from smm.live_runner import file_fingerprint
+        from smm.unit_edit_transaction import scene_input_lock
+        with scene_input_lock(root):
+            material["source_files"] = file_fingerprint(root, ("config", "data"))["files"]
+    return material
 
 
 def input_fingerprint(cfg, draft):
@@ -258,23 +263,10 @@ def saved_status_line(cfg):
     return f"已保存场景状态：{facts['date']} · {facts['season_label']} · 日内{facts['intraday_label']} · {facts['reserve']}"
 
 
-def render_experiment_layers(cfg, name, *, pending=False):
-    """Full three-layer summary. Call this on the run step only."""
+def render_experiment_details(cfg):
+    """Optional evidence beneath the single authoritative launch summary."""
     import pandas as pd
     import streamlit as st
-    facts = scenario_facts(cfg)
-    st.markdown(f"**场景层 · 已保存**（{name}）")
-    render_intraday_status(facts)
-    minutes = "未记录" if facts["minutes"] is None else f"{facts['minutes']:g} 分钟"
-    periods = "未记录" if facts["periods"] is None else f"{facts['periods']} 段"
-    st.caption(
-        f"日期 {facts['date']} · {facts['season_label']} · {periods} × {minutes}"
-        f" · 误差 {facts['errors']} · 备用 {facts['reserve']}"
-    )
-    if pending:
-        st.caption("场景选择尚未应用。上面是已保存场景，不是待启动条件。")
-    else:
-        st.caption("日内与备用显示已保存配置。要修改请到本步高级参数；这里不另存一份。")
     with st.expander("资源层（按需）", expanded=False):
         st.caption("编辑仍在「2 机组」。这里只读容量，不改参与标志，也不保存。")
         try:
@@ -302,8 +294,7 @@ def render_contract_card(cfg, name, draft, info, *, mode="full", periods=None, p
     render_intraday_status(facts)
     rows, fingerprint = contract_rows(cfg, draft, info, mode=mode, periods=periods)
     st.dataframe(pd.DataFrame(rows), hide_index=True, width="stretch")
-    with st.expander("合约卡中的假设值", expanded=False):
-        st.dataframe(pd.DataFrame(assumption_rows(cfg)), hide_index=True, width="stretch")
+    render_experiment_details(cfg)
     confirmed = st.checkbox(
         "已核对合约卡，确认按此启动",
         key=f"contract_ok:{name}:{fingerprint}:{mode}:{periods}",

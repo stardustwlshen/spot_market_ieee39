@@ -1,23 +1,27 @@
 """抽蓄接入前后对比：同一默认场景（MKT、丰水期、最新报价）分别在 PS1 停用 / 启用下跑完整 日前 + 实时 15 min 滚动 + 结算。
 
 用法：python scripts/compare_pumped.py [--periods N] [--no-plots]
-输出：outputs/pumped_compare.json、outputs/pumped_compare.csv，以及两次全流程目录 outputs/full_..._ps_off / _ps_on。
+输出：汇总新建于 outputs/pumped_comparisons/，默认两次运行使用独立 outputs/full_* 目录，可在网页查看。
+不复用历史结果；--output 可指定尚不存在的新目录（含两次运行，不自动加入网页目录）。
 对比指标：负荷加权均价（日前/实时）、峰谷价差（小时负荷加权价 max−min）、阻塞盈余、弃电量、运行小时、日前目标值。
 """
 import argparse
 import copy
 import json
+import hashlib
+import math
+import tempfile
 import sys
 from datetime import datetime
-from zoneinfo import ZoneInfo
 from pathlib import Path
 
 import pandas as pd
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
-from smm.config import load_config  # noqa: E402
+from smm.config import load_config, ROOT  # noqa: E402
 from smm.full import run_full, write_full_outputs  # noqa: E402
 from smm.pipeline import prepare  # noqa: E402
+from smm.run_input_provenance import freeze_cli_inputs  # noqa: E402
 
 
 def metrics(s: dict) -> dict:
@@ -51,44 +55,80 @@ def metrics(s: dict) -> dict:
     return o
 
 
-def main():
-    ap = argparse.ArgumentParser()
+def input_fingerprint(root):
+    return {p.relative_to(root).as_posix(): hashlib.sha256(p.read_bytes()).hexdigest()
+            for folder in ("config", "data", "bids", "src", "scripts")
+            for p in sorted((root / folder).rglob("*"))
+            if p.is_file() and "__pycache__" not in p.parts and p.suffix != ".pyc"}
+
+
+def require_unchanged(root, expected, output):
+    if input_fingerprint(root) != expected:
+        raise RuntimeError(f"对比期间输入或源码已变化，停止混合不同条件的结果；已有证据保留在 {output}，请另建新对比。")
+
+
+def main(argv=None):
+    ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--periods", type=int, default=None)
     ap.add_argument("--no-plots", action="store_true")
     ap.add_argument("--bid-version", type=int, default=None)
     ap.add_argument("--time-limit", type=float, default=None, help="覆盖日前 MIP 时限（秒）")
     ap.add_argument("--solver-log", action="store_true", help="打印 HiGHS 日志")
-    ap.add_argument("--reuse", action="store_true", help="输出目录已有 summary.json 时直接复用（分步保存，中断后可续跑）")
-    a = ap.parse_args()
+    ap.add_argument("--output", type=Path, help="尚不存在的新对比目录；默认自动生成独立目录")
+    arguments = sys.argv[1:] if argv is None else argv
+    if "--reuse" in arguments:
+        ap.error("--reuse 已移除：旧结果来源无法证明一致。请不带 --reuse 新建对比，或用 --output 指定尚不存在的新目录；旧结果保留。")
+    a = ap.parse_args(arguments)
+    if a.time_limit is not None and (not math.isfinite(a.time_limit) or a.time_limit <= 0):
+        ap.error("--time-limit 必须为有限正数")
+    if a.bid_version is not None and a.bid_version < 1:
+        ap.error("--bid-version 必须为正整数")
+    source_root = ROOT
+    # Capture before reading configuration so concurrent edits cannot be hidden.
+    before = input_fingerprint(source_root)
+    cfg_base = load_config()
+    if a.periods is not None and not 1 <= a.periods <= cfg_base.T:
+        ap.error(f"--periods 必须为1到{cfg_base.T}之间的整数")
+    if a.output is None:
+        parent = cfg_base.root / "outputs" / "pumped_comparisons"
+        parent.mkdir(parents=True, exist_ok=True)
+        output = Path(tempfile.mkdtemp(prefix="comparison_", dir=parent))
+    else:
+        output = a.output.resolve()
+        output.mkdir(parents=True, exist_ok=False)
+    print(f"独立对比目录：{output}", flush=True)
+    require_unchanged(source_root, before, output)
     out = {}
-    root = None
+    # Both variants share the loaded configuration; each preparation is read-only.
     for tag, on in (("ps_off", False), ("ps_on", True)):
-        cfg = load_config()
-        root = cfg.root
-        if a.time_limit:
+        cfg = copy.deepcopy(cfg_base)
+        if a.time_limit is not None:
             cfg.base["solver"]["time_limit_s"] = a.time_limit
         if a.solver_log:
             cfg.base["solver"]["log"] = True
         if not on:
             cfg.units["pumped"] = []
-        print(f"[{tag}] 开始 {datetime.now(ZoneInfo("America/Los_Angeles")):%H:%M:%S} PST", flush=True)
-        if a.reuse:
-            hit = sorted((cfg.root / "outputs").glob(f"full_{cfg.base['date']}_{cfg.rule_set}_{cfg.base['season']}_v{a.bid_version or '*'}_{tag}/summary.json"))
-            if hit:
-                s = json.loads(hit[-1].read_text(encoding="utf-8"))
-                out[tag] = dict(dir=str(hit[-1].parent.relative_to(cfg.root)), metrics=metrics(s), time_s=s["time_s"], checks=s["checks"])
-                print(f"[{tag}] 复用 {hit[-1].parent}", flush=True)
-                continue
-        case = prepare(cfg, a.bid_version)
+        print(f"[{tag}] 开始 {datetime.now().astimezone():%H:%M:%S %Z}", flush=True)
+        require_unchanged(source_root, before, output)
+        case = prepare(cfg, a.bid_version, read_only=True)
+        if a.output is None:
+            d = cfg.root / "outputs" / (
+                f"full_{cfg.base['date']}_{cfg.rule_set}_{cfg.base['season']}_"
+                f"v{case.bids['version']}_{output.name}_{tag}")
+        else:
+            d = output / tag
+        # Exclusive creation and frozen effective inputs precede the solve.
+        freeze_cli_inputs(cfg, case, d)
+        require_unchanged(source_root, before, output)
         res = run_full(cfg, case, periods=a.periods, log=lambda *x: None, retain_id_models=False)
-        d = cfg.root / "outputs" / f"full_{cfg.base['date']}_{cfg.rule_set}_{cfg.base['season']}_v{case.bids['version']}_{tag}"
         s = write_full_outputs(res, d, make_plots=not a.no_plots)
-        out[tag] = dict(dir=str(d.relative_to(cfg.root)), metrics=metrics(s), time_s=s["time_s"], checks=s["checks"])
+        out[tag] = dict(dir=str(d), metrics=metrics(s), time_s=s["time_s"], checks=s["checks"])
         print(f"[{tag}] 完成，用时 {s['time_s']['total']:.0f}s → {d}", flush=True)
+    require_unchanged(source_root, before, output)
     df = pd.DataFrame({k: v["metrics"] for k, v in out.items()})
     df["变化(on−off)"] = df["ps_on"] - df["ps_off"]
-    df.to_csv(root / "outputs" / "pumped_compare.csv", float_format="%.3f", encoding="utf-8-sig")
-    (root / "outputs" / "pumped_compare.json").write_text(json.dumps(out, ensure_ascii=False, indent=2, default=float), encoding="utf-8")
+    df.to_csv(output / "pumped_compare.csv", float_format="%.3f", encoding="utf-8-sig")
+    (output / "pumped_compare.json").write_text(json.dumps(out, ensure_ascii=False, indent=2, default=float), encoding="utf-8")
     pd.set_option("display.width", 200)
     print(df.round(2).to_string())
 

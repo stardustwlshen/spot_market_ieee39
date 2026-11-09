@@ -157,33 +157,6 @@ def line_loading(lines: pd.DataFrame, path: Path, top=6, title="重载/阻塞线
     plt.close(fig)
 
 
-def rebid_compare(base_prices, new_prices, base_units, new_units, unit_ids, path: Path, buses, title="改报价前后对比", dt_h=0.25):
-    fig, axes = plt.subplots(2, 1, figsize=(12, 8), sharex=True)
-    ax = axes[0]
-    for b in buses:
-        a = base_prices[base_prices.bus == b].sort_values("period")
-        c = new_prices[new_prices.bus == b].sort_values("period")
-        l, = ax.plot(a.period, a.lmp, lw=1.2, label=f"母线{b} 改前")
-        ax.plot(c.period, c.lmp, lw=1.2, ls="--", color=l.get_color(), label=f"母线{b} 改后")
-    ax.set_ylabel("节点电价 元/MWh")
-    ax.legend(ncol=4, fontsize=8)
-    ax.grid(alpha=0.3)
-    ax.set_title(title)
-    ax = axes[1]
-    for uid in unit_ids:
-        a = base_units[base_units.unit == uid].sort_values("period")
-        c = new_units[new_units.unit == uid].sort_values("period")
-        l, = ax.plot(a.period, a.P_mw, lw=1.2, label=f"{uid} 改前")
-        ax.plot(c.period, c.P_mw, lw=1.2, ls="--", color=l.get_color(), label=f"{uid} 改后")
-    ax.set_ylabel("中标出力 MW")
-    ax.legend(ncol=4, fontsize=8)
-    ax.grid(alpha=0.3)
-    _xt(ax, int(max(base_prices.period.max(), new_prices.period.max())) + 1, dt_h=dt_h)
-    fig.tight_layout()
-    fig.savefig(path, dpi=130)
-    plt.close(fig)
-
-
 def forecast_plot(profiles: pd.DataFrame, path: Path, title="日前/日内/实时预测与实际", dt_h=0.25):
     keys = [c[:-7] for c in profiles if c.endswith("_actual") and c[:-7]+"_da" in profiles]
     if not keys:
