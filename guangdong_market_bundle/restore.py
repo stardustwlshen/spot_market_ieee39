@@ -2,6 +2,7 @@
 import hashlib
 import io
 import json
+import os
 from pathlib import Path, PurePosixPath
 import sys
 import tarfile
@@ -20,14 +21,17 @@ if len(data) != manifest['size'] or hashlib.sha256(data).hexdigest() != manifest
 target = here.parent / 'guangdong_market'
 if target.exists():
     raise SystemExit('Refusing to overwrite existing directory: ' + str(target))
+extract_root = str(here.parent.resolve())
+if os.name == 'nt':
+    extract_root = '\\\\?\\' + extract_root
 with tarfile.open(fileobj=io.BytesIO(data), mode='r:xz') as archive:
     for member in archive.getmembers():
         p = PurePosixPath(member.name)
         if p.is_absolute() or '..' in p.parts or not p.parts or p.parts[0] != 'guangdong_market' or not (member.isfile() or member.isdir()):
             raise SystemExit('Unsafe archive member: ' + member.name)
     if sys.version_info >= (3, 12):
-        archive.extractall(here.parent, filter='data')
+        archive.extractall(extract_root, filter='data')
     else:
-        archive.extractall(here.parent)
+        archive.extractall(extract_root)
 print('Verified and restored:', target)
 print('Read guangdong_market/使用说明.md before running the research application.')
