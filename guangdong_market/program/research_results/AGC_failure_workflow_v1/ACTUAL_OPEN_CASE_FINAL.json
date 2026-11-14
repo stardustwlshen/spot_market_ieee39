@@ -1,0 +1,70 @@
+{
+  "schema": "gd.agc.failure_workflow.research.v1",
+  "status": "BLOCKED_SYSTEM_SAFETY",
+  "revision": 0,
+  "branch_id": "short_cycle_tail_v1",
+  "hour_start": "2026-11-11T12:00:00+08:00",
+  "case_sha256": "098ffb3261cd3d857013faa911681d2bc1957cccbe0e571227b2c9b5497f281e",
+  "original_awards": {
+    "target_mw": 50,
+    "awards_mw": {
+      "C1": 10,
+      "C2": 10,
+      "C3": 10,
+      "CCGT": 10,
+      "GT": 10
+    },
+    "source_sha256": "2195de0bb6c7a29470192e6cb7277ee609f21ccf382861dfa96c26b00687727d",
+    "reserve_requirements": {
+      "positive_mw": 400,
+      "accident_mw": 400
+    },
+    "basis": "inherited synthetic50MW, not a new H12 auction or certified operator award"
+  },
+  "original_awards_sha256": "83a948ebc7a1e6f401dda0e27188993c9e8fc1457814fc802131193da210b20a",
+  "failure": {
+    "status": "verified_research_AGC_safety_not_released",
+    "target_hour": "2026-11-11T12:00:00+08:00",
+    "research_no_increase_check": "fail",
+    "hour_excess_MWh": 27.691195469279826,
+    "full4h_excess_MWh": 49.999999999999446,
+    "unit_removals": [],
+    "unit_attribution_not_established": true,
+    "requires_AC_and_security": true,
+    "native_calls": 0,
+    "formal": false,
+    "safety_release": false,
+    "dispatch_authorized": false
+  },
+  "failure_source_sha256": "e456aae0a4c71478d28ddb37a68216815f513eebf5190904350eaa0d5784d072",
+  "candidate": null,
+  "events": [
+    {
+      "event": "aggregate_failure_received",
+      "details": "No unit attribution; original awards retained as historical evidence, not safety-approved dispatch."
+    }
+  ],
+  "missing_inputs": [
+    "system redispatch/reclearing proposal with same requirement and constraints",
+    "source-bound unit-specific evidence before removing any awarded unit",
+    "actual AGC state, safety sections/AC, storage and no-increase checks",
+    "if article59 route requested: sourced trigger, eligible nonawarded inventory and safety evidence"
+  ],
+  "article59_policy": {
+    "trigger": "post-safety capacity shortage OR actual operating security need; not inferred from aggregate counterfactual",
+    "precondition": "all safety constraints satisfied",
+    "priority": [
+      "market nonawarded: sorting price ascending",
+      "nonparticipants afterwards: comprehensive performance descending"
+    ],
+    "record": "post-event information record required",
+    "automatic_call_supported": false
+  },
+  "unit_removals": [],
+  "publication_allowed": false,
+  "dispatch_authorized": false,
+  "qualification_created": false,
+  "formal": false,
+  "native_calls": 0,
+  "state_sha256": "ce7a339d30a06899af0b54626b9f821b291e72dbb0a7d96ac255582b87ff3e35"
+}

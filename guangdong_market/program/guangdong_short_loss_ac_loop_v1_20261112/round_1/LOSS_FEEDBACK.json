@@ -1,0 +1,299 @@
+{
+  "source_AC": "guangdong_short_first_ac_v1_20261112/AC_RESULT.json",
+  "source_AC_sha256": "92f9128a4010d8ce9a9642367de8f4a7ebe77bd494bfac47099af5204cbba245",
+  "source_mapping_sha256": "b750d90c9da5aa1bad5db815cc3f5d267ecc5bbcd22aec10658109bbf6e09c47",
+  "node_loss_MW": {
+    "1": 0.080605511284773,
+    "2": 0.6698117904893275,
+    "3": 1.2850911511171716,
+    "4": 0.7814022125218614,
+    "5": 0.9156005640767688,
+    "6": 0.5656354741400804,
+    "7": 0.24800430327350398,
+    "8": 0.25959869145820846,
+    "9": 0.1419642955021505,
+    "10": 0.5661196644413025,
+    "11": 0.1454792500020332,
+    "12": 0.01547350611956766,
+    "13": 1.7206945449557889,
+    "14": 3.165987736962613,
+    "15": 2.3222386975496363,
+    "16": 2.3532122890466276,
+    "17": 0.86081723871294,
+    "18": 0.5639617587344645,
+    "19": 2.1320824464196724,
+    "20": 0.7093656635698403,
+    "21": 0.2477334291822011,
+    "22": 0.2934096736095597,
+    "23": 0.1744480582799639,
+    "24": 0.11785118132338823,
+    "25": 0.11690910525649745,
+    "26": 2.8898980367502887,
+    "27": 1.1157187586746744,
+    "28": 1.3563187805562933,
+    "29": 3.892739218627767,
+    "30": 1.1368683772161603e-13,
+    "31": 0.0,
+    "32": -5.684341886080802e-14,
+    "33": -9.344490729411395e-16,
+    "34": -1.4715779121605668e-14,
+    "35": -2.842170943040401e-14,
+    "36": 0.0181746123084352,
+    "37": 0.08214935994966766,
+    "38": 1.9749487705143451,
+    "39": 0.05206901582281098
+  },
+  "total_loss_MW": 31.83551479123424,
+  "physical_load_unchanged": true,
+  "allocation": "half branch real loss to each endpoint; numerical research proxy not metered demand",
+  "source_time": "2026-11-11T00:15:00+08:00",
+  "forecast_causality": "counterfactual same-cell solved candidate feedback, not external telemetry or past real operation",
+  "changed_original_rows": [
+    {
+      "row": "c_balance['1',0]",
+      "renewable_coefficient": -1.0,
+      "delta_lb": -0.080605511284773,
+      "delta_ub": -0.080605511284773
+    },
+    {
+      "row": "c_balance['2',0]",
+      "renewable_coefficient": -1.0,
+      "delta_lb": -0.6698117904893275,
+      "delta_ub": -0.6698117904893275
+    },
+    {
+      "row": "c_balance['3',0]",
+      "renewable_coefficient": -1.0,
+      "delta_lb": -1.2850911511171716,
+      "delta_ub": -1.2850911511171716
+    },
+    {
+      "row": "c_balance['4',0]",
+      "renewable_coefficient": -1.0,
+      "delta_lb": -0.7814022125218614,
+      "delta_ub": -0.7814022125218614
+    },
+    {
+      "row": "c_balance['5',0]",
+      "renewable_coefficient": -1.0,
+      "delta_lb": -0.9156005640767688,
+      "delta_ub": -0.9156005640767688
+    },
+    {
+      "row": "c_balance['6',0]",
+      "renewable_coefficient": -1.0,
+      "delta_lb": -0.5656354741400804,
+      "delta_ub": -0.5656354741400804
+    },
+    {
+      "row": "c_balance['7',0]",
+      "renewable_coefficient": -1.0,
+      "delta_lb": -0.24800430327350398,
+      "delta_ub": -0.24800430327350398
+    },
+    {
+      "row": "c_balance['8',0]",
+      "renewable_coefficient": 1.0,
+      "delta_lb": 0.25959869145820846,
+      "delta_ub": 0.25959869145820846
+    },
+    {
+      "row": "c_balance['9',0]",
+      "renewable_coefficient": -1.0,
+      "delta_lb": -0.1419642955021505,
+      "delta_ub": -0.1419642955021505
+    },
+    {
+      "row": "c_balance['10',0]",
+      "renewable_coefficient": -1.0,
+      "delta_lb": -0.5661196644413025,
+      "delta_ub": -0.5661196644413025
+    },
+    {
+      "row": "c_balance['11',0]",
+      "renewable_coefficient": 1.0,
+      "delta_lb": 0.1454792500020332,
+      "delta_ub": 0.1454792500020332
+    },
+    {
+      "row": "c_balance['12',0]",
+      "renewable_coefficient": -1.0,
+      "delta_lb": -0.01547350611956766,
+      "delta_ub": -0.01547350611956766
+    },
+    {
+      "row": "c_balance['13',0]",
+      "renewable_coefficient": 1.0,
+      "delta_lb": 1.7206945449557889,
+      "delta_ub": 1.7206945449557889
+    },
+    {
+      "row": "c_balance['14',0]",
+      "renewable_coefficient": 1.0,
+      "delta_lb": 3.165987736962613,
+      "delta_ub": 3.165987736962613
+    },
+    {
+      "row": "c_balance['15',0]",
+      "renewable_coefficient": -1.0,
+      "delta_lb": -2.3222386975496363,
+      "delta_ub": -2.3222386975496363
+    },
+    {
+      "row": "c_balance['16',0]",
+      "renewable_coefficient": -1.0,
+      "delta_lb": -2.3532122890466276,
+      "delta_ub": -2.3532122890466276
+    },
+    {
+      "row": "c_balance['17',0]",
+      "renewable_coefficient": -1.0,
+      "delta_lb": -0.86081723871294,
+      "delta_ub": -0.86081723871294
+    },
+    {
+      "row": "c_balance['18',0]",
+      "renewable_coefficient": 1.0,
+      "delta_lb": 0.5639617587344645,
+      "delta_ub": 0.5639617587344645
+    },
+    {
+      "row": "c_balance['19',0]",
+      "renewable_coefficient": -1.0,
+      "delta_lb": -2.1320824464196724,
+      "delta_ub": -2.1320824464196724
+    },
+    {
+      "row": "c_balance['20',0]",
+      "renewable_coefficient": -1.0,
+      "delta_lb": -0.7093656635698403,
+      "delta_ub": -0.7093656635698403
+    },
+    {
+      "row": "c_balance['21',0]",
+      "renewable_coefficient": -1.0,
+      "delta_lb": -0.2477334291822011,
+      "delta_ub": -0.2477334291822011
+    },
+    {
+      "row": "c_balance['22',0]",
+      "renewable_coefficient": -1.0,
+      "delta_lb": -0.2934096736095597,
+      "delta_ub": -0.2934096736095597
+    },
+    {
+      "row": "c_balance['23',0]",
+      "renewable_coefficient": -1.0,
+      "delta_lb": -0.1744480582799639,
+      "delta_ub": -0.1744480582799639
+    },
+    {
+      "row": "c_balance['24',0]",
+      "renewable_coefficient": 1.0,
+      "delta_lb": 0.11785118132338823,
+      "delta_ub": 0.11785118132338823
+    },
+    {
+      "row": "c_balance['25',0]",
+      "renewable_coefficient": -1.0,
+      "delta_lb": -0.11690910525649745,
+      "delta_ub": -0.11690910525649745
+    },
+    {
+      "row": "c_balance['26',0]",
+      "renewable_coefficient": -1.0,
+      "delta_lb": -2.8898980367502887,
+      "delta_ub": -2.8898980367502887
+    },
+    {
+      "row": "c_balance['27',0]",
+      "renewable_coefficient": 1.0,
+      "delta_lb": 1.1157187586746744,
+      "delta_ub": 1.1157187586746744
+    },
+    {
+      "row": "c_balance['28',0]",
+      "renewable_coefficient": -1.0,
+      "delta_lb": -1.3563187805562933,
+      "delta_ub": -1.3563187805562933
+    },
+    {
+      "row": "c_balance['29',0]",
+      "renewable_coefficient": 1.0,
+      "delta_lb": 3.892739218627767,
+      "delta_ub": 3.892739218627767
+    },
+    {
+      "row": "c_balance['30',0]",
+      "renewable_coefficient": 1.0,
+      "delta_lb": 1.1368683772161603e-13,
+      "delta_ub": 1.1368683772161603e-13
+    },
+    {
+      "row": "c_balance['31',0]",
+      "renewable_coefficient": 1.0,
+      "delta_lb": 0.0,
+      "delta_ub": 0.0
+    },
+    {
+      "row": "c_balance['32',0]",
+      "renewable_coefficient": 1.0,
+      "delta_lb": -5.684341886080802e-14,
+      "delta_ub": -5.684341886080802e-14
+    },
+    {
+      "row": "c_balance['33',0]",
+      "renewable_coefficient": 1.0,
+      "delta_lb": -9.344490729411395e-16,
+      "delta_ub": -9.344490729411395e-16
+    },
+    {
+      "row": "c_balance['34',0]",
+      "renewable_coefficient": 1.0,
+      "delta_lb": -1.4715779121605668e-14,
+      "delta_ub": -1.4715779121605668e-14
+    },
+    {
+      "row": "c_balance['35',0]",
+      "renewable_coefficient": 1.0,
+      "delta_lb": -2.842170943040401e-14,
+      "delta_ub": -2.842170943040401e-14
+    },
+    {
+      "row": "c_balance['36',0]",
+      "renewable_coefficient": 1.0,
+      "delta_lb": 0.0181746123084352,
+      "delta_ub": 0.0181746123084352
+    },
+    {
+      "row": "c_balance['37',0]",
+      "renewable_coefficient": 1.0,
+      "delta_lb": 0.08214935994966766,
+      "delta_ub": 0.08214935994966766
+    },
+    {
+      "row": "c_balance['38',0]",
+      "renewable_coefficient": 1.0,
+      "delta_lb": 1.9749487705143451,
+      "delta_ub": 1.9749487705143451
+    },
+    {
+      "row": "c_balance['39',0]",
+      "renewable_coefficient": 1.0,
+      "delta_lb": 0.05206901582281098,
+      "delta_ub": 0.05206901582281098
+    },
+    {
+      "row": "reserves[1]",
+      "side": "lb",
+      "delta": 31.83551479123424
+    },
+    {
+      "row": "reserves[2]",
+      "side": "ub",
+      "delta": 31.83551479123424
+    }
+  ],
+  "fixed_actual_point": [],
+  "formal": false
+}

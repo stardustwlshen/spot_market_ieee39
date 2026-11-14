@@ -1,0 +1,750 @@
+{
+  "day_start": "2026-11-11T00:00:00+08:00",
+  "initial_preparation": {
+    "cells": [
+      {
+        "batteries": {
+          "ES1": {
+            "charge_mw": 0.0,
+            "discharge_mw": 0.0,
+            "mode": "idle",
+            "power_mw": 0.0,
+            "selected_hour_direction_permission": 0
+          },
+          "ES2": {
+            "charge_mw": 0.0,
+            "discharge_mw": 0.0,
+            "mode": "idle",
+            "power_mw": 0.0,
+            "selected_hour_direction_permission": 0
+          },
+          "ES3": {
+            "charge_mw": 0.0,
+            "discharge_mw": 0.0,
+            "mode": "idle",
+            "power_mw": 0.0,
+            "selected_hour_direction_permission": 0
+          },
+          "ES4": {
+            "charge_mw": 0.0,
+            "discharge_mw": 0.0,
+            "mode": "idle",
+            "power_mw": 0.0,
+            "selected_hour_direction_permission": 0
+          },
+          "ES5": {
+            "charge_mw": 0.0,
+            "discharge_mw": 0.0,
+            "mode": "idle",
+            "power_mw": 0.0,
+            "selected_hour_direction_permission": 0
+          }
+        },
+        "end": "2026-11-10T23:50:00+08:00",
+        "start": "2026-11-10T23:45:00+08:00",
+        "thermal": {
+          "C1": {
+            "begin_mw": 645.9999887210572,
+            "curve_length": null,
+            "curve_step": null,
+            "end_mw": 646.0,
+            "mean_mw": 646.0,
+            "phase": "stable"
+          },
+          "C2": {
+            "begin_mw": 724.9999999999945,
+            "curve_length": null,
+            "curve_step": null,
+            "end_mw": 725.0,
+            "mean_mw": 725.0,
+            "phase": "stable"
+          },
+          "C3": {
+            "begin_mw": 864.9999999999961,
+            "curve_length": null,
+            "curve_step": null,
+            "end_mw": 865.0,
+            "mean_mw": 865.0,
+            "phase": "stable"
+          },
+          "CCGT": {
+            "begin_mw": 322.1408564499447,
+            "curve_length": null,
+            "curve_step": null,
+            "end_mw": 316.83341519916667,
+            "mean_mw": 316.83341519916667,
+            "phase": "stable"
+          },
+          "GT": {
+            "begin_mw": 75.0,
+            "curve_length": null,
+            "curve_step": null,
+            "end_mw": 75.0,
+            "mean_mw": 75.0,
+            "phase": "stable"
+          }
+        }
+      },
+      {
+        "batteries": {
+          "ES1": {
+            "charge_mw": 0.0,
+            "discharge_mw": 0.0,
+            "mode": "idle",
+            "power_mw": 0.0,
+            "selected_hour_direction_permission": 0
+          },
+          "ES2": {
+            "charge_mw": 0.0,
+            "discharge_mw": 0.0,
+            "mode": "idle",
+            "power_mw": 0.0,
+            "selected_hour_direction_permission": 0
+          },
+          "ES3": {
+            "charge_mw": 0.0,
+            "discharge_mw": 0.0,
+            "mode": "idle",
+            "power_mw": 0.0,
+            "selected_hour_direction_permission": 0
+          },
+          "ES4": {
+            "charge_mw": 0.0,
+            "discharge_mw": 0.0,
+            "mode": "idle",
+            "power_mw": 0.0,
+            "selected_hour_direction_permission": 0
+          },
+          "ES5": {
+            "charge_mw": 0.0,
+            "discharge_mw": 0.0,
+            "mode": "idle",
+            "power_mw": 0.0,
+            "selected_hour_direction_permission": 0
+          }
+        },
+        "end": "2026-11-10T23:55:00+08:00",
+        "start": "2026-11-10T23:50:00+08:00",
+        "thermal": {
+          "C1": {
+            "begin_mw": 646.0,
+            "curve_length": null,
+            "curve_step": null,
+            "end_mw": 646.0,
+            "mean_mw": 646.0,
+            "phase": "stable"
+          },
+          "C2": {
+            "begin_mw": 725.0,
+            "curve_length": null,
+            "curve_step": null,
+            "end_mw": 725.0,
+            "mean_mw": 725.0,
+            "phase": "stable"
+          },
+          "C3": {
+            "begin_mw": 865.0,
+            "curve_length": null,
+            "curve_step": null,
+            "end_mw": 861.2185552555,
+            "mean_mw": 861.2185552555,
+            "phase": "stable"
+          },
+          "CCGT": {
+            "begin_mw": 316.83341519916667,
+            "curve_length": null,
+            "curve_step": null,
+            "end_mw": 310.0,
+            "mean_mw": 310.0,
+            "phase": "stable"
+          },
+          "GT": {
+            "begin_mw": 75.0,
+            "curve_length": null,
+            "curve_step": null,
+            "end_mw": 75.0,
+            "mean_mw": 75.0,
+            "phase": "stable"
+          }
+        }
+      },
+      {
+        "batteries": {
+          "ES1": {
+            "charge_mw": 0.0,
+            "discharge_mw": 0.0,
+            "mode": "idle",
+            "power_mw": 0.0,
+            "selected_hour_direction_permission": 0
+          },
+          "ES2": {
+            "charge_mw": 0.0,
+            "discharge_mw": 0.0,
+            "mode": "idle",
+            "power_mw": 0.0,
+            "selected_hour_direction_permission": 0
+          },
+          "ES3": {
+            "charge_mw": 0.0,
+            "discharge_mw": 0.0,
+            "mode": "idle",
+            "power_mw": 0.0,
+            "selected_hour_direction_permission": 0
+          },
+          "ES4": {
+            "charge_mw": 0.0,
+            "discharge_mw": 0.0,
+            "mode": "idle",
+            "power_mw": 0.0,
+            "selected_hour_direction_permission": 0
+          },
+          "ES5": {
+            "charge_mw": 0.0,
+            "discharge_mw": 0.0,
+            "mode": "idle",
+            "power_mw": 0.0,
+            "selected_hour_direction_permission": 0
+          }
+        },
+        "end": "2026-11-11T00:00:00+08:00",
+        "start": "2026-11-10T23:55:00+08:00",
+        "thermal": {
+          "C1": {
+            "begin_mw": 646.0,
+            "curve_length": null,
+            "curve_step": null,
+            "end_mw": 646.0,
+            "mean_mw": 646.0,
+            "phase": "stable"
+          },
+          "C2": {
+            "begin_mw": 725.0,
+            "curve_length": null,
+            "curve_step": null,
+            "end_mw": 725.0,
+            "mean_mw": 725.0,
+            "phase": "stable"
+          },
+          "C3": {
+            "begin_mw": 861.2185552555,
+            "curve_length": null,
+            "curve_step": null,
+            "end_mw": 850.6036953118341,
+            "mean_mw": 850.6036953118341,
+            "phase": "stable"
+          },
+          "CCGT": {
+            "begin_mw": 310.0,
+            "curve_length": null,
+            "curve_step": null,
+            "end_mw": 310.0,
+            "mean_mw": 310.0,
+            "phase": "stable"
+          },
+          "GT": {
+            "begin_mw": 75.0,
+            "curve_length": null,
+            "curve_step": null,
+            "end_mw": 75.0,
+            "mean_mw": 75.0,
+            "phase": "stable"
+          }
+        }
+      }
+    ],
+    "evidence_kind": "portable_archived_mathematical_proof_not_live_native",
+    "historical_telemetry": false,
+    "midnight_state": {
+      "at": "2026-11-11T00:00:00+08:00",
+      "batteries": {
+        "ES1": {
+          "calendar_hour": "2026-11-11T00:00:00+08:00",
+          "cumulative_internal_mwh": 0.0,
+          "daily_used_internal_mwh": {
+            "2026-11-10": 0.0,
+            "2026-11-11": 0.0
+          },
+          "energy_mwh": 100.0,
+          "hour_direction": 0,
+          "mode": "idle",
+          "mode_age_h": 23.999999999999996,
+          "power_mw": 0.0
+        },
+        "ES2": {
+          "calendar_hour": "2026-11-11T00:00:00+08:00",
+          "cumulative_internal_mwh": 0.0,
+          "daily_used_internal_mwh": {
+            "2026-11-10": 0.0,
+            "2026-11-11": 0.0
+          },
+          "energy_mwh": 200.0,
+          "hour_direction": 0,
+          "mode": "idle",
+          "mode_age_h": 23.999999999999996,
+          "power_mw": 0.0
+        },
+        "ES3": {
+          "calendar_hour": "2026-11-11T00:00:00+08:00",
+          "cumulative_internal_mwh": 0.0,
+          "daily_used_internal_mwh": {
+            "2026-11-10": 0.0,
+            "2026-11-11": 0.0
+          },
+          "energy_mwh": 100.0,
+          "hour_direction": 0,
+          "mode": "idle",
+          "mode_age_h": 23.999999999999996,
+          "power_mw": 0.0
+        },
+        "ES4": {
+          "calendar_hour": "2026-11-11T00:00:00+08:00",
+          "cumulative_internal_mwh": 0.0,
+          "daily_used_internal_mwh": {
+            "2026-11-10": 0.0,
+            "2026-11-11": 0.0
+          },
+          "energy_mwh": 300.0,
+          "hour_direction": 0,
+          "mode": "idle",
+          "mode_age_h": 23.999999999999996,
+          "power_mw": 0.0
+        },
+        "ES5": {
+          "calendar_hour": "2026-11-11T00:00:00+08:00",
+          "cumulative_internal_mwh": 0.0,
+          "daily_used_internal_mwh": {
+            "2026-11-10": 0.0,
+            "2026-11-11": 0.0
+          },
+          "energy_mwh": 300.0,
+          "hour_direction": 0,
+          "mode": "idle",
+          "mode_age_h": 23.999999999999996,
+          "power_mw": 0.0
+        }
+      },
+      "pumped_storage": {
+        "PS1": {
+          "lower_m3": 3200000.0,
+          "modes": {
+            "PS1_1": "off",
+            "PS1_2": "off"
+          },
+          "net_power_mw": 0.0,
+          "parameters": {
+            "bus": 2,
+            "e_gen": 9.6,
+            "e_pump": 12.6,
+            "enabled": true,
+            "id": "PS1",
+            "init_mode": "idle",
+            "max_gen_starts": 4,
+            "max_pump_starts": 2,
+            "n_units": 2,
+            "start_cost_gen": 2000,
+            "start_cost_pump": 4000,
+            "switch_gap": 1,
+            "unit_gen_max": 300,
+            "unit_gen_min": 150,
+            "unit_pump": 300,
+            "unit_pump_min": 210,
+            "v_total": 520,
+            "variable_speed": false,
+            "vdn_max": 470,
+            "vdn_min": 60,
+            "vup0": 200,
+            "vup_end_bid": 200,
+            "vup_max": 450,
+            "vup_min": 60
+          },
+          "reserve_credit_mw": 0.0,
+          "upper_m3": 2000000.0
+        }
+      },
+      "thermal": {
+        "C1": {
+          "curve_length": null,
+          "curve_step": null,
+          "online": 1,
+          "phase": "stable",
+          "power_mw": 646.0,
+          "residence_remaining_h": 0.0,
+          "state_age_h": 48.25000000000001
+        },
+        "C2": {
+          "curve_length": null,
+          "curve_step": null,
+          "online": 1,
+          "phase": "stable",
+          "power_mw": 725.0,
+          "residence_remaining_h": 0.0,
+          "state_age_h": 48.25000000000001
+        },
+        "C3": {
+          "curve_length": null,
+          "curve_step": null,
+          "online": 1,
+          "phase": "stable",
+          "power_mw": 850.6036953118341,
+          "residence_remaining_h": 0.0,
+          "state_age_h": 48.25000000000001
+        },
+        "CCGT": {
+          "curve_length": null,
+          "curve_step": null,
+          "online": 1,
+          "phase": "stable",
+          "power_mw": 310.0,
+          "residence_remaining_h": 0.0,
+          "state_age_h": 8.250000000000002
+        },
+        "GT": {
+          "curve_length": null,
+          "curve_step": null,
+          "online": 1,
+          "phase": "stable",
+          "power_mw": 75.0,
+          "residence_remaining_h": 0.0,
+          "state_age_h": 8.250000000000002
+        }
+      }
+    },
+    "original_predecessor_reachable": false,
+    "seed_state": {
+      "at": "2026-11-10T23:45:00+08:00",
+      "batteries": {
+        "ES1": {
+          "calendar_hour": "2026-11-10T23:00:00+08:00",
+          "cumulative_internal_mwh": 0.0,
+          "daily_used_internal_mwh": {
+            "2026-11-10": 0.0
+          },
+          "energy_mwh": 100.0,
+          "hour_direction": 0,
+          "mode": "idle",
+          "mode_age_h": 23.75,
+          "power_mw": 0.0
+        },
+        "ES2": {
+          "calendar_hour": "2026-11-10T23:00:00+08:00",
+          "cumulative_internal_mwh": 0.0,
+          "daily_used_internal_mwh": {
+            "2026-11-10": 0.0
+          },
+          "energy_mwh": 200.0,
+          "hour_direction": 0,
+          "mode": "idle",
+          "mode_age_h": 23.75,
+          "power_mw": 0.0
+        },
+        "ES3": {
+          "calendar_hour": "2026-11-10T23:00:00+08:00",
+          "cumulative_internal_mwh": 0.0,
+          "daily_used_internal_mwh": {
+            "2026-11-10": 0.0
+          },
+          "energy_mwh": 100.0,
+          "hour_direction": 0,
+          "mode": "idle",
+          "mode_age_h": 23.75,
+          "power_mw": 0.0
+        },
+        "ES4": {
+          "calendar_hour": "2026-11-10T23:00:00+08:00",
+          "cumulative_internal_mwh": 0.0,
+          "daily_used_internal_mwh": {
+            "2026-11-10": 0.0
+          },
+          "energy_mwh": 300.0,
+          "hour_direction": 0,
+          "mode": "idle",
+          "mode_age_h": 23.75,
+          "power_mw": 0.0
+        },
+        "ES5": {
+          "calendar_hour": "2026-11-10T23:00:00+08:00",
+          "cumulative_internal_mwh": 0.0,
+          "daily_used_internal_mwh": {
+            "2026-11-10": 0.0
+          },
+          "energy_mwh": 300.0,
+          "hour_direction": 0,
+          "mode": "idle",
+          "mode_age_h": 23.75,
+          "power_mw": 0.0
+        }
+      },
+      "pumped_storage": {
+        "PS1": {
+          "lower_m3": 3200000.0,
+          "modes": {
+            "PS1_1": "off",
+            "PS1_2": "off"
+          },
+          "net_power_mw": 0.0,
+          "parameters": {
+            "bus": 2,
+            "e_gen": 9.6,
+            "e_pump": 12.6,
+            "enabled": true,
+            "id": "PS1",
+            "init_mode": "idle",
+            "max_gen_starts": 4,
+            "max_pump_starts": 2,
+            "n_units": 2,
+            "start_cost_gen": 2000,
+            "start_cost_pump": 4000,
+            "switch_gap": 1,
+            "unit_gen_max": 300,
+            "unit_gen_min": 150,
+            "unit_pump": 300,
+            "unit_pump_min": 210,
+            "v_total": 520,
+            "variable_speed": false,
+            "vdn_max": 470,
+            "vdn_min": 60,
+            "vup0": 200,
+            "vup_end_bid": 200,
+            "vup_max": 450,
+            "vup_min": 60
+          },
+          "reserve_credit_mw": 0.0,
+          "upper_m3": 2000000.0
+        }
+      },
+      "thermal": {
+        "C1": {
+          "curve_length": null,
+          "curve_step": null,
+          "online": 1,
+          "phase": "stable",
+          "power_mw": 645.9999887210572,
+          "residence_remaining_h": 0.0,
+          "state_age_h": 48.0
+        },
+        "C2": {
+          "curve_length": null,
+          "curve_step": null,
+          "online": 1,
+          "phase": "stable",
+          "power_mw": 724.9999999999945,
+          "residence_remaining_h": 0.0,
+          "state_age_h": 48.0
+        },
+        "C3": {
+          "curve_length": null,
+          "curve_step": null,
+          "online": 1,
+          "phase": "stable",
+          "power_mw": 864.9999999999961,
+          "residence_remaining_h": 0.0,
+          "state_age_h": 48.0
+        },
+        "CCGT": {
+          "curve_length": null,
+          "curve_step": null,
+          "online": 1,
+          "phase": "stable",
+          "power_mw": 322.1408564499447,
+          "residence_remaining_h": 0.0,
+          "state_age_h": 8.0
+        },
+        "GT": {
+          "curve_length": null,
+          "curve_step": null,
+          "online": 1,
+          "phase": "stable",
+          "power_mw": 75.0,
+          "residence_remaining_h": 0.0,
+          "state_age_h": 8.0
+        }
+      }
+    }
+  },
+  "technical": {
+    "batteries": {
+      "ES1": {
+        "charge_max_mw": 100.0,
+        "cycle_budget": {
+          "2026-11-11": {
+            "limit_internal_mwh": 400.0,
+            "used_internal_mwh": 0.0
+          },
+          "2026-11-12": {
+            "limit_internal_mwh": 400.0,
+            "used_internal_mwh": 0.0
+          }
+        },
+        "discharge_max_mw": 100.0,
+        "energy_capacity_mwh": 200.0,
+        "energy_max_mwh": 180.0,
+        "energy_min_mwh": 20.0,
+        "eta_charge": 0.95,
+        "eta_discharge": 0.95,
+        "minimum_mode_h": {
+          "charge": 0.0,
+          "discharge": 0.0,
+          "idle": 0.0
+        },
+        "preparation_h": {
+          "charge": 0.0,
+          "discharge": 0.0
+        },
+        "ramp_down_mw_per_h": 1200.0,
+        "ramp_up_mw_per_h": 1200.0
+      },
+      "ES2": {
+        "charge_max_mw": 200.0,
+        "cycle_budget": {
+          "2026-11-11": {
+            "limit_internal_mwh": 800.0,
+            "used_internal_mwh": 0.0
+          },
+          "2026-11-12": {
+            "limit_internal_mwh": 800.0,
+            "used_internal_mwh": 0.0
+          }
+        },
+        "discharge_max_mw": 200.0,
+        "energy_capacity_mwh": 400.0,
+        "energy_max_mwh": 360.0,
+        "energy_min_mwh": 40.0,
+        "eta_charge": 0.95,
+        "eta_discharge": 0.95,
+        "minimum_mode_h": {
+          "charge": 0.0,
+          "discharge": 0.0,
+          "idle": 0.0
+        },
+        "preparation_h": {
+          "charge": 0.0,
+          "discharge": 0.0
+        },
+        "ramp_down_mw_per_h": 2400.0,
+        "ramp_up_mw_per_h": 2400.0
+      },
+      "ES3": {
+        "charge_max_mw": 100.0,
+        "cycle_budget": {
+          "2026-11-11": {
+            "limit_internal_mwh": 400.0,
+            "used_internal_mwh": 0.0
+          },
+          "2026-11-12": {
+            "limit_internal_mwh": 400.0,
+            "used_internal_mwh": 0.0
+          }
+        },
+        "discharge_max_mw": 100.0,
+        "energy_capacity_mwh": 200.0,
+        "energy_max_mwh": 180.0,
+        "energy_min_mwh": 20.0,
+        "eta_charge": 0.95,
+        "eta_discharge": 0.95,
+        "minimum_mode_h": {
+          "charge": 0.0,
+          "discharge": 0.0,
+          "idle": 0.0
+        },
+        "preparation_h": {
+          "charge": 0.0,
+          "discharge": 0.0
+        },
+        "ramp_down_mw_per_h": 1200.0,
+        "ramp_up_mw_per_h": 1200.0
+      },
+      "ES4": {
+        "charge_max_mw": 150.0,
+        "cycle_budget": {
+          "2026-11-11": {
+            "limit_internal_mwh": 1200.0,
+            "used_internal_mwh": 0.0
+          },
+          "2026-11-12": {
+            "limit_internal_mwh": 1200.0,
+            "used_internal_mwh": 0.0
+          }
+        },
+        "discharge_max_mw": 150.0,
+        "energy_capacity_mwh": 600.0,
+        "energy_max_mwh": 540.0,
+        "energy_min_mwh": 60.0,
+        "eta_charge": 0.95,
+        "eta_discharge": 0.95,
+        "minimum_mode_h": {
+          "charge": 0.0,
+          "discharge": 0.0,
+          "idle": 0.0
+        },
+        "preparation_h": {
+          "charge": 0.0,
+          "discharge": 0.0
+        },
+        "ramp_down_mw_per_h": 1800.0,
+        "ramp_up_mw_per_h": 1800.0
+      },
+      "ES5": {
+        "charge_max_mw": 150.0,
+        "cycle_budget": {
+          "2026-11-11": {
+            "limit_internal_mwh": 1200.0,
+            "used_internal_mwh": 0.0
+          },
+          "2026-11-12": {
+            "limit_internal_mwh": 1200.0,
+            "used_internal_mwh": 0.0
+          }
+        },
+        "discharge_max_mw": 150.0,
+        "energy_capacity_mwh": 600.0,
+        "energy_max_mwh": 540.0,
+        "energy_min_mwh": 60.0,
+        "eta_charge": 0.95,
+        "eta_discharge": 0.95,
+        "minimum_mode_h": {
+          "charge": 0.0,
+          "discharge": 0.0,
+          "idle": 0.0
+        },
+        "preparation_h": {
+          "charge": 0.0,
+          "discharge": 0.0
+        },
+        "ramp_down_mw_per_h": 1800.0,
+        "ramp_up_mw_per_h": 1800.0
+      }
+    },
+    "thermal": {
+      "C1": {
+        "min_down_h": 8.0,
+        "min_up_h": 8.0,
+        "ramp_down_mw_per_h": 582.0,
+        "ramp_up_mw_per_h": 582.0
+      },
+      "C2": {
+        "min_down_h": 8.0,
+        "min_up_h": 8.0,
+        "ramp_down_mw_per_h": 654.0,
+        "ramp_up_mw_per_h": 654.0
+      },
+      "C3": {
+        "min_down_h": 8.0,
+        "min_up_h": 8.0,
+        "ramp_down_mw_per_h": 780.0,
+        "ramp_up_mw_per_h": 780.0
+      },
+      "CCGT": {
+        "min_down_h": 4.0,
+        "min_up_h": 4.0,
+        "ramp_down_mw_per_h": 1650.0,
+        "ramp_up_mw_per_h": 1650.0
+      },
+      "GT": {
+        "min_down_h": 1.0,
+        "min_up_h": 1.0,
+        "ramp_down_mw_per_h": 1620.0,
+        "ramp_up_mw_per_h": 1620.0
+      }
+    }
+  }
+}

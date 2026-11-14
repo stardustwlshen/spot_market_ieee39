@@ -1,0 +1,32 @@
+{
+  "status": "private_library_stage_archive_downloaded_all_selected_members_verified",
+  "library_file_id": "libfile_fde3_f-0bda4f81366c81918c4b47ceae4a00a9_da36cc1b542081919a2fe7f8af93584c",
+  "file_id": "file_0000000091248230b84870f05368f9d5",
+  "file_name": "Guangdong_coherent96_event_AGC_stage_delta_20261113.tar.gz",
+  "version": 0,
+  "sha256": "ec0ad2e7d2194cb8079ed5ca03bf0aeda3adcfb3a4aa987628e43ee7049e7ceb",
+  "bytes": 18061249,
+  "selected_files": 1390,
+  "manifest_members": 1,
+  "selected_raw_bytes": 141357291,
+  "native_completed_receipts": {
+    "40batch": 40,
+    "q29": 1,
+    "anchorq27": 1,
+    "event2": 2,
+    "diagnosticLP": 1,
+    "diagnosticW43": 1
+  },
+  "scope": "selected coherent96 thermal DA patch/recipes/KKT/accounting;40 batch including failed q27; q29; new anchor q27; event 2native exact carry and pure W3; 2 diagnostics; AGC/PRICE hosts/UI; performance failures; rules; base indices",
+  "not_claimed": [
+    "new96native",
+    "full_history_automatic_replay",
+    "self_contained_full_old_history",
+    "v9_source_package"
+  ],
+  "external_base_delivery_indices": [
+    "guangdong_user_v8_package_20261113/DELIVERY.json",
+    "guangdong_first_hour_supplement_backup_20261113/DELIVERY.json",
+    "guangdong_corrected_day_backup_20261113/DELIVERY.json"
+  ]
+}

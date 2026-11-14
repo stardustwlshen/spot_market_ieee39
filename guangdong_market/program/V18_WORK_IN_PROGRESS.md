@@ -1,0 +1,9 @@
+# Independent selected-DA tail user mode, not a final package
+
+Current app adds a working independent card using its selected accepted DA, not a hard-coded developer run. It verifies a complete existing576-cell source, derives the t527 thermal/SOC/dated-cycle boundary and original AGC, retains satisfied past terminal policy, and refuses unsupported/changed input. The last48-cell SCUC+fixedSCED and last24-cell full-profile PRICE are separate research lookahead, NOT default50MW live chain, official DA98, observed execution, settlement or dispatch authority.
+
+The user must name and review the source/stop-curve research permission/no-deviation boundary, then explicitly confirm a single maximum3-call plan (SCUC300s gap0.1% threads1, SCEDsimplex120s with all required worker settings, full-profile PRICE60s). Default0; fresh output; duplicate/failed/unknown never retries. No AC. Main live entry defaults to4 windows; optional96 now requires preflighted explicit source-bound D+1 research declaration.
+
+Installed0native tests: freshly derived seed/carry and complete tail model match prior actual reference names/columns/rows/objective/options/BOUNDARY/AGC; explicit prior raw pair compatibility rechecked; complete application PRICE model2643cols/1836rows also matches all mathematics/options. These are not new native solves. UI/launch sequencing mocks prove confirmation,3-call order/options and no retry; real inspect subprocess confirms selected-source argument and original AGC0. Prior real3calls remain separate evidence.
+
+No package/archive and no final APPLICATION_MANIFEST regenerated. Inherited manifest/docs refer to earlier releases. Clock96 small increment is installed and0native entry/contract tested, not full-day native validated. Explicit D+1 declaration is required before launch and consumed only at its causal deadline. Original-day VerifiedSourceRecord integration is still pending.

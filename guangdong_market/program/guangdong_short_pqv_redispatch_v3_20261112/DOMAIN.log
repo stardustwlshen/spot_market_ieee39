@@ -1,0 +1,111 @@
+{
+  "thermal": {
+    "C1": {
+      "P_min_MW": 587.5,
+      "P_max_MW": 636.0,
+      "source_bounds": {
+        "raw_with_AGC": [
+          300.0,
+          636.0
+        ],
+        "previous_endpoint_ramp": [
+          587.5,
+          684.5
+        ],
+        "next_endpoint_ramp": [
+          587.5,
+          684.5
+        ]
+      },
+      "original_P_MW": 636.0
+    },
+    "C2": {
+      "P_min_MW": 660.5,
+      "P_max_MW": 698.3144595889985,
+      "source_bounds": {
+        "raw_with_AGC": [
+          335.0,
+          715.0
+        ],
+        "previous_endpoint_ramp": [
+          589.3144595889985,
+          698.3144595889985
+        ],
+        "next_endpoint_ramp": [
+          660.5,
+          769.5
+        ]
+      },
+      "original_P_MW": 698.3144595889985
+    },
+    "C3": {
+      "P_min_MW": 720.6036953118341,
+      "P_max_MW": 720.6036953118341,
+      "source_bounds": {
+        "raw_with_AGC": [
+          400.0,
+          855.0
+        ],
+        "previous_endpoint_ramp": [
+          590.6036953118341,
+          720.6036953118341
+        ],
+        "next_endpoint_ramp": [
+          720.6036953118341,
+          850.6036953118341
+        ]
+      },
+      "original_P_MW": 720.6036953118341
+    },
+    "CCGT": {
+      "P_min_MW": 320.0,
+      "P_max_MW": 457.5,
+      "source_bounds": {
+        "raw_with_AGC": [
+          320.0,
+          677.0
+        ],
+        "previous_endpoint_ramp": [
+          182.5,
+          457.5
+        ],
+        "next_endpoint_ramp": [
+          192.3415422201661,
+          467.3415422201661
+        ]
+      },
+      "original_P_MW": 385.4
+    },
+    "GT": {
+      "P_min_MW": 85.0,
+      "P_max_MW": 220.0,
+      "source_bounds": {
+        "raw_with_AGC": [
+          85.0,
+          290.0
+        ],
+        "previous_endpoint_ramp": [
+          -50.0,
+          220.0
+        ],
+        "next_endpoint_ramp": [
+          -50.0,
+          220.0
+        ]
+      },
+      "original_P_MW": 85.0
+    }
+  },
+  "battery": {
+    "ES4": {
+      "P_min_MW": 0.0,
+      "P_max_MW": 150.0,
+      "original_P_MW": 50.0
+    },
+    "ES5": {
+      "P_min_MW": 0.0,
+      "P_max_MW": 150.0,
+      "original_P_MW": 19.160527609735574
+    }
+  }
+}

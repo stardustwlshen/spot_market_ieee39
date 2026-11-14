@@ -1,0 +1,29 @@
+{
+  "status": "parent_executed_relocated_small_MIP_verified",
+  "scope": "prior delivery snapshot copied elsewhere; prepare and native from /tmp cwd",
+  "verified_snapshot_manifest_sha256": "88e3be8d73844ec061bf1403ac6dcad2445e582c2b3542383b4a72cabd45babe",
+  "review_source": "guangdong_delivery_actual_verify_20261112/native-small/REVIEW.json",
+  "review_sha256": "f458ac5434be0eb7c5868b2dbae5396b66b8c25b71025bd8125f7a9c41b789f2",
+  "native_log_source": "guangdong_delivery_actual_verify_20261112/NATIVE.log",
+  "native_log_sha256": "f9353202fff0cdc2cd3a8fd46485dc642d02ed026d827a396ba0d2edbc154eb4",
+  "review": {
+    "status": "accepted_mathematical_MIP_not_operator_dispatch",
+    "automatic_retry": false,
+    "native_calls": 1,
+    "formal_compliance": false,
+    "audit": {
+      "variables": 1623,
+      "rows": 3073,
+      "integer_count": 1273,
+      "max_primal_violation": 1.4210854715202004e-14,
+      "max_integer_violation": 0.0,
+      "objective": 6140.75
+    },
+    "bound": 6140.75,
+    "gap": 0.0
+  },
+  "package_author_native_calls": 0,
+  "later_parent_native_calls": 1,
+  "raw_solutions_bundled": false,
+  "later_R80_packaging_no_native": true
+}

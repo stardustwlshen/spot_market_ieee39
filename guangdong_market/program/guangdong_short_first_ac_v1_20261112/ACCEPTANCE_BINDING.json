@@ -1,0 +1,47 @@
+{
+  "payload_sha256": "2a3384e8b60cecd44a62ee9a0b4b1e65fececd84edd4d3d712fc4c883c21fe5a",
+  "SCED_accepted": true,
+  "full_domain_constraints_checked": true,
+  "sources": [
+    {
+      "path": "guangdong_rt_short_physical_v1_20261112/actual39_v1/ACCEPTED_PAIR.json",
+      "sha256": "381c8db74805ea4efb85dad82cafefff8fef6c21a2bf40d393ee814fb8a38aa7"
+    },
+    {
+      "path": "guangdong_rt_short_physical_v1_20261112/actual39_v1/SCED/response.json.gz",
+      "sha256": "0b435e00e7ab62de7a805e0012f8eeff8b26cfdda5b8221112ab5e1b30358ccf"
+    },
+    {
+      "path": "guangdong_rt_short_physical_v1_20261112/pure39_v2/derived_case.json",
+      "sha256": "477a540b434a175298721dd7f2fead1172f5c1a11bdfe9ae146940fda5653f32"
+    },
+    {
+      "path": "guangdong_rt_short_physical_v1_20261112/pure39_v2/names.json",
+      "sha256": "b3c23adb143501048f88e9fa7cd2b53bfc0884b66cafaed84069a9c2bd5913a5"
+    },
+    {
+      "path": "guangdong_rt_short_physical_v1_20261112/pure39_v2/BOUNDARY.json",
+      "sha256": "c5172af3e366e9b32d05a30efb053d21c1785fedc98999fc0dec8563c8220000"
+    },
+    {
+      "path": "guangdong_rt_short_physical_v1_20261112/pure39_v2/agc.json",
+      "sha256": "ea1973f333638c4c3391447dcb989dcf3427fe170b5d5199dcdb013293f05ba9"
+    },
+    {
+      "path": "guangdong_r30_ac_security_20261112/IEEE39_RESEARCH_INPUT.json",
+      "sha256": "e11ea32b3c859f3926e872af09adfe2bafd8b84100dc21b3adea8a274cc909a2"
+    },
+    {
+      "path": "guangdong_agc_ac_controls_v2_20261112/INVERTER_INVENTORY.json",
+      "sha256": "c6f939198f7a203f7e58720722e92b12a010f493a0c19bebb7b7ac0920454fac"
+    },
+    {
+      "path": "guangdong_short_first_ac_v1_20261112/prepare_first.py",
+      "sha256": "00d8766955ab40286f50521c4204089f28e99ffc3d9f09c458bb5efedf74f86d"
+    },
+    {
+      "path": "guangdong_short_first_ac_v1_20261112/adapter_diagnostic.py",
+      "sha256": "0d17a1fdc2159af9f22d111ef0779ca780a4e53bef8c33a5b75fccd63742b6e7"
+    }
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "status": "real_free_builder_constructed_and_12_contract_rows_serialized_existing_native_satisfies",
+  "new_native_calls": 0,
+  "added_rows": 12,
+  "max_added_row_residual": 0.0,
+  "construction_source_sha256": "339baac4648c1c191807133b68f40568c1ec31b9b5424ad520f496e6160ad5a9",
+  "source_prefix_only": true,
+  "conservative_protection_retained": true,
+  "full_case_integration": false,
+  "formal": false
+}

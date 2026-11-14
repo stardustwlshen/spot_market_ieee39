@@ -1,0 +1,31 @@
+{
+  "status": "actual_simulated_energy_components_complete_not_formal_bill",
+  "result_path": "guangdong_r75_daily_simulated_settlement_20261112/actual_day_v1/RESULT.json",
+  "result_sha256": "125bbf32498cbb3b836b2238ccc52d02e206cd2d5c462ac4dfba6fb29be343a5",
+  "entry": "assemble_v2.py",
+  "arithmetic_calls": 2,
+  "successful_calculations": 1,
+  "first_failure_preserved": true,
+  "native_calls": 0,
+  "KKT_repeated": false,
+  "tests": 6,
+  "R74_erratum": {
+    "path": "guangdong_r74_price_summary_20261112/actual_day_v1/ERRATUM.json",
+    "sha256": "f1577733b82c609e8c1f5782de534ab90cc8955011d12aafe50d07fbc9a2368c"
+  },
+  "files": {
+    "guangdong_r75_daily_simulated_settlement_20261112/assemble.py": "36205730c9e5c2fc97fa4a99c15310bf9e64f07cef7bd1c64ef754bcefce95f4",
+    "guangdong_r75_daily_simulated_settlement_20261112/test_normalization.py": "a33ea256157b407cb86cb4de4a24cbe1c2e9afac64f95aab78fbfd691e05590e",
+    "guangdong_r75_daily_simulated_settlement_20261112/test_source_delta.py": "ef0428ddf8cf341f8206b11bd871c5d7036212ee2eda9d3b60ebd95976eefb94",
+    "guangdong_r75_daily_simulated_settlement_20261112/assemble_v2.py": "d46f19e59b15839966bc559e29f7f4a41d4bdbb3846cb3305bf049f252219c59",
+    "guangdong_r75_daily_simulated_settlement_20261112/arithmetic.py": "be3fdebd610bbd272c9db0ed0ff935953c000c2743110b4208a6a9b552c68dda",
+    "guangdong_r75_daily_simulated_settlement_20261112/README.md": "ed83c5a13f8d3769cb6bd97b703f98fc6c5964b85b08e8260dbb774fbd4b3ce8",
+    "guangdong_r75_daily_simulated_settlement_20261112/TESTS_v2.log": "c8052e572fa80ee187a476d453033c104b3c1585f7b92e53496728f08660e617",
+    "guangdong_r75_daily_simulated_settlement_20261112/ACTUAL_CALCULATION.log": "8f04afc73a5d031d3015f46115a291d6c1dd80fbd3e8503adc4209956a32028b",
+    "guangdong_r75_daily_simulated_settlement_20261112/ACTUAL_CALCULATION_v2.log": "13d01c733360fcfd97f6d418b5c29db8c13b1a244364551e8fd68b132cc3813e",
+    "guangdong_r75_daily_simulated_settlement_20261112/actual_day_v1/PRICE_TRACE.json": "af3c25ff0659e4388df8a72a97b7c0b6f0e8c5616cb8e6331434c50b6aee8e0b",
+    "guangdong_r75_daily_simulated_settlement_20261112/actual_day_v1/SOURCE_PINS.json": "cbf2fb25b856b2936464435689014af427bb38f20daa7567036ea8dc0e54f5c4",
+    "guangdong_r75_daily_simulated_settlement_20261112/actual_day_v1/RESULT.json": "125bbf32498cbb3b836b2238ccc52d02e206cd2d5c462ac4dfba6fb29be343a5",
+    "guangdong_r75_daily_simulated_settlement_20261112/actual_day_v1/ASSUMPTIONS.json": "6aaf06c6e71cdfe639fc0511e31fd25d10f0e8eeb27a57890514402eaf0a2f7e"
+  }
+}

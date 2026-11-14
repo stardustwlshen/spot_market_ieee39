@@ -1,0 +1,10 @@
+{
+  "installed_homepage": true,
+  "installed_CLI_and_dependencies_defaults": true,
+  "actual_CLI_pure_prepare": true,
+  "repeat_click_rejected": true,
+  "result_read": true,
+  "native_calls": 0,
+  "AC_calls": 0,
+  "formal_complete": false
+}

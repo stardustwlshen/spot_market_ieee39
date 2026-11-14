@@ -1,0 +1,35 @@
+{
+  "status": "passed",
+  "native_calls": 0,
+  "worker_launch_mocked": true,
+  "sequence_mocked": true,
+  "UI_checks": [
+    "default zero",
+    "source-bound plan12",
+    "simplex explicit",
+    "unique output",
+    "duplicate rejection",
+    "unknown not restarted",
+    "identity clears confirmation",
+    "JSON host rejection"
+  ],
+  "sequence": [
+    "price prepare -1",
+    "price1 -1",
+    "pair prepare",
+    "pair2",
+    "price prepare 0",
+    "price1 0",
+    "pair prepare",
+    "pair2",
+    "price prepare 1",
+    "price1 1",
+    "pair prepare",
+    "pair2",
+    "price prepare 2",
+    "price1 2",
+    "pair prepare",
+    "pair2",
+    "hour0"
+  ]
+}

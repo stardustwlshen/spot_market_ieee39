@@ -1,0 +1,38 @@
+{
+  "status": "BLOCKED_SYSTEM_SAFETY",
+  "hour_start": "2026-11-11T12:00:00+08:00",
+  "original_awards_mw": {
+    "C1": 10,
+    "C2": 10,
+    "C3": 10,
+    "CCGT": 10,
+    "GT": 10
+  },
+  "award_basis": "inherited synthetic50MW, not a new H12 auction or certified operator award",
+  "pending_candidate": null,
+  "missing_inputs": [
+    "system redispatch/reclearing proposal with same requirement and constraints",
+    "source-bound unit-specific evidence before removing any awarded unit",
+    "actual AGC state, safety sections/AC, storage and no-increase checks",
+    "if article59 route requested: sourced trigger, eligible nonawarded inventory and safety evidence"
+  ],
+  "next_actions": [
+    "propose a same-awards system redispatch for research recheck, or collect supported reclearing inputs"
+  ],
+  "article59_policy": {
+    "trigger": "post-safety capacity shortage OR actual operating security need; not inferred from aggregate counterfactual",
+    "precondition": "all safety constraints satisfied",
+    "priority": [
+      "market nonawarded: sorting price ascending",
+      "nonparticipants afterwards: comprehensive performance descending"
+    ],
+    "record": "post-event information record required",
+    "automatic_call_supported": false
+  },
+  "unit_removals": [],
+  "publication_allowed": false,
+  "dispatch_authorized": false,
+  "count_as_safety_pass": false,
+  "formal": false,
+  "native_calls": 0
+}

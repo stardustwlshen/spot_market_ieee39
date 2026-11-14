@@ -1,0 +1,908 @@
+{
+  "source_sha256": "928dd8d932922a1613221783e935d2e536ed65ef86f48cdf3af29969ff08d061",
+  "rows": [
+    {
+      "window": 44,
+      "start": "2026-11-11T11:00:00+08:00",
+      "end": "2026-11-11T11:15:00+08:00",
+      "bus": "4",
+      "run_id": "R45-RT-d2e7f5bc431c476bb71539567a225458",
+      "command_ids": [
+        "R45-RT-d2e7f5bc431c476bb71539567a225458-W44-RT-0",
+        "R45-RT-d2e7f5bc431c476bb71539567a225458-W44-RT-1",
+        "R45-RT-d2e7f5bc431c476bb71539567a225458-W44-RT-2"
+      ],
+      "receipt_ids": [
+        "R45-RT-d2e7f5bc431c476bb71539567a225458-W44-RT-0-SIMULATED-RECEIPT",
+        "R45-RT-d2e7f5bc431c476bb71539567a225458-W44-RT-1-SIMULATED-RECEIPT",
+        "R45-RT-d2e7f5bc431c476bb71539567a225458-W44-RT-2-SIMULATED-RECEIPT"
+      ],
+      "quantities": {
+        "synthetic_available_mwh": "131.40299970175",
+        "simulated_dispatched_mwh": "116.9341084349583",
+        "simulated_curtailed_mwh": "14.468891266791701",
+        "physical_DA_reference_mwh": "131.40299970175"
+      },
+      "raw_price": "-1000.0",
+      "quantity_kind": "simulated_executed",
+      "readiness": {
+        "amount": null,
+        "missing": [
+          "participation",
+          "real_unit_identity (bus aggregation is synthetic only)",
+          "metered_quantity",
+          "actual_meter",
+          "financial_DA",
+          "contracts (unknown is not zero)",
+          "verified_settlement_prices"
+        ],
+        "route": "needs_inputs",
+        "formal_bill": null,
+        "payable": false,
+        "separate_unclosed_components": {
+          "monthly_mechanism": null,
+          "green_certificates": null,
+          "AGC_mileage": null
+        }
+      }
+    },
+    {
+      "window": 45,
+      "start": "2026-11-11T11:15:00+08:00",
+      "end": "2026-11-11T11:30:00+08:00",
+      "bus": "4",
+      "run_id": "R45-RT-d2e7f5bc431c476bb71539567a225458",
+      "command_ids": [
+        "R45-RT-d2e7f5bc431c476bb71539567a225458-W45-RT-0",
+        "R45-RT-d2e7f5bc431c476bb71539567a225458-W45-RT-1",
+        "R45-RT-d2e7f5bc431c476bb71539567a225458-W45-RT-2"
+      ],
+      "receipt_ids": [
+        "R45-RT-d2e7f5bc431c476bb71539567a225458-W45-RT-0-SIMULATED-RECEIPT",
+        "R45-RT-d2e7f5bc431c476bb71539567a225458-W45-RT-1-SIMULATED-RECEIPT",
+        "R45-RT-d2e7f5bc431c476bb71539567a225458-W45-RT-2-SIMULATED-RECEIPT"
+      ],
+      "quantities": {
+        "synthetic_available_mwh": "133.12553457",
+        "simulated_dispatched_mwh": "120.98305411462502",
+        "simulated_curtailed_mwh": "12.142480455374994",
+        "physical_DA_reference_mwh": "48.943781061592865"
+      },
+      "raw_price": "-1000.0",
+      "quantity_kind": "simulated_executed",
+      "readiness": {
+        "amount": null,
+        "missing": [
+          "participation",
+          "real_unit_identity (bus aggregation is synthetic only)",
+          "metered_quantity",
+          "actual_meter",
+          "financial_DA",
+          "contracts (unknown is not zero)",
+          "verified_settlement_prices"
+        ],
+        "route": "needs_inputs",
+        "formal_bill": null,
+        "payable": false,
+        "separate_unclosed_components": {
+          "monthly_mechanism": null,
+          "green_certificates": null,
+          "AGC_mileage": null
+        }
+      }
+    },
+    {
+      "window": 46,
+      "start": "2026-11-11T11:30:00+08:00",
+      "end": "2026-11-11T11:45:00+08:00",
+      "bus": "4",
+      "run_id": "R45-RT-d2e7f5bc431c476bb71539567a225458",
+      "command_ids": [
+        "R45-RT-d2e7f5bc431c476bb71539567a225458-W46-RT-0",
+        "R45-RT-d2e7f5bc431c476bb71539567a225458-W46-RT-1",
+        "R45-RT-d2e7f5bc431c476bb71539567a225458-W46-RT-2"
+      ],
+      "receipt_ids": [
+        "R45-RT-d2e7f5bc431c476bb71539567a225458-W46-RT-0-SIMULATED-RECEIPT",
+        "R45-RT-d2e7f5bc431c476bb71539567a225458-W46-RT-1-SIMULATED-RECEIPT",
+        "R45-RT-d2e7f5bc431c476bb71539567a225458-W46-RT-2-SIMULATED-RECEIPT"
+      ],
+      "quantities": {
+        "synthetic_available_mwh": "134.278005461375",
+        "simulated_dispatched_mwh": "133.71043720524997",
+        "simulated_curtailed_mwh": "0.5675682561250142",
+        "physical_DA_reference_mwh": "133.17230388684723"
+      },
+      "raw_price": "-1000.0",
+      "quantity_kind": "simulated_executed",
+      "readiness": {
+        "amount": null,
+        "missing": [
+          "participation",
+          "real_unit_identity (bus aggregation is synthetic only)",
+          "metered_quantity",
+          "actual_meter",
+          "financial_DA",
+          "contracts (unknown is not zero)",
+          "verified_settlement_prices"
+        ],
+        "route": "needs_inputs",
+        "formal_bill": null,
+        "payable": false,
+        "separate_unclosed_components": {
+          "monthly_mechanism": null,
+          "green_certificates": null,
+          "AGC_mileage": null
+        }
+      }
+    },
+    {
+      "window": 47,
+      "start": "2026-11-11T11:45:00+08:00",
+      "end": "2026-11-11T12:00:00+08:00",
+      "bus": "4",
+      "run_id": "R45-RT-d2e7f5bc431c476bb71539567a225458",
+      "command_ids": [
+        "R45-RT-d2e7f5bc431c476bb71539567a225458-W47-RT-0",
+        "R45-RT-d2e7f5bc431c476bb71539567a225458-W47-RT-1",
+        "R45-RT-d2e7f5bc431c476bb71539567a225458-W47-RT-2"
+      ],
+      "receipt_ids": [
+        "R45-RT-d2e7f5bc431c476bb71539567a225458-W47-RT-0-SIMULATED-RECEIPT",
+        "R45-RT-d2e7f5bc431c476bb71539567a225458-W47-RT-1-SIMULATED-RECEIPT",
+        "R45-RT-d2e7f5bc431c476bb71539567a225458-W47-RT-2-SIMULATED-RECEIPT"
+      ],
+      "quantities": {
+        "synthetic_available_mwh": "134.85547731862502",
+        "simulated_dispatched_mwh": "134.85547731862502",
+        "simulated_curtailed_mwh": "0.0",
+        "physical_DA_reference_mwh": "108.75391431724984"
+      },
+      "raw_price": "-1000.0",
+      "quantity_kind": "simulated_executed",
+      "readiness": {
+        "amount": null,
+        "missing": [
+          "participation",
+          "real_unit_identity (bus aggregation is synthetic only)",
+          "metered_quantity",
+          "actual_meter",
+          "financial_DA",
+          "contracts (unknown is not zero)",
+          "verified_settlement_prices"
+        ],
+        "route": "needs_inputs",
+        "formal_bill": null,
+        "payable": false,
+        "separate_unclosed_components": {
+          "monthly_mechanism": null,
+          "green_certificates": null,
+          "AGC_mileage": null
+        }
+      }
+    },
+    {
+      "window": 44,
+      "start": "2026-11-11T11:00:00+08:00",
+      "end": "2026-11-11T11:15:00+08:00",
+      "bus": "8",
+      "run_id": "R45-RT-d2e7f5bc431c476bb71539567a225458",
+      "command_ids": [
+        "R45-RT-d2e7f5bc431c476bb71539567a225458-W44-RT-0",
+        "R45-RT-d2e7f5bc431c476bb71539567a225458-W44-RT-1",
+        "R45-RT-d2e7f5bc431c476bb71539567a225458-W44-RT-2"
+      ],
+      "receipt_ids": [
+        "R45-RT-d2e7f5bc431c476bb71539567a225458-W44-RT-0-SIMULATED-RECEIPT",
+        "R45-RT-d2e7f5bc431c476bb71539567a225458-W44-RT-1-SIMULATED-RECEIPT",
+        "R45-RT-d2e7f5bc431c476bb71539567a225458-W44-RT-2-SIMULATED-RECEIPT"
+      ],
+      "quantities": {
+        "synthetic_available_mwh": "131.40299970175",
+        "simulated_dispatched_mwh": "98.75913168788905",
+        "simulated_curtailed_mwh": "32.64386801386096",
+        "physical_DA_reference_mwh": "87.60199980116666"
+      },
+      "raw_price": "-1000.0",
+      "quantity_kind": "simulated_executed",
+      "readiness": {
+        "amount": null,
+        "missing": [
+          "participation",
+          "real_unit_identity (bus aggregation is synthetic only)",
+          "metered_quantity",
+          "actual_meter",
+          "financial_DA",
+          "contracts (unknown is not zero)",
+          "verified_settlement_prices"
+        ],
+        "route": "needs_inputs",
+        "formal_bill": null,
+        "payable": false,
+        "separate_unclosed_components": {
+          "monthly_mechanism": null,
+          "green_certificates": null,
+          "AGC_mileage": null
+        }
+      }
+    },
+    {
+      "window": 45,
+      "start": "2026-11-11T11:15:00+08:00",
+      "end": "2026-11-11T11:30:00+08:00",
+      "bus": "8",
+      "run_id": "R45-RT-d2e7f5bc431c476bb71539567a225458",
+      "command_ids": [
+        "R45-RT-d2e7f5bc431c476bb71539567a225458-W45-RT-0",
+        "R45-RT-d2e7f5bc431c476bb71539567a225458-W45-RT-1",
+        "R45-RT-d2e7f5bc431c476bb71539567a225458-W45-RT-2"
+      ],
+      "receipt_ids": [
+        "R45-RT-d2e7f5bc431c476bb71539567a225458-W45-RT-0-SIMULATED-RECEIPT",
+        "R45-RT-d2e7f5bc431c476bb71539567a225458-W45-RT-1-SIMULATED-RECEIPT",
+        "R45-RT-d2e7f5bc431c476bb71539567a225458-W45-RT-2-SIMULATED-RECEIPT"
+      ],
+      "quantities": {
+        "synthetic_available_mwh": "133.12553457",
+        "simulated_dispatched_mwh": "122.22617231460242",
+        "simulated_curtailed_mwh": "10.899362255397586",
+        "physical_DA_reference_mwh": "133.12553457"
+      },
+      "raw_price": "-1000.0",
+      "quantity_kind": "simulated_executed",
+      "readiness": {
+        "amount": null,
+        "missing": [
+          "participation",
+          "real_unit_identity (bus aggregation is synthetic only)",
+          "metered_quantity",
+          "actual_meter",
+          "financial_DA",
+          "contracts (unknown is not zero)",
+          "verified_settlement_prices"
+        ],
+        "route": "needs_inputs",
+        "formal_bill": null,
+        "payable": false,
+        "separate_unclosed_components": {
+          "monthly_mechanism": null,
+          "green_certificates": null,
+          "AGC_mileage": null
+        }
+      }
+    },
+    {
+      "window": 46,
+      "start": "2026-11-11T11:30:00+08:00",
+      "end": "2026-11-11T11:45:00+08:00",
+      "bus": "8",
+      "run_id": "R45-RT-d2e7f5bc431c476bb71539567a225458",
+      "command_ids": [
+        "R45-RT-d2e7f5bc431c476bb71539567a225458-W46-RT-0",
+        "R45-RT-d2e7f5bc431c476bb71539567a225458-W46-RT-1",
+        "R45-RT-d2e7f5bc431c476bb71539567a225458-W46-RT-2"
+      ],
+      "receipt_ids": [
+        "R45-RT-d2e7f5bc431c476bb71539567a225458-W46-RT-0-SIMULATED-RECEIPT",
+        "R45-RT-d2e7f5bc431c476bb71539567a225458-W46-RT-1-SIMULATED-RECEIPT",
+        "R45-RT-d2e7f5bc431c476bb71539567a225458-W46-RT-2-SIMULATED-RECEIPT"
+      ],
+      "quantities": {
+        "synthetic_available_mwh": "134.278005461375",
+        "simulated_dispatched_mwh": "134.278005461375",
+        "simulated_curtailed_mwh": "0.0",
+        "physical_DA_reference_mwh": "89.61488123555557"
+      },
+      "raw_price": "-1000.0",
+      "quantity_kind": "simulated_executed",
+      "readiness": {
+        "amount": null,
+        "missing": [
+          "participation",
+          "real_unit_identity (bus aggregation is synthetic only)",
+          "metered_quantity",
+          "actual_meter",
+          "financial_DA",
+          "contracts (unknown is not zero)",
+          "verified_settlement_prices"
+        ],
+        "route": "needs_inputs",
+        "formal_bill": null,
+        "payable": false,
+        "separate_unclosed_components": {
+          "monthly_mechanism": null,
+          "green_certificates": null,
+          "AGC_mileage": null
+        }
+      }
+    },
+    {
+      "window": 47,
+      "start": "2026-11-11T11:45:00+08:00",
+      "end": "2026-11-11T12:00:00+08:00",
+      "bus": "8",
+      "run_id": "R45-RT-d2e7f5bc431c476bb71539567a225458",
+      "command_ids": [
+        "R45-RT-d2e7f5bc431c476bb71539567a225458-W47-RT-0",
+        "R45-RT-d2e7f5bc431c476bb71539567a225458-W47-RT-1",
+        "R45-RT-d2e7f5bc431c476bb71539567a225458-W47-RT-2"
+      ],
+      "receipt_ids": [
+        "R45-RT-d2e7f5bc431c476bb71539567a225458-W47-RT-0-SIMULATED-RECEIPT",
+        "R45-RT-d2e7f5bc431c476bb71539567a225458-W47-RT-1-SIMULATED-RECEIPT",
+        "R45-RT-d2e7f5bc431c476bb71539567a225458-W47-RT-2-SIMULATED-RECEIPT"
+      ],
+      "quantities": {
+        "synthetic_available_mwh": "134.85547731862502",
+        "simulated_dispatched_mwh": "65.86157365399026",
+        "simulated_curtailed_mwh": "68.99390366463474",
+        "physical_DA_reference_mwh": "98.12299513776946"
+      },
+      "raw_price": "-1000.0",
+      "quantity_kind": "simulated_executed",
+      "readiness": {
+        "amount": null,
+        "missing": [
+          "participation",
+          "real_unit_identity (bus aggregation is synthetic only)",
+          "metered_quantity",
+          "actual_meter",
+          "financial_DA",
+          "contracts (unknown is not zero)",
+          "verified_settlement_prices"
+        ],
+        "route": "needs_inputs",
+        "formal_bill": null,
+        "payable": false,
+        "separate_unclosed_components": {
+          "monthly_mechanism": null,
+          "green_certificates": null,
+          "AGC_mileage": null
+        }
+      }
+    },
+    {
+      "window": 44,
+      "start": "2026-11-11T11:00:00+08:00",
+      "end": "2026-11-11T11:15:00+08:00",
+      "bus": "30",
+      "run_id": "R45-RT-d2e7f5bc431c476bb71539567a225458",
+      "command_ids": [
+        "R45-RT-d2e7f5bc431c476bb71539567a225458-W44-RT-0",
+        "R45-RT-d2e7f5bc431c476bb71539567a225458-W44-RT-1",
+        "R45-RT-d2e7f5bc431c476bb71539567a225458-W44-RT-2"
+      ],
+      "receipt_ids": [
+        "R45-RT-d2e7f5bc431c476bb71539567a225458-W44-RT-0-SIMULATED-RECEIPT",
+        "R45-RT-d2e7f5bc431c476bb71539567a225458-W44-RT-1-SIMULATED-RECEIPT",
+        "R45-RT-d2e7f5bc431c476bb71539567a225458-W44-RT-2-SIMULATED-RECEIPT"
+      ],
+      "quantities": {
+        "synthetic_available_mwh": "118.846879667125",
+        "simulated_dispatched_mwh": "79.23125311141668",
+        "simulated_curtailed_mwh": "39.61562655570833",
+        "physical_DA_reference_mwh": "118.846879667125"
+      },
+      "raw_price": "-1000.0",
+      "quantity_kind": "simulated_executed",
+      "readiness": {
+        "amount": null,
+        "missing": [
+          "participation",
+          "real_unit_identity (bus aggregation is synthetic only)",
+          "metered_quantity",
+          "actual_meter",
+          "financial_DA",
+          "contracts (unknown is not zero)",
+          "verified_settlement_prices"
+        ],
+        "route": "needs_inputs",
+        "formal_bill": null,
+        "payable": false,
+        "separate_unclosed_components": {
+          "monthly_mechanism": null,
+          "green_certificates": null,
+          "AGC_mileage": null
+        }
+      }
+    },
+    {
+      "window": 45,
+      "start": "2026-11-11T11:15:00+08:00",
+      "end": "2026-11-11T11:30:00+08:00",
+      "bus": "30",
+      "run_id": "R45-RT-d2e7f5bc431c476bb71539567a225458",
+      "command_ids": [
+        "R45-RT-d2e7f5bc431c476bb71539567a225458-W45-RT-0",
+        "R45-RT-d2e7f5bc431c476bb71539567a225458-W45-RT-1",
+        "R45-RT-d2e7f5bc431c476bb71539567a225458-W45-RT-2"
+      ],
+      "receipt_ids": [
+        "R45-RT-d2e7f5bc431c476bb71539567a225458-W45-RT-0-SIMULATED-RECEIPT",
+        "R45-RT-d2e7f5bc431c476bb71539567a225458-W45-RT-1-SIMULATED-RECEIPT",
+        "R45-RT-d2e7f5bc431c476bb71539567a225458-W45-RT-2-SIMULATED-RECEIPT"
+      ],
+      "quantities": {
+        "synthetic_available_mwh": "115.840059526875",
+        "simulated_dispatched_mwh": "46.34302884113884",
+        "simulated_curtailed_mwh": "69.49703068573616",
+        "physical_DA_reference_mwh": "76.89368561422222"
+      },
+      "raw_price": "-1000.0",
+      "quantity_kind": "simulated_executed",
+      "readiness": {
+        "amount": null,
+        "missing": [
+          "participation",
+          "real_unit_identity (bus aggregation is synthetic only)",
+          "metered_quantity",
+          "actual_meter",
+          "financial_DA",
+          "contracts (unknown is not zero)",
+          "verified_settlement_prices"
+        ],
+        "route": "needs_inputs",
+        "formal_bill": null,
+        "payable": false,
+        "separate_unclosed_components": {
+          "monthly_mechanism": null,
+          "green_certificates": null,
+          "AGC_mileage": null
+        }
+      }
+    },
+    {
+      "window": 46,
+      "start": "2026-11-11T11:30:00+08:00",
+      "end": "2026-11-11T11:45:00+08:00",
+      "bus": "30",
+      "run_id": "R45-RT-d2e7f5bc431c476bb71539567a225458",
+      "command_ids": [
+        "R45-RT-d2e7f5bc431c476bb71539567a225458-W46-RT-0",
+        "R45-RT-d2e7f5bc431c476bb71539567a225458-W46-RT-1",
+        "R45-RT-d2e7f5bc431c476bb71539567a225458-W46-RT-2"
+      ],
+      "receipt_ids": [
+        "R45-RT-d2e7f5bc431c476bb71539567a225458-W46-RT-0-SIMULATED-RECEIPT",
+        "R45-RT-d2e7f5bc431c476bb71539567a225458-W46-RT-1-SIMULATED-RECEIPT",
+        "R45-RT-d2e7f5bc431c476bb71539567a225458-W46-RT-2-SIMULATED-RECEIPT"
+      ],
+      "quantities": {
+        "synthetic_available_mwh": "112.90109560387499",
+        "simulated_dispatched_mwh": "50.20234548166663",
+        "simulated_curtailed_mwh": "62.698750122208374",
+        "physical_DA_reference_mwh": "78.866578813125"
+      },
+      "raw_price": "-1000.0",
+      "quantity_kind": "simulated_executed",
+      "readiness": {
+        "amount": null,
+        "missing": [
+          "participation",
+          "real_unit_identity (bus aggregation is synthetic only)",
+          "metered_quantity",
+          "actual_meter",
+          "financial_DA",
+          "contracts (unknown is not zero)",
+          "verified_settlement_prices"
+        ],
+        "route": "needs_inputs",
+        "formal_bill": null,
+        "payable": false,
+        "separate_unclosed_components": {
+          "monthly_mechanism": null,
+          "green_certificates": null,
+          "AGC_mileage": null
+        }
+      }
+    },
+    {
+      "window": 47,
+      "start": "2026-11-11T11:45:00+08:00",
+      "end": "2026-11-11T12:00:00+08:00",
+      "bus": "30",
+      "run_id": "R45-RT-d2e7f5bc431c476bb71539567a225458",
+      "command_ids": [
+        "R45-RT-d2e7f5bc431c476bb71539567a225458-W47-RT-0",
+        "R45-RT-d2e7f5bc431c476bb71539567a225458-W47-RT-1",
+        "R45-RT-d2e7f5bc431c476bb71539567a225458-W47-RT-2"
+      ],
+      "receipt_ids": [
+        "R45-RT-d2e7f5bc431c476bb71539567a225458-W47-RT-0-SIMULATED-RECEIPT",
+        "R45-RT-d2e7f5bc431c476bb71539567a225458-W47-RT-1-SIMULATED-RECEIPT",
+        "R45-RT-d2e7f5bc431c476bb71539567a225458-W47-RT-2-SIMULATED-RECEIPT"
+      ],
+      "quantities": {
+        "synthetic_available_mwh": "110.12083814012499",
+        "simulated_dispatched_mwh": "108.18654563570838",
+        "simulated_curtailed_mwh": "1.934292504416618",
+        "physical_DA_reference_mwh": "91.21765603366673"
+      },
+      "raw_price": "-1000.0",
+      "quantity_kind": "simulated_executed",
+      "readiness": {
+        "amount": null,
+        "missing": [
+          "participation",
+          "real_unit_identity (bus aggregation is synthetic only)",
+          "metered_quantity",
+          "actual_meter",
+          "financial_DA",
+          "contracts (unknown is not zero)",
+          "verified_settlement_prices"
+        ],
+        "route": "needs_inputs",
+        "formal_bill": null,
+        "payable": false,
+        "separate_unclosed_components": {
+          "monthly_mechanism": null,
+          "green_certificates": null,
+          "AGC_mileage": null
+        }
+      }
+    },
+    {
+      "window": 44,
+      "start": "2026-11-11T11:00:00+08:00",
+      "end": "2026-11-11T11:15:00+08:00",
+      "bus": "33",
+      "run_id": "R45-RT-d2e7f5bc431c476bb71539567a225458",
+      "command_ids": [
+        "R45-RT-d2e7f5bc431c476bb71539567a225458-W44-RT-0",
+        "R45-RT-d2e7f5bc431c476bb71539567a225458-W44-RT-1",
+        "R45-RT-d2e7f5bc431c476bb71539567a225458-W44-RT-2"
+      ],
+      "receipt_ids": [
+        "R45-RT-d2e7f5bc431c476bb71539567a225458-W44-RT-0-SIMULATED-RECEIPT",
+        "R45-RT-d2e7f5bc431c476bb71539567a225458-W44-RT-1-SIMULATED-RECEIPT",
+        "R45-RT-d2e7f5bc431c476bb71539567a225458-W44-RT-2-SIMULATED-RECEIPT"
+      ],
+      "quantities": {
+        "synthetic_available_mwh": "114.233007740625",
+        "simulated_dispatched_mwh": "114.233007740625",
+        "simulated_curtailed_mwh": "0.0",
+        "physical_DA_reference_mwh": "76.36698097062505"
+      },
+      "raw_price": "-1000.0",
+      "quantity_kind": "simulated_executed",
+      "readiness": {
+        "amount": null,
+        "missing": [
+          "participation",
+          "real_unit_identity (bus aggregation is synthetic only)",
+          "metered_quantity",
+          "actual_meter",
+          "financial_DA",
+          "contracts (unknown is not zero)",
+          "verified_settlement_prices"
+        ],
+        "route": "needs_inputs",
+        "formal_bill": null,
+        "payable": false,
+        "separate_unclosed_components": {
+          "monthly_mechanism": null,
+          "green_certificates": null,
+          "AGC_mileage": null
+        }
+      }
+    },
+    {
+      "window": 45,
+      "start": "2026-11-11T11:15:00+08:00",
+      "end": "2026-11-11T11:30:00+08:00",
+      "bus": "33",
+      "run_id": "R45-RT-d2e7f5bc431c476bb71539567a225458",
+      "command_ids": [
+        "R45-RT-d2e7f5bc431c476bb71539567a225458-W45-RT-0",
+        "R45-RT-d2e7f5bc431c476bb71539567a225458-W45-RT-1",
+        "R45-RT-d2e7f5bc431c476bb71539567a225458-W45-RT-2"
+      ],
+      "receipt_ids": [
+        "R45-RT-d2e7f5bc431c476bb71539567a225458-W45-RT-0-SIMULATED-RECEIPT",
+        "R45-RT-d2e7f5bc431c476bb71539567a225458-W45-RT-1-SIMULATED-RECEIPT",
+        "R45-RT-d2e7f5bc431c476bb71539567a225458-W45-RT-2-SIMULATED-RECEIPT"
+      ],
+      "quantities": {
+        "synthetic_available_mwh": "115.73046471937501",
+        "simulated_dispatched_mwh": "81.22575796328722",
+        "simulated_curtailed_mwh": "34.50470675608778",
+        "physical_DA_reference_mwh": "115.73046471937501"
+      },
+      "raw_price": "-1000.0",
+      "quantity_kind": "simulated_executed",
+      "readiness": {
+        "amount": null,
+        "missing": [
+          "participation",
+          "real_unit_identity (bus aggregation is synthetic only)",
+          "metered_quantity",
+          "actual_meter",
+          "financial_DA",
+          "contracts (unknown is not zero)",
+          "verified_settlement_prices"
+        ],
+        "route": "needs_inputs",
+        "formal_bill": null,
+        "payable": false,
+        "separate_unclosed_components": {
+          "monthly_mechanism": null,
+          "green_certificates": null,
+          "AGC_mileage": null
+        }
+      }
+    },
+    {
+      "window": 46,
+      "start": "2026-11-11T11:30:00+08:00",
+      "end": "2026-11-11T11:45:00+08:00",
+      "bus": "33",
+      "run_id": "R45-RT-d2e7f5bc431c476bb71539567a225458",
+      "command_ids": [
+        "R45-RT-d2e7f5bc431c476bb71539567a225458-W46-RT-0",
+        "R45-RT-d2e7f5bc431c476bb71539567a225458-W46-RT-1",
+        "R45-RT-d2e7f5bc431c476bb71539567a225458-W46-RT-2"
+      ],
+      "receipt_ids": [
+        "R45-RT-d2e7f5bc431c476bb71539567a225458-W46-RT-0-SIMULATED-RECEIPT",
+        "R45-RT-d2e7f5bc431c476bb71539567a225458-W46-RT-1-SIMULATED-RECEIPT",
+        "R45-RT-d2e7f5bc431c476bb71539567a225458-W46-RT-2-SIMULATED-RECEIPT"
+      ],
+      "quantities": {
+        "synthetic_available_mwh": "116.732346081",
+        "simulated_dispatched_mwh": "84.75281469872222",
+        "simulated_curtailed_mwh": "31.979531382277774",
+        "physical_DA_reference_mwh": "84.75281469872222"
+      },
+      "raw_price": "-1000.0",
+      "quantity_kind": "simulated_executed",
+      "readiness": {
+        "amount": null,
+        "missing": [
+          "participation",
+          "real_unit_identity (bus aggregation is synthetic only)",
+          "metered_quantity",
+          "actual_meter",
+          "financial_DA",
+          "contracts (unknown is not zero)",
+          "verified_settlement_prices"
+        ],
+        "route": "needs_inputs",
+        "formal_bill": null,
+        "payable": false,
+        "separate_unclosed_components": {
+          "monthly_mechanism": null,
+          "green_certificates": null,
+          "AGC_mileage": null
+        }
+      }
+    },
+    {
+      "window": 47,
+      "start": "2026-11-11T11:45:00+08:00",
+      "end": "2026-11-11T12:00:00+08:00",
+      "bus": "33",
+      "run_id": "R45-RT-d2e7f5bc431c476bb71539567a225458",
+      "command_ids": [
+        "R45-RT-d2e7f5bc431c476bb71539567a225458-W47-RT-0",
+        "R45-RT-d2e7f5bc431c476bb71539567a225458-W47-RT-1",
+        "R45-RT-d2e7f5bc431c476bb71539567a225458-W47-RT-2"
+      ],
+      "receipt_ids": [
+        "R45-RT-d2e7f5bc431c476bb71539567a225458-W47-RT-0-SIMULATED-RECEIPT",
+        "R45-RT-d2e7f5bc431c476bb71539567a225458-W47-RT-1-SIMULATED-RECEIPT",
+        "R45-RT-d2e7f5bc431c476bb71539567a225458-W47-RT-2-SIMULATED-RECEIPT"
+      ],
+      "quantities": {
+        "synthetic_available_mwh": "117.234361615625",
+        "simulated_dispatched_mwh": "85.40619836841667",
+        "simulated_curtailed_mwh": "31.828163247208334",
+        "physical_DA_reference_mwh": "117.234361615625"
+      },
+      "raw_price": "-1000.0",
+      "quantity_kind": "simulated_executed",
+      "readiness": {
+        "amount": null,
+        "missing": [
+          "participation",
+          "real_unit_identity (bus aggregation is synthetic only)",
+          "metered_quantity",
+          "actual_meter",
+          "financial_DA",
+          "contracts (unknown is not zero)",
+          "verified_settlement_prices"
+        ],
+        "route": "needs_inputs",
+        "formal_bill": null,
+        "payable": false,
+        "separate_unclosed_components": {
+          "monthly_mechanism": null,
+          "green_certificates": null,
+          "AGC_mileage": null
+        }
+      }
+    },
+    {
+      "window": 44,
+      "start": "2026-11-11T11:00:00+08:00",
+      "end": "2026-11-11T11:15:00+08:00",
+      "bus": "37",
+      "run_id": "R45-RT-d2e7f5bc431c476bb71539567a225458",
+      "command_ids": [
+        "R45-RT-d2e7f5bc431c476bb71539567a225458-W44-RT-0",
+        "R45-RT-d2e7f5bc431c476bb71539567a225458-W44-RT-1",
+        "R45-RT-d2e7f5bc431c476bb71539567a225458-W44-RT-2"
+      ],
+      "receipt_ids": [
+        "R45-RT-d2e7f5bc431c476bb71539567a225458-W44-RT-0-SIMULATED-RECEIPT",
+        "R45-RT-d2e7f5bc431c476bb71539567a225458-W44-RT-1-SIMULATED-RECEIPT",
+        "R45-RT-d2e7f5bc431c476bb71539567a225458-W44-RT-2-SIMULATED-RECEIPT"
+      ],
+      "quantities": {
+        "synthetic_available_mwh": "57.537763312500005",
+        "simulated_dispatched_mwh": "19.179254437500003",
+        "simulated_curtailed_mwh": "38.358508875000005",
+        "physical_DA_reference_mwh": "19.179254437500003"
+      },
+      "raw_price": "-1000.0",
+      "quantity_kind": "simulated_executed",
+      "readiness": {
+        "amount": null,
+        "missing": [
+          "participation",
+          "real_unit_identity (bus aggregation is synthetic only)",
+          "metered_quantity",
+          "actual_meter",
+          "financial_DA",
+          "contracts (unknown is not zero)",
+          "verified_settlement_prices"
+        ],
+        "route": "needs_inputs",
+        "formal_bill": null,
+        "payable": false,
+        "separate_unclosed_components": {
+          "monthly_mechanism": null,
+          "green_certificates": null,
+          "AGC_mileage": null
+        }
+      }
+    },
+    {
+      "window": 45,
+      "start": "2026-11-11T11:15:00+08:00",
+      "end": "2026-11-11T11:30:00+08:00",
+      "bus": "37",
+      "run_id": "R45-RT-d2e7f5bc431c476bb71539567a225458",
+      "command_ids": [
+        "R45-RT-d2e7f5bc431c476bb71539567a225458-W45-RT-0",
+        "R45-RT-d2e7f5bc431c476bb71539567a225458-W45-RT-1",
+        "R45-RT-d2e7f5bc431c476bb71539567a225458-W45-RT-2"
+      ],
+      "receipt_ids": [
+        "R45-RT-d2e7f5bc431c476bb71539567a225458-W45-RT-0-SIMULATED-RECEIPT",
+        "R45-RT-d2e7f5bc431c476bb71539567a225458-W45-RT-1-SIMULATED-RECEIPT",
+        "R45-RT-d2e7f5bc431c476bb71539567a225458-W45-RT-2-SIMULATED-RECEIPT"
+      ],
+      "quantities": {
+        "synthetic_available_mwh": "55.821695428249996",
+        "simulated_dispatched_mwh": "37.21446361883333",
+        "simulated_curtailed_mwh": "18.607231809416664",
+        "physical_DA_reference_mwh": "37.397043066722226"
+      },
+      "raw_price": "-1000.0",
+      "quantity_kind": "simulated_executed",
+      "readiness": {
+        "amount": null,
+        "missing": [
+          "participation",
+          "real_unit_identity (bus aggregation is synthetic only)",
+          "metered_quantity",
+          "actual_meter",
+          "financial_DA",
+          "contracts (unknown is not zero)",
+          "verified_settlement_prices"
+        ],
+        "route": "needs_inputs",
+        "formal_bill": null,
+        "payable": false,
+        "separate_unclosed_components": {
+          "monthly_mechanism": null,
+          "green_certificates": null,
+          "AGC_mileage": null
+        }
+      }
+    },
+    {
+      "window": 46,
+      "start": "2026-11-11T11:30:00+08:00",
+      "end": "2026-11-11T11:45:00+08:00",
+      "bus": "37",
+      "run_id": "R45-RT-d2e7f5bc431c476bb71539567a225458",
+      "command_ids": [
+        "R45-RT-d2e7f5bc431c476bb71539567a225458-W46-RT-0",
+        "R45-RT-d2e7f5bc431c476bb71539567a225458-W46-RT-1",
+        "R45-RT-d2e7f5bc431c476bb71539567a225458-W46-RT-2"
+      ],
+      "receipt_ids": [
+        "R45-RT-d2e7f5bc431c476bb71539567a225458-W46-RT-0-SIMULATED-RECEIPT",
+        "R45-RT-d2e7f5bc431c476bb71539567a225458-W46-RT-1-SIMULATED-RECEIPT",
+        "R45-RT-d2e7f5bc431c476bb71539567a225458-W46-RT-2-SIMULATED-RECEIPT"
+      ],
+      "quantities": {
+        "synthetic_available_mwh": "54.2693155085",
+        "simulated_dispatched_mwh": "33.28915420308436",
+        "simulated_curtailed_mwh": "20.98016130541564",
+        "physical_DA_reference_mwh": "54.2693155085"
+      },
+      "raw_price": "-1000.0",
+      "quantity_kind": "simulated_executed",
+      "readiness": {
+        "amount": null,
+        "missing": [
+          "participation",
+          "real_unit_identity (bus aggregation is synthetic only)",
+          "metered_quantity",
+          "actual_meter",
+          "financial_DA",
+          "contracts (unknown is not zero)",
+          "verified_settlement_prices"
+        ],
+        "route": "needs_inputs",
+        "formal_bill": null,
+        "payable": false,
+        "separate_unclosed_components": {
+          "monthly_mechanism": null,
+          "green_certificates": null,
+          "AGC_mileage": null
+        }
+      }
+    },
+    {
+      "window": 47,
+      "start": "2026-11-11T11:45:00+08:00",
+      "end": "2026-11-11T12:00:00+08:00",
+      "bus": "37",
+      "run_id": "R45-RT-d2e7f5bc431c476bb71539567a225458",
+      "command_ids": [
+        "R45-RT-d2e7f5bc431c476bb71539567a225458-W47-RT-0",
+        "R45-RT-d2e7f5bc431c476bb71539567a225458-W47-RT-1",
+        "R45-RT-d2e7f5bc431c476bb71539567a225458-W47-RT-2"
+      ],
+      "receipt_ids": [
+        "R45-RT-d2e7f5bc431c476bb71539567a225458-W47-RT-0-SIMULATED-RECEIPT",
+        "R45-RT-d2e7f5bc431c476bb71539567a225458-W47-RT-1-SIMULATED-RECEIPT",
+        "R45-RT-d2e7f5bc431c476bb71539567a225458-W47-RT-2-SIMULATED-RECEIPT"
+      ],
+      "quantities": {
+        "synthetic_available_mwh": "52.9110709355",
+        "simulated_dispatched_mwh": "52.9110709355",
+        "simulated_curtailed_mwh": "0.0",
+        "physical_DA_reference_mwh": "35.274047290333336"
+      },
+      "raw_price": "-1000.0",
+      "quantity_kind": "simulated_executed",
+      "readiness": {
+        "amount": null,
+        "missing": [
+          "participation",
+          "real_unit_identity (bus aggregation is synthetic only)",
+          "metered_quantity",
+          "actual_meter",
+          "financial_DA",
+          "contracts (unknown is not zero)",
+          "verified_settlement_prices"
+        ],
+        "route": "needs_inputs",
+        "formal_bill": null,
+        "payable": false,
+        "separate_unclosed_components": {
+          "monthly_mechanism": null,
+          "green_certificates": null,
+          "AGC_mileage": null
+        }
+      }
+    }
+  ],
+  "formal_bill": null,
+  "payable": false,
+  "new_native_calls": 0
+}

@@ -1,0 +1,156 @@
+{
+  "schema": "gd.agc.mixed.r79.result.v1",
+  "scope": "Guangdong local research procurement candidates only",
+  "hour_start": "2026-11-12T01:00:00+08:00",
+  "zone": "GD_fixture",
+  "ranked": [
+    {
+      "resource_id": "D",
+      "kind": "independent_storage_third_party",
+      "P": "1",
+      "k1": "1",
+      "sorting_price": "1.93548387096774193548387096774193548387096774193548387096774",
+      "declared_mw": "40",
+      "Fm": "1.55"
+    },
+    {
+      "resource_id": "T0",
+      "kind": "thermal",
+      "plant_id": "P0",
+      "P": "0.333333333333333333333333333333333333333333333333333333333333",
+      "k1": "1",
+      "sorting_price": "9.00000000000000000000000000000000000000000000000000000000001",
+      "declared_mw": "50.00"
+    },
+    {
+      "resource_id": "T1",
+      "kind": "thermal",
+      "plant_id": "P1",
+      "P": "0.333333333333333333333333333333333333333333333333333333333333",
+      "k1": "1",
+      "sorting_price": "12.0000000000000000000000000000000000000000000000000000000000",
+      "declared_mw": "50.00"
+    },
+    {
+      "resource_id": "T2",
+      "kind": "thermal",
+      "plant_id": "P2",
+      "P": "0.333333333333333333333333333333333333333333333333333333333333",
+      "k1": "1",
+      "sorting_price": "15.0000000000000000000000000000000000000000000000000000000000",
+      "declared_mw": "50.00"
+    },
+    {
+      "resource_id": "T3",
+      "kind": "thermal",
+      "plant_id": "P3",
+      "P": "0.333333333333333333333333333333333333333333333333333333333333",
+      "k1": "1",
+      "sorting_price": "18.0000000000000000000000000000000000000000000000000000000000",
+      "declared_mw": "50.00"
+    },
+    {
+      "resource_id": "T4",
+      "kind": "thermal",
+      "plant_id": "P4",
+      "P": "0.333333333333333333333333333333333333333333333333333333333333",
+      "k1": "1",
+      "sorting_price": "21.0000000000000000000000000000000000000000000000000000000000",
+      "declared_mw": "50.00"
+    },
+    {
+      "resource_id": "T5",
+      "kind": "thermal",
+      "plant_id": "P5",
+      "P": "0.333333333333333333333333333333333333333333333333333333333333",
+      "k1": "1",
+      "sorting_price": "24.0000000000000000000000000000000000000000000000000000000000",
+      "declared_mw": "50.00"
+    }
+  ],
+  "awards_mw": {
+    "D": "40",
+    "T0": "40.0",
+    "T1": "40.0"
+  },
+  "trace": [
+    {
+      "added": "D",
+      "awards_mw": {
+        "D": "40"
+      },
+      "total_mw": "40"
+    },
+    {
+      "added": "T0",
+      "awards_mw": {
+        "D": "40",
+        "T0": "40.0"
+      },
+      "total_mw": "80.0"
+    },
+    {
+      "added": "T1",
+      "awards_mw": {
+        "D": "40",
+        "T0": "40.0",
+        "T1": "40.0"
+      },
+      "total_mw": "120.0"
+    }
+  ],
+  "non_price_setters": [],
+  "raw_marginal": "12.0000000000000000000000000000000000000000000000000000000000",
+  "candidate_price": "12.0000000000000000000000000000000000000000000000000000000000",
+  "unmet_mw": "0",
+  "previous_hour_price_used": false,
+  "storage_competition": {
+    "schema": "gd.agc.storage.r78.result.v1",
+    "hour_start": "2026-11-12T01:00:00+08:00",
+    "zone": "GD_fixture",
+    "K_U": "3.00",
+    "external_full_area_kmax": "3",
+    "excluded": [],
+    "unresolved": [],
+    "precision_policy": "Decimal precision60; no explicit intermediate quantization; rounded decimal division is implementation strategy, not official production rule",
+    "formal_eligibility_granted": false,
+    "formal_publication_allowed": false,
+    "settlement_Fm_application": false,
+    "native_calls": 0,
+    "status": "research_candidates_only",
+    "candidates": [
+      {
+        "resource_id": "D",
+        "q": "40",
+        "b": "3",
+        "k": "3",
+        "ratio": "0.4",
+        "qmin": "20.0",
+        "qmax": "40.0",
+        "base_score": "80",
+        "reward": "15",
+        "score": "95",
+        "P": "1",
+        "tie_group": 0,
+        "cumulative_q": "40",
+        "x": "0.2",
+        "Fm": "1.55",
+        "sorting_price": "1.93548387096774193548387096774193548387096774193548387096774"
+      }
+    ],
+    "tie_groups": [
+      [
+        "D"
+      ]
+    ],
+    "market_clearing_performed": false,
+    "award_capacity_rule": "whole declared q if awarded downstream; no fractional award here"
+  },
+  "thermal_nonparticipants": [],
+  "requires_R77_and_joint_energy_safety": true,
+  "formal_publication_allowed": false,
+  "regional_uniform_price": false,
+  "qualification_granted": false,
+  "original_AGC50_chain_changed": false,
+  "native_calls": 0
+}

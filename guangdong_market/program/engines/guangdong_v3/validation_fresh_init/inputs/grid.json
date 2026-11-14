@@ -1,0 +1,1766 @@
+[
+  {
+    "actual_time": "2026-11-11T00:15:00+08:00",
+    "constraint_scope": "R44 new R42 actual source, inherited original IEEE39 PTDF and explicit98 representative research mapping",
+    "end": "2026-11-11T00:15:00+08:00",
+    "kind": "delivery",
+    "objective_weight_h": 0.25,
+    "physical_duration_h": 0.25,
+    "power_semantics": "interval_mean",
+    "predecessor": null,
+    "ramp_elapsed_h": 0.25,
+    "settlement": true,
+    "start": "2026-11-11T00:00:00+08:00",
+    "physical_indices": [
+      0,
+      1,
+      2
+    ]
+  },
+  {
+    "actual_time": "2026-11-11T00:30:00+08:00",
+    "constraint_scope": "R44 new R42 actual source, inherited original IEEE39 PTDF and explicit98 representative research mapping",
+    "end": "2026-11-11T00:30:00+08:00",
+    "kind": "delivery",
+    "objective_weight_h": 0.25,
+    "physical_duration_h": 0.25,
+    "power_semantics": "interval_mean",
+    "predecessor": 0,
+    "ramp_elapsed_h": 0.25,
+    "settlement": true,
+    "start": "2026-11-11T00:15:00+08:00",
+    "physical_indices": [
+      3,
+      4,
+      5
+    ]
+  },
+  {
+    "actual_time": "2026-11-11T00:45:00+08:00",
+    "constraint_scope": "R44 new R42 actual source, inherited original IEEE39 PTDF and explicit98 representative research mapping",
+    "end": "2026-11-11T00:45:00+08:00",
+    "kind": "delivery",
+    "objective_weight_h": 0.25,
+    "physical_duration_h": 0.25,
+    "power_semantics": "interval_mean",
+    "predecessor": 1,
+    "ramp_elapsed_h": 0.25,
+    "settlement": true,
+    "start": "2026-11-11T00:30:00+08:00",
+    "physical_indices": [
+      6,
+      7,
+      8
+    ]
+  },
+  {
+    "actual_time": "2026-11-11T01:00:00+08:00",
+    "constraint_scope": "R44 new R42 actual source, inherited original IEEE39 PTDF and explicit98 representative research mapping",
+    "end": "2026-11-11T01:00:00+08:00",
+    "kind": "delivery",
+    "objective_weight_h": 0.25,
+    "physical_duration_h": 0.25,
+    "power_semantics": "interval_mean",
+    "predecessor": 2,
+    "ramp_elapsed_h": 0.25,
+    "settlement": true,
+    "start": "2026-11-11T00:45:00+08:00",
+    "physical_indices": [
+      9,
+      10,
+      11
+    ]
+  },
+  {
+    "actual_time": "2026-11-11T01:15:00+08:00",
+    "constraint_scope": "R44 new R42 actual source, inherited original IEEE39 PTDF and explicit98 representative research mapping",
+    "end": "2026-11-11T01:15:00+08:00",
+    "kind": "delivery",
+    "objective_weight_h": 0.25,
+    "physical_duration_h": 0.25,
+    "power_semantics": "interval_mean",
+    "predecessor": 3,
+    "ramp_elapsed_h": 0.25,
+    "settlement": true,
+    "start": "2026-11-11T01:00:00+08:00",
+    "physical_indices": [
+      12,
+      13,
+      14
+    ]
+  },
+  {
+    "actual_time": "2026-11-11T01:30:00+08:00",
+    "constraint_scope": "R44 new R42 actual source, inherited original IEEE39 PTDF and explicit98 representative research mapping",
+    "end": "2026-11-11T01:30:00+08:00",
+    "kind": "delivery",
+    "objective_weight_h": 0.25,
+    "physical_duration_h": 0.25,
+    "power_semantics": "interval_mean",
+    "predecessor": 4,
+    "ramp_elapsed_h": 0.25,
+    "settlement": true,
+    "start": "2026-11-11T01:15:00+08:00",
+    "physical_indices": [
+      15,
+      16,
+      17
+    ]
+  },
+  {
+    "actual_time": "2026-11-11T01:45:00+08:00",
+    "constraint_scope": "R44 new R42 actual source, inherited original IEEE39 PTDF and explicit98 representative research mapping",
+    "end": "2026-11-11T01:45:00+08:00",
+    "kind": "delivery",
+    "objective_weight_h": 0.25,
+    "physical_duration_h": 0.25,
+    "power_semantics": "interval_mean",
+    "predecessor": 5,
+    "ramp_elapsed_h": 0.25,
+    "settlement": true,
+    "start": "2026-11-11T01:30:00+08:00",
+    "physical_indices": [
+      18,
+      19,
+      20
+    ]
+  },
+  {
+    "actual_time": "2026-11-11T02:00:00+08:00",
+    "constraint_scope": "R44 new R42 actual source, inherited original IEEE39 PTDF and explicit98 representative research mapping",
+    "end": "2026-11-11T02:00:00+08:00",
+    "kind": "delivery",
+    "objective_weight_h": 0.25,
+    "physical_duration_h": 0.25,
+    "power_semantics": "interval_mean",
+    "predecessor": 6,
+    "ramp_elapsed_h": 0.25,
+    "settlement": true,
+    "start": "2026-11-11T01:45:00+08:00",
+    "physical_indices": [
+      21,
+      22,
+      23
+    ]
+  },
+  {
+    "actual_time": "2026-11-11T02:15:00+08:00",
+    "constraint_scope": "R44 new R42 actual source, inherited original IEEE39 PTDF and explicit98 representative research mapping",
+    "end": "2026-11-11T02:15:00+08:00",
+    "kind": "delivery",
+    "objective_weight_h": 0.25,
+    "physical_duration_h": 0.25,
+    "power_semantics": "interval_mean",
+    "predecessor": 7,
+    "ramp_elapsed_h": 0.25,
+    "settlement": true,
+    "start": "2026-11-11T02:00:00+08:00",
+    "physical_indices": [
+      24,
+      25,
+      26
+    ]
+  },
+  {
+    "actual_time": "2026-11-11T02:30:00+08:00",
+    "constraint_scope": "R44 new R42 actual source, inherited original IEEE39 PTDF and explicit98 representative research mapping",
+    "end": "2026-11-11T02:30:00+08:00",
+    "kind": "delivery",
+    "objective_weight_h": 0.25,
+    "physical_duration_h": 0.25,
+    "power_semantics": "interval_mean",
+    "predecessor": 8,
+    "ramp_elapsed_h": 0.25,
+    "settlement": true,
+    "start": "2026-11-11T02:15:00+08:00",
+    "physical_indices": [
+      27,
+      28,
+      29
+    ]
+  },
+  {
+    "actual_time": "2026-11-11T02:45:00+08:00",
+    "constraint_scope": "R44 new R42 actual source, inherited original IEEE39 PTDF and explicit98 representative research mapping",
+    "end": "2026-11-11T02:45:00+08:00",
+    "kind": "delivery",
+    "objective_weight_h": 0.25,
+    "physical_duration_h": 0.25,
+    "power_semantics": "interval_mean",
+    "predecessor": 9,
+    "ramp_elapsed_h": 0.25,
+    "settlement": true,
+    "start": "2026-11-11T02:30:00+08:00",
+    "physical_indices": [
+      30,
+      31,
+      32
+    ]
+  },
+  {
+    "actual_time": "2026-11-11T03:00:00+08:00",
+    "constraint_scope": "R44 new R42 actual source, inherited original IEEE39 PTDF and explicit98 representative research mapping",
+    "end": "2026-11-11T03:00:00+08:00",
+    "kind": "delivery",
+    "objective_weight_h": 0.25,
+    "physical_duration_h": 0.25,
+    "power_semantics": "interval_mean",
+    "predecessor": 10,
+    "ramp_elapsed_h": 0.25,
+    "settlement": true,
+    "start": "2026-11-11T02:45:00+08:00",
+    "physical_indices": [
+      33,
+      34,
+      35
+    ]
+  },
+  {
+    "actual_time": "2026-11-11T03:15:00+08:00",
+    "constraint_scope": "R44 new R42 actual source, inherited original IEEE39 PTDF and explicit98 representative research mapping",
+    "end": "2026-11-11T03:15:00+08:00",
+    "kind": "delivery",
+    "objective_weight_h": 0.25,
+    "physical_duration_h": 0.25,
+    "power_semantics": "interval_mean",
+    "predecessor": 11,
+    "ramp_elapsed_h": 0.25,
+    "settlement": true,
+    "start": "2026-11-11T03:00:00+08:00",
+    "physical_indices": [
+      36,
+      37,
+      38
+    ]
+  },
+  {
+    "actual_time": "2026-11-11T03:30:00+08:00",
+    "constraint_scope": "R44 new R42 actual source, inherited original IEEE39 PTDF and explicit98 representative research mapping",
+    "end": "2026-11-11T03:30:00+08:00",
+    "kind": "delivery",
+    "objective_weight_h": 0.25,
+    "physical_duration_h": 0.25,
+    "power_semantics": "interval_mean",
+    "predecessor": 12,
+    "ramp_elapsed_h": 0.25,
+    "settlement": true,
+    "start": "2026-11-11T03:15:00+08:00",
+    "physical_indices": [
+      39,
+      40,
+      41
+    ]
+  },
+  {
+    "actual_time": "2026-11-11T03:45:00+08:00",
+    "constraint_scope": "R44 new R42 actual source, inherited original IEEE39 PTDF and explicit98 representative research mapping",
+    "end": "2026-11-11T03:45:00+08:00",
+    "kind": "delivery",
+    "objective_weight_h": 0.25,
+    "physical_duration_h": 0.25,
+    "power_semantics": "interval_mean",
+    "predecessor": 13,
+    "ramp_elapsed_h": 0.25,
+    "settlement": true,
+    "start": "2026-11-11T03:30:00+08:00",
+    "physical_indices": [
+      42,
+      43,
+      44
+    ]
+  },
+  {
+    "actual_time": "2026-11-11T04:00:00+08:00",
+    "constraint_scope": "R44 new R42 actual source, inherited original IEEE39 PTDF and explicit98 representative research mapping",
+    "end": "2026-11-11T04:00:00+08:00",
+    "kind": "delivery",
+    "objective_weight_h": 0.25,
+    "physical_duration_h": 0.25,
+    "power_semantics": "interval_mean",
+    "predecessor": 14,
+    "ramp_elapsed_h": 0.25,
+    "settlement": true,
+    "start": "2026-11-11T03:45:00+08:00",
+    "physical_indices": [
+      45,
+      46,
+      47
+    ]
+  },
+  {
+    "actual_time": "2026-11-11T04:15:00+08:00",
+    "constraint_scope": "R44 new R42 actual source, inherited original IEEE39 PTDF and explicit98 representative research mapping",
+    "end": "2026-11-11T04:15:00+08:00",
+    "kind": "delivery",
+    "objective_weight_h": 0.25,
+    "physical_duration_h": 0.25,
+    "power_semantics": "interval_mean",
+    "predecessor": 15,
+    "ramp_elapsed_h": 0.25,
+    "settlement": true,
+    "start": "2026-11-11T04:00:00+08:00",
+    "physical_indices": [
+      48,
+      49,
+      50
+    ]
+  },
+  {
+    "actual_time": "2026-11-11T04:30:00+08:00",
+    "constraint_scope": "R44 new R42 actual source, inherited original IEEE39 PTDF and explicit98 representative research mapping",
+    "end": "2026-11-11T04:30:00+08:00",
+    "kind": "delivery",
+    "objective_weight_h": 0.25,
+    "physical_duration_h": 0.25,
+    "power_semantics": "interval_mean",
+    "predecessor": 16,
+    "ramp_elapsed_h": 0.25,
+    "settlement": true,
+    "start": "2026-11-11T04:15:00+08:00",
+    "physical_indices": [
+      51,
+      52,
+      53
+    ]
+  },
+  {
+    "actual_time": "2026-11-11T04:45:00+08:00",
+    "constraint_scope": "R44 new R42 actual source, inherited original IEEE39 PTDF and explicit98 representative research mapping",
+    "end": "2026-11-11T04:45:00+08:00",
+    "kind": "delivery",
+    "objective_weight_h": 0.25,
+    "physical_duration_h": 0.25,
+    "power_semantics": "interval_mean",
+    "predecessor": 17,
+    "ramp_elapsed_h": 0.25,
+    "settlement": true,
+    "start": "2026-11-11T04:30:00+08:00",
+    "physical_indices": [
+      54,
+      55,
+      56
+    ]
+  },
+  {
+    "actual_time": "2026-11-11T05:00:00+08:00",
+    "constraint_scope": "R44 new R42 actual source, inherited original IEEE39 PTDF and explicit98 representative research mapping",
+    "end": "2026-11-11T05:00:00+08:00",
+    "kind": "delivery",
+    "objective_weight_h": 0.25,
+    "physical_duration_h": 0.25,
+    "power_semantics": "interval_mean",
+    "predecessor": 18,
+    "ramp_elapsed_h": 0.25,
+    "settlement": true,
+    "start": "2026-11-11T04:45:00+08:00",
+    "physical_indices": [
+      57,
+      58,
+      59
+    ]
+  },
+  {
+    "actual_time": "2026-11-11T05:15:00+08:00",
+    "constraint_scope": "R44 new R42 actual source, inherited original IEEE39 PTDF and explicit98 representative research mapping",
+    "end": "2026-11-11T05:15:00+08:00",
+    "kind": "delivery",
+    "objective_weight_h": 0.25,
+    "physical_duration_h": 0.25,
+    "power_semantics": "interval_mean",
+    "predecessor": 19,
+    "ramp_elapsed_h": 0.25,
+    "settlement": true,
+    "start": "2026-11-11T05:00:00+08:00",
+    "physical_indices": [
+      60,
+      61,
+      62
+    ]
+  },
+  {
+    "actual_time": "2026-11-11T05:30:00+08:00",
+    "constraint_scope": "R44 new R42 actual source, inherited original IEEE39 PTDF and explicit98 representative research mapping",
+    "end": "2026-11-11T05:30:00+08:00",
+    "kind": "delivery",
+    "objective_weight_h": 0.25,
+    "physical_duration_h": 0.25,
+    "power_semantics": "interval_mean",
+    "predecessor": 20,
+    "ramp_elapsed_h": 0.25,
+    "settlement": true,
+    "start": "2026-11-11T05:15:00+08:00",
+    "physical_indices": [
+      63,
+      64,
+      65
+    ]
+  },
+  {
+    "actual_time": "2026-11-11T05:45:00+08:00",
+    "constraint_scope": "R44 new R42 actual source, inherited original IEEE39 PTDF and explicit98 representative research mapping",
+    "end": "2026-11-11T05:45:00+08:00",
+    "kind": "delivery",
+    "objective_weight_h": 0.25,
+    "physical_duration_h": 0.25,
+    "power_semantics": "interval_mean",
+    "predecessor": 21,
+    "ramp_elapsed_h": 0.25,
+    "settlement": true,
+    "start": "2026-11-11T05:30:00+08:00",
+    "physical_indices": [
+      66,
+      67,
+      68
+    ]
+  },
+  {
+    "actual_time": "2026-11-11T06:00:00+08:00",
+    "constraint_scope": "R44 new R42 actual source, inherited original IEEE39 PTDF and explicit98 representative research mapping",
+    "end": "2026-11-11T06:00:00+08:00",
+    "kind": "delivery",
+    "objective_weight_h": 0.25,
+    "physical_duration_h": 0.25,
+    "power_semantics": "interval_mean",
+    "predecessor": 22,
+    "ramp_elapsed_h": 0.25,
+    "settlement": true,
+    "start": "2026-11-11T05:45:00+08:00",
+    "physical_indices": [
+      69,
+      70,
+      71
+    ]
+  },
+  {
+    "actual_time": "2026-11-11T06:15:00+08:00",
+    "constraint_scope": "R44 new R42 actual source, inherited original IEEE39 PTDF and explicit98 representative research mapping",
+    "end": "2026-11-11T06:15:00+08:00",
+    "kind": "delivery",
+    "objective_weight_h": 0.25,
+    "physical_duration_h": 0.25,
+    "power_semantics": "interval_mean",
+    "predecessor": 23,
+    "ramp_elapsed_h": 0.25,
+    "settlement": true,
+    "start": "2026-11-11T06:00:00+08:00",
+    "physical_indices": [
+      72,
+      73,
+      74
+    ]
+  },
+  {
+    "actual_time": "2026-11-11T06:30:00+08:00",
+    "constraint_scope": "R44 new R42 actual source, inherited original IEEE39 PTDF and explicit98 representative research mapping",
+    "end": "2026-11-11T06:30:00+08:00",
+    "kind": "delivery",
+    "objective_weight_h": 0.25,
+    "physical_duration_h": 0.25,
+    "power_semantics": "interval_mean",
+    "predecessor": 24,
+    "ramp_elapsed_h": 0.25,
+    "settlement": true,
+    "start": "2026-11-11T06:15:00+08:00",
+    "physical_indices": [
+      75,
+      76,
+      77
+    ]
+  },
+  {
+    "actual_time": "2026-11-11T06:45:00+08:00",
+    "constraint_scope": "R44 new R42 actual source, inherited original IEEE39 PTDF and explicit98 representative research mapping",
+    "end": "2026-11-11T06:45:00+08:00",
+    "kind": "delivery",
+    "objective_weight_h": 0.25,
+    "physical_duration_h": 0.25,
+    "power_semantics": "interval_mean",
+    "predecessor": 25,
+    "ramp_elapsed_h": 0.25,
+    "settlement": true,
+    "start": "2026-11-11T06:30:00+08:00",
+    "physical_indices": [
+      78,
+      79,
+      80
+    ]
+  },
+  {
+    "actual_time": "2026-11-11T07:00:00+08:00",
+    "constraint_scope": "R44 new R42 actual source, inherited original IEEE39 PTDF and explicit98 representative research mapping",
+    "end": "2026-11-11T07:00:00+08:00",
+    "kind": "delivery",
+    "objective_weight_h": 0.25,
+    "physical_duration_h": 0.25,
+    "power_semantics": "interval_mean",
+    "predecessor": 26,
+    "ramp_elapsed_h": 0.25,
+    "settlement": true,
+    "start": "2026-11-11T06:45:00+08:00",
+    "physical_indices": [
+      81,
+      82,
+      83
+    ]
+  },
+  {
+    "actual_time": "2026-11-11T07:15:00+08:00",
+    "constraint_scope": "R44 new R42 actual source, inherited original IEEE39 PTDF and explicit98 representative research mapping",
+    "end": "2026-11-11T07:15:00+08:00",
+    "kind": "delivery",
+    "objective_weight_h": 0.25,
+    "physical_duration_h": 0.25,
+    "power_semantics": "interval_mean",
+    "predecessor": 27,
+    "ramp_elapsed_h": 0.25,
+    "settlement": true,
+    "start": "2026-11-11T07:00:00+08:00",
+    "physical_indices": [
+      84,
+      85,
+      86
+    ]
+  },
+  {
+    "actual_time": "2026-11-11T07:30:00+08:00",
+    "constraint_scope": "R44 new R42 actual source, inherited original IEEE39 PTDF and explicit98 representative research mapping",
+    "end": "2026-11-11T07:30:00+08:00",
+    "kind": "delivery",
+    "objective_weight_h": 0.25,
+    "physical_duration_h": 0.25,
+    "power_semantics": "interval_mean",
+    "predecessor": 28,
+    "ramp_elapsed_h": 0.25,
+    "settlement": true,
+    "start": "2026-11-11T07:15:00+08:00",
+    "physical_indices": [
+      87,
+      88,
+      89
+    ]
+  },
+  {
+    "actual_time": "2026-11-11T07:45:00+08:00",
+    "constraint_scope": "R44 new R42 actual source, inherited original IEEE39 PTDF and explicit98 representative research mapping",
+    "end": "2026-11-11T07:45:00+08:00",
+    "kind": "delivery",
+    "objective_weight_h": 0.25,
+    "physical_duration_h": 0.25,
+    "power_semantics": "interval_mean",
+    "predecessor": 29,
+    "ramp_elapsed_h": 0.25,
+    "settlement": true,
+    "start": "2026-11-11T07:30:00+08:00",
+    "physical_indices": [
+      90,
+      91,
+      92
+    ]
+  },
+  {
+    "actual_time": "2026-11-11T08:00:00+08:00",
+    "constraint_scope": "R44 new R42 actual source, inherited original IEEE39 PTDF and explicit98 representative research mapping",
+    "end": "2026-11-11T08:00:00+08:00",
+    "kind": "delivery",
+    "objective_weight_h": 0.25,
+    "physical_duration_h": 0.25,
+    "power_semantics": "interval_mean",
+    "predecessor": 30,
+    "ramp_elapsed_h": 0.25,
+    "settlement": true,
+    "start": "2026-11-11T07:45:00+08:00",
+    "physical_indices": [
+      93,
+      94,
+      95
+    ]
+  },
+  {
+    "actual_time": "2026-11-11T08:15:00+08:00",
+    "constraint_scope": "R44 new R42 actual source, inherited original IEEE39 PTDF and explicit98 representative research mapping",
+    "end": "2026-11-11T08:15:00+08:00",
+    "kind": "delivery",
+    "objective_weight_h": 0.25,
+    "physical_duration_h": 0.25,
+    "power_semantics": "interval_mean",
+    "predecessor": 31,
+    "ramp_elapsed_h": 0.25,
+    "settlement": true,
+    "start": "2026-11-11T08:00:00+08:00",
+    "physical_indices": [
+      96,
+      97,
+      98
+    ]
+  },
+  {
+    "actual_time": "2026-11-11T08:30:00+08:00",
+    "constraint_scope": "R44 new R42 actual source, inherited original IEEE39 PTDF and explicit98 representative research mapping",
+    "end": "2026-11-11T08:30:00+08:00",
+    "kind": "delivery",
+    "objective_weight_h": 0.25,
+    "physical_duration_h": 0.25,
+    "power_semantics": "interval_mean",
+    "predecessor": 32,
+    "ramp_elapsed_h": 0.25,
+    "settlement": true,
+    "start": "2026-11-11T08:15:00+08:00",
+    "physical_indices": [
+      99,
+      100,
+      101
+    ]
+  },
+  {
+    "actual_time": "2026-11-11T08:45:00+08:00",
+    "constraint_scope": "R44 new R42 actual source, inherited original IEEE39 PTDF and explicit98 representative research mapping",
+    "end": "2026-11-11T08:45:00+08:00",
+    "kind": "delivery",
+    "objective_weight_h": 0.25,
+    "physical_duration_h": 0.25,
+    "power_semantics": "interval_mean",
+    "predecessor": 33,
+    "ramp_elapsed_h": 0.25,
+    "settlement": true,
+    "start": "2026-11-11T08:30:00+08:00",
+    "physical_indices": [
+      102,
+      103,
+      104
+    ]
+  },
+  {
+    "actual_time": "2026-11-11T09:00:00+08:00",
+    "constraint_scope": "R44 new R42 actual source, inherited original IEEE39 PTDF and explicit98 representative research mapping",
+    "end": "2026-11-11T09:00:00+08:00",
+    "kind": "delivery",
+    "objective_weight_h": 0.25,
+    "physical_duration_h": 0.25,
+    "power_semantics": "interval_mean",
+    "predecessor": 34,
+    "ramp_elapsed_h": 0.25,
+    "settlement": true,
+    "start": "2026-11-11T08:45:00+08:00",
+    "physical_indices": [
+      105,
+      106,
+      107
+    ]
+  },
+  {
+    "actual_time": "2026-11-11T09:15:00+08:00",
+    "constraint_scope": "R44 new R42 actual source, inherited original IEEE39 PTDF and explicit98 representative research mapping",
+    "end": "2026-11-11T09:15:00+08:00",
+    "kind": "delivery",
+    "objective_weight_h": 0.25,
+    "physical_duration_h": 0.25,
+    "power_semantics": "interval_mean",
+    "predecessor": 35,
+    "ramp_elapsed_h": 0.25,
+    "settlement": true,
+    "start": "2026-11-11T09:00:00+08:00",
+    "physical_indices": [
+      108,
+      109,
+      110
+    ]
+  },
+  {
+    "actual_time": "2026-11-11T09:30:00+08:00",
+    "constraint_scope": "R44 new R42 actual source, inherited original IEEE39 PTDF and explicit98 representative research mapping",
+    "end": "2026-11-11T09:30:00+08:00",
+    "kind": "delivery",
+    "objective_weight_h": 0.25,
+    "physical_duration_h": 0.25,
+    "power_semantics": "interval_mean",
+    "predecessor": 36,
+    "ramp_elapsed_h": 0.25,
+    "settlement": true,
+    "start": "2026-11-11T09:15:00+08:00",
+    "physical_indices": [
+      111,
+      112,
+      113
+    ]
+  },
+  {
+    "actual_time": "2026-11-11T09:45:00+08:00",
+    "constraint_scope": "R44 new R42 actual source, inherited original IEEE39 PTDF and explicit98 representative research mapping",
+    "end": "2026-11-11T09:45:00+08:00",
+    "kind": "delivery",
+    "objective_weight_h": 0.25,
+    "physical_duration_h": 0.25,
+    "power_semantics": "interval_mean",
+    "predecessor": 37,
+    "ramp_elapsed_h": 0.25,
+    "settlement": true,
+    "start": "2026-11-11T09:30:00+08:00",
+    "physical_indices": [
+      114,
+      115,
+      116
+    ]
+  },
+  {
+    "actual_time": "2026-11-11T10:00:00+08:00",
+    "constraint_scope": "R44 new R42 actual source, inherited original IEEE39 PTDF and explicit98 representative research mapping",
+    "end": "2026-11-11T10:00:00+08:00",
+    "kind": "delivery",
+    "objective_weight_h": 0.25,
+    "physical_duration_h": 0.25,
+    "power_semantics": "interval_mean",
+    "predecessor": 38,
+    "ramp_elapsed_h": 0.25,
+    "settlement": true,
+    "start": "2026-11-11T09:45:00+08:00",
+    "physical_indices": [
+      117,
+      118,
+      119
+    ]
+  },
+  {
+    "actual_time": "2026-11-11T10:15:00+08:00",
+    "constraint_scope": "R44 new R42 actual source, inherited original IEEE39 PTDF and explicit98 representative research mapping",
+    "end": "2026-11-11T10:15:00+08:00",
+    "kind": "delivery",
+    "objective_weight_h": 0.25,
+    "physical_duration_h": 0.25,
+    "power_semantics": "interval_mean",
+    "predecessor": 39,
+    "ramp_elapsed_h": 0.25,
+    "settlement": true,
+    "start": "2026-11-11T10:00:00+08:00",
+    "physical_indices": [
+      120,
+      121,
+      122
+    ]
+  },
+  {
+    "actual_time": "2026-11-11T10:30:00+08:00",
+    "constraint_scope": "R44 new R42 actual source, inherited original IEEE39 PTDF and explicit98 representative research mapping",
+    "end": "2026-11-11T10:30:00+08:00",
+    "kind": "delivery",
+    "objective_weight_h": 0.25,
+    "physical_duration_h": 0.25,
+    "power_semantics": "interval_mean",
+    "predecessor": 40,
+    "ramp_elapsed_h": 0.25,
+    "settlement": true,
+    "start": "2026-11-11T10:15:00+08:00",
+    "physical_indices": [
+      123,
+      124,
+      125
+    ]
+  },
+  {
+    "actual_time": "2026-11-11T10:45:00+08:00",
+    "constraint_scope": "R44 new R42 actual source, inherited original IEEE39 PTDF and explicit98 representative research mapping",
+    "end": "2026-11-11T10:45:00+08:00",
+    "kind": "delivery",
+    "objective_weight_h": 0.25,
+    "physical_duration_h": 0.25,
+    "power_semantics": "interval_mean",
+    "predecessor": 41,
+    "ramp_elapsed_h": 0.25,
+    "settlement": true,
+    "start": "2026-11-11T10:30:00+08:00",
+    "physical_indices": [
+      126,
+      127,
+      128
+    ]
+  },
+  {
+    "actual_time": "2026-11-11T11:00:00+08:00",
+    "constraint_scope": "R44 new R42 actual source, inherited original IEEE39 PTDF and explicit98 representative research mapping",
+    "end": "2026-11-11T11:00:00+08:00",
+    "kind": "delivery",
+    "objective_weight_h": 0.25,
+    "physical_duration_h": 0.25,
+    "power_semantics": "interval_mean",
+    "predecessor": 42,
+    "ramp_elapsed_h": 0.25,
+    "settlement": true,
+    "start": "2026-11-11T10:45:00+08:00",
+    "physical_indices": [
+      129,
+      130,
+      131
+    ]
+  },
+  {
+    "actual_time": "2026-11-11T11:15:00+08:00",
+    "constraint_scope": "R44 new R42 actual source, inherited original IEEE39 PTDF and explicit98 representative research mapping",
+    "end": "2026-11-11T11:15:00+08:00",
+    "kind": "delivery",
+    "objective_weight_h": 0.25,
+    "physical_duration_h": 0.25,
+    "power_semantics": "interval_mean",
+    "predecessor": 43,
+    "ramp_elapsed_h": 0.25,
+    "settlement": true,
+    "start": "2026-11-11T11:00:00+08:00",
+    "physical_indices": [
+      132,
+      133,
+      134
+    ]
+  },
+  {
+    "actual_time": "2026-11-11T11:30:00+08:00",
+    "constraint_scope": "R44 new R42 actual source, inherited original IEEE39 PTDF and explicit98 representative research mapping",
+    "end": "2026-11-11T11:30:00+08:00",
+    "kind": "delivery",
+    "objective_weight_h": 0.25,
+    "physical_duration_h": 0.25,
+    "power_semantics": "interval_mean",
+    "predecessor": 44,
+    "ramp_elapsed_h": 0.25,
+    "settlement": true,
+    "start": "2026-11-11T11:15:00+08:00",
+    "physical_indices": [
+      135,
+      136,
+      137
+    ]
+  },
+  {
+    "actual_time": "2026-11-11T11:45:00+08:00",
+    "constraint_scope": "R44 new R42 actual source, inherited original IEEE39 PTDF and explicit98 representative research mapping",
+    "end": "2026-11-11T11:45:00+08:00",
+    "kind": "delivery",
+    "objective_weight_h": 0.25,
+    "physical_duration_h": 0.25,
+    "power_semantics": "interval_mean",
+    "predecessor": 45,
+    "ramp_elapsed_h": 0.25,
+    "settlement": true,
+    "start": "2026-11-11T11:30:00+08:00",
+    "physical_indices": [
+      138,
+      139,
+      140
+    ]
+  },
+  {
+    "actual_time": "2026-11-11T12:00:00+08:00",
+    "constraint_scope": "R44 new R42 actual source, inherited original IEEE39 PTDF and explicit98 representative research mapping",
+    "end": "2026-11-11T12:00:00+08:00",
+    "kind": "delivery",
+    "objective_weight_h": 0.25,
+    "physical_duration_h": 0.25,
+    "power_semantics": "interval_mean",
+    "predecessor": 46,
+    "ramp_elapsed_h": 0.25,
+    "settlement": true,
+    "start": "2026-11-11T11:45:00+08:00",
+    "physical_indices": [
+      141,
+      142,
+      143
+    ]
+  },
+  {
+    "actual_time": "2026-11-11T12:15:00+08:00",
+    "constraint_scope": "R44 new R42 actual source, inherited original IEEE39 PTDF and explicit98 representative research mapping",
+    "end": "2026-11-11T12:15:00+08:00",
+    "kind": "delivery",
+    "objective_weight_h": 0.25,
+    "physical_duration_h": 0.25,
+    "power_semantics": "interval_mean",
+    "predecessor": 47,
+    "ramp_elapsed_h": 0.25,
+    "settlement": true,
+    "start": "2026-11-11T12:00:00+08:00",
+    "physical_indices": [
+      144,
+      145,
+      146
+    ]
+  },
+  {
+    "actual_time": "2026-11-11T12:30:00+08:00",
+    "constraint_scope": "R44 new R42 actual source, inherited original IEEE39 PTDF and explicit98 representative research mapping",
+    "end": "2026-11-11T12:30:00+08:00",
+    "kind": "delivery",
+    "objective_weight_h": 0.25,
+    "physical_duration_h": 0.25,
+    "power_semantics": "interval_mean",
+    "predecessor": 48,
+    "ramp_elapsed_h": 0.25,
+    "settlement": true,
+    "start": "2026-11-11T12:15:00+08:00",
+    "physical_indices": [
+      147,
+      148,
+      149
+    ]
+  },
+  {
+    "actual_time": "2026-11-11T12:45:00+08:00",
+    "constraint_scope": "R44 new R42 actual source, inherited original IEEE39 PTDF and explicit98 representative research mapping",
+    "end": "2026-11-11T12:45:00+08:00",
+    "kind": "delivery",
+    "objective_weight_h": 0.25,
+    "physical_duration_h": 0.25,
+    "power_semantics": "interval_mean",
+    "predecessor": 49,
+    "ramp_elapsed_h": 0.25,
+    "settlement": true,
+    "start": "2026-11-11T12:30:00+08:00",
+    "physical_indices": [
+      150,
+      151,
+      152
+    ]
+  },
+  {
+    "actual_time": "2026-11-11T13:00:00+08:00",
+    "constraint_scope": "R44 new R42 actual source, inherited original IEEE39 PTDF and explicit98 representative research mapping",
+    "end": "2026-11-11T13:00:00+08:00",
+    "kind": "delivery",
+    "objective_weight_h": 0.25,
+    "physical_duration_h": 0.25,
+    "power_semantics": "interval_mean",
+    "predecessor": 50,
+    "ramp_elapsed_h": 0.25,
+    "settlement": true,
+    "start": "2026-11-11T12:45:00+08:00",
+    "physical_indices": [
+      153,
+      154,
+      155
+    ]
+  },
+  {
+    "actual_time": "2026-11-11T13:15:00+08:00",
+    "constraint_scope": "R44 new R42 actual source, inherited original IEEE39 PTDF and explicit98 representative research mapping",
+    "end": "2026-11-11T13:15:00+08:00",
+    "kind": "delivery",
+    "objective_weight_h": 0.25,
+    "physical_duration_h": 0.25,
+    "power_semantics": "interval_mean",
+    "predecessor": 51,
+    "ramp_elapsed_h": 0.25,
+    "settlement": true,
+    "start": "2026-11-11T13:00:00+08:00",
+    "physical_indices": [
+      156,
+      157,
+      158
+    ]
+  },
+  {
+    "actual_time": "2026-11-11T13:30:00+08:00",
+    "constraint_scope": "R44 new R42 actual source, inherited original IEEE39 PTDF and explicit98 representative research mapping",
+    "end": "2026-11-11T13:30:00+08:00",
+    "kind": "delivery",
+    "objective_weight_h": 0.25,
+    "physical_duration_h": 0.25,
+    "power_semantics": "interval_mean",
+    "predecessor": 52,
+    "ramp_elapsed_h": 0.25,
+    "settlement": true,
+    "start": "2026-11-11T13:15:00+08:00",
+    "physical_indices": [
+      159,
+      160,
+      161
+    ]
+  },
+  {
+    "actual_time": "2026-11-11T13:45:00+08:00",
+    "constraint_scope": "R44 new R42 actual source, inherited original IEEE39 PTDF and explicit98 representative research mapping",
+    "end": "2026-11-11T13:45:00+08:00",
+    "kind": "delivery",
+    "objective_weight_h": 0.25,
+    "physical_duration_h": 0.25,
+    "power_semantics": "interval_mean",
+    "predecessor": 53,
+    "ramp_elapsed_h": 0.25,
+    "settlement": true,
+    "start": "2026-11-11T13:30:00+08:00",
+    "physical_indices": [
+      162,
+      163,
+      164
+    ]
+  },
+  {
+    "actual_time": "2026-11-11T14:00:00+08:00",
+    "constraint_scope": "R44 new R42 actual source, inherited original IEEE39 PTDF and explicit98 representative research mapping",
+    "end": "2026-11-11T14:00:00+08:00",
+    "kind": "delivery",
+    "objective_weight_h": 0.25,
+    "physical_duration_h": 0.25,
+    "power_semantics": "interval_mean",
+    "predecessor": 54,
+    "ramp_elapsed_h": 0.25,
+    "settlement": true,
+    "start": "2026-11-11T13:45:00+08:00",
+    "physical_indices": [
+      165,
+      166,
+      167
+    ]
+  },
+  {
+    "actual_time": "2026-11-11T14:15:00+08:00",
+    "constraint_scope": "R44 new R42 actual source, inherited original IEEE39 PTDF and explicit98 representative research mapping",
+    "end": "2026-11-11T14:15:00+08:00",
+    "kind": "delivery",
+    "objective_weight_h": 0.25,
+    "physical_duration_h": 0.25,
+    "power_semantics": "interval_mean",
+    "predecessor": 55,
+    "ramp_elapsed_h": 0.25,
+    "settlement": true,
+    "start": "2026-11-11T14:00:00+08:00",
+    "physical_indices": [
+      168,
+      169,
+      170
+    ]
+  },
+  {
+    "actual_time": "2026-11-11T14:30:00+08:00",
+    "constraint_scope": "R44 new R42 actual source, inherited original IEEE39 PTDF and explicit98 representative research mapping",
+    "end": "2026-11-11T14:30:00+08:00",
+    "kind": "delivery",
+    "objective_weight_h": 0.25,
+    "physical_duration_h": 0.25,
+    "power_semantics": "interval_mean",
+    "predecessor": 56,
+    "ramp_elapsed_h": 0.25,
+    "settlement": true,
+    "start": "2026-11-11T14:15:00+08:00",
+    "physical_indices": [
+      171,
+      172,
+      173
+    ]
+  },
+  {
+    "actual_time": "2026-11-11T14:45:00+08:00",
+    "constraint_scope": "R44 new R42 actual source, inherited original IEEE39 PTDF and explicit98 representative research mapping",
+    "end": "2026-11-11T14:45:00+08:00",
+    "kind": "delivery",
+    "objective_weight_h": 0.25,
+    "physical_duration_h": 0.25,
+    "power_semantics": "interval_mean",
+    "predecessor": 57,
+    "ramp_elapsed_h": 0.25,
+    "settlement": true,
+    "start": "2026-11-11T14:30:00+08:00",
+    "physical_indices": [
+      174,
+      175,
+      176
+    ]
+  },
+  {
+    "actual_time": "2026-11-11T15:00:00+08:00",
+    "constraint_scope": "R44 new R42 actual source, inherited original IEEE39 PTDF and explicit98 representative research mapping",
+    "end": "2026-11-11T15:00:00+08:00",
+    "kind": "delivery",
+    "objective_weight_h": 0.25,
+    "physical_duration_h": 0.25,
+    "power_semantics": "interval_mean",
+    "predecessor": 58,
+    "ramp_elapsed_h": 0.25,
+    "settlement": true,
+    "start": "2026-11-11T14:45:00+08:00",
+    "physical_indices": [
+      177,
+      178,
+      179
+    ]
+  },
+  {
+    "actual_time": "2026-11-11T15:15:00+08:00",
+    "constraint_scope": "R44 new R42 actual source, inherited original IEEE39 PTDF and explicit98 representative research mapping",
+    "end": "2026-11-11T15:15:00+08:00",
+    "kind": "delivery",
+    "objective_weight_h": 0.25,
+    "physical_duration_h": 0.25,
+    "power_semantics": "interval_mean",
+    "predecessor": 59,
+    "ramp_elapsed_h": 0.25,
+    "settlement": true,
+    "start": "2026-11-11T15:00:00+08:00",
+    "physical_indices": [
+      180,
+      181,
+      182
+    ]
+  },
+  {
+    "actual_time": "2026-11-11T15:30:00+08:00",
+    "constraint_scope": "R44 new R42 actual source, inherited original IEEE39 PTDF and explicit98 representative research mapping",
+    "end": "2026-11-11T15:30:00+08:00",
+    "kind": "delivery",
+    "objective_weight_h": 0.25,
+    "physical_duration_h": 0.25,
+    "power_semantics": "interval_mean",
+    "predecessor": 60,
+    "ramp_elapsed_h": 0.25,
+    "settlement": true,
+    "start": "2026-11-11T15:15:00+08:00",
+    "physical_indices": [
+      183,
+      184,
+      185
+    ]
+  },
+  {
+    "actual_time": "2026-11-11T15:45:00+08:00",
+    "constraint_scope": "R44 new R42 actual source, inherited original IEEE39 PTDF and explicit98 representative research mapping",
+    "end": "2026-11-11T15:45:00+08:00",
+    "kind": "delivery",
+    "objective_weight_h": 0.25,
+    "physical_duration_h": 0.25,
+    "power_semantics": "interval_mean",
+    "predecessor": 61,
+    "ramp_elapsed_h": 0.25,
+    "settlement": true,
+    "start": "2026-11-11T15:30:00+08:00",
+    "physical_indices": [
+      186,
+      187,
+      188
+    ]
+  },
+  {
+    "actual_time": "2026-11-11T16:00:00+08:00",
+    "constraint_scope": "R44 new R42 actual source, inherited original IEEE39 PTDF and explicit98 representative research mapping",
+    "end": "2026-11-11T16:00:00+08:00",
+    "kind": "delivery",
+    "objective_weight_h": 0.25,
+    "physical_duration_h": 0.25,
+    "power_semantics": "interval_mean",
+    "predecessor": 62,
+    "ramp_elapsed_h": 0.25,
+    "settlement": true,
+    "start": "2026-11-11T15:45:00+08:00",
+    "physical_indices": [
+      189,
+      190,
+      191
+    ]
+  },
+  {
+    "actual_time": "2026-11-11T16:15:00+08:00",
+    "constraint_scope": "R44 new R42 actual source, inherited original IEEE39 PTDF and explicit98 representative research mapping",
+    "end": "2026-11-11T16:15:00+08:00",
+    "kind": "delivery",
+    "objective_weight_h": 0.25,
+    "physical_duration_h": 0.25,
+    "power_semantics": "interval_mean",
+    "predecessor": 63,
+    "ramp_elapsed_h": 0.25,
+    "settlement": true,
+    "start": "2026-11-11T16:00:00+08:00",
+    "physical_indices": [
+      192,
+      193,
+      194
+    ]
+  },
+  {
+    "actual_time": "2026-11-11T16:30:00+08:00",
+    "constraint_scope": "R44 new R42 actual source, inherited original IEEE39 PTDF and explicit98 representative research mapping",
+    "end": "2026-11-11T16:30:00+08:00",
+    "kind": "delivery",
+    "objective_weight_h": 0.25,
+    "physical_duration_h": 0.25,
+    "power_semantics": "interval_mean",
+    "predecessor": 64,
+    "ramp_elapsed_h": 0.25,
+    "settlement": true,
+    "start": "2026-11-11T16:15:00+08:00",
+    "physical_indices": [
+      195,
+      196,
+      197
+    ]
+  },
+  {
+    "actual_time": "2026-11-11T16:45:00+08:00",
+    "constraint_scope": "R44 new R42 actual source, inherited original IEEE39 PTDF and explicit98 representative research mapping",
+    "end": "2026-11-11T16:45:00+08:00",
+    "kind": "delivery",
+    "objective_weight_h": 0.25,
+    "physical_duration_h": 0.25,
+    "power_semantics": "interval_mean",
+    "predecessor": 65,
+    "ramp_elapsed_h": 0.25,
+    "settlement": true,
+    "start": "2026-11-11T16:30:00+08:00",
+    "physical_indices": [
+      198,
+      199,
+      200
+    ]
+  },
+  {
+    "actual_time": "2026-11-11T17:00:00+08:00",
+    "constraint_scope": "R44 new R42 actual source, inherited original IEEE39 PTDF and explicit98 representative research mapping",
+    "end": "2026-11-11T17:00:00+08:00",
+    "kind": "delivery",
+    "objective_weight_h": 0.25,
+    "physical_duration_h": 0.25,
+    "power_semantics": "interval_mean",
+    "predecessor": 66,
+    "ramp_elapsed_h": 0.25,
+    "settlement": true,
+    "start": "2026-11-11T16:45:00+08:00",
+    "physical_indices": [
+      201,
+      202,
+      203
+    ]
+  },
+  {
+    "actual_time": "2026-11-11T17:15:00+08:00",
+    "constraint_scope": "R44 new R42 actual source, inherited original IEEE39 PTDF and explicit98 representative research mapping",
+    "end": "2026-11-11T17:15:00+08:00",
+    "kind": "delivery",
+    "objective_weight_h": 0.25,
+    "physical_duration_h": 0.25,
+    "power_semantics": "interval_mean",
+    "predecessor": 67,
+    "ramp_elapsed_h": 0.25,
+    "settlement": true,
+    "start": "2026-11-11T17:00:00+08:00",
+    "physical_indices": [
+      204,
+      205,
+      206
+    ]
+  },
+  {
+    "actual_time": "2026-11-11T17:30:00+08:00",
+    "constraint_scope": "R44 new R42 actual source, inherited original IEEE39 PTDF and explicit98 representative research mapping",
+    "end": "2026-11-11T17:30:00+08:00",
+    "kind": "delivery",
+    "objective_weight_h": 0.25,
+    "physical_duration_h": 0.25,
+    "power_semantics": "interval_mean",
+    "predecessor": 68,
+    "ramp_elapsed_h": 0.25,
+    "settlement": true,
+    "start": "2026-11-11T17:15:00+08:00",
+    "physical_indices": [
+      207,
+      208,
+      209
+    ]
+  },
+  {
+    "actual_time": "2026-11-11T17:45:00+08:00",
+    "constraint_scope": "R44 new R42 actual source, inherited original IEEE39 PTDF and explicit98 representative research mapping",
+    "end": "2026-11-11T17:45:00+08:00",
+    "kind": "delivery",
+    "objective_weight_h": 0.25,
+    "physical_duration_h": 0.25,
+    "power_semantics": "interval_mean",
+    "predecessor": 69,
+    "ramp_elapsed_h": 0.25,
+    "settlement": true,
+    "start": "2026-11-11T17:30:00+08:00",
+    "physical_indices": [
+      210,
+      211,
+      212
+    ]
+  },
+  {
+    "actual_time": "2026-11-11T18:00:00+08:00",
+    "constraint_scope": "R44 new R42 actual source, inherited original IEEE39 PTDF and explicit98 representative research mapping",
+    "end": "2026-11-11T18:00:00+08:00",
+    "kind": "delivery",
+    "objective_weight_h": 0.25,
+    "physical_duration_h": 0.25,
+    "power_semantics": "interval_mean",
+    "predecessor": 70,
+    "ramp_elapsed_h": 0.25,
+    "settlement": true,
+    "start": "2026-11-11T17:45:00+08:00",
+    "physical_indices": [
+      213,
+      214,
+      215
+    ]
+  },
+  {
+    "actual_time": "2026-11-11T18:15:00+08:00",
+    "constraint_scope": "R44 new R42 actual source, inherited original IEEE39 PTDF and explicit98 representative research mapping",
+    "end": "2026-11-11T18:15:00+08:00",
+    "kind": "delivery",
+    "objective_weight_h": 0.25,
+    "physical_duration_h": 0.25,
+    "power_semantics": "interval_mean",
+    "predecessor": 71,
+    "ramp_elapsed_h": 0.25,
+    "settlement": true,
+    "start": "2026-11-11T18:00:00+08:00",
+    "physical_indices": [
+      216,
+      217,
+      218
+    ]
+  },
+  {
+    "actual_time": "2026-11-11T18:30:00+08:00",
+    "constraint_scope": "R44 new R42 actual source, inherited original IEEE39 PTDF and explicit98 representative research mapping",
+    "end": "2026-11-11T18:30:00+08:00",
+    "kind": "delivery",
+    "objective_weight_h": 0.25,
+    "physical_duration_h": 0.25,
+    "power_semantics": "interval_mean",
+    "predecessor": 72,
+    "ramp_elapsed_h": 0.25,
+    "settlement": true,
+    "start": "2026-11-11T18:15:00+08:00",
+    "physical_indices": [
+      219,
+      220,
+      221
+    ]
+  },
+  {
+    "actual_time": "2026-11-11T18:45:00+08:00",
+    "constraint_scope": "R44 new R42 actual source, inherited original IEEE39 PTDF and explicit98 representative research mapping",
+    "end": "2026-11-11T18:45:00+08:00",
+    "kind": "delivery",
+    "objective_weight_h": 0.25,
+    "physical_duration_h": 0.25,
+    "power_semantics": "interval_mean",
+    "predecessor": 73,
+    "ramp_elapsed_h": 0.25,
+    "settlement": true,
+    "start": "2026-11-11T18:30:00+08:00",
+    "physical_indices": [
+      222,
+      223,
+      224
+    ]
+  },
+  {
+    "actual_time": "2026-11-11T19:00:00+08:00",
+    "constraint_scope": "R44 new R42 actual source, inherited original IEEE39 PTDF and explicit98 representative research mapping",
+    "end": "2026-11-11T19:00:00+08:00",
+    "kind": "delivery",
+    "objective_weight_h": 0.25,
+    "physical_duration_h": 0.25,
+    "power_semantics": "interval_mean",
+    "predecessor": 74,
+    "ramp_elapsed_h": 0.25,
+    "settlement": true,
+    "start": "2026-11-11T18:45:00+08:00",
+    "physical_indices": [
+      225,
+      226,
+      227
+    ]
+  },
+  {
+    "actual_time": "2026-11-11T19:15:00+08:00",
+    "constraint_scope": "R44 new R42 actual source, inherited original IEEE39 PTDF and explicit98 representative research mapping",
+    "end": "2026-11-11T19:15:00+08:00",
+    "kind": "delivery",
+    "objective_weight_h": 0.25,
+    "physical_duration_h": 0.25,
+    "power_semantics": "interval_mean",
+    "predecessor": 75,
+    "ramp_elapsed_h": 0.25,
+    "settlement": true,
+    "start": "2026-11-11T19:00:00+08:00",
+    "physical_indices": [
+      228,
+      229,
+      230
+    ]
+  },
+  {
+    "actual_time": "2026-11-11T19:30:00+08:00",
+    "constraint_scope": "R44 new R42 actual source, inherited original IEEE39 PTDF and explicit98 representative research mapping",
+    "end": "2026-11-11T19:30:00+08:00",
+    "kind": "delivery",
+    "objective_weight_h": 0.25,
+    "physical_duration_h": 0.25,
+    "power_semantics": "interval_mean",
+    "predecessor": 76,
+    "ramp_elapsed_h": 0.25,
+    "settlement": true,
+    "start": "2026-11-11T19:15:00+08:00",
+    "physical_indices": [
+      231,
+      232,
+      233
+    ]
+  },
+  {
+    "actual_time": "2026-11-11T19:45:00+08:00",
+    "constraint_scope": "R44 new R42 actual source, inherited original IEEE39 PTDF and explicit98 representative research mapping",
+    "end": "2026-11-11T19:45:00+08:00",
+    "kind": "delivery",
+    "objective_weight_h": 0.25,
+    "physical_duration_h": 0.25,
+    "power_semantics": "interval_mean",
+    "predecessor": 77,
+    "ramp_elapsed_h": 0.25,
+    "settlement": true,
+    "start": "2026-11-11T19:30:00+08:00",
+    "physical_indices": [
+      234,
+      235,
+      236
+    ]
+  },
+  {
+    "actual_time": "2026-11-11T20:00:00+08:00",
+    "constraint_scope": "R44 new R42 actual source, inherited original IEEE39 PTDF and explicit98 representative research mapping",
+    "end": "2026-11-11T20:00:00+08:00",
+    "kind": "delivery",
+    "objective_weight_h": 0.25,
+    "physical_duration_h": 0.25,
+    "power_semantics": "interval_mean",
+    "predecessor": 78,
+    "ramp_elapsed_h": 0.25,
+    "settlement": true,
+    "start": "2026-11-11T19:45:00+08:00",
+    "physical_indices": [
+      237,
+      238,
+      239
+    ]
+  },
+  {
+    "actual_time": "2026-11-11T20:15:00+08:00",
+    "constraint_scope": "R44 new R42 actual source, inherited original IEEE39 PTDF and explicit98 representative research mapping",
+    "end": "2026-11-11T20:15:00+08:00",
+    "kind": "delivery",
+    "objective_weight_h": 0.25,
+    "physical_duration_h": 0.25,
+    "power_semantics": "interval_mean",
+    "predecessor": 79,
+    "ramp_elapsed_h": 0.25,
+    "settlement": true,
+    "start": "2026-11-11T20:00:00+08:00",
+    "physical_indices": [
+      240,
+      241,
+      242
+    ]
+  },
+  {
+    "actual_time": "2026-11-11T20:30:00+08:00",
+    "constraint_scope": "R44 new R42 actual source, inherited original IEEE39 PTDF and explicit98 representative research mapping",
+    "end": "2026-11-11T20:30:00+08:00",
+    "kind": "delivery",
+    "objective_weight_h": 0.25,
+    "physical_duration_h": 0.25,
+    "power_semantics": "interval_mean",
+    "predecessor": 80,
+    "ramp_elapsed_h": 0.25,
+    "settlement": true,
+    "start": "2026-11-11T20:15:00+08:00",
+    "physical_indices": [
+      243,
+      244,
+      245
+    ]
+  },
+  {
+    "actual_time": "2026-11-11T20:45:00+08:00",
+    "constraint_scope": "R44 new R42 actual source, inherited original IEEE39 PTDF and explicit98 representative research mapping",
+    "end": "2026-11-11T20:45:00+08:00",
+    "kind": "delivery",
+    "objective_weight_h": 0.25,
+    "physical_duration_h": 0.25,
+    "power_semantics": "interval_mean",
+    "predecessor": 81,
+    "ramp_elapsed_h": 0.25,
+    "settlement": true,
+    "start": "2026-11-11T20:30:00+08:00",
+    "physical_indices": [
+      246,
+      247,
+      248
+    ]
+  },
+  {
+    "actual_time": "2026-11-11T21:00:00+08:00",
+    "constraint_scope": "R44 new R42 actual source, inherited original IEEE39 PTDF and explicit98 representative research mapping",
+    "end": "2026-11-11T21:00:00+08:00",
+    "kind": "delivery",
+    "objective_weight_h": 0.25,
+    "physical_duration_h": 0.25,
+    "power_semantics": "interval_mean",
+    "predecessor": 82,
+    "ramp_elapsed_h": 0.25,
+    "settlement": true,
+    "start": "2026-11-11T20:45:00+08:00",
+    "physical_indices": [
+      249,
+      250,
+      251
+    ]
+  },
+  {
+    "actual_time": "2026-11-11T21:15:00+08:00",
+    "constraint_scope": "R44 new R42 actual source, inherited original IEEE39 PTDF and explicit98 representative research mapping",
+    "end": "2026-11-11T21:15:00+08:00",
+    "kind": "delivery",
+    "objective_weight_h": 0.25,
+    "physical_duration_h": 0.25,
+    "power_semantics": "interval_mean",
+    "predecessor": 83,
+    "ramp_elapsed_h": 0.25,
+    "settlement": true,
+    "start": "2026-11-11T21:00:00+08:00",
+    "physical_indices": [
+      252,
+      253,
+      254
+    ]
+  },
+  {
+    "actual_time": "2026-11-11T21:30:00+08:00",
+    "constraint_scope": "R44 new R42 actual source, inherited original IEEE39 PTDF and explicit98 representative research mapping",
+    "end": "2026-11-11T21:30:00+08:00",
+    "kind": "delivery",
+    "objective_weight_h": 0.25,
+    "physical_duration_h": 0.25,
+    "power_semantics": "interval_mean",
+    "predecessor": 84,
+    "ramp_elapsed_h": 0.25,
+    "settlement": true,
+    "start": "2026-11-11T21:15:00+08:00",
+    "physical_indices": [
+      255,
+      256,
+      257
+    ]
+  },
+  {
+    "actual_time": "2026-11-11T21:45:00+08:00",
+    "constraint_scope": "R44 new R42 actual source, inherited original IEEE39 PTDF and explicit98 representative research mapping",
+    "end": "2026-11-11T21:45:00+08:00",
+    "kind": "delivery",
+    "objective_weight_h": 0.25,
+    "physical_duration_h": 0.25,
+    "power_semantics": "interval_mean",
+    "predecessor": 85,
+    "ramp_elapsed_h": 0.25,
+    "settlement": true,
+    "start": "2026-11-11T21:30:00+08:00",
+    "physical_indices": [
+      258,
+      259,
+      260
+    ]
+  },
+  {
+    "actual_time": "2026-11-11T22:00:00+08:00",
+    "constraint_scope": "R44 new R42 actual source, inherited original IEEE39 PTDF and explicit98 representative research mapping",
+    "end": "2026-11-11T22:00:00+08:00",
+    "kind": "delivery",
+    "objective_weight_h": 0.25,
+    "physical_duration_h": 0.25,
+    "power_semantics": "interval_mean",
+    "predecessor": 86,
+    "ramp_elapsed_h": 0.25,
+    "settlement": true,
+    "start": "2026-11-11T21:45:00+08:00",
+    "physical_indices": [
+      261,
+      262,
+      263
+    ]
+  },
+  {
+    "actual_time": "2026-11-11T22:15:00+08:00",
+    "constraint_scope": "R44 new R42 actual source, inherited original IEEE39 PTDF and explicit98 representative research mapping",
+    "end": "2026-11-11T22:15:00+08:00",
+    "kind": "delivery",
+    "objective_weight_h": 0.25,
+    "physical_duration_h": 0.25,
+    "power_semantics": "interval_mean",
+    "predecessor": 87,
+    "ramp_elapsed_h": 0.25,
+    "settlement": true,
+    "start": "2026-11-11T22:00:00+08:00",
+    "physical_indices": [
+      264,
+      265,
+      266
+    ]
+  },
+  {
+    "actual_time": "2026-11-11T22:30:00+08:00",
+    "constraint_scope": "R44 new R42 actual source, inherited original IEEE39 PTDF and explicit98 representative research mapping",
+    "end": "2026-11-11T22:30:00+08:00",
+    "kind": "delivery",
+    "objective_weight_h": 0.25,
+    "physical_duration_h": 0.25,
+    "power_semantics": "interval_mean",
+    "predecessor": 88,
+    "ramp_elapsed_h": 0.25,
+    "settlement": true,
+    "start": "2026-11-11T22:15:00+08:00",
+    "physical_indices": [
+      267,
+      268,
+      269
+    ]
+  },
+  {
+    "actual_time": "2026-11-11T22:45:00+08:00",
+    "constraint_scope": "R44 new R42 actual source, inherited original IEEE39 PTDF and explicit98 representative research mapping",
+    "end": "2026-11-11T22:45:00+08:00",
+    "kind": "delivery",
+    "objective_weight_h": 0.25,
+    "physical_duration_h": 0.25,
+    "power_semantics": "interval_mean",
+    "predecessor": 89,
+    "ramp_elapsed_h": 0.25,
+    "settlement": true,
+    "start": "2026-11-11T22:30:00+08:00",
+    "physical_indices": [
+      270,
+      271,
+      272
+    ]
+  },
+  {
+    "actual_time": "2026-11-11T23:00:00+08:00",
+    "constraint_scope": "R44 new R42 actual source, inherited original IEEE39 PTDF and explicit98 representative research mapping",
+    "end": "2026-11-11T23:00:00+08:00",
+    "kind": "delivery",
+    "objective_weight_h": 0.25,
+    "physical_duration_h": 0.25,
+    "power_semantics": "interval_mean",
+    "predecessor": 90,
+    "ramp_elapsed_h": 0.25,
+    "settlement": true,
+    "start": "2026-11-11T22:45:00+08:00",
+    "physical_indices": [
+      273,
+      274,
+      275
+    ]
+  },
+  {
+    "actual_time": "2026-11-11T23:15:00+08:00",
+    "constraint_scope": "R44 new R42 actual source, inherited original IEEE39 PTDF and explicit98 representative research mapping",
+    "end": "2026-11-11T23:15:00+08:00",
+    "kind": "delivery",
+    "objective_weight_h": 0.25,
+    "physical_duration_h": 0.25,
+    "power_semantics": "interval_mean",
+    "predecessor": 91,
+    "ramp_elapsed_h": 0.25,
+    "settlement": true,
+    "start": "2026-11-11T23:00:00+08:00",
+    "physical_indices": [
+      276,
+      277,
+      278
+    ]
+  },
+  {
+    "actual_time": "2026-11-11T23:30:00+08:00",
+    "constraint_scope": "R44 new R42 actual source, inherited original IEEE39 PTDF and explicit98 representative research mapping",
+    "end": "2026-11-11T23:30:00+08:00",
+    "kind": "delivery",
+    "objective_weight_h": 0.25,
+    "physical_duration_h": 0.25,
+    "power_semantics": "interval_mean",
+    "predecessor": 92,
+    "ramp_elapsed_h": 0.25,
+    "settlement": true,
+    "start": "2026-11-11T23:15:00+08:00",
+    "physical_indices": [
+      279,
+      280,
+      281
+    ]
+  },
+  {
+    "actual_time": "2026-11-11T23:45:00+08:00",
+    "constraint_scope": "R44 new R42 actual source, inherited original IEEE39 PTDF and explicit98 representative research mapping",
+    "end": "2026-11-11T23:45:00+08:00",
+    "kind": "delivery",
+    "objective_weight_h": 0.25,
+    "physical_duration_h": 0.25,
+    "power_semantics": "interval_mean",
+    "predecessor": 93,
+    "ramp_elapsed_h": 0.25,
+    "settlement": true,
+    "start": "2026-11-11T23:30:00+08:00",
+    "physical_indices": [
+      282,
+      283,
+      284
+    ]
+  },
+  {
+    "actual_time": "2026-11-12T00:00:00+08:00",
+    "constraint_scope": "R44 new R42 actual source, inherited original IEEE39 PTDF and explicit98 representative research mapping",
+    "end": "2026-11-12T00:00:00+08:00",
+    "kind": "delivery",
+    "objective_weight_h": 0.25,
+    "physical_duration_h": 0.25,
+    "power_semantics": "interval_mean",
+    "predecessor": 94,
+    "ramp_elapsed_h": 0.25,
+    "settlement": true,
+    "start": "2026-11-11T23:45:00+08:00",
+    "physical_indices": [
+      285,
+      286,
+      287
+    ]
+  },
+  {
+    "actual_time": "2026-11-12T06:30:00+08:00",
+    "constraint_scope": "R44 new R42 actual source, inherited original IEEE39 PTDF and explicit98 representative research mapping",
+    "end": "2026-11-12T06:30:00+08:00",
+    "kind": "valley",
+    "objective_weight_h": 0.25,
+    "physical_duration_h": 0.25,
+    "power_semantics": "interval_mean",
+    "predecessor": 95,
+    "ramp_elapsed_h": 6.5,
+    "settlement": false,
+    "start": "2026-11-12T06:15:00+08:00",
+    "physical_indices": [
+      363,
+      364,
+      365
+    ]
+  },
+  {
+    "actual_time": "2026-11-12T17:45:00+08:00",
+    "constraint_scope": "R44 new R42 actual source, inherited original IEEE39 PTDF and explicit98 representative research mapping",
+    "end": "2026-11-12T17:45:00+08:00",
+    "kind": "peak",
+    "objective_weight_h": 0.25,
+    "physical_duration_h": 0.25,
+    "power_semantics": "interval_mean",
+    "predecessor": 96,
+    "ramp_elapsed_h": 11.25,
+    "settlement": false,
+    "start": "2026-11-12T17:30:00+08:00",
+    "physical_indices": [
+      498,
+      499,
+      500
+    ]
+  }
+]

@@ -1,0 +1,23 @@
+{
+  "status": "research_candidate_pure_contract_and_real_builder_adapter_passed",
+  "pure_tests": 14,
+  "new_native_calls": 0,
+  "real_builder_added_rows": 12,
+  "existing_primal_added_rows_residual": 0,
+  "installed": false,
+  "full_case_integrated": false,
+  "formal_authority_supported": false,
+  "frozen_run_unchanged": true,
+  "files": {
+    "TEST.log": "98a69ce7c37a36a172caef38b2933185ce4a507ad8f0da0910eea1031a59505f",
+    "contract.py": "104723c1ccdc9aeadf44c6f1cf0461bd85fa173b063faccee1a487287119b3e0",
+    "REAL_BUILDER_TEST.log": "dae6dec2ffaae41b7fff665b00f65091ca1c645307f99a24237923f0e3aed954",
+    "README.md": "92a3491376cbbe85ef2e78901b433ab1d65d951886e03b7320f6d1346e203a17",
+    "test_contract.py": "272193963d28242f6776125350dc240f1778d33ff2281bec77604381b4f4cd12",
+    "test_real_builder.py": "989d0b9a3c15b17284023506f82e13bd76b0636c0829ae164c4340fa884dbd1c",
+    "COMPILED_R68.json": "425244a77e1d7caffb50e5c13e55ad309f90444c32986d681a38b7582b02e925",
+    "REAL_BUILDER_RESULT.json": "e3e2d765e6f04101d084bbf6b76b39db0006002e73f3019e67f8d808c0e9a253",
+    "BUILDER_BOUNDARY_R68.json": "e5a91d46dcacc34cbd6a18e30b5957762b14b9d24fe7e77d5fca303e9fcfd463",
+    "TEST_first_path_failure.log": "aacf98a59c7840a4d9b51a204b55369bda0657623bcad135c4b1e4724dd044f7"
+  }
+}

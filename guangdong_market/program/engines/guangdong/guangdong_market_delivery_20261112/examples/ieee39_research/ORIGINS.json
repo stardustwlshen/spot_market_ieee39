@@ -1,0 +1,16 @@
+{
+  "original_sources": {
+    "guangdong_after_reset_r23_native_20261112/native_once_v1/ieee39_separate_prepared_input.json": "c10e5cbfbe0f39f028d10cb2b2d30003e803033a3d883f4c753339bc9c1cdbe9",
+    "guangdong_r50_da98_connected_fee_candidate_20261112/POLICY_SYNTHETIC_MINIMUM_FEE.json": "9527953e25337f7be4e9de37cce685e861e900af8b35f9530dc012e43e346262",
+    "guangdong_market_program_v2_20261112/market.py": "a23ac9afdddb505cbba09ad4f4c33c28cdfeeb16807acdcba4f9f107378e2d80",
+    "guangdong_r44_curtailable_da_price_bridge_20261112/eligible_prepared_v2/base_bridge.json": "9e4eb324b47e85944548fd51b7416aa82877a63b4837fba0f2ecefe71be7d809"
+  },
+  "local_files": {
+    "case.json": "c10e5cbfbe0f39f028d10cb2b2d30003e803033a3d883f4c753339bc9c1cdbe9",
+    "policy.json": "9527953e25337f7be4e9de37cce685e861e900af8b35f9530dc012e43e346262",
+    "grid.json": "c398b0ec503e7703d0cf8f042ed1f646d54d9faa71116c6139a31b9ff3039eb0",
+    "agc.json": "7c2a809fae8fec6d135d3df1c9d91784a4d78e4b15b90460635ec895460eb816",
+    "bundle.json": "2239abda744395cabfd608d2e3f2af2bc8ab2e7dae6f07215e856428b352d14b"
+  },
+  "extraction": "Byte copy case/policy; exact frozen v2.fixture() grid and AGC JSON extraction, no value modifications; no build/native"
+}

@@ -1,0 +1,31 @@
+{
+  "status": "frozen_installable_short_user_entry",
+  "program_sha256": "290caf6e336a16ed1509dd9f123ad9616e98ec67d3f2044491616a824a664e20",
+  "manifest_sha256": "f6ce11087d77a7d59f5c05fd8389c15172e048bb2963a9f3172eb65fb3189b29",
+  "files": 176,
+  "source_bytes": 2911426,
+  "install": "install_final",
+  "installed_test_run": "installed_final_run_v1",
+  "tests": [
+    "selected editedDA strict seed",
+    "actual21k short physical build",
+    "preflight ready native_calls0",
+    "default run pure",
+    "unknown stage rejection",
+    "5 canonical stage binding negative types",
+    "7 acceptance-field tamper types"
+  ],
+  "new_native_calls": 0,
+  "underlying_engine_actual_windows": 4,
+  "underlying_engine_native_calls": 8,
+  "formal": false,
+  "safety_release": false,
+  "remaining": [
+    "active-boundary seed/carry not wired in user entry",
+    "nonzero startup notification receipt importer not wired",
+    "cold/warm/hot typed mechanism separate",
+    "new short-domain PRICE/AGC/AC integration owned by other workstreams",
+    "midnight/next-day causal carry needs explicit tests before daylong",
+    "four-hour linkage research choice, not official unique interpretation"
+  ]
+}

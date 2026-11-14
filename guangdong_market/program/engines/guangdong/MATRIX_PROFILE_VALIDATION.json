@@ -1,0 +1,9 @@
+{
+  "status": "pass_pure_profile_generation",
+  "exact_same_policy_as_actual_source_template": true,
+  "model_import_calls": 0,
+  "optimization_calls": 0,
+  "large_model_builds": 0,
+  "cross_platform_full_run_verified": false,
+  "active_launcher_modified": false
+}

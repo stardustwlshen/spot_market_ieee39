@@ -1,0 +1,8 @@
+{
+  "status": "passed",
+  "native_calls": 0,
+  "AC_calls": 0,
+  "real_worker_validate_subprocess": true,
+  "input": "fresh v13 pure-prepared context with original legal selected DA; no pin rewrite",
+  "selected_event_profile": "fixed_curve_5min_source_mixed_quarter_fixed_RESEARCH_v1"
+}

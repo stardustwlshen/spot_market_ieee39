@@ -1,0 +1,12 @@
+{
+  "rt": {
+    "sha256": "1c04da260127cc0745b8ef19fcaf1c12b8a92276f86f2700958879609c0022f2",
+    "dual_tolerance": 1e-09,
+    "scale": 0
+  },
+  "price": {
+    "sha256": "fbc23effbf1e428a2c86daab6a7def7276d89604ae6969800059c3bfc34188b3",
+    "precision": "unchanged original standard default"
+  },
+  "DA_SCED_and_SCUC": "unchanged original workers; no override"
+}

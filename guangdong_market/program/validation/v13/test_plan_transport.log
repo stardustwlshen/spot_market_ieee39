@@ -1,0 +1,25 @@
+Traceback (most recent call last):
+  File "/workspace/scratch/42c5fe32dad0/guangdong_live_market_v5_20261113/test_plan_transport.py", line 6, in <module>
+    p=c.plan(da,str(run),'v13_plan_only',False,False,False,True)
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/scratch/42c5fe32dad0/guangdong_market_user_app_v13_candidate_20261113/app/gd_live_control.py", line 21, in plan
+    need(p.returncode==0,p.stderr or p.stdout or 'live source validation failed');z=json.loads(p.stdout.strip().splitlines()[-1]);pins.update({str(f):sha(f)for f in [r/'SHORT_CONTEXT.json',r/'seed/case.json']})
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/scratch/42c5fe32dad0/guangdong_market_user_app_v13_candidate_20261113/app/gd_live_control.py", line 8, in need
+    if not x:raise ValueError(m)
+             ^^^^^^^^^^^^^^^^^^^
+ValueError: Traceback (most recent call last):
+  File "/workspace/scratch/42c5fe32dad0/guangdong_market_user_app_v13_candidate_20261113/app/gd_live_worker.py", line 12, in <module>
+    s=V6Session(sys.argv[2],research_fixed_curve_events=True);ctl.need(str(Path(s.context['selected_DA']).resolve())==str(Path(sys.argv[3]).resolve()),'DA/run mismatch');import json;print(json.dumps(plan(research_event_simulation=bool(int(sys.argv[4])),counterfactual_continue=bool(int(sys.argv[5])),ac_once=bool(int(sys.argv[6])),event_price_profile=bool(int(sys.argv[7])))));sys.exit(0)
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/scratch/42c5fe32dad0/guangdong_market_user_app_v13_candidate_20261113/app/lifecycle_runtime/guangdong_event_host_candidate_v1_20261113/v6_runtime.py", line 11, in __init__
+    e.need(research_fixed_curve_events is True,'explicit research event switch');self.program=installed();self.run,self.context=self.program.context(run)
+                                                                                                                                ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/scratch/42c5fe32dad0/guangdong_market_user_app_v13_candidate_20261113/engines/guangdong_short_unified_v6/rt/guangdong_rt_short_user_cli_v5_20261112/program.py", line 17, in context
+    r=Path(run).resolve();c=read(r/'SHORT_CONTEXT.json');need(c['code_pins']==pins(),'short engine source changed')
+                                                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/scratch/42c5fe32dad0/guangdong_market_user_app_v13_candidate_20261113/engines/guangdong_short_unified_v6/rt/guangdong_rt_short_user_cli_v5_20261112/program.py", line 12, in need
+    if not ok:raise ValueError(msg)
+              ^^^^^^^^^^^^^^^^^^^^^
+ValueError: short engine source changed
+

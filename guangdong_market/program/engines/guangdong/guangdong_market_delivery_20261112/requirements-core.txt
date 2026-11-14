@@ -1,0 +1,6 @@
+# Tested build/serialization environment; official highspy binary needed only for explicit native solve.
+pyomo==6.10.1
+highspy==1.15.1
+numpy==2.4.6
+
+PyYAML==6.0.3

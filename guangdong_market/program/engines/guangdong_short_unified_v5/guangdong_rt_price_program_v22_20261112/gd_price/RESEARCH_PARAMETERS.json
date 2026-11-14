@@ -1,0 +1,53 @@
+{
+  "schema": "gd.PRICE.penalties.v1",
+  "mode": "research",
+  "factors": {
+    "load": {
+      "value": 1000.0,
+      "unit": "yuan_per_MWh",
+      "meaning": "ML_prime",
+      "effective_from": "2026-11-10T23:45:00+08:00",
+      "effective_to": "2026-11-13T00:00:00+08:00",
+      "source": {
+        "document": "/workspace/scratch/42c5fe32dad0/guangdong_generic_rt_price_program_v1_20261112/RESEARCH_PARAMETERS.txt",
+        "sha256": "1b27fda72704d9aad50149482d3470124456c5a847d107e21b974a02b6d33c36",
+        "locator": "ML_prime",
+        "grade": "explicit_research_assumption",
+        "available_at": "2026-11-10T20:30:00+08:00"
+      }
+    },
+    "accident": {
+      "value": 200.0,
+      "unit": "yuan_per_MWh",
+      "meaning": "MR_prime",
+      "effective_from": "2026-11-10T23:45:00+08:00",
+      "effective_to": "2026-11-13T00:00:00+08:00",
+      "source": {
+        "document": "/workspace/scratch/42c5fe32dad0/guangdong_generic_rt_price_program_v1_20261112/RESEARCH_PARAMETERS.txt",
+        "sha256": "1b27fda72704d9aad50149482d3470124456c5a847d107e21b974a02b6d33c36",
+        "locator": "MR_prime",
+        "grade": "explicit_research_assumption",
+        "available_at": "2026-11-10T20:30:00+08:00"
+      }
+    },
+    "network": {
+      "value": 100.0,
+      "unit": "yuan_per_MWh",
+      "meaning": "M1_prime",
+      "effective_from": "2026-11-10T23:45:00+08:00",
+      "effective_to": "2026-11-13T00:00:00+08:00",
+      "source": {
+        "document": "/workspace/scratch/42c5fe32dad0/guangdong_generic_rt_price_program_v1_20261112/RESEARCH_PARAMETERS.txt",
+        "sha256": "1b27fda72704d9aad50149482d3470124456c5a847d107e21b974a02b6d33c36",
+        "locator": "M1_prime",
+        "grade": "explicit_research_assumption",
+        "available_at": "2026-11-10T20:30:00+08:00"
+      }
+    }
+  },
+  "balance_allocation": {
+    "basis": "Independent node-angle equivalent: one system balance slack pair per15min, explicitly allocated to reference node39; not asserted official allocation",
+    "source": "new research mapping; all39 nodal balances remain, weights sum1",
+    "officially_certified": false
+  }
+}

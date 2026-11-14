@@ -1,0 +1,6 @@
+# Python >=3.11. Observed runtime versions; installation is not performed by this package.
+highspy==1.15.1
+pyomo==6.10.1
+numpy==2.4.6
+scipy==1.18.1
+# Optional independent AC research requires pandapower; not part of energy safety certification.

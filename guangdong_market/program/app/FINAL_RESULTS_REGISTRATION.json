@@ -1,0 +1,10 @@
+{
+  "continuation": {
+    "bundle": "../research_results/explicit_continuation_day",
+    "index_sha256": "b0d8f744939db7f421a4c5c56cd853e33a685708a48b9b22668b0e9e17dcc889"
+  },
+  "normal12": {
+    "bundle": "../research_results/final_normal12_snapshot",
+    "index_sha256": "6b7e01688903467679e8eea77cff40f1aaef2f045043f624bea39c0ed43c0116"
+  }
+}

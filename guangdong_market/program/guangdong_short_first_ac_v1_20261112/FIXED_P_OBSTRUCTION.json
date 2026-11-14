@@ -1,0 +1,117 @@
+{
+  "status": "proved_fixed_non_slack_P_QV_only_domain_empty_under_AGC_limit",
+  "zero_loss_SCED_plan": true,
+  "slack_id": "C1",
+  "slack_plan_MW": 636.0,
+  "slack_raw_Pmax_MW": 646.0,
+  "AGC_up_reserved_MW": 10.0,
+  "slack_allowed_max_after_AGC_MW": 636.0,
+  "actual_loss_MW": 31.83551479123424,
+  "positive_loss_structural_witness": {
+    "bus": "0",
+    "net_physical_P_demand_MW": 60.8942726865,
+    "incident_branches": [
+      {
+        "id": "B0",
+        "r_pu": 0.0034999999999999996
+      },
+      {
+        "id": "B1",
+        "r_pu": 0.001
+      }
+    ]
+  },
+  "argument": "With all non-slack P, fixed injections and physical load unchanged, Pslack=Pplan+network real loss. Nonnegative R and shunt conductance yield nonnegative loss; the named loaded non-generator bus with only positive-R incident branches requires a nonzero real branch current and strictly positive loss. Pplan is already the AGC-adjusted slack upper bound, so any such loss violates it. Q/V control or added bounded inverter Q cannot remove this active-power obstruction. This is not a proof that redispatch plus reactive control is infeasible.",
+  "original_device_map_checked": [
+    {
+      "id": "W1",
+      "AC_bus": "29",
+      "original_nameplate_P_MW": 1040,
+      "P_used_MW": 292.90001517183333,
+      "Q_Mvar": 0.0
+    },
+    {
+      "id": "W2",
+      "AC_bus": "36",
+      "original_nameplate_P_MW": 564,
+      "P_used_MW": 171.5069727938333,
+      "Q_Mvar": 0.0
+    },
+    {
+      "id": "PV1",
+      "AC_bus": "32",
+      "original_nameplate_P_MW": 652,
+      "P_used_MW": -0.0,
+      "Q_Mvar": 0.0
+    },
+    {
+      "id": "PV2",
+      "AC_bus": "3",
+      "original_nameplate_P_MW": 750,
+      "P_used_MW": -0.0,
+      "Q_Mvar": 0.0
+    },
+    {
+      "id": "PV3",
+      "AC_bus": "7",
+      "original_nameplate_P_MW": 750,
+      "P_used_MW": -0.0,
+      "Q_Mvar": 0.0
+    },
+    {
+      "id": "ES1",
+      "AC_bus": "18",
+      "original_nameplate_P_MW": 100,
+      "P_used_MW": -0.0,
+      "Q_Mvar": 0.0
+    },
+    {
+      "id": "ES2",
+      "AC_bus": "15",
+      "original_nameplate_P_MW": 200,
+      "P_used_MW": -0.0,
+      "Q_Mvar": 0.0
+    },
+    {
+      "id": "ES3",
+      "AC_bus": "24",
+      "original_nameplate_P_MW": 100,
+      "P_used_MW": -0.0,
+      "Q_Mvar": 0.0
+    },
+    {
+      "id": "ES4",
+      "AC_bus": "3",
+      "original_nameplate_P_MW": 150,
+      "P_used_MW": 37.3250128185021,
+      "Q_Mvar": 0.0
+    },
+    {
+      "id": "ES5",
+      "AC_bus": "7",
+      "original_nameplate_P_MW": 150,
+      "P_used_MW": -0.0,
+      "Q_Mvar": 0.0
+    }
+  ],
+  "AC_residual_MVA": 2.51132175642011e-11,
+  "nonlinear_calls_used": 0,
+  "further_AC_calls_used": 0,
+  "next_minimum_action": "same-source loss proxy feedback into all relevant SCED energy/PTDF rows, allow economically/physically constrained non-slack redispatch, preserve AGC/dual400/SOC/notice and source binding; only then form one bounded reactive-control candidate and independent AC",
+  "not_executed": [
+    "new SCED feedback",
+    "new capability optimization",
+    "PRICE acceptance",
+    "execution ledger",
+    "security ticket"
+  ],
+  "formal_release": false,
+  "security_release": false,
+  "source_pins": {
+    "guangdong_short_first_ac_v1_20261112/PAYLOAD.json": "e283180cf0dae313c219ea0ba28c8d21b53b9686c53850924f8cb59beb3036eb",
+    "guangdong_short_first_ac_v1_20261112/MAPPING.json": "b750d90c9da5aa1bad5db815cc3f5d267ecc5bbcd22aec10658109bbf6e09c47",
+    "guangdong_short_first_ac_v1_20261112/AC_RESULT.json": "92f9128a4010d8ce9a9642367de8f4a7ebe77bd494bfac47099af5204cbba245",
+    "guangdong_short_first_ac_v1_20261112/SUMMARY.json": "e1a64f7383fe7e0f35d7f6ebfcb36fdc1af67be1a85981cca0fc62a3b2951260",
+    "guangdong_agc_ac_controls_v2_20261112/INVERTER_INVENTORY.json": "c6f939198f7a203f7e58720722e92b12a010f493a0c19bebb7b7ac0920454fac"
+  }
+}

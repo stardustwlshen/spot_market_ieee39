@@ -1,0 +1,15 @@
+{
+  "files": {
+    "test_gate.py": "3f3756aa69a538697cbcada0b1ec80e38aabc598396b6126e5187339c61dbb04",
+    "README.md": "9017a26bf838ae3ba5da74514d2154c61ec78f4e276799bebc54ff12ecc5d187",
+    "TESTS_TIME_BINDING.log": "6a840c9afb8c0e0e613d2f47dddba1dbba0efc79f3d678114250febb27d74362",
+    "CURRENT_CHAIN.json": "88407dfb267962302fc8a69d6ebf64444ff57828154d0439a25cac7d9844626e",
+    "TESTS.log": "8b8ddcd2e7b63fe945152ea4c56d7e74f75ec09c6df6f5afe0311439df55ede7",
+    "gate.py": "d12d6a0de085c3f5eb15f9ddae4b77fff584b74ffa411ad867bfb7838ddf3fbd",
+    "EXAMPLE_RESULT.json": "dfaff427a095f29ab6d000583be9a5586cba3e37a64030d3702cb478300ecfac",
+    "PREPARATION_NOTE.txt": "98a889b1af5049db3fa749042e1ec916ac99c148961ab8469b85581a690435d5",
+    "example.synthetic.json": "8292a920a74853ed6320cbe84f5625dbf98273a593e959ed5ddb51a9b072c805"
+  },
+  "pure_tests": 11,
+  "native_calls": 0
+}

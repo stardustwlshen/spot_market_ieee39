@@ -1,0 +1,24 @@
+{
+  "schemas": {
+    "thermal": "gd.agc.r73.v1",
+    "storage": "gd.agc.storage.r78.v1",
+    "mixed": "gd.agc.mixed.r79.v1",
+    "safety": "gd.agc.safety.r77.v1"
+  },
+  "validation": "Executable strict validators in vendor; examples provide field shapes, not real qualifications. Unknown fields do not supply missing required data.",
+  "execution_backend": {
+    "bundled": true,
+    "required_for_SCUC_RT_PRICE": "Original validated workspace and its case/policy/templates/prepared/source contracts; not satisfied by one CLI file.",
+    "R80": {
+      "status": "fixed synthetic fixture two-window runner integrated",
+      "commands": [
+        "rt-small-fixture",
+        "prepare-rt-small",
+        "run-rt-small"
+      ],
+      "arbitrary_input_support": false,
+      "native_repeated_in_packaging": false
+    },
+    "scope": "R56 explicit SCUC builder and R68 small MIP prepare/one-shot solve only; full RT/PRICE/settlement orchestration requires original workspace"
+  }
+}

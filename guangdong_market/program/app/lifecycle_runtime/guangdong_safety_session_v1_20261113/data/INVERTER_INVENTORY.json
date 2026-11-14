@@ -1,0 +1,230 @@
+{
+  "status": "verified_inventory_no_explicit_inverter_Q_or_S_data",
+  "source_contract": "Frozen R14 reconstructed static input is SHA-linked by current pipeline explicit_rt_assets ASSETS; not unrelated current repository default config",
+  "snapshot_global_cell": 212,
+  "units": [
+    {
+      "id": "W1",
+      "kind": "wind",
+      "external_bus": 30,
+      "internal_bus": 29,
+      "nameplate_P_MW": 1040,
+      "energy_MWh": null,
+      "actual_loss_corrected_snapshot_P_MW": 299.6130159016667,
+      "current_research_Q_Mvar": 0.0,
+      "explicit_Q_or_S_fields": {},
+      "current_assumption": "fixed PQ, Q=0; no supplied inverter S rating/capability curve",
+      "original_record": {
+        "id": "W1",
+        "type": "wind",
+        "bus": 30,
+        "cap": 1040,
+        "profile": "wind_a"
+      }
+    },
+    {
+      "id": "W2",
+      "kind": "wind",
+      "external_bus": 37,
+      "internal_bus": 36,
+      "nameplate_P_MW": 564,
+      "energy_MWh": null,
+      "actual_loss_corrected_snapshot_P_MW": 150.12251817483335,
+      "current_research_Q_Mvar": 0.0,
+      "explicit_Q_or_S_fields": {},
+      "current_assumption": "fixed PQ, Q=0; no supplied inverter S rating/capability curve",
+      "original_record": {
+        "id": "W2",
+        "type": "wind",
+        "bus": 37,
+        "cap": 564,
+        "profile": "wind_b"
+      }
+    },
+    {
+      "id": "PV1",
+      "kind": "pv",
+      "external_bus": 33,
+      "internal_bus": 32,
+      "nameplate_P_MW": 652,
+      "energy_MWh": null,
+      "actual_loss_corrected_snapshot_P_MW": 35.79807343433333,
+      "current_research_Q_Mvar": 0.0,
+      "explicit_Q_or_S_fields": {},
+      "current_assumption": "fixed PQ, Q=0; no supplied inverter S rating/capability curve",
+      "original_record": {
+        "id": "PV1",
+        "type": "pv",
+        "bus": 33,
+        "cap": 652,
+        "profile": "pv"
+      }
+    },
+    {
+      "id": "PV2",
+      "kind": "pv",
+      "external_bus": 4,
+      "internal_bus": 3,
+      "nameplate_P_MW": 750,
+      "energy_MWh": null,
+      "actual_loss_corrected_snapshot_P_MW": 41.17876545316666,
+      "current_research_Q_Mvar": 0.0,
+      "explicit_Q_or_S_fields": {},
+      "current_assumption": "fixed PQ, Q=0; no supplied inverter S rating/capability curve",
+      "original_record": {
+        "id": "PV2",
+        "type": "pv",
+        "bus": 4,
+        "cap": 750,
+        "profile": "pv"
+      }
+    },
+    {
+      "id": "PV3",
+      "kind": "pv",
+      "external_bus": 8,
+      "internal_bus": 7,
+      "nameplate_P_MW": 750,
+      "energy_MWh": null,
+      "actual_loss_corrected_snapshot_P_MW": 41.17876545316666,
+      "current_research_Q_Mvar": 0.0,
+      "explicit_Q_or_S_fields": {},
+      "current_assumption": "fixed PQ, Q=0; no supplied inverter S rating/capability curve",
+      "original_record": {
+        "id": "PV3",
+        "type": "pv",
+        "bus": 8,
+        "cap": 750,
+        "profile": "pv"
+      }
+    },
+    {
+      "id": "ES1",
+      "kind": "battery",
+      "external_bus": 19,
+      "internal_bus": 18,
+      "nameplate_P_MW": 100,
+      "energy_MWh": 200,
+      "actual_loss_corrected_snapshot_P_MW": 33.333,
+      "current_research_Q_Mvar": 0.0,
+      "explicit_Q_or_S_fields": {},
+      "current_assumption": "fixed PQ, Q=0; no supplied inverter S rating/capability curve",
+      "original_record": {
+        "id": "ES1",
+        "bus": 19,
+        "pmax": 100,
+        "ecap": 200,
+        "eta_c": 0.95,
+        "eta_d": 0.95,
+        "soc_min": 0.1,
+        "soc_max": 0.9,
+        "soc0": 0.5,
+        "soc_end_bid": 0.5
+      }
+    },
+    {
+      "id": "ES2",
+      "kind": "battery",
+      "external_bus": 16,
+      "internal_bus": 15,
+      "nameplate_P_MW": 200,
+      "energy_MWh": 400,
+      "actual_loss_corrected_snapshot_P_MW": -0.0,
+      "current_research_Q_Mvar": 0.0,
+      "explicit_Q_or_S_fields": {},
+      "current_assumption": "fixed PQ, Q=0; no supplied inverter S rating/capability curve",
+      "original_record": {
+        "id": "ES2",
+        "bus": 16,
+        "pmax": 200,
+        "ecap": 400,
+        "eta_c": 0.95,
+        "eta_d": 0.95,
+        "soc_min": 0.1,
+        "soc_max": 0.9,
+        "soc0": 0.5,
+        "soc_end_bid": 0.5
+      }
+    },
+    {
+      "id": "ES3",
+      "kind": "battery",
+      "external_bus": 25,
+      "internal_bus": 24,
+      "nameplate_P_MW": 100,
+      "energy_MWh": 200,
+      "actual_loss_corrected_snapshot_P_MW": -0.0,
+      "current_research_Q_Mvar": 0.0,
+      "explicit_Q_or_S_fields": {},
+      "current_assumption": "fixed PQ, Q=0; no supplied inverter S rating/capability curve",
+      "original_record": {
+        "id": "ES3",
+        "bus": 25,
+        "pmax": 100,
+        "ecap": 200,
+        "eta_c": 0.95,
+        "eta_d": 0.95,
+        "soc_min": 0.1,
+        "soc_max": 0.9,
+        "soc0": 0.5,
+        "soc_end_bid": 0.5
+      }
+    },
+    {
+      "id": "ES4",
+      "kind": "battery",
+      "external_bus": 4,
+      "internal_bus": 3,
+      "nameplate_P_MW": 150,
+      "energy_MWh": 600,
+      "actual_loss_corrected_snapshot_P_MW": 93.33305922734883,
+      "current_research_Q_Mvar": 0.0,
+      "explicit_Q_or_S_fields": {},
+      "current_assumption": "fixed PQ, Q=0; no supplied inverter S rating/capability curve",
+      "original_record": {
+        "id": "ES4",
+        "bus": 4,
+        "pmax": 150,
+        "ecap": 600,
+        "eta_c": 0.95,
+        "eta_d": 0.95,
+        "soc_min": 0.1,
+        "soc_max": 0.9,
+        "soc0": 0.5,
+        "soc_end_bid": 0.5
+      }
+    },
+    {
+      "id": "ES5",
+      "kind": "battery",
+      "external_bus": 8,
+      "internal_bus": 7,
+      "nameplate_P_MW": 150,
+      "energy_MWh": 600,
+      "actual_loss_corrected_snapshot_P_MW": 50.0,
+      "current_research_Q_Mvar": 0.0,
+      "explicit_Q_or_S_fields": {},
+      "current_assumption": "fixed PQ, Q=0; no supplied inverter S rating/capability curve",
+      "original_record": {
+        "id": "ES5",
+        "bus": 8,
+        "pmax": 150,
+        "ecap": 600,
+        "eta_c": 0.95,
+        "eta_d": 0.95,
+        "soc_min": 0.1,
+        "soc_max": 0.9,
+        "soc0": 0.5,
+        "soc_end_bid": 0.5
+      }
+    }
+  ],
+  "not_telemetry": true,
+  "source_pins": {
+    "/workspace/scratch/42c5fe32dad0/guangdong_r14_core95_20261112/input/historical_da_only/source_reconstructed_day_inputs.json": "cec7e26b76756885c640218dea024451351415f6012210463782aef3436a1a3b",
+    "/workspace/scratch/42c5fe32dad0/guangdong_pipeline_20261112/explicit_rt_assets/ASSETS.json": "cf1f8bda129a5d31f9babf79c7b5b6be5a9d101a9fa7485809d6f3f66faf93a3",
+    "/workspace/scratch/42c5fe32dad0/guangdong_joint_ac_feasibility_v1_20261112/loss_candidate_v1/AC_CANDIDATE_MAPPING.json": "202071469c0c23ebfbf4576348a483ffe0d02c45b6558027c897770a1c534610"
+  },
+  "no_original_change": true,
+  "no_solver_calls": true
+}

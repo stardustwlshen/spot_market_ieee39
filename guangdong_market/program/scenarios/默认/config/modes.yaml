@@ -1,0 +1,83 @@
+# 市场规则参数：一套自有统一规则 MKT（参考四川、甘肃现行规则取值，不再分省口径）。
+# 每项注明参考来源：
+#   川V4.0   = 《四川电力现货市场交易实施细则（V4.0）》2025-11（nxepta.com）
+#   川结算   = 《四川电力市场结算细则 V1.0》
+#   甘V3.2   = 《甘肃电力现货市场管理实施细则（V3.2）》/《运营实施细则》（gxt.gansu.gov.cn）
+#   甘工作方案 = 《甘肃电力现货市场结算运行工作方案》
+#   基本规则 = 《电力现货市场基本规则（试行）》发改能源规〔2023〕1217号
+# 未查到原文数值、由本项目设定的均标“假设值”。所有参数可在此修改。
+MKT:
+  name: 自有统一现货市场规则（参考川、甘）
+  pricing: LMP                       # 节点边际电价（甘V3.2 发电侧节点电价；川为系统电价，本项目统一用 LMP）
+  price_limits:                      # 元/MWh
+    bid_min: 0                       # 假设值：取川(−50, 川V4.0 附件3)与甘(40, 甘发改价格规〔2025〕4号)之间
+    bid_max: 800                     # 川V4.0 附件3（甘申报上限 500、出清上限 650）
+    clear_min: 0                     # 同 bid_min（假设值）
+    clear_max: 800                   # 川V4.0 附件3
+  segments:
+    min: 3                           # 假设值：川 5–10 段，甘 1–10 段，取 3
+    max: 10                          # 两省一致：最多 10 段
+    storage_min: 1
+    storage_max: 5                   # 川V4.0 储能 1–5 段（甘 1–10）
+  price_strict_increasing: true      # 川V4.0：各段价格严格递增（甘为单调非减）
+  price_step: 10                     # 甘V3.2：价格步长 10 元/MWh
+  min_seg_frac: 0.10                 # 甘V3.2：每段 ≥ 装机 10%（川 A1=5%，储能 10%）
+  max_adjacent_step: 150             # 川V4.0 β2=150：相邻段价差上限（煤电首段→第 2 段除外）
+  coal_first_segment: pmin           # 两省一致：煤电首段为 0~最小技术出力
+  storage_dis_gt_ch: error           # 川V4.0：放电最低价须高于充电最高价（不满足即报错）
+  startup_states: {hot: 8, warm: 72} # 川V4.0 三态（<8h 热、8–72h 温、>72h 冷）；甘V3.2 另分极热态 1h，此处不分
+  demand_bid: false                  # 第一阶段负荷固定（两省用户侧报量不报价/暂不定价）
+  tie_mode: fixed                    # 区外来电按联络线计划固定（川V4.0 7.5.2 / 甘V3.2 联络线终计划作边界）
+  reserve:                           # R⁺ = ρ_L·D̂ + ρ_RE·P̂_RE + R_ctg；R⁻ = ρ⁻_L·D̂ + ρ⁻_RE·P̂_RE（基本规则第四十六条要求设正负备用）
+    rho_L: 0.03                      # 假设值（DL/T 5429-2009 负荷备用 2%–5%）
+    rho_RE: 0.10                     # 假设值（两省规则未给数值）
+    rho_L_dn: 0.03                   # 假设值
+    rho_RE_dn: 0.0                   # 假设值
+    include_ctg: true                # 甘V3.2：正备用 ≥ max(单一交流元件故障最大功率缺额, 最大单机)
+    mu_RE: 0.0                       # 风光计入正备用的置信因子（甘V3.2 有该项但未给数值，取 0，假设值）
+    storage_reserve: false           # 储能与抽蓄（规则同储能）是否提供备用；默认不计（假设）
+    providers: [coal, gas_ccgt, gas_gt, hydro]
+  penalties: {balance: 1.0e+6, line: 1.0e+5, reserve: 1.0e+5}       # 甘工作方案：平衡 1e6、断面 1e5；备用 1e5 为假设值
+  pricing_penalties: {balance: 1.0e+4, line: 500, reserve: 500}     # 甘V3.2：节点电价计算断面罚因子 500；平衡 1e4 为假设值
+  # ---- 滚动方式（甘肃模式）：不设独立日内市场；煤电/CCGT 启停在日前确定（甘V3.2 第十八条），
+  #      实时每 15 min 滚动出清未来 2 h（甘V3.2 第六十三条），只执行首时段。
+  storage_end_soc:                   # 储能期末 SOC
+    da: declared                     # 日前：储能申报运行日末期望 SOC → 硬约束；未申报 → 由出清决定（川V4.0 7.7.4、附件8 式(20)）
+  intraday:                          # 独立日内滚动（川V4.0 8.1 事件触发式）；统一规则 MKT 默认关闭，代码保留
+    enabled: false                   # 甘肃模式不设独立日内市场；--intraday 可打开做对比
+    interval_h: 1                    # 假设值（仅 enabled 时）：川V4.0 8.1 为“边界变化时触发”，未规定固定周期
+    window: day_end                  # 川V4.0 8.1、8.3.1：运行日剩余时段
+    granularity_min: 15              # 川V4.0 8.2.5：96 点
+    lock_types: [coal, gas_ccgt]     # 川V4.0 8.2.4；基本规则第五十四条：日内滚动优化快速启停资源
+    free_types: [gas_gt, hydro, storage]   # 日内（仅 enabled）：水电期末库容硬约束、储能日末 SOC 按实时锚点规则
+    lead_issue_periods: 1            # 假设值
+    mip_rel_gap: 0.005               # 假设值（求解参数）
+    time_limit_s: 60
+  realtime:
+    interval_min: 15                 # 川V4.0 9.1、甘V3.2 第六十三条：15 分钟
+    lookahead_h: 2                   # 甘V3.2 第六十三条：滚动出清未来 15 min–2 h（川V4.0 写“未来 M 小时”，M 查不到）
+    boundary_lead_min: 30            # 甘V3.2 第六十三条时序：T−30 读取边界（状态、超短期预测），T−30~T−15 求解，T−15 下发
+    binding_periods: 1               # 只执行首时段 T~T+15
+    first_period_actual: true        # 假设做法：首时段负荷/风光用实际值（T−30 超短期预测残差由 AGC 承担，不建模）
+    lock_types: [coal, gas_ccgt]     # 启停沿用日前（甘V3.2 第十八条：煤电启停日前确定）
+    free_types: [gas_gt]             # 燃气 GT 启停在每个 2 h 窗口 MIP 内按需决策（假设做法，参考基本规则第五十四条“快速启停资源”）
+    hydro: fixed_da                  # 水电执行日前出清曲线（台数+出力）；甘肃运营实施细则(V3.2征求意见稿) 第六十条（摘要来源，原文本次未能下载）：水电实时报量不报价、执行经安全校核的曲线
+    storage:
+      mode: sced_anchor              # 充放 0-1 状态在窗口 MIP 内决策； sced_anchor：沿用日前封存报价（第六十二条）进入实时 SCED，初值 = 实际 SOC；fixed_da：执行日前充放电曲线（价格接受者）
+      anchor: hourly_eq              # 已确认默认（模式 B2）：广东式，窗口内各整点 E_RT = E_DA，硬约束（条款号未核实）
+                                     # 可选 window_end_pct（模式 B1）：甘V3.2 运营细则附录5 第9项，窗口末 (1−x)E_DA ≤ E_RT ≤ (1+x)E_DA（同时满足 SOC 上下限）
+      x: 0.05                        # 假设值：仅 window_end_pct 使用；甘肃细则未给出 x
+      anchor_penalty: 1.0e5          # 假设值：锚点松弛罚 元/MWh，仅防无解；触发时放宽到实际值后重算价格，不进入电价
+    mip_rel_gap: 1.0e-4              # 求解参数
+    time_limit_s: 30
+  pumped:                            # 抽水蓄能：市场规则与电化学储能完全一致（rules: storage，不另设一套），依据见 docs/开发记录.md“抽水蓄能”
+    rules: storage                   # 报价：发电曲线≙放电、抽水报价≙充电，段数 segments.storage_*，发电最低价>抽水最高价（storage_dis_gt_ch）
+                                     # 定价：正常参与出清与定价（与储能相同，无“不可定价”固定处理）
+                                     # 日前日末上库库容：报价申报 vup_end → 硬约束（≙ storage_end_soc 申报期末 SOC，川V4.0 7.7.4）；未申报由出清决定
+                                     # 实时：realtime.storage（sced_anchor + B2 hourly_eq 默认；B1 window_end_pct ±x；fixed_da 执行日前）
+                                     # 备用：reserve.storage_reserve；结算：两级结算（发电/抽水分列主体）
+                                     # 已弃用（2026-11-01 删除）：da_mode、rt_mode(band/fixed_da/hourly_eq)、rt_band_1e4m3、pricing(fixed/band/free)、pricing_eps、reserve
+    mode_step_periods: 4             # 抽蓄物理/工程简化（非市场规则，假设）：日前抽/发台数按小时决策（1 = 每 15 min），用于提速
+  settlement:
+    scheme: two_settlement           # 日前电量×日前 LMP + (实际−日前)×实时 LMP（甘工作方案两级结算）
+    interval_min: 15                 # 假设值：统一 15 min（川结算：储能 15 min、其他 1 h；甘 15 min）

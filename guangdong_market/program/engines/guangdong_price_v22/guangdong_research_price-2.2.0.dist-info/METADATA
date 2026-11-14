@@ -1,0 +1,7 @@
+Metadata-Version: 2.4
+Name: guangdong-research-price
+Version: 2.2.0
+Summary: Independent Guangdong research PRICE and counterfactual hourly accounting
+Requires-Python: >=3.11
+Requires-Dist: pyomo>=6.8
+Requires-Dist: highspy>=1.10

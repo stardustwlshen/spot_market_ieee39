@@ -1,0 +1,887 @@
+[
+  {
+    "quarter": 0,
+    "kind": "old_independent_PRICE_native_with_zero_extension",
+    "raw_response": "/workspace/scratch/42c5fe32dad0/guangdong_generic_rt_price_program_v1_20261112/seed_pure_v1/native_once/response.json",
+    "not_DA_price_proxy": true,
+    "verification": "/workspace/scratch/42c5fe32dad0/guangdong_seed_price_origin_review_v1_20261113/RESULT.json",
+    "max_all_horizon_relaxation": 0.0,
+    "max_published_quarter_relaxation": 0.0,
+    "nonzero_published": []
+  },
+  {
+    "quarter": 1,
+    "raw_response": "/workspace/scratch/42c5fe32dad0/guangdong_short_rt_price_v25_20261112/CURRENT_pure_v1/native_once/response.json",
+    "max_all_horizon_relaxation": 0.0,
+    "max_published_quarter_relaxation": 0.0,
+    "nonzero_published": [],
+    "formal": false
+  },
+  {
+    "quarter": 2,
+    "raw_response": "/workspace/scratch/42c5fe32dad0/guangdong_short_hour_price_v26_20261112/W1_pure/native_once/response.json",
+    "max_all_horizon_relaxation": 0.0,
+    "max_published_quarter_relaxation": 0.0,
+    "nonzero_published": [],
+    "formal": false
+  },
+  {
+    "quarter": 3,
+    "raw_response": "/workspace/scratch/42c5fe32dad0/guangdong_short_hour_price_v26_20261112/W2_pure/native_once/response.json",
+    "max_all_horizon_relaxation": 0.0,
+    "max_published_quarter_relaxation": 0.0,
+    "nonzero_published": [],
+    "formal": false
+  },
+  {
+    "quarter": 4,
+    "raw_response": "/workspace/scratch/42c5fe32dad0/guangdong_short_hour_price_v26_20261112/W3_pure/native_once/response.json",
+    "max_all_horizon_relaxation": 0.0,
+    "max_published_quarter_relaxation": 0.0,
+    "nonzero_published": [],
+    "formal": false
+  },
+  {
+    "quarter": 5,
+    "raw_response": "/workspace/scratch/42c5fe32dad0/guangdong_short_price_user_cli_v2_20261112/W4_pure_v1/native_once/response.json",
+    "max_all_horizon_relaxation": 0.0,
+    "max_published_quarter_relaxation": 0.0,
+    "nonzero_published": [],
+    "formal": false
+  },
+  {
+    "quarter": 6,
+    "raw_response": "/workspace/scratch/42c5fe32dad0/guangdong_short_price_day_driver_v1_20261112/W5_prepared/native_once/response.json",
+    "max_all_horizon_relaxation": 0.0,
+    "max_published_quarter_relaxation": 0.0,
+    "nonzero_published": [],
+    "formal": false
+  },
+  {
+    "quarter": 7,
+    "raw_response": "/workspace/scratch/42c5fe32dad0/guangdong_short_price_day_driver_v1_20261112/W6_prepared/native_once/response.json",
+    "max_all_horizon_relaxation": 0.0,
+    "max_published_quarter_relaxation": 0.0,
+    "nonzero_published": [],
+    "formal": false
+  },
+  {
+    "quarter": 8,
+    "raw_response": "/workspace/scratch/42c5fe32dad0/guangdong_short_price_day_driver_v1_20261112/W7_prepared/native_once/response.json",
+    "max_all_horizon_relaxation": 0.0,
+    "max_published_quarter_relaxation": 0.0,
+    "nonzero_published": [],
+    "formal": false
+  },
+  {
+    "quarter": 9,
+    "raw_response": "/workspace/scratch/42c5fe32dad0/guangdong_short_price_day_driver_v1_20261112/W8_prepared/native_once/response.json",
+    "max_all_horizon_relaxation": 0.0,
+    "max_published_quarter_relaxation": 0.0,
+    "nonzero_published": [],
+    "formal": false
+  },
+  {
+    "quarter": 10,
+    "raw_response": "/workspace/scratch/42c5fe32dad0/guangdong_short_price_day_driver_v1_20261112/W9_prepared/native_once/response.json",
+    "max_all_horizon_relaxation": 0.0,
+    "max_published_quarter_relaxation": 0.0,
+    "nonzero_published": [],
+    "formal": false
+  },
+  {
+    "quarter": 11,
+    "raw_response": "/workspace/scratch/42c5fe32dad0/guangdong_short_price_user_cli_v3_20261112/W10_pure_v1/native_once/response.json",
+    "max_all_horizon_relaxation": 0.0,
+    "max_published_quarter_relaxation": 0.0,
+    "nonzero_published": [],
+    "formal": false
+  },
+  {
+    "quarter": 12,
+    "raw_response": "/workspace/scratch/42c5fe32dad0/guangdong_short_price_day_driver_v2_20261112/W11_prepared/native_once/response.json",
+    "max_all_horizon_relaxation": 0.0,
+    "max_published_quarter_relaxation": 0.0,
+    "nonzero_published": [],
+    "formal": false
+  },
+  {
+    "quarter": 13,
+    "raw_response": "/workspace/scratch/42c5fe32dad0/guangdong_short_price_day_driver_v3_20261112/W12_prepared/native_once/response.json",
+    "max_all_horizon_relaxation": 0.0,
+    "max_published_quarter_relaxation": 0.0,
+    "nonzero_published": [],
+    "formal": false
+  },
+  {
+    "quarter": 14,
+    "raw_response": "/workspace/scratch/42c5fe32dad0/guangdong_short_price_day_driver_v3_20261112/W13_prepared/native_once/response.json",
+    "max_all_horizon_relaxation": 0.0,
+    "max_published_quarter_relaxation": 0.0,
+    "nonzero_published": [],
+    "formal": false
+  },
+  {
+    "quarter": 15,
+    "raw_response": "/workspace/scratch/42c5fe32dad0/guangdong_short_price_day_driver_v3_20261112/W14_prepared/native_once/response.json",
+    "max_all_horizon_relaxation": 0.0,
+    "max_published_quarter_relaxation": 0.0,
+    "nonzero_published": [],
+    "formal": false
+  },
+  {
+    "quarter": 16,
+    "raw_response": "/workspace/scratch/42c5fe32dad0/guangdong_short_price_day_driver_v3_20261112/W15_prepared/native_once/response.json",
+    "max_all_horizon_relaxation": 0.0,
+    "max_published_quarter_relaxation": 0.0,
+    "nonzero_published": [],
+    "formal": false
+  },
+  {
+    "quarter": 17,
+    "raw_response": "/workspace/scratch/42c5fe32dad0/guangdong_short_price_day_driver_v3_20261112/W16_prepared/native_once/response.json",
+    "max_all_horizon_relaxation": 0.0,
+    "max_published_quarter_relaxation": 0.0,
+    "nonzero_published": [],
+    "formal": false
+  },
+  {
+    "quarter": 18,
+    "raw_response": "/workspace/scratch/42c5fe32dad0/guangdong_short_price_day_driver_v3_20261112/W17_prepared/native_once/response.json",
+    "max_all_horizon_relaxation": 0.0,
+    "max_published_quarter_relaxation": 0.0,
+    "nonzero_published": [],
+    "formal": false
+  },
+  {
+    "quarter": 19,
+    "raw_response": "/workspace/scratch/42c5fe32dad0/guangdong_short_price_day_driver_v3_20261112/W18_prepared/native_once/response.json",
+    "max_all_horizon_relaxation": 0.0,
+    "max_published_quarter_relaxation": 0.0,
+    "nonzero_published": [],
+    "formal": false
+  },
+  {
+    "quarter": 20,
+    "raw_response": "/workspace/scratch/42c5fe32dad0/guangdong_short_price_day_driver_v3_20261112/W19_prepared/native_once/response.json",
+    "max_all_horizon_relaxation": 0.0,
+    "max_published_quarter_relaxation": 0.0,
+    "nonzero_published": [],
+    "formal": false
+  },
+  {
+    "quarter": 21,
+    "raw_response": "/workspace/scratch/42c5fe32dad0/guangdong_short_price_day_driver_v4_20261112/W20_prepared/native_once/response.json",
+    "max_all_horizon_relaxation": 0.0,
+    "max_published_quarter_relaxation": 0.0,
+    "nonzero_published": [],
+    "formal": false
+  },
+  {
+    "quarter": 22,
+    "raw_response": "/workspace/scratch/42c5fe32dad0/guangdong_short_price_day_driver_v4_20261112/W21_prepared/native_once/response.json",
+    "max_all_horizon_relaxation": 0.0,
+    "max_published_quarter_relaxation": 0.0,
+    "nonzero_published": [],
+    "formal": false
+  },
+  {
+    "quarter": 23,
+    "raw_response": "/workspace/scratch/42c5fe32dad0/guangdong_short_price_day_driver_v4_20261112/W22_prepared/native_once/response.json",
+    "max_all_horizon_relaxation": 0.0,
+    "max_published_quarter_relaxation": 0.0,
+    "nonzero_published": [],
+    "formal": false
+  },
+  {
+    "quarter": 24,
+    "raw_response": "/workspace/scratch/42c5fe32dad0/guangdong_short_price_day_driver_v4_20261112/W23_prepared/native_once/response.json",
+    "max_all_horizon_relaxation": 0.0,
+    "max_published_quarter_relaxation": 0.0,
+    "nonzero_published": [],
+    "formal": false
+  },
+  {
+    "quarter": 25,
+    "raw_response": "/workspace/scratch/42c5fe32dad0/guangdong_short_price_cycle_driver_v1_20261113/W24_prepared/native_once/response.json",
+    "max_all_horizon_relaxation": 41.05987867825005,
+    "max_published_quarter_relaxation": 0.0,
+    "nonzero_published": [],
+    "formal": false
+  },
+  {
+    "quarter": 26,
+    "raw_response": "/workspace/scratch/42c5fe32dad0/guangdong_short_price_cycle_driver_v1_20261113/W25_prepared/native_once/response.json",
+    "max_all_horizon_relaxation": 92.13048181127944,
+    "max_published_quarter_relaxation": 3.218683284273368,
+    "nonzero_published": [
+      {
+        "variable": "PRICE_load_surplus[0]",
+        "value": 3.218683284273368
+      }
+    ],
+    "formal": false
+  },
+  {
+    "quarter": 27,
+    "raw_response": "/workspace/scratch/42c5fe32dad0/guangdong_short_price_cycle_driver_v1_20261113/W26_prepared/native_once/response.json",
+    "max_all_horizon_relaxation": 131.91733722245777,
+    "max_published_quarter_relaxation": 28.03514700394914,
+    "nonzero_published": [
+      {
+        "variable": "PRICE_load_surplus[0]",
+        "value": 28.03514700394914
+      }
+    ],
+    "formal": false
+  },
+  {
+    "quarter": 28,
+    "raw_response": "/workspace/scratch/42c5fe32dad0/guangdong_short_price_cycle_driver_v1_20261113/W27_prepared/native_once/response.json",
+    "max_all_horizon_relaxation": 124.8421580249192,
+    "max_published_quarter_relaxation": 0.0,
+    "nonzero_published": [],
+    "formal": false
+  },
+  {
+    "quarter": 29,
+    "raw_response": "/workspace/scratch/42c5fe32dad0/guangdong_short_price_cycle_driver_v1_20261113/W28_prepared/native_once/response.json",
+    "max_all_horizon_relaxation": 98.90627314253008,
+    "max_published_quarter_relaxation": 0.0,
+    "nonzero_published": [],
+    "formal": false
+  },
+  {
+    "quarter": 30,
+    "raw_response": "/workspace/scratch/42c5fe32dad0/guangdong_short_price_cycle_driver_v1_20261113/W29_prepared/native_once/response.json",
+    "max_all_horizon_relaxation": 95.63910296369394,
+    "max_published_quarter_relaxation": 54.89033241941799,
+    "nonzero_published": [
+      {
+        "variable": "PRICE_load_surplus[0]",
+        "value": 54.89033241941799
+      }
+    ],
+    "formal": false
+  },
+  {
+    "quarter": 31,
+    "raw_response": "/workspace/scratch/42c5fe32dad0/guangdong_short_price_cycle_driver_v1_20261113/W30_prepared/native_once/response.json",
+    "max_all_horizon_relaxation": 97.55554894621991,
+    "max_published_quarter_relaxation": 70.26877917054283,
+    "nonzero_published": [
+      {
+        "variable": "PRICE_load_surplus[0]",
+        "value": 70.26877917054283
+      }
+    ],
+    "formal": false
+  },
+  {
+    "quarter": 32,
+    "raw_response": "/workspace/scratch/42c5fe32dad0/guangdong_short_price_cycle_driver_v1_20261113/W31_prepared/native_once/response.json",
+    "max_all_horizon_relaxation": 125.20972206010269,
+    "max_published_quarter_relaxation": 92.36140730068635,
+    "nonzero_published": [
+      {
+        "variable": "PRICE_load_surplus[0]",
+        "value": 92.36140730068635
+      }
+    ],
+    "formal": false
+  },
+  {
+    "quarter": 33,
+    "raw_response": "/workspace/scratch/42c5fe32dad0/guangdong_short_price_cycle_driver_v1_20261113/W32_prepared/native_once/response.json",
+    "max_all_horizon_relaxation": 134.77699972874586,
+    "max_published_quarter_relaxation": 122.22752398907109,
+    "nonzero_published": [
+      {
+        "variable": "PRICE_load_surplus[0]",
+        "value": 122.22752398907109
+      }
+    ],
+    "formal": false
+  },
+  {
+    "quarter": 34,
+    "raw_response": "/workspace/scratch/42c5fe32dad0/guangdong_short_price_cycle_driver_v2_20261113/W33_prepared/native_once/response.json",
+    "max_all_horizon_relaxation": 154.45515404857704,
+    "max_published_quarter_relaxation": 124.50266724143123,
+    "nonzero_published": [
+      {
+        "variable": "PRICE_load_surplus[0]",
+        "value": 124.50266724143123
+      }
+    ],
+    "formal": false
+  },
+  {
+    "quarter": 35,
+    "raw_response": "/workspace/scratch/42c5fe32dad0/guangdong_short_price_cycle_driver_v2_20261113/W34_prepared/native_once/response.json",
+    "max_all_horizon_relaxation": 150.06290089648584,
+    "max_published_quarter_relaxation": 122.2622826033099,
+    "nonzero_published": [
+      {
+        "variable": "PRICE_load_surplus[0]",
+        "value": 122.2622826033099
+      }
+    ],
+    "formal": false
+  },
+  {
+    "quarter": 36,
+    "raw_response": "/workspace/scratch/42c5fe32dad0/guangdong_short_price_cycle_driver_v2_20261113/W35_prepared/native_once/response.json",
+    "max_all_horizon_relaxation": 148.19851749530613,
+    "max_published_quarter_relaxation": 134.6501893470395,
+    "nonzero_published": [
+      {
+        "variable": "PRICE_load_surplus[0]",
+        "value": 134.6501893470395
+      }
+    ],
+    "formal": false
+  },
+  {
+    "quarter": 37,
+    "raw_response": "/workspace/scratch/42c5fe32dad0/guangdong_short_price_cycle_driver_v2_20261113/W36_prepared/native_once/response.json",
+    "max_all_horizon_relaxation": 143.8432262543827,
+    "max_published_quarter_relaxation": 124.70562007413383,
+    "nonzero_published": [
+      {
+        "variable": "PRICE_load_surplus[0]",
+        "value": 124.70562007413383
+      }
+    ],
+    "formal": false
+  },
+  {
+    "quarter": 38,
+    "raw_response": "/workspace/scratch/42c5fe32dad0/guangdong_short_price_cycle_driver_v2_20261113/W37_prepared/native_once/response.json",
+    "max_all_horizon_relaxation": 147.51536701017014,
+    "max_published_quarter_relaxation": 127.15631456137291,
+    "nonzero_published": [
+      {
+        "variable": "PRICE_load_surplus[0]",
+        "value": 127.15631456137291
+      }
+    ],
+    "formal": false
+  },
+  {
+    "quarter": 39,
+    "raw_response": "/workspace/scratch/42c5fe32dad0/guangdong_short_price_cycle_driver_v2_20261113/W38_prepared/native_once/response.json",
+    "max_all_horizon_relaxation": 156.09128127066916,
+    "max_published_quarter_relaxation": 136.31463815288663,
+    "nonzero_published": [
+      {
+        "variable": "PRICE_load_surplus[0]",
+        "value": 136.31463815288663
+      }
+    ],
+    "formal": false
+  },
+  {
+    "quarter": 40,
+    "raw_response": "/workspace/scratch/42c5fe32dad0/guangdong_short_price_cycle_driver_v2_20261113/W39_prepared/native_once/response.json",
+    "max_all_horizon_relaxation": 159.36645819693987,
+    "max_published_quarter_relaxation": 136.15212899848106,
+    "nonzero_published": [
+      {
+        "variable": "PRICE_load_surplus[0]",
+        "value": 136.15212899848106
+      }
+    ],
+    "formal": false
+  },
+  {
+    "quarter": 41,
+    "raw_response": "/workspace/scratch/42c5fe32dad0/guangdong_short_price_cycle_driver_v2_20261113/W40_prepared/native_once/response.json",
+    "max_all_horizon_relaxation": 158.7314571041835,
+    "max_published_quarter_relaxation": 135.3141948257129,
+    "nonzero_published": [
+      {
+        "variable": "PRICE_load_surplus[0]",
+        "value": 135.3141948257129
+      }
+    ],
+    "formal": false
+  },
+  {
+    "quarter": 42,
+    "raw_response": "/workspace/scratch/42c5fe32dad0/guangdong_short_price_cycle_driver_v2_20261113/W41_prepared/native_once/response.json",
+    "max_all_horizon_relaxation": 156.8175227386927,
+    "max_published_quarter_relaxation": 137.87142447102258,
+    "nonzero_published": [
+      {
+        "variable": "PRICE_load_surplus[0]",
+        "value": 137.87142447102258
+      }
+    ],
+    "formal": false
+  },
+  {
+    "quarter": 43,
+    "raw_response": "/workspace/scratch/42c5fe32dad0/guangdong_short_price_cycle_driver_v2_20261113/W42_prepared/native_once/response.json",
+    "max_all_horizon_relaxation": 158.4503600016239,
+    "max_published_quarter_relaxation": 143.80689125275487,
+    "nonzero_published": [
+      {
+        "variable": "PRICE_load_surplus[0]",
+        "value": 143.80689125275487
+      }
+    ],
+    "formal": false
+  },
+  {
+    "quarter": 44,
+    "raw_response": "/workspace/scratch/42c5fe32dad0/guangdong_short_price_cycle_driver_v2_20261113/W43_prepared/native_once/response.json",
+    "max_all_horizon_relaxation": 159.7242396955367,
+    "max_published_quarter_relaxation": 159.7242396955367,
+    "nonzero_published": [
+      {
+        "variable": "PRICE_load_surplus[0]",
+        "value": 159.7242396955367
+      }
+    ],
+    "formal": false
+  },
+  {
+    "quarter": 45,
+    "raw_response": "/workspace/scratch/42c5fe32dad0/guangdong_short_price_cycle_driver_v2_20261113/W44_prepared/native_once/response.json",
+    "max_all_horizon_relaxation": 153.5996622761331,
+    "max_published_quarter_relaxation": 153.5996622761331,
+    "nonzero_published": [
+      {
+        "variable": "PRICE_load_surplus[0]",
+        "value": 153.5996622761331
+      }
+    ],
+    "formal": false
+  },
+  {
+    "quarter": 46,
+    "raw_response": "/workspace/scratch/42c5fe32dad0/guangdong_short_price_cycle_driver_v2_20261113/W45_prepared/native_once/response.json",
+    "max_all_horizon_relaxation": 131.98796460713726,
+    "max_published_quarter_relaxation": 131.98796460713726,
+    "nonzero_published": [
+      {
+        "variable": "PRICE_load_surplus[0]",
+        "value": 131.98796460713726
+      }
+    ],
+    "formal": false
+  },
+  {
+    "quarter": 47,
+    "raw_response": "/workspace/scratch/42c5fe32dad0/guangdong_short_price_cycle_driver_v2_20261113/W46_prepared/native_once/response.json",
+    "max_all_horizon_relaxation": 106.38458120481357,
+    "max_published_quarter_relaxation": 106.38458120481357,
+    "nonzero_published": [
+      {
+        "variable": "PRICE_load_surplus[0]",
+        "value": 106.38458120481357
+      }
+    ],
+    "formal": false
+  },
+  {
+    "quarter": 48,
+    "raw_response": "/workspace/scratch/42c5fe32dad0/guangdong_short_price_cycle_driver_v2_20261113/W47_prepared/native_once/response.json",
+    "max_all_horizon_relaxation": 91.14930018646572,
+    "max_published_quarter_relaxation": 91.14930018646572,
+    "nonzero_published": [
+      {
+        "variable": "PRICE_load_surplus[0]",
+        "value": 91.14930018646572
+      }
+    ],
+    "formal": false
+  },
+  {
+    "quarter": 49,
+    "raw_response": "/workspace/scratch/42c5fe32dad0/guangdong_short_price_cycle_driver_v2_20261113/W48_prepared/native_once/response.json",
+    "max_all_horizon_relaxation": 68.49137715300023,
+    "max_published_quarter_relaxation": 68.49137715300023,
+    "nonzero_published": [
+      {
+        "variable": "PRICE_load_surplus[0]",
+        "value": 68.49137715300023
+      }
+    ],
+    "formal": false
+  },
+  {
+    "quarter": 50,
+    "raw_response": "/workspace/scratch/42c5fe32dad0/guangdong_short_price_cycle_driver_v2_20261113/W49_prepared/native_once/response.json",
+    "max_all_horizon_relaxation": 14.215661836929002,
+    "max_published_quarter_relaxation": 14.215661836929002,
+    "nonzero_published": [
+      {
+        "variable": "PRICE_load_surplus[0]",
+        "value": 14.215661836929002
+      }
+    ],
+    "formal": false
+  },
+  {
+    "quarter": 51,
+    "raw_response": "/workspace/scratch/42c5fe32dad0/guangdong_short_price_cycle_driver_v2_20261113/W50_prepared/native_once/response.json",
+    "max_all_horizon_relaxation": 0.0,
+    "max_published_quarter_relaxation": 0.0,
+    "nonzero_published": [],
+    "formal": false
+  },
+  {
+    "quarter": 52,
+    "raw_response": "/workspace/scratch/42c5fe32dad0/guangdong_short_price_cycle_driver_v2_20261113/W51_prepared/native_once/response.json",
+    "max_all_horizon_relaxation": 0.0,
+    "max_published_quarter_relaxation": 0.0,
+    "nonzero_published": [],
+    "formal": false
+  },
+  {
+    "quarter": 53,
+    "raw_response": "/workspace/scratch/42c5fe32dad0/guangdong_short_price_cycle_driver_v2_20261113/W52_prepared/native_once/response.json",
+    "max_all_horizon_relaxation": 0.0,
+    "max_published_quarter_relaxation": 0.0,
+    "nonzero_published": [],
+    "formal": false
+  },
+  {
+    "quarter": 54,
+    "raw_response": "/workspace/scratch/42c5fe32dad0/guangdong_short_price_cycle_driver_v2_20261113/W53_prepared/native_once/response.json",
+    "max_all_horizon_relaxation": 0.0,
+    "max_published_quarter_relaxation": 0.0,
+    "nonzero_published": [],
+    "formal": false
+  },
+  {
+    "quarter": 55,
+    "raw_response": "/workspace/scratch/42c5fe32dad0/guangdong_short_price_cycle_driver_v2_20261113/W54_prepared/native_once/response.json",
+    "max_all_horizon_relaxation": 0.0,
+    "max_published_quarter_relaxation": 0.0,
+    "nonzero_published": [],
+    "formal": false
+  },
+  {
+    "quarter": 56,
+    "raw_response": "/workspace/scratch/42c5fe32dad0/guangdong_short_price_cycle_driver_v2_20261113/W55_prepared/native_once/response.json",
+    "max_all_horizon_relaxation": 0.0,
+    "max_published_quarter_relaxation": 0.0,
+    "nonzero_published": [],
+    "formal": false
+  },
+  {
+    "quarter": 57,
+    "raw_response": "/workspace/scratch/42c5fe32dad0/guangdong_short_price_cycle_driver_v2_20261113/W56_prepared/native_once/response.json",
+    "max_all_horizon_relaxation": 0.0,
+    "max_published_quarter_relaxation": 0.0,
+    "nonzero_published": [],
+    "formal": false
+  },
+  {
+    "quarter": 58,
+    "raw_response": "/workspace/scratch/42c5fe32dad0/guangdong_short_price_cycle_driver_v2_20261113/W57_prepared/native_once/response.json",
+    "max_all_horizon_relaxation": 0.0,
+    "max_published_quarter_relaxation": 0.0,
+    "nonzero_published": [],
+    "formal": false
+  },
+  {
+    "quarter": 59,
+    "raw_response": "/workspace/scratch/42c5fe32dad0/guangdong_short_price_cycle_driver_v2_20261113/W58_prepared/native_once/response.json",
+    "max_all_horizon_relaxation": 0.0,
+    "max_published_quarter_relaxation": 0.0,
+    "nonzero_published": [],
+    "formal": false
+  },
+  {
+    "quarter": 60,
+    "raw_response": "/workspace/scratch/42c5fe32dad0/guangdong_short_price_cycle_driver_v2_20261113/W59_prepared/native_once/response.json",
+    "max_all_horizon_relaxation": 0.0,
+    "max_published_quarter_relaxation": 0.0,
+    "nonzero_published": [],
+    "formal": false
+  },
+  {
+    "quarter": 61,
+    "raw_response": "/workspace/scratch/42c5fe32dad0/guangdong_short_price_cycle_driver_v2_20261113/W60_prepared/native_once/response.json",
+    "max_all_horizon_relaxation": 0.0,
+    "max_published_quarter_relaxation": 0.0,
+    "nonzero_published": [],
+    "formal": false
+  },
+  {
+    "quarter": 62,
+    "raw_response": "/workspace/scratch/42c5fe32dad0/guangdong_short_price_cycle_driver_v2_20261113/W61_prepared/native_once/response.json",
+    "max_all_horizon_relaxation": 0.0,
+    "max_published_quarter_relaxation": 0.0,
+    "nonzero_published": [],
+    "formal": false
+  },
+  {
+    "quarter": 63,
+    "raw_response": "/workspace/scratch/42c5fe32dad0/guangdong_short_price_cycle_driver_v2_20261113/W62_prepared/native_once/response.json",
+    "max_all_horizon_relaxation": 0.0,
+    "max_published_quarter_relaxation": 0.0,
+    "nonzero_published": [],
+    "formal": false
+  },
+  {
+    "quarter": 64,
+    "raw_response": "/workspace/scratch/42c5fe32dad0/guangdong_short_price_cycle_driver_v2_20261113/W63_prepared/native_once/response.json",
+    "max_all_horizon_relaxation": 0.0,
+    "max_published_quarter_relaxation": 0.0,
+    "nonzero_published": [],
+    "formal": false
+  },
+  {
+    "quarter": 65,
+    "raw_response": "/workspace/scratch/42c5fe32dad0/guangdong_short_price_cycle_driver_v2_20261113/W64_prepared/native_once/response.json",
+    "max_all_horizon_relaxation": 0.0,
+    "max_published_quarter_relaxation": 0.0,
+    "nonzero_published": [],
+    "formal": false
+  },
+  {
+    "quarter": 66,
+    "raw_response": "/workspace/scratch/42c5fe32dad0/guangdong_short_price_cycle_driver_v2_20261113/W65_prepared/native_once/response.json",
+    "max_all_horizon_relaxation": 0.0,
+    "max_published_quarter_relaxation": 0.0,
+    "nonzero_published": [],
+    "formal": false
+  },
+  {
+    "quarter": 67,
+    "raw_response": "/workspace/scratch/42c5fe32dad0/guangdong_short_price_cycle_driver_v2_20261113/W66_prepared/native_once/response.json",
+    "max_all_horizon_relaxation": 0.0,
+    "max_published_quarter_relaxation": 0.0,
+    "nonzero_published": [],
+    "formal": false
+  },
+  {
+    "quarter": 68,
+    "raw_response": "/workspace/scratch/42c5fe32dad0/guangdong_short_price_cycle_driver_v2_20261113/W67_prepared/native_once/response.json",
+    "max_all_horizon_relaxation": 0.0,
+    "max_published_quarter_relaxation": 0.0,
+    "nonzero_published": [],
+    "formal": false
+  },
+  {
+    "quarter": 69,
+    "raw_response": "/workspace/scratch/42c5fe32dad0/guangdong_short_price_cycle_driver_v2_20261113/W68_prepared/native_once/response.json",
+    "max_all_horizon_relaxation": 0.0,
+    "max_published_quarter_relaxation": 0.0,
+    "nonzero_published": [],
+    "formal": false
+  },
+  {
+    "quarter": 70,
+    "raw_response": "/workspace/scratch/42c5fe32dad0/guangdong_short_price_cycle_driver_v2_20261113/W69_prepared/native_once/response.json",
+    "max_all_horizon_relaxation": 0.0,
+    "max_published_quarter_relaxation": 0.0,
+    "nonzero_published": [],
+    "formal": false
+  },
+  {
+    "quarter": 71,
+    "raw_response": "/workspace/scratch/42c5fe32dad0/guangdong_short_price_cycle_driver_v3_20261113/W70_prepared/native_once/response.json",
+    "max_all_horizon_relaxation": 0.0,
+    "max_published_quarter_relaxation": 0.0,
+    "nonzero_published": [],
+    "formal": false
+  },
+  {
+    "quarter": 72,
+    "raw_response": "/workspace/scratch/42c5fe32dad0/guangdong_short_price_cycle_driver_v3_20261113/W71_prepared/native_once/response.json",
+    "max_all_horizon_relaxation": 0.0,
+    "max_published_quarter_relaxation": 0.0,
+    "nonzero_published": [],
+    "formal": false
+  },
+  {
+    "quarter": 73,
+    "raw_response": "/workspace/scratch/42c5fe32dad0/guangdong_short_price_cycle_driver_v3_20261113/W72_prepared/native_once/response.json",
+    "max_all_horizon_relaxation": 0.0,
+    "max_published_quarter_relaxation": 0.0,
+    "nonzero_published": [],
+    "formal": false
+  },
+  {
+    "quarter": 74,
+    "raw_response": "/workspace/scratch/42c5fe32dad0/guangdong_short_price_cycle_driver_v3_20261113/W73_prepared/native_once/response.json",
+    "max_all_horizon_relaxation": 0.0,
+    "max_published_quarter_relaxation": 0.0,
+    "nonzero_published": [],
+    "formal": false
+  },
+  {
+    "quarter": 75,
+    "raw_response": "/workspace/scratch/42c5fe32dad0/guangdong_short_price_cycle_driver_v3_20261113/W74_prepared/native_once/response.json",
+    "max_all_horizon_relaxation": 0.0,
+    "max_published_quarter_relaxation": 0.0,
+    "nonzero_published": [],
+    "formal": false
+  },
+  {
+    "quarter": 76,
+    "raw_response": "/workspace/scratch/42c5fe32dad0/guangdong_short_price_cycle_driver_v3_20261113/W75_prepared/native_once/response.json",
+    "max_all_horizon_relaxation": 0.0,
+    "max_published_quarter_relaxation": 0.0,
+    "nonzero_published": [],
+    "formal": false
+  },
+  {
+    "quarter": 77,
+    "raw_response": "/workspace/scratch/42c5fe32dad0/guangdong_short_price_cycle_driver_v3_20261113/W76_prepared/native_once/response.json",
+    "max_all_horizon_relaxation": 0.0,
+    "max_published_quarter_relaxation": 0.0,
+    "nonzero_published": [],
+    "formal": false
+  },
+  {
+    "quarter": 78,
+    "raw_response": "/workspace/scratch/42c5fe32dad0/guangdong_short_price_cycle_driver_v3_20261113/W77_prepared/native_once/response.json",
+    "max_all_horizon_relaxation": 0.0,
+    "max_published_quarter_relaxation": 0.0,
+    "nonzero_published": [],
+    "formal": false
+  },
+  {
+    "quarter": 79,
+    "raw_response": "/workspace/scratch/42c5fe32dad0/guangdong_short_price_cycle_driver_v3_20261113/W78_prepared/native_once/response.json",
+    "max_all_horizon_relaxation": 0.0,
+    "max_published_quarter_relaxation": 0.0,
+    "nonzero_published": [],
+    "formal": false
+  },
+  {
+    "quarter": 80,
+    "raw_response": "/workspace/scratch/42c5fe32dad0/guangdong_short_price_cycle_driver_v3_20261113/W79_prepared/native_once/response.json",
+    "max_all_horizon_relaxation": 0.0,
+    "max_published_quarter_relaxation": 0.0,
+    "nonzero_published": [],
+    "formal": false
+  },
+  {
+    "quarter": 81,
+    "raw_response": "/workspace/scratch/42c5fe32dad0/guangdong_short_price_cycle_driver_v3_20261113/W80_prepared/native_once/response.json",
+    "max_all_horizon_relaxation": 0.0,
+    "max_published_quarter_relaxation": 0.0,
+    "nonzero_published": [],
+    "formal": false
+  },
+  {
+    "quarter": 82,
+    "raw_response": "/workspace/scratch/42c5fe32dad0/guangdong_short_price_cycle_driver_v3_20261113/W81_prepared/native_once/response.json",
+    "max_all_horizon_relaxation": 0.0,
+    "max_published_quarter_relaxation": 0.0,
+    "nonzero_published": [],
+    "formal": false
+  },
+  {
+    "quarter": 83,
+    "raw_response": "/workspace/scratch/42c5fe32dad0/guangdong_short_price_cycle_driver_v3_20261113/W82_prepared/native_once/response.json",
+    "max_all_horizon_relaxation": 0.0,
+    "max_published_quarter_relaxation": 0.0,
+    "nonzero_published": [],
+    "formal": false
+  },
+  {
+    "quarter": 84,
+    "raw_response": "/workspace/scratch/42c5fe32dad0/guangdong_short_price_cycle_driver_v3_20261113/W83_prepared/native_once/response.json",
+    "max_all_horizon_relaxation": 0.0,
+    "max_published_quarter_relaxation": 0.0,
+    "nonzero_published": [],
+    "formal": false
+  },
+  {
+    "quarter": 85,
+    "raw_response": "/workspace/scratch/42c5fe32dad0/guangdong_short_price_cycle_driver_v3_20261113/W84_prepared/native_once/response.json",
+    "max_all_horizon_relaxation": 0.0,
+    "max_published_quarter_relaxation": 0.0,
+    "nonzero_published": [],
+    "formal": false
+  },
+  {
+    "quarter": 86,
+    "raw_response": "/workspace/scratch/42c5fe32dad0/guangdong_short_price_cycle_driver_v3_20261113/W85_prepared/native_once/response.json",
+    "max_all_horizon_relaxation": 0.0,
+    "max_published_quarter_relaxation": 0.0,
+    "nonzero_published": [],
+    "formal": false
+  },
+  {
+    "quarter": 87,
+    "raw_response": "/workspace/scratch/42c5fe32dad0/guangdong_short_price_cycle_driver_v3_20261113/W86_prepared/native_once/response.json",
+    "max_all_horizon_relaxation": 0.0,
+    "max_published_quarter_relaxation": 0.0,
+    "nonzero_published": [],
+    "formal": false
+  },
+  {
+    "quarter": 88,
+    "raw_response": "/workspace/scratch/42c5fe32dad0/guangdong_short_price_cycle_driver_v3_20261113/W87_prepared/native_once/response.json",
+    "max_all_horizon_relaxation": 0.0,
+    "max_published_quarter_relaxation": 0.0,
+    "nonzero_published": [],
+    "formal": false
+  },
+  {
+    "quarter": 89,
+    "raw_response": "/workspace/scratch/42c5fe32dad0/guangdong_short_price_cycle_driver_v3_20261113/W88_prepared/native_once/response.json",
+    "max_all_horizon_relaxation": 0.0,
+    "max_published_quarter_relaxation": 0.0,
+    "nonzero_published": [],
+    "formal": false
+  },
+  {
+    "quarter": 90,
+    "raw_response": "/workspace/scratch/42c5fe32dad0/guangdong_short_price_cycle_driver_v3_20261113/W89_prepared/native_once/response.json",
+    "max_all_horizon_relaxation": 0.0,
+    "max_published_quarter_relaxation": 0.0,
+    "nonzero_published": [],
+    "formal": false
+  },
+  {
+    "quarter": 91,
+    "raw_response": "/workspace/scratch/42c5fe32dad0/guangdong_short_price_cycle_driver_v3_20261113/W90_prepared/native_once/response.json",
+    "max_all_horizon_relaxation": 0.0,
+    "max_published_quarter_relaxation": 0.0,
+    "nonzero_published": [],
+    "formal": false
+  },
+  {
+    "quarter": 92,
+    "raw_response": "/workspace/scratch/42c5fe32dad0/guangdong_short_price_cycle_driver_v3_20261113/W91_prepared/native_once/response.json",
+    "max_all_horizon_relaxation": 0.0,
+    "max_published_quarter_relaxation": 0.0,
+    "nonzero_published": [],
+    "formal": false
+  },
+  {
+    "quarter": 93,
+    "raw_response": "/workspace/scratch/42c5fe32dad0/guangdong_short_price_cycle_driver_v3_20261113/W92_prepared/native_once/response.json",
+    "max_all_horizon_relaxation": 0.0,
+    "max_published_quarter_relaxation": 0.0,
+    "nonzero_published": [],
+    "formal": false
+  },
+  {
+    "quarter": 94,
+    "raw_response": "/workspace/scratch/42c5fe32dad0/guangdong_short_price_cycle_driver_v3_20261113/W93_prepared/native_once/response.json",
+    "max_all_horizon_relaxation": 0.0,
+    "max_published_quarter_relaxation": 0.0,
+    "nonzero_published": [],
+    "formal": false
+  },
+  {
+    "quarter": 95,
+    "raw_response": "/workspace/scratch/42c5fe32dad0/guangdong_short_price_cycle_driver_v3_20261113/W94_prepared/native_once/response.json",
+    "max_all_horizon_relaxation": 0.0,
+    "max_published_quarter_relaxation": 0.0,
+    "nonzero_published": [],
+    "formal": false
+  }
+]

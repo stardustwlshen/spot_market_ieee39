@@ -1,0 +1,9 @@
+{
+  "prepare_batch.py": "104ac6d7926f9f5fb427d7b3f65907d4f30f14ef1711e0a8e1909e0e7681ab5a",
+  "provider.py": "406b7be5a33bbf9d166173d371b57d645bd94a84b87f062d60cefb22f47321d5",
+  "transform.py": "4ec7969700c46831f221bc09b4b76956d801cf75028b58d62fa4cb736f15e7c2",
+  "test_provider.py": "9272f0193169a721c9f7db8443e7fbb5da68e9e733159eba771ed3be94e57226",
+  "review_batch.py": "9fc31c3a2e324f6c2cba6ecd38954c5cb9d53dcb6c0bff387ff580f3943a3c9f",
+  "launch_batch_once.py": "0ede17be61354c2f42386d086ee4b5085342c4fd9b6b3cfffee2967b83ff0ee5",
+  "prepare.py": "5118dff9f589499f8388f8871f9708b47623d2fa72ab526a88d0ce1c78f81b63"
+}

@@ -1,0 +1,101 @@
+{
+  "schema": "gd.PRICE.surplus_rootcause.v1",
+  "native_calls": 0,
+  "window": 43,
+  "quarter": 44,
+  "thermal": [
+    {
+      "unit": "C1",
+      "actual_SCED": 300.0,
+      "PRICE": 300.0,
+      "physical_min": 290.0,
+      "physical_max": 646.0,
+      "AGC_down": 10.0,
+      "AGC_up": 10.0,
+      "PRICE_lb": 300.0,
+      "PRICE_ub": 330.0
+    },
+    {
+      "unit": "C2",
+      "actual_SCED": 335.0,
+      "PRICE": 335.0,
+      "physical_min": 325.0,
+      "physical_max": 725.0,
+      "AGC_down": 10.0,
+      "AGC_up": 10.0,
+      "PRICE_lb": 335.0,
+      "PRICE_ub": 368.5
+    },
+    {
+      "unit": "C3",
+      "actual_SCED": 400.0,
+      "PRICE": 400.0,
+      "physical_min": 390.0,
+      "physical_max": 865.0,
+      "AGC_down": 10.0,
+      "AGC_up": 10.0,
+      "PRICE_lb": 400.0,
+      "PRICE_ub": 440.0
+    },
+    {
+      "unit": "CCGT",
+      "actual_SCED": 320.0,
+      "PRICE": 320.0,
+      "physical_min": 310.0,
+      "physical_max": 687.0,
+      "AGC_down": 10.0,
+      "AGC_up": 10.0,
+      "PRICE_lb": 320.0,
+      "PRICE_ub": 352.0
+    },
+    {
+      "unit": "GT",
+      "actual_SCED": 85.0,
+      "PRICE": 85.0,
+      "physical_min": 75.0,
+      "physical_max": 300.0,
+      "AGC_down": 10.0,
+      "AGC_up": 10.0,
+      "PRICE_lb": 85.0,
+      "PRICE_ub": 93.5
+    }
+  ],
+  "load_MW": 3787.8761808375,
+  "fixed_tie_MW": 716.5287942125,
+  "SCED": {
+    "resource_net_MW": 1090.397691804186,
+    "VRE_MW": 1980.9496948208139,
+    "curtail_MW": 232.74490567418616
+  },
+  "PRICE": {
+    "resource_net_MW": 1055.4374609846045,
+    "VRE_MW": 2175.634165335932,
+    "curtail_MW": 38.060435159068106,
+    "load_surplus_MW": 159.7242396955367
+  },
+  "conclusion": "Zero-slack feasible primal exists for every row and bound of the full original eight-quarter LP. Surplus is an economic choice, not forced physical infeasibility. At q44 thermal is unchanged; additional VRE 194.684470515118 MW minus additional storage charging 34.960230819581 MW equals surplus 159.724239695537 MW.",
+  "rule_findings": {
+    "official_document": "South regional spot implementation rules 2026 V1.0",
+    "PRICE_objective_and_balance": "printed 123-125 / PDF126-128 explicitly both load slack signs",
+    "default_penalties": "printed180/PDF183 rows19 and21 both renewable consumption and load balance default1000 CNY/MWh; current values match regional default but Guangdong implementation not authenticated",
+    "network_penalty": "same table row18 default1000; current research100 NOT that default",
+    "VRE_offer": "current -50 CNY/MWh research offer; no claim actual quote or verified province floor",
+    "eligibility": "current aggregated bus VRE lacks per-market-unit pricing eligibility; current SCED delta band is research interpretation, not verified official DA SCED reference"
+  },
+  "economic_marginal": {
+    "VRE_bid_CNY_MWh": -50,
+    "curtail_penalty_CNY_MWh": 1000,
+    "load_surplus_penalty_CNY_MWh": 1000,
+    "one_MW_more_VRE_less_curtail_more_surplus_CNY_per_quarter": -12.5,
+    "note": "conditional local marginal direction ignoring other active constraints; full raw LP already establishes optimum and feasible projection establishes zero slack is possible"
+  },
+  "action": "Preserve original prices and slack. No rule-grounded parameter correction established: arbitrarily lifting load penalty or deleting slack would modify official-style mechanism. No additional native solve needed to prove cause. Correct eligibility/reference adapter only after authenticated participant classification/reference interpretation. Report research energy amount, not formal bill.",
+  "pins": {
+    "guangdong_PRICE_surplus_rootcause_v1_20261113/PROJECTION.json": "c483b92b741224385890ab3a6cf61115085671d2c7d34dfa0bcb2c0fde7fa4b5",
+    "guangdong_PRICE_surplus_rootcause_v1_20261113/PROJECTED_PRIMAL.json": "16382cb2eb237331ca2e8688a379e7fd2c9e8585132a84688a8b520c5cdbbaa4",
+    "guangdong_rt_short_user_cli_v10_20261113/import_W34_recovered_v1/W43/prepared/derived_case.json": "2df65e960e9d1acad916e68512bdebfac94185c404a8a1fb9ae038a3ea0e0c84",
+    "guangdong_rt_short_user_cli_v10_20261113/import_W34_recovered_v1/W43/prepared/agc.json": "ea1973f333638c4c3391447dcb989dcf3427fe170b5d5199dcdb013293f05ba9",
+    "guangdong_r21_day_verified_final_v1_20261112/source/rules/region202610_official.pdf": "978d7d7179e3629f8a86fb2d770470e1700b67c4bb867123b07a2d8f480c3caf"
+  },
+  "scope_caution": "Maximum-slack W43 causally traced; do not claim every one of the other22 published slack quarters was individually projected. Full-day diagnostics count23 but present feasibility proof is this whole8-quarter window only."
+}

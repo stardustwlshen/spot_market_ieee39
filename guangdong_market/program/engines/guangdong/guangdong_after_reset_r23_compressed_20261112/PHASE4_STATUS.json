@@ -1,0 +1,61 @@
+{
+  "phase": "4",
+  "status": "validated_research_checkpoint_not_official_complete_market",
+  "updated_utc": "2026-11-10T12:30:58.260009+00:00",
+  "previous_checkpoints_preserved": true,
+  "pushed": false,
+  "active_solver": null,
+  "verified_runs": {
+    "actual96": "evidence/ieee39_hindsight96_reference_v1",
+    "prepared_paired_windows": "evidence/prepared_reserve_native_v1",
+    "small_price_basis": "evidence/phase4_price_cash",
+    "da96_independent_price": "evidence/ieee39_da_pricing_research_v2"
+  },
+  "not_claimed": [
+    "official_complete_Guangdong_market",
+    "official_LMP_mapping",
+    "real_AGC_delivery",
+    "final_market_cash",
+    "continuous_prepared_counterfactual_day",
+    "strict_global_hindsight_lower_bound"
+  ],
+  "current_blockers": [],
+  "next": [
+    "extend RT conditional pricing evidence without claiming official mapping",
+    "connect explicitly sourced or synthetic AGC mileage/performance to cash boundary",
+    "continuous physically prepared RT counterfactual with explicit startup assumptions"
+  ],
+  "resolved_findings": [
+    "LMP repeated dependency scans indexed with unchanged semantics",
+    "UI fixed required evidence hashes and componentwise cost checks",
+    "Prepared counterfactual evidence path relocation guarded by ten SHA identities"
+  ],
+  "final_new_core_regression": {
+    "scope": "All Guangdong new-core test_gd*.py plus test_rule_evidence.py, not the legacy full repository suite",
+    "started_utc": "2026-11-10T12:23:01.040391+00:00",
+    "seconds": 100.68111709000004,
+    "exit_code": 0,
+    "collected": 1874,
+    "passed": 1874,
+    "failed": 0,
+    "skipped": 0,
+    "source_unchanged": true,
+    "files_hashed": 84,
+    "requested_mip_gap": 0.001,
+    "solver": "COPT 8.0.7 only, native flags enabled",
+    "log": "phase4_native_regression.log",
+    "junit": "phase4_native_regression.xml",
+    "before": "phase4_regression_source_before.json",
+    "after": "phase4_regression_source_after.json"
+  },
+  "packaged_pure_validation": {
+    "passed": 1785,
+    "skipped": 89,
+    "failed": 0,
+    "seconds": 65.28,
+    "native_solver_cases_intentionally_skipped": true,
+    "original_workspace_reads_prohibited": true,
+    "solver_invocation_prohibited": true,
+    "ui_actual_manifest_remove_restore_passed": true
+  }
+}

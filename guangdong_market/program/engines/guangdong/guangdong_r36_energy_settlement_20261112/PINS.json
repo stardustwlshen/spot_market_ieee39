@@ -1,0 +1,7 @@
+{
+  "guangdong_r21_day_verified_final_v1_20261112/source/rules/gdsettle2026_reposted.pdf": "768c06ce2b77c958956e3b5ae8ca51de82b2712f78a1247b722ba845b795d263",
+  "guangdong_r21_day_verified_final_v1_20261112/source/rules/region202610_official.pdf": "978d7d7179e3629f8a86fb2d770470e1700b67c4bb867123b07a2d8f480c3caf",
+  "guangdong_r21_day_verified_final_v1_20261112/source/repo/src/smm/gd_r14_settlement.py": "c6931c9b5b873cf5c64fdd59d2f98036746fc0b72e8a4b9059b57bc88aa8d6a5",
+  "guangdong_r36_energy_settlement_20261112/r36_energy.py": "10e59396ccf6a8053aa9b33071451ab533b7ac12dbf6d44ee1d3d50a1fa4615d",
+  "guangdong_r36_energy_settlement_20261112/test_r36.py": "45a78da874097a7fda17d01cdae08bdcdae852735220dc67efb9d6be9e55b485"
+}

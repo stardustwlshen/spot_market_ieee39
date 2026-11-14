@@ -1,0 +1,2 @@
+INITIAL 2.2242876655667662e-13 1.0043077480759166e-12 []
+{"cell": 0, "status": "no_feasible_candidate", "accepted": false, "review": {"cell": 0, "max_AC_equation_pu": 0.00040283497515049656, "max_line_squared_pu": 0.0, "max_inverter_normalized": 0.0, "max_bound_pu": 0.006353890584395172, "max_reserve_pu": 6.707878696943226e-11, "nfev": 142, "elapsed_seconds": 2.274960782000562, "solver_success": true, "strict_feasible_candidate": false}}

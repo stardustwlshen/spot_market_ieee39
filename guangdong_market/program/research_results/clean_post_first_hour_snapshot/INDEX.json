@@ -1,0 +1,34 @@
+{
+  "schema": "gd.readonly.research.snapshot.v1",
+  "source_kind": "clean_post_scuc_first_hour_fixed_example",
+  "run_id": "unified-first-hour-0826265ba54046ed91e47310cb7eb67c",
+  "selected_DA": "/workspace/scratch/42c5fe32dad0/guangdong_pipeline_20261112/pure_fresh_run_v1",
+  "branch": "/workspace/scratch/42c5fe32dad0/guangdong_v18_clean_planning_regression_20261113/fresh_context/live_market_sessions/clean_planning_regression_v1/pipeline/dispatch",
+  "executed_cells": 12,
+  "issued_cells": 15,
+  "accepted_price_quarters": 4,
+  "account_rows": 54,
+  "hour0_energy_component_CNY": "984919.7573504869877597878065",
+  "full_day_energy_amount_CNY": null,
+  "files": {
+    "PHYSICAL_CELLS.json": "3a62f01cd470945bb86b6273e09b66945a78aeb30f4b2e72e5ca3811153820f7",
+    "QUARTER_PRICES.json": "82d6706dbbd2beca808387f871b221a7c7c89d2b5ff5c078c1dd28f807da89a8",
+    "HOURS.json": "3665cf2b0ba1e8132185d443dcd9a9c6efccf6c19d3ddb052513fc0bb86238a4",
+    "ACCOUNT_ROWS.json": "c983471147a356582ad19e26a6f94c5872ded5f60cca8248998105c2afce33be",
+    "PRICE_COMPATIBILITY.json": "253aec34b4980c0fa6332446c88fbe9603261ca78a45aed2d418040817387603"
+  },
+  "source_pins": {
+    "/workspace/scratch/42c5fe32dad0/guangdong_v18_clean_planning_regression_20261113/VERIFIED_RESULT_INDEX.json": "758144763d5a42ee3099f9b1c215d2e539d50df6b5237862c887b17e7ccd3966",
+    "/workspace/scratch/42c5fe32dad0/guangdong_v18_clean_planning_regression_20261113/H1_RECEIPT_HASH_VERIFIED_REEXPORT.json": "624975d84d9804fb535a185acde5eab9670fc0dd08d8affce3ba83c25cf39e68",
+    "/workspace/scratch/42c5fe32dad0/guangdong_v18_clean_planning_regression_20261113/fresh_context/live_market_sessions/clean_planning_regression_v1/pipeline/price/HOUR0.json": "a6589ba8dd1e2a141abc7a1a4c0c236003b0423e2137ee67b0e1f28eaf2ecee9",
+    "/workspace/scratch/42c5fe32dad0/guangdong_v18_clean_planning_regression_20261113/fresh_context/live_market_sessions/clean_planning_regression_v1/pipeline/price/EXECUTION_H0.json": "ac993c7495b268dc9ea0717b1d7ccca2ccc90c49349903c3de839086cf1443db",
+    "/workspace/scratch/42c5fe32dad0/guangdong_v18_clean_planning_regression_20261113/fresh_context/live_market_sessions/clean_planning_regression_v1/pipeline/price/q0/ACCEPTED.json": "79b59ebf4611d880914782000a0126ab88084d8f8bd2a241832d2ed7302b6448",
+    "/workspace/scratch/42c5fe32dad0/guangdong_v18_clean_planning_regression_20261113/fresh_context/live_market_sessions/clean_planning_regression_v1/pipeline/price/q1/ACCEPTED.json": "e5f34b1cc3fa4b273cb1362ddb12cc0f39e97da1f45f1e2a4282526e4bf00ce4",
+    "/workspace/scratch/42c5fe32dad0/guangdong_v18_clean_planning_regression_20261113/fresh_context/live_market_sessions/clean_planning_regression_v1/pipeline/price/q2/ACCEPTED.json": "fa68704277190d9f5926796f61b61804e19b5a18518b38feb4c424c0472b33e6",
+    "/workspace/scratch/42c5fe32dad0/guangdong_v18_clean_planning_regression_20261113/fresh_context/live_market_sessions/clean_planning_regression_v1/pipeline/price/q3/ACCEPTED.json": "f8127ae64603ab48f17f4b80487d1960049ad1485dbc596438418a968a301df9"
+  },
+  "formal_bill": null,
+  "safety_release": false,
+  "publication_allowed": false,
+  "live_restore_allowed": false
+}

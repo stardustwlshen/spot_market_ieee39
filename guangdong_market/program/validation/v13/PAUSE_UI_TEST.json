@@ -1,0 +1,16 @@
+{
+  "status": "passed",
+  "native_calls": 0,
+  "AC_calls": 0,
+  "UI_fixture": true,
+  "commands_not_consumed_by_worker": true,
+  "checks": [
+    "default0",
+    "separate_register_and_execute",
+    "digest_mismatch",
+    "duplicate",
+    "expired",
+    "exited",
+    "fields_required"
+  ]
+}

@@ -1,0 +1,23 @@
+# 网页应用统一主题（Streamlit 读取运行目录下的 .streamlit/config.toml；scripts/run_app.sh 在项目根目录启动）
+[client]
+showSidebarNavigation = false   # 侧边栏导航由 app/common.py 的 sidebar_nav() 统一绘制
+toolbarMode = "minimal"
+
+[theme]
+base = "light"
+primaryColor = "#1f5fa8"
+backgroundColor = "#ffffff"
+secondaryBackgroundColor = "#f2f5f9"
+textColor = "#1f2937"
+linkColor = "#1f5fa8"
+borderColor = "#dde3ea"
+showWidgetBorder = true
+baseRadius = "0.5rem"
+baseFontSize = 15
+font = "'Noto Sans CJK SC', 'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', sans-serif"
+headingFont = "'Noto Sans CJK SC', 'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', sans-serif"
+chartCategoricalColors = ["#1f5fa8", "#d1495b", "#2a9d8f", "#e9a03b", "#6a4c93", "#8d99ae", "#3cb371", "#c97b63"]
+
+[theme.sidebar]
+backgroundColor = "#eef2f7"
+secondaryBackgroundColor = "#ffffff"

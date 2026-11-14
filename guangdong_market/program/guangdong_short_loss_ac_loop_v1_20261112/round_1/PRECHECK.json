@@ -1,0 +1,31 @@
+{
+  "original_VG_conflicts_preserved": [
+    {
+      "id": "GT",
+      "VG": 1.0636,
+      "Vmin": 0.94,
+      "Vmax": 1.06
+    }
+  ],
+  "first_three_times": [
+    "2026-11-11T00:15:00+08:00",
+    "2026-11-11T00:20:00+08:00",
+    "2026-11-11T00:25:00+08:00"
+  ],
+  "first_three_ticks": [
+    0,
+    1,
+    2
+  ],
+  "all48_thermal_stable_no_start_stop": true,
+  "zero_loss_SCED": false,
+  "Q_source": "original benchmark gross Q/P proxy; no measured Q",
+  "no_future_17h_Q_VG_loaded": true,
+  "original_Q0": true,
+  "new_capability_not_instantiated": true,
+  "precheck": {
+    "positive_mw": 647.6818450991674,
+    "accident_mw": 626.6855404110015,
+    "net_generation_minus_physical_load_mw": 31.8355147912348
+  }
+}

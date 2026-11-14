@@ -1,0 +1,14 @@
+{
+  "status": "passed",
+  "native_calls": 0,
+  "complete_installed_PRICE_prepare": true,
+  "stable_matrix_identical": [
+    "variables",
+    "rows",
+    "objective",
+    "options",
+    "names"
+  ],
+  "default_profile_unchanged": true,
+  "event_profile_separate_explicit": true
+}

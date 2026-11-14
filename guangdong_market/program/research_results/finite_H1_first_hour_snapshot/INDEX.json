@@ -1,0 +1,34 @@
+{
+  "schema": "gd.readonly.research.snapshot.v1",
+  "source_kind": "finite_H1_first_hour_fixed_example",
+  "run_id": "unified-first-hour-f14d0d6557e643588983d1dd596f49db",
+  "selected_DA": "/workspace/scratch/42c5fe32dad0/guangdong_pipeline_20261112/pure_fresh_run_v1",
+  "branch": "/workspace/scratch/42c5fe32dad0/guangdong_finite_h1_actual_20261113/actual_pipeline/dispatch",
+  "executed_cells": 12,
+  "issued_cells": 15,
+  "accepted_price_quarters": 4,
+  "account_rows": 54,
+  "hour0_energy_component_CNY": "984919.7573504863269991628066",
+  "full_day_energy_amount_CNY": null,
+  "files": {
+    "PHYSICAL_CELLS.json": "47560a7341885d2b445ab23fbf4b81a394d27fb2bb06872f4715a8d1bda59a30",
+    "QUARTER_PRICES.json": "82d6706dbbd2beca808387f871b221a7c7c89d2b5ff5c078c1dd28f807da89a8",
+    "HOURS.json": "e29bc75bf5cd20ea21f3b6865fdbf8f2ac76c79c1a5e3c9bdc7b59108c6da32e",
+    "ACCOUNT_ROWS.json": "3d296297510321bb89a3aba3f8ea0712af9b2db5939e9b74339482c340176f96",
+    "PRICE_COMPATIBILITY.json": "fd0136e42aef192ba322e13a167c04285b7e26aa13c53f49f9a3afc8a2c29b9d"
+  },
+  "source_pins": {
+    "/workspace/scratch/42c5fe32dad0/guangdong_finite_h1_actual_20261113/VERIFIED_RESULT.json": "2f454f214470cda74341a10c80ecbe384feddb8e234101ba8205eb13d9e866a7",
+    "/workspace/scratch/42c5fe32dad0/guangdong_finite_h1_actual_20261113/actual_pipeline/dispatch/W2/H1_RESEARCH_AGC_RECEIPT.json": "fdc3dc2ad5213ac1e341a6c48c2df20f1c78a13a82feb0b6877dd464d643d0c3",
+    "/workspace/scratch/42c5fe32dad0/guangdong_finite_h1_actual_20261113/actual_pipeline/price/HOUR0.json": "7d1d9c80e6df5478ced8ec428faab8af96cb150517a90e343e9af15238fc3a42",
+    "/workspace/scratch/42c5fe32dad0/guangdong_finite_h1_actual_20261113/actual_pipeline/price/EXECUTION_H0.json": "f3619a64b2928f971b39b8bf05f9dc0cf8a8e5a84499074d84f93de66ee71dde",
+    "/workspace/scratch/42c5fe32dad0/guangdong_finite_h1_actual_20261113/actual_pipeline/price/q0/ACCEPTED.json": "41e52bed5faa076a3fdc413ef240bfc87a6f383448e3de0fec3d9cac0d124f1a",
+    "/workspace/scratch/42c5fe32dad0/guangdong_finite_h1_actual_20261113/actual_pipeline/price/q1/ACCEPTED.json": "eface73624616953903ed0bb302129d8f7482ae1fb1a531185acd9ea31252d8a",
+    "/workspace/scratch/42c5fe32dad0/guangdong_finite_h1_actual_20261113/actual_pipeline/price/q2/ACCEPTED.json": "253083dd77c4f3970e4fe9d088dfbb33aa457ac3dcfd0cf2f136804ef07785e9",
+    "/workspace/scratch/42c5fe32dad0/guangdong_finite_h1_actual_20261113/actual_pipeline/price/q3/ACCEPTED.json": "bd9492e3684084564b65f84aa2db74d016950a9063c7571140f9d332e3cde9c8"
+  },
+  "formal_bill": null,
+  "safety_release": false,
+  "publication_allowed": false,
+  "live_restore_allowed": false
+}

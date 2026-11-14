@@ -1,0 +1,161 @@
+MKT:
+  name: 自有统一现货市场规则（参考川、甘）
+  pricing: LMP
+  price_limits:
+    bid_min: -50
+    bid_max: 800
+    clear_min: 0
+    clear_max: 800
+  segments:
+    min: 3
+    max: 10
+    storage_min: 1
+    storage_max: 5
+  price_strict_increasing: true
+  price_step: 10
+  min_seg_frac: 0.1
+  max_adjacent_step: 150
+  bid_rules:
+    profile: gd_reference_thermal
+    default: {}
+    by_type:
+      wind:
+        require_capacity_coverage: true
+      pv:
+        require_capacity_coverage: true
+  coal_first_segment: pmin
+  storage_dis_gt_ch: error
+  startup_states:
+    hot: 8
+    warm: 72
+  demand_bid: false
+  tie_mode: fixed
+  reserve:
+    rho_L: 0.03
+    rho_RE: 0.1
+    rho_L_dn: 0.03
+    rho_RE_dn: 0.0
+    include_ctg: true
+    mu_RE: 0.0
+    storage_reserve: false
+    providers:
+    - coal
+    - gas_ccgt
+    - gas_gt
+    - hydro
+  penalties:
+    balance: 1000000.0
+    line: 5000
+    reserve: 100000.0
+  pricing_penalties:
+    balance: 10000.0
+    line: 500
+    reserve: 500
+  storage_end_soc:
+    da: declared
+  intraday:
+    enabled: false
+    interval_h: 1
+    window: day_end
+    granularity_min: 15
+    lock_types:
+    - coal
+    - gas_ccgt
+    free_types:
+    - gas_gt
+    - hydro
+    - storage
+    lead_issue_periods: 1
+    mip_rel_gap: 0.005
+    time_limit_s: 60
+  realtime:
+    interval_min: 15
+    lookahead_h: 2
+    boundary_lead_min: 30
+    binding_periods: 1
+    first_period_actual: true
+    lock_types:
+    - coal
+    - gas_ccgt
+    free_types:
+    - gas_gt
+    hydro: fixed_da
+    storage:
+      mode: sced_anchor
+      anchor: hourly_eq
+      x: 0.05
+      anchor_penalty: 1.0e5
+    mip_rel_gap: 0.0001
+    time_limit_s: 30
+  pumped:
+    rules: storage
+    mode_step_periods: 4
+  settlement:
+    scheme: two_settlement
+    interval_min: 15
+  regulation:
+    enabled: false
+    research_note: 通用研究假设；首版仅认证火电与电化学储能。物理需求按MW，不乘性能K；不模拟AGC信号轨迹。
+    demand_ratio: 0.01
+    mileage_ratio: 4.0
+    response_minutes: 1.0
+    sustain_h: 0.25
+    slack_budget_tolerance: 1.0e-05
+    shortage_penalty: 100000.0
+    resources:
+      C1:
+        eligible: true
+        capacity_mw: 20
+        offered_capacity_mw: 20
+        ramp_mw_per_min: 9.7
+        performance: 0.8
+        bid_yuan_per_mw: 12.0
+      C2:
+        eligible: true
+        capacity_mw: 20
+        offered_capacity_mw: 20
+        ramp_mw_per_min: 10.9
+        performance: 0.8
+        bid_yuan_per_mw: 11.0
+      C3:
+        eligible: true
+        capacity_mw: 20
+        offered_capacity_mw: 20
+        ramp_mw_per_min: 13.0
+        performance: 0.8
+        bid_yuan_per_mw: 13.0
+      CCGT:
+        eligible: true
+        capacity_mw: 40
+        offered_capacity_mw: 40
+        ramp_mw_per_min: 27.5
+        performance: 1.0
+        bid_yuan_per_mw: 10.0
+      GT:
+        eligible: true
+        capacity_mw: 40
+        offered_capacity_mw: 40
+        ramp_mw_per_min: 27.0
+        performance: 1.0
+        bid_yuan_per_mw: 9.0
+      ES1:
+        eligible: true
+        capacity_mw: 10
+        offered_capacity_mw: 10
+        ramp_mw_per_min: 100.0
+        performance: 1.5
+        bid_yuan_per_mw: 8.0
+      ES2:
+        eligible: true
+        capacity_mw: 10
+        offered_capacity_mw: 10
+        ramp_mw_per_min: 200.0
+        performance: 1.5
+        bid_yuan_per_mw: 8.0
+      ES3:
+        eligible: true
+        capacity_mw: 10
+        offered_capacity_mw: 10
+        ramp_mw_per_min: 100.0
+        performance: 1.5
+        bid_yuan_per_mw: 8.0

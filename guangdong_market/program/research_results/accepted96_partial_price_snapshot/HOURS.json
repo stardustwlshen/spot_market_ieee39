@@ -1,0 +1,251 @@
+[
+  {
+    "hour": 0,
+    "start": "2026-11-11T00:00:00+08:00",
+    "end": "2026-11-11T01:00:00+08:00",
+    "status": "complete_research_energy_component",
+    "quarter_prices": 4,
+    "executed_cells": 12,
+    "total_energy_component_CNY": "984919.75735048716835681468151158260416666666666666666666666666666666666666666667",
+    "formal_bill": null
+  },
+  {
+    "hour": 1,
+    "start": "2026-11-11T01:00:00+08:00",
+    "end": "2026-11-11T02:00:00+08:00",
+    "status": "complete_research_energy_component",
+    "quarter_prices": 4,
+    "executed_cells": 12,
+    "total_energy_component_CNY": "944806.62861457062723682412739033378916666666666666666666666666666666666666666663",
+    "formal_bill": null
+  },
+  {
+    "hour": 2,
+    "start": "2026-11-11T02:00:00+08:00",
+    "end": "2026-11-11T03:00:00+08:00",
+    "status": "complete_research_energy_component",
+    "quarter_prices": 4,
+    "executed_cells": 12,
+    "total_energy_component_CNY": "918223.26737954211931641060210661902220833333333333333333333333333333333333333334",
+    "formal_bill": null
+  },
+  {
+    "hour": 3,
+    "start": "2026-11-11T03:00:00+08:00",
+    "end": "2026-11-11T04:00:00+08:00",
+    "status": "complete_research_energy_component",
+    "quarter_prices": 4,
+    "executed_cells": 12,
+    "total_energy_component_CNY": "899357.33759919450432669461766868952921420702142004166666666666666666666666666667",
+    "formal_bill": null
+  },
+  {
+    "hour": 4,
+    "start": "2026-11-11T04:00:00+08:00",
+    "end": "2026-11-11T05:00:00+08:00",
+    "status": "complete_research_energy_component",
+    "quarter_prices": 4,
+    "executed_cells": 12,
+    "total_energy_component_CNY": "886072.03167634978513730122608366105140237275278973760166666666666666666666666665",
+    "formal_bill": null
+  },
+  {
+    "hour": 5,
+    "start": "2026-11-11T05:00:00+08:00",
+    "end": "2026-11-11T06:00:00+08:00",
+    "status": "complete_research_energy_component",
+    "quarter_prices": 4,
+    "executed_cells": 12,
+    "total_energy_component_CNY": "879695.41480041435521660222617489660970665866451812423754583333333333333333333333",
+    "formal_bill": null
+  },
+  {
+    "hour": 6,
+    "start": "2026-11-11T06:00:00+08:00",
+    "end": "2026-11-11T07:00:00+08:00",
+    "status": "complete_research_energy_component",
+    "quarter_prices": 4,
+    "executed_cells": 12,
+    "total_energy_component_CNY": "845639.54956240838206465923987702987499999999999999999999999999999999999999999999",
+    "formal_bill": null
+  },
+  {
+    "hour": 7,
+    "start": "2026-11-11T07:00:00+08:00",
+    "end": "2026-11-11T08:00:00+08:00",
+    "status": "complete_research_energy_component",
+    "quarter_prices": 4,
+    "executed_cells": 12,
+    "total_energy_component_CNY": "99863.784326632484167933820093437135416666666666666666666666666666666666666666666",
+    "formal_bill": null
+  },
+  {
+    "hour": 8,
+    "start": "2026-11-11T08:00:00+08:00",
+    "end": "2026-11-11T09:00:00+08:00",
+    "status": "complete_research_energy_component",
+    "quarter_prices": 4,
+    "executed_cells": 12,
+    "total_energy_component_CNY": "-141543.60543531874096666666666666666666666666666666666666666666666666666666666667",
+    "formal_bill": null
+  },
+  {
+    "hour": 9,
+    "start": "2026-11-11T09:00:00+08:00",
+    "end": "2026-11-11T10:00:00+08:00",
+    "status": "complete_research_energy_component",
+    "quarter_prices": 4,
+    "executed_cells": 12,
+    "total_energy_component_CNY": "-145511.17490038125134583333333333333333333333333333333333333333333333333333333332",
+    "formal_bill": null
+  },
+  {
+    "hour": 10,
+    "start": "2026-11-11T10:00:00+08:00",
+    "end": "2026-11-11T11:00:00+08:00",
+    "status": "complete_research_energy_component",
+    "quarter_prices": 4,
+    "executed_cells": 12,
+    "total_energy_component_CNY": "-150315.77631060624955416666666666666666666666666666666666666666666666666666666667",
+    "formal_bill": null
+  },
+  {
+    "hour": 11,
+    "start": "2026-11-11T11:00:00+08:00",
+    "end": "2026-11-11T12:00:00+08:00",
+    "status": "complete_research_energy_component",
+    "quarter_prices": 4,
+    "executed_cells": 12,
+    "total_energy_component_CNY": "-155569.25227703750703750000000000000000000000000000000000000000000000000000000001",
+    "formal_bill": null
+  },
+  {
+    "hour": 12,
+    "start": "2026-11-11T12:00:00+08:00",
+    "end": "2026-11-11T13:00:00+08:00",
+    "status": "complete_research_energy_component",
+    "quarter_prices": 4,
+    "executed_cells": 12,
+    "total_energy_component_CNY": "-160825.32202192499444675675551780666750000000000000000000000000000000000000000000",
+    "formal_bill": null
+  },
+  {
+    "hour": 13,
+    "start": "2026-11-11T13:00:00+08:00",
+    "end": "2026-11-11T14:00:00+08:00",
+    "status": "complete_research_energy_component",
+    "quarter_prices": 4,
+    "executed_cells": 12,
+    "total_energy_component_CNY": "-165634.32138751256970324449941130393005282103535696916666666666666666666666666667",
+    "formal_bill": null
+  },
+  {
+    "hour": 14,
+    "start": "2026-11-11T14:00:00+08:00",
+    "end": "2026-11-11T15:00:00+08:00",
+    "status": "complete_research_energy_component",
+    "quarter_prices": 4,
+    "executed_cells": 12,
+    "total_energy_component_CNY": "700952.80184752022099197683259513409708333333333333333333333333333333333333333334",
+    "formal_bill": null
+  },
+  {
+    "hour": 15,
+    "start": "2026-11-11T15:00:00+08:00",
+    "end": "2026-11-11T16:00:00+08:00",
+    "status": "complete_research_energy_component",
+    "quarter_prices": 4,
+    "executed_cells": 12,
+    "total_energy_component_CNY": "1078709.1985840868520739583333342642075241901041562509614791666666666666666666666",
+    "formal_bill": null
+  },
+  {
+    "hour": 16,
+    "start": "2026-11-11T16:00:00+08:00",
+    "end": "2026-11-11T17:00:00+08:00",
+    "status": "complete_research_energy_component",
+    "quarter_prices": 4,
+    "executed_cells": 12,
+    "total_energy_component_CNY": "1175901.5896332782747084999999996373883033333333337625000000000000000000000000000",
+    "formal_bill": null
+  },
+  {
+    "hour": 17,
+    "start": "2026-11-11T17:00:00+08:00",
+    "end": "2026-11-11T18:00:00+08:00",
+    "status": "complete_research_energy_component",
+    "quarter_prices": 4,
+    "executed_cells": 12,
+    "total_energy_component_CNY": "1432256.7640290961818745031363255543529601838459713751059763847769791666666666665",
+    "formal_bill": null
+  },
+  {
+    "hour": 18,
+    "start": "2026-11-11T18:00:00+08:00",
+    "end": "2026-11-11T19:00:00+08:00",
+    "status": "complete_research_energy_component",
+    "quarter_prices": 4,
+    "executed_cells": 12,
+    "total_energy_component_CNY": "1471164.0363677862529882964782879668139912825566085285725526402083333333333333333",
+    "formal_bill": null
+  },
+  {
+    "hour": 19,
+    "start": "2026-11-11T19:00:00+08:00",
+    "end": "2026-11-11T20:00:00+08:00",
+    "status": "complete_research_energy_component",
+    "quarter_prices": 4,
+    "executed_cells": 12,
+    "total_energy_component_CNY": "1452397.6251321726093588483841107377351433144423002397527979166666666666666666666",
+    "formal_bill": null
+  },
+  {
+    "hour": 20,
+    "start": "2026-11-11T20:00:00+08:00",
+    "end": "2026-11-11T21:00:00+08:00",
+    "status": "complete_research_energy_component",
+    "quarter_prices": 4,
+    "executed_cells": 12,
+    "total_energy_component_CNY": "1405926.1113440169136950626529272428479895550356099270456250000000000000000000003",
+    "formal_bill": null
+  },
+  {
+    "hour": 21,
+    "start": "2026-11-11T21:00:00+08:00",
+    "end": "2026-11-11T22:00:00+08:00",
+    "status": "complete_research_energy_component",
+    "quarter_prices": 4,
+    "executed_cells": 12,
+    "total_energy_component_CNY": "1329004.2381598800670659659517499504637494518323071168360393166497904958333333333",
+    "formal_bill": null
+  },
+  {
+    "hour": 22,
+    "start": "2026-11-11T22:00:00+08:00",
+    "end": "2026-11-11T23:00:00+08:00",
+    "status": "complete_research_energy_component",
+    "quarter_prices": 4,
+    "executed_cells": 12,
+    "total_energy_component_CNY": "1147966.3640557729787587790707007642658073757778873322770889583333333333333333334",
+    "formal_bill": null
+  },
+  {
+    "hour": 23,
+    "start": "2026-11-11T23:00:00+08:00",
+    "end": "2026-11-12T00:00:00+08:00",
+    "status": "partial_prices_only",
+    "quarter_prices": 3,
+    "available_quarters": [
+      92,
+      93,
+      94
+    ],
+    "missing_quarters": [
+      95
+    ],
+    "executed_cells": 12,
+    "total_energy_component_CNY": null,
+    "reason": "hourly RT price requires all4 quarters; missing is not zero",
+    "formal_bill": null
+  }
+]

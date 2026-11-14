@@ -1,0 +1,17 @@
+{
+  "files": {
+    "ac_candidate.py": "84551d52ee5b41518036e1e015037a5969f644f6463c9fa06bfa8ffefb80658b",
+    "ac_adapter.py": "0d17a1fdc2159af9f22d111ef0779ca780a4e53bef8c33a5b75fccd63742b6e7",
+    "failure_workflow.py": "2432ea278d3fba989152347b9fcf7805fd9c00cf69f1baa053b7fd46d662ce84",
+    "ac_security.py": "ee4438023bd41d669122107e27d9779e16a7fa393a175054650d23a2e7a1ce91",
+    "bridge.py": "8d99e87b5bec57d43b816ebdd0b7ced5e2bb4e2b286af7c5ac56d6c5712acbdb",
+    "data/IEEE39_RESEARCH_INPUT.json": "e11ea32b3c859f3926e872af09adfe2bafd8b84100dc21b3adea8a274cc909a2",
+    "data/INVERTER_INVENTORY.json": "c6f939198f7a203f7e58720722e92b12a010f493a0c19bebb7b7ac0920454fac",
+    "data/SUPPORTED_SIGNATURE.json": "b1371ebd1913e4ae3a3a685bcb41e62cbf3e13cc9d44179f92c11fcd026829bc",
+    "known_W0/SOURCE_BOUND_STATUS.json": "b1d9f6891c6df8e9fb3a8f411049ea0b12c10f312920063fae0a2bd324c96cf2",
+    "known_W0/MAPPING.json": "c42556d17ec51944eb68cef2f8b6162c06c69ac0cd9dd00b51c776b767ea376b",
+    "known_W0/AC_RESULT.json": "32a10e30bea75413e9b728cc426050bc4586ee998a7c2c31436474b653e7bf46",
+    "known_W0/PAYLOAD.json": "8e3c0b43d7ded57e4c1e013f882cb1f85ec1167b3410fadff6a5212f8d4a1aaf",
+    "safety_session.py": "ab0ef60c12fe879b566cefe0d80922279c10d25be4d3fba17f65ca83cee11472"
+  }
+}

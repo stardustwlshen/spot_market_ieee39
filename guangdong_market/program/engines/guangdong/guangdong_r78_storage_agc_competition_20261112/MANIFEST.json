@@ -1,0 +1,15 @@
+{
+  "files": {
+    "storage.py": "5b24c0037040ebb21f6700baf88680dc656d78835d5d75646fc3212d61e924c8",
+    "SOURCE_SPEC.md": "04aead5850e5c25a5ff4ab42c01e3653f86470220175972623757d9f0293e6d6",
+    "README.md": "c289837038b6298b4e96929a45700bfa0ca3b4e7dfbad92af4e1eca81d947bb1",
+    "TESTS.log": "45abebc3866c7aaabc61d13e6cb2a483a865d3aaa6de60480622f0f782e9cac2",
+    "TESTS_SCOPE.log": "8fbf1ad2230478d7fa8f87bfde57991b802b3e5bac9b14f4ede1ad1820e4f583",
+    "PAGE_HASHES.json": "034796f16114dd92aeb4cffc49981e3b7346a6eca576fc6b2efef8ba54d8818c",
+    "EXAMPLE_RESULT.json": "67ebab41079e787057ad259b9cf02514e8c2bc5120f801ade62d0c5e0828d210",
+    "test_storage.py": "4c0cd785cec56560f5176aaa4203ba4338d1f8dbe8cac09623ad884947ad3c47",
+    "example.synthetic.json": "d3fd0c3adfe5a67ea0b5f0e3a41702c3d41a0a4d8c723211de995f77c6ad8bd5"
+  },
+  "pure_tests": 11,
+  "native_calls": 0
+}

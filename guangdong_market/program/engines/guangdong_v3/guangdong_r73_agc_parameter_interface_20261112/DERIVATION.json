@@ -1,0 +1,9 @@
+{
+  "base": "guangdong_r31_rule_agc_20261112/r31_agc.py",
+  "base_sha256": "43ce8b563c34c4e472224878675bc9e8f8053931c14f65ad6d8d32385c1e62f0",
+  "changes": [
+    "required external bid_floor within retained scan envelope 1..3; no transition inference",
+    "separate distribution_zone_demand_mw for 20% denominator; demand_mw remains provincial procurement target"
+  ],
+  "native_calls": 0
+}

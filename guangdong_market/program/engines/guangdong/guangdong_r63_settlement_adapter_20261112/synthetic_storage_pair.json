@@ -1,0 +1,419 @@
+{
+  "schema": "gd.settlement.r63.storage_pair.v1",
+  "discharge": {
+    "technology": "independent_storage",
+    "participation": "participates",
+    "participation_source": "SYNTHETIC declaration",
+    "agency_mode": "not_applicable",
+    "agency_contracts": null,
+    "key": {
+      "resource_id": "ES1",
+      "settlement_unit_id": "discharge",
+      "node_id": "N1",
+      "direction": "discharge",
+      "start": "2026-11-12T00:00:00+00:00",
+      "end": "2026-11-12T01:00:00+00:00"
+    },
+    "settlement_class": "independent_storage",
+    "classification": {
+      "value": true,
+      "evidence": {
+        "status": "simulation",
+        "source_id": "synthetic_fixture",
+        "source_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+        "version": "1",
+        "issued_at": "2026-11-11T00:00:00+00:00",
+        "available_at": "2026-11-11T00:00:00+00:00",
+        "missing_reason": null
+      }
+    },
+    "applicability": {
+      "value": true,
+      "evidence": {
+        "status": "simulation",
+        "source_id": "synthetic_fixture",
+        "source_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+        "version": "1",
+        "issued_at": "2026-11-11T00:00:00+00:00",
+        "available_at": "2026-11-11T00:00:00+00:00",
+        "missing_reason": null
+      }
+    },
+    "quarter_eligibility": null,
+    "channel": "simulation",
+    "asof": "2026-11-14T00:00:00+00:00",
+    "meter": {
+      "value": "110",
+      "unit": "MWh",
+      "evidence": {
+        "status": "simulation",
+        "source_id": "synthetic_fixture",
+        "source_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+        "version": "1",
+        "issued_at": "2026-11-11T00:00:00+00:00",
+        "available_at": "2026-11-11T00:00:00+00:00",
+        "missing_reason": null
+      }
+    },
+    "contracts": [
+      {
+        "contract_id": "LT",
+        "reference_node_id": "Nref",
+        "quantity": {
+          "value": "50",
+          "unit": "MWh",
+          "evidence": {
+            "status": "simulation",
+            "source_id": "synthetic_fixture",
+            "source_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+            "version": "1",
+            "issued_at": "2026-11-11T00:00:00+00:00",
+            "available_at": "2026-11-11T00:00:00+00:00",
+            "missing_reason": null
+          }
+        },
+        "strike": {
+          "value": "300",
+          "unit": "CNY/MWh",
+          "evidence": {
+            "status": "simulation",
+            "source_id": "synthetic_fixture",
+            "source_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+            "version": "1",
+            "issued_at": "2026-11-11T00:00:00+00:00",
+            "available_at": "2026-11-11T00:00:00+00:00",
+            "missing_reason": null
+          }
+        },
+        "reference_price": {
+          "value": "250",
+          "unit": "CNY/MWh",
+          "evidence": {
+            "status": "simulation",
+            "source_id": "synthetic_fixture",
+            "source_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+            "version": "1",
+            "issued_at": "2026-11-11T00:00:00+00:00",
+            "available_at": "2026-11-11T00:00:00+00:00",
+            "missing_reason": null
+          }
+        },
+        "hourly_quantity": null,
+        "reference_market": "DA",
+        "reference_price_kind": "synthetic_price_fixture",
+        "reference_interval": {
+          "start": "2026-11-12T00:00:00+00:00",
+          "end": "2026-11-12T01:00:00+00:00"
+        },
+        "reference_selection_source": "explicit synthetic contract reference choice"
+      }
+    ],
+    "da": {
+      "market": "DA",
+      "run_id": "da",
+      "pricing_run_id": "dap",
+      "version": "1",
+      "publication_id": "pubda",
+      "key": {
+        "resource_id": "ES1",
+        "settlement_unit_id": "discharge",
+        "node_id": "N1",
+        "direction": "discharge",
+        "start": "2026-11-12T00:00:00+00:00",
+        "end": "2026-11-12T01:00:00+00:00"
+      },
+      "price": {
+        "value": "400",
+        "unit": "CNY/MWh",
+        "evidence": {
+          "status": "simulation",
+          "source_id": "synthetic_fixture",
+          "source_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+          "version": "1",
+          "issued_at": "2026-11-11T00:00:00+00:00",
+          "available_at": "2026-11-11T00:00:00+00:00",
+          "missing_reason": null
+        }
+      },
+      "quantity": {
+        "value": "100",
+        "unit": "MWh",
+        "evidence": {
+          "status": "simulation",
+          "source_id": "synthetic_fixture",
+          "source_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+          "version": "1",
+          "issued_at": "2026-11-11T00:00:00+00:00",
+          "available_at": "2026-11-11T00:00:00+00:00",
+          "missing_reason": null
+        }
+      },
+      "price_publication_status": "final",
+      "price_kind": "synthetic_price_fixture"
+    },
+    "rt": {
+      "market": "RT",
+      "run_id": "rt",
+      "pricing_run_id": "rtp",
+      "version": "1",
+      "publication_id": "pubrt",
+      "key": {
+        "resource_id": "ES1",
+        "settlement_unit_id": "discharge",
+        "node_id": "N1",
+        "direction": "discharge",
+        "start": "2026-11-12T00:00:00+00:00",
+        "end": "2026-11-12T01:00:00+00:00"
+      },
+      "price": {
+        "value": "500",
+        "unit": "CNY/MWh",
+        "evidence": {
+          "status": "simulation",
+          "source_id": "synthetic_fixture",
+          "source_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+          "version": "1",
+          "issued_at": "2026-11-11T00:00:00+00:00",
+          "available_at": "2026-11-11T00:00:00+00:00",
+          "missing_reason": null
+        }
+      },
+      "quantity": null,
+      "price_publication_status": "final",
+      "price_kind": "synthetic_price_fixture"
+    },
+    "schema": "gd.settlement.r63.ledger.v1",
+    "authenticity": {
+      "status": "synthetic_declared",
+      "source": "R63 disclosed test fixture"
+    },
+    "account_mapping_evidence": {
+      "status": "simulation",
+      "source_id": "synthetic_fixture",
+      "source_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "version": "1",
+      "issued_at": "2026-11-11T00:00:00+00:00",
+      "available_at": "2026-11-11T00:00:00+00:00",
+      "missing_reason": null
+    },
+    "contract_inventory_evidence": {
+      "status": "simulation",
+      "source_id": "synthetic_fixture",
+      "source_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "version": "1",
+      "issued_at": "2026-11-11T00:00:00+00:00",
+      "available_at": "2026-11-11T00:00:00+00:00",
+      "missing_reason": null
+    },
+    "known_empty_contracts": false,
+    "meter_kind": "synthetic_meter_fixture"
+  },
+  "charge": {
+    "technology": "independent_storage",
+    "participation": "participates",
+    "participation_source": "SYNTHETIC declaration",
+    "agency_mode": "not_applicable",
+    "agency_contracts": null,
+    "key": {
+      "resource_id": "ES1",
+      "settlement_unit_id": "charge",
+      "node_id": "N1",
+      "direction": "charge",
+      "start": "2026-11-12T00:00:00+00:00",
+      "end": "2026-11-12T01:00:00+00:00"
+    },
+    "settlement_class": "independent_storage",
+    "classification": {
+      "value": true,
+      "evidence": {
+        "status": "simulation",
+        "source_id": "synthetic_fixture",
+        "source_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+        "version": "1",
+        "issued_at": "2026-11-11T00:00:00+00:00",
+        "available_at": "2026-11-11T00:00:00+00:00",
+        "missing_reason": null
+      }
+    },
+    "applicability": {
+      "value": true,
+      "evidence": {
+        "status": "simulation",
+        "source_id": "synthetic_fixture",
+        "source_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+        "version": "1",
+        "issued_at": "2026-11-11T00:00:00+00:00",
+        "available_at": "2026-11-11T00:00:00+00:00",
+        "missing_reason": null
+      }
+    },
+    "quarter_eligibility": null,
+    "channel": "simulation",
+    "asof": "2026-11-14T00:00:00+00:00",
+    "meter": {
+      "value": "-110",
+      "unit": "MWh",
+      "evidence": {
+        "status": "simulation",
+        "source_id": "synthetic_fixture",
+        "source_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+        "version": "1",
+        "issued_at": "2026-11-11T00:00:00+00:00",
+        "available_at": "2026-11-11T00:00:00+00:00",
+        "missing_reason": null
+      }
+    },
+    "contracts": [
+      {
+        "contract_id": "LT",
+        "reference_node_id": "Nref",
+        "quantity": {
+          "value": "-50",
+          "unit": "MWh",
+          "evidence": {
+            "status": "simulation",
+            "source_id": "synthetic_fixture",
+            "source_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+            "version": "1",
+            "issued_at": "2026-11-11T00:00:00+00:00",
+            "available_at": "2026-11-11T00:00:00+00:00",
+            "missing_reason": null
+          }
+        },
+        "strike": {
+          "value": "300",
+          "unit": "CNY/MWh",
+          "evidence": {
+            "status": "simulation",
+            "source_id": "synthetic_fixture",
+            "source_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+            "version": "1",
+            "issued_at": "2026-11-11T00:00:00+00:00",
+            "available_at": "2026-11-11T00:00:00+00:00",
+            "missing_reason": null
+          }
+        },
+        "reference_price": {
+          "value": "250",
+          "unit": "CNY/MWh",
+          "evidence": {
+            "status": "simulation",
+            "source_id": "synthetic_fixture",
+            "source_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+            "version": "1",
+            "issued_at": "2026-11-11T00:00:00+00:00",
+            "available_at": "2026-11-11T00:00:00+00:00",
+            "missing_reason": null
+          }
+        },
+        "hourly_quantity": null,
+        "reference_market": "DA",
+        "reference_price_kind": "synthetic_price_fixture",
+        "reference_interval": {
+          "start": "2026-11-12T00:00:00+00:00",
+          "end": "2026-11-12T01:00:00+00:00"
+        },
+        "reference_selection_source": "explicit synthetic contract reference choice"
+      }
+    ],
+    "da": {
+      "market": "DA",
+      "run_id": "da",
+      "pricing_run_id": "dap",
+      "version": "1",
+      "publication_id": "pubda",
+      "key": {
+        "resource_id": "ES1",
+        "settlement_unit_id": "charge",
+        "node_id": "N1",
+        "direction": "charge",
+        "start": "2026-11-12T00:00:00+00:00",
+        "end": "2026-11-12T01:00:00+00:00"
+      },
+      "price": {
+        "value": "400",
+        "unit": "CNY/MWh",
+        "evidence": {
+          "status": "simulation",
+          "source_id": "synthetic_fixture",
+          "source_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+          "version": "1",
+          "issued_at": "2026-11-11T00:00:00+00:00",
+          "available_at": "2026-11-11T00:00:00+00:00",
+          "missing_reason": null
+        }
+      },
+      "quantity": {
+        "value": "-100",
+        "unit": "MWh",
+        "evidence": {
+          "status": "simulation",
+          "source_id": "synthetic_fixture",
+          "source_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+          "version": "1",
+          "issued_at": "2026-11-11T00:00:00+00:00",
+          "available_at": "2026-11-11T00:00:00+00:00",
+          "missing_reason": null
+        }
+      },
+      "price_publication_status": "final",
+      "price_kind": "synthetic_price_fixture"
+    },
+    "rt": {
+      "market": "RT",
+      "run_id": "rt",
+      "pricing_run_id": "rtp",
+      "version": "1",
+      "publication_id": "pubrt",
+      "key": {
+        "resource_id": "ES1",
+        "settlement_unit_id": "charge",
+        "node_id": "N1",
+        "direction": "charge",
+        "start": "2026-11-12T00:00:00+00:00",
+        "end": "2026-11-12T01:00:00+00:00"
+      },
+      "price": {
+        "value": "500",
+        "unit": "CNY/MWh",
+        "evidence": {
+          "status": "simulation",
+          "source_id": "synthetic_fixture",
+          "source_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+          "version": "1",
+          "issued_at": "2026-11-11T00:00:00+00:00",
+          "available_at": "2026-11-11T00:00:00+00:00",
+          "missing_reason": null
+        }
+      },
+      "quantity": null,
+      "price_publication_status": "final",
+      "price_kind": "synthetic_price_fixture"
+    },
+    "schema": "gd.settlement.r63.ledger.v1",
+    "authenticity": {
+      "status": "synthetic_declared",
+      "source": "R63 disclosed test fixture"
+    },
+    "account_mapping_evidence": {
+      "status": "simulation",
+      "source_id": "synthetic_fixture",
+      "source_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "version": "1",
+      "issued_at": "2026-11-11T00:00:00+00:00",
+      "available_at": "2026-11-11T00:00:00+00:00",
+      "missing_reason": null
+    },
+    "contract_inventory_evidence": {
+      "status": "simulation",
+      "source_id": "synthetic_fixture",
+      "source_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "version": "1",
+      "issued_at": "2026-11-11T00:00:00+00:00",
+      "available_at": "2026-11-11T00:00:00+00:00",
+      "missing_reason": null
+    },
+    "known_empty_contracts": false,
+    "meter_kind": "synthetic_meter_fixture"
+  }
+}

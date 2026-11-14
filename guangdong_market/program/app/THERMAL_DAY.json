@@ -1,0 +1,9 @@
+{
+  "bundle": "../research_results/thermal_DA_anchor_day_v9",
+  "manifest_sha256": "428a6c04d5e3a3194e9ebb8f9e9697e227b0b3afd30f755a514b3be66f8d839a",
+  "DA_identity": {
+    "run_id": "gd-760dddd43b9a4f24af0b58f1af0c4e8a",
+    "case_sha256": "c10e5cbfbe0f39f028d10cb2b2d30003e803033a3d883f4c753339bc9c1cdbe9",
+    "SCED_response_sha256": "615e7dafe88fc3d9efdc444f394014ab7d6112a88418122976eb0d6b9afb620a"
+  }
+}

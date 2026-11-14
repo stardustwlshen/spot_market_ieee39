@@ -1,0 +1,9 @@
+{
+  "status": "passed",
+  "native_calls": 0,
+  "AC_calls": 0,
+  "plan_call_mocked": true,
+  "event_price_default_off": true,
+  "independent_from_event_instruction_permission": true,
+  "profile_change_clears_confirmation": true
+}

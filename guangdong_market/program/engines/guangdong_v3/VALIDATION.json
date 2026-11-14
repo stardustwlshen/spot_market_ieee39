@@ -1,0 +1,15 @@
+{
+  "status": "pure_delivery_validation_passed",
+  "cwd": "/tmp",
+  "original_case_fresh_init": true,
+  "RT_PRICE_dependency_imports": true,
+  "all_import_manifest_paths_inside_delivery": true,
+  "small_model_columns": 1623,
+  "small_model_rows": 3073,
+  "reserve_synthetic_total_CNY": "600.00",
+  "mixed_AGC_pure_interface_loaded": true,
+  "native_calls": 0,
+  "AC_calls": 0,
+  "large_model_builds": 0,
+  "full96_current_pipeline": "running_no_completion_claim"
+}

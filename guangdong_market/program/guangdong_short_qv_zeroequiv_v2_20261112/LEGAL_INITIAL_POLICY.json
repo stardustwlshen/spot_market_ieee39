@@ -1,0 +1,34 @@
+{
+  "policy": "deterministic projection of original input thermal VG into existing legal interval, Q0 unchanged; no optimized future controls",
+  "controls": [
+    {
+      "id": "C1",
+      "original_VG": 0.982,
+      "legal_VG": 0.982
+    },
+    {
+      "id": "C2",
+      "original_VG": 0.9841,
+      "legal_VG": 0.9841
+    },
+    {
+      "id": "C3",
+      "original_VG": 1.0265,
+      "legal_VG": 1.0265
+    },
+    {
+      "id": "CCGT",
+      "original_VG": 1.0494,
+      "legal_VG": 1.0494
+    },
+    {
+      "id": "GT",
+      "original_VG": 1.0636,
+      "legal_VG": 1.06
+    }
+  ],
+  "source_mapping_sha256": "0c4b39bda379ae344ea70dca07a3076b98884d3135abb79491446ff6a57a8e98",
+  "source_response_sha256": "f036600aead22bea2e9b98767e1e967988f33566944800b60f8c3bed88b7401d",
+  "source_original_voltage_failure_preserved": true,
+  "not_claimed_operational_instruction": true
+}

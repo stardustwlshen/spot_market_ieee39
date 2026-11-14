@@ -1,0 +1,2 @@
+[console_scripts]
+gd-price = gd_price.cli:main

@@ -1,0 +1,2622 @@
+{
+  "schema": "gd.research.generic_rt.two_window_actual_summary.v1",
+  "status": "two_real_SCUC_fixed_SCED_pairs_accepted",
+  "rows": [
+    {
+      "window": 0,
+      "SCUC_status": "Optimal",
+      "SCUC_gap": 0.0,
+      "SCUC_objective": 832205.2512698917,
+      "SCED_status": "Optimal",
+      "SCED_objective": 832205.2512698907,
+      "max_fixed_prefix_drift": 0.0,
+      "SCED_full_KKT": {
+        "absolute_gap": 3.4924596548080444e-10,
+        "allowed_angle_column_names": [
+          "angle['6',206]",
+          "angle['6',253]",
+          "angle['6',254]",
+          "angle['6',255]",
+          "angle['6',259]"
+        ],
+        "angle_stationarity_tolerance": 1e-08,
+        "checks": "all rows and columns with fsum accumulation",
+        "dual_objective": 832205.2512698922,
+        "max_complementarity": 8.787045165566593e-11,
+        "max_dual_sign_violation": 1.9892512545618878e-09,
+        "max_free_angle_stationarity": 0.0,
+        "max_non_angle_dual_sign_violation": 1.9892512545618878e-09,
+        "max_primal_violation": 7.94386778579792e-12,
+        "objective_complementarity_tolerance": 0.0008422052512698926,
+        "passed": true,
+        "primal_objective": 832205.2512698926,
+        "raw_witness_unchanged": true,
+        "rows": 248256,
+        "scoped_angle_columns": [
+          {
+            "absolute_residual": 0.0,
+            "name": "angle['6',206]",
+            "stationarity_residual": 0.0
+          },
+          {
+            "absolute_residual": 0.0,
+            "name": "angle['6',253]",
+            "stationarity_residual": 0.0
+          },
+          {
+            "absolute_residual": 0.0,
+            "name": "angle['6',254]",
+            "stationarity_residual": 0.0
+          },
+          {
+            "absolute_residual": 0.0,
+            "name": "angle['6',255]",
+            "stationarity_residual": 0.0
+          },
+          {
+            "absolute_residual": 0.0,
+            "name": "angle['6',259]",
+            "stationarity_residual": 0.0
+          }
+        ],
+        "strict_legacy_1e_8_pass": true,
+        "variables": 264048,
+        "worst_free_angle": null
+      },
+      "storage_mode_differences_vs_DA": [
+        {
+          "resource": "ES1",
+          "index": 12,
+          "old_DA_mode": [
+            0,
+            1
+          ],
+          "new_RT_mode": [
+            1,
+            0
+          ],
+          "old_DA_power_mw": 33.333,
+          "new_RT_power_mw": -17.00837362783335,
+          "in_issued_first3": false
+        },
+        {
+          "resource": "ES1",
+          "index": 13,
+          "old_DA_mode": [
+            0,
+            1
+          ],
+          "new_RT_mode": [
+            1,
+            0
+          ],
+          "old_DA_power_mw": 33.333,
+          "new_RT_power_mw": -0.0,
+          "in_issued_first3": false
+        },
+        {
+          "resource": "ES1",
+          "index": 14,
+          "old_DA_mode": [
+            0,
+            1
+          ],
+          "new_RT_mode": [
+            1,
+            0
+          ],
+          "old_DA_power_mw": 33.333,
+          "new_RT_power_mw": -0.0,
+          "in_issued_first3": false
+        },
+        {
+          "resource": "ES1",
+          "index": 15,
+          "old_DA_mode": [
+            0,
+            1
+          ],
+          "new_RT_mode": [
+            1,
+            0
+          ],
+          "old_DA_power_mw": 33.333,
+          "new_RT_power_mw": -0.0,
+          "in_issued_first3": false
+        },
+        {
+          "resource": "ES1",
+          "index": 16,
+          "old_DA_mode": [
+            0,
+            1
+          ],
+          "new_RT_mode": [
+            0,
+            0
+          ],
+          "old_DA_power_mw": 33.333,
+          "new_RT_power_mw": -0.0,
+          "in_issued_first3": false
+        },
+        {
+          "resource": "ES1",
+          "index": 17,
+          "old_DA_mode": [
+            0,
+            1
+          ],
+          "new_RT_mode": [
+            1,
+            0
+          ],
+          "old_DA_power_mw": 33.333,
+          "new_RT_power_mw": -19.17250229199999,
+          "in_issued_first3": false
+        },
+        {
+          "resource": "ES1",
+          "index": 18,
+          "old_DA_mode": [
+            0,
+            1
+          ],
+          "new_RT_mode": [
+            1,
+            0
+          ],
+          "old_DA_power_mw": 16.655775962000728,
+          "new_RT_power_mw": -19.624391776666698,
+          "in_issued_first3": false
+        },
+        {
+          "resource": "ES1",
+          "index": 19,
+          "old_DA_mode": [
+            0,
+            1
+          ],
+          "new_RT_mode": [
+            1,
+            0
+          ],
+          "old_DA_power_mw": 33.333,
+          "new_RT_power_mw": -0.0,
+          "in_issued_first3": false
+        },
+        {
+          "resource": "ES1",
+          "index": 20,
+          "old_DA_mode": [
+            0,
+            1
+          ],
+          "new_RT_mode": [
+            1,
+            0
+          ],
+          "old_DA_power_mw": 33.333,
+          "new_RT_power_mw": -20.548840239333344,
+          "in_issued_first3": false
+        },
+        {
+          "resource": "ES1",
+          "index": 21,
+          "old_DA_mode": [
+            0,
+            1
+          ],
+          "new_RT_mode": [
+            1,
+            0
+          ],
+          "old_DA_power_mw": 33.333,
+          "new_RT_power_mw": -0.5858524201669866,
+          "in_issued_first3": false
+        },
+        {
+          "resource": "ES1",
+          "index": 22,
+          "old_DA_mode": [
+            0,
+            1
+          ],
+          "new_RT_mode": [
+            1,
+            0
+          ],
+          "old_DA_power_mw": 33.333,
+          "new_RT_power_mw": -21.508142257500026,
+          "in_issued_first3": false
+        },
+        {
+          "resource": "ES1",
+          "index": 23,
+          "old_DA_mode": [
+            0,
+            1
+          ],
+          "new_RT_mode": [
+            1,
+            0
+          ],
+          "old_DA_power_mw": 33.333,
+          "new_RT_power_mw": -0.0,
+          "in_issued_first3": false
+        },
+        {
+          "resource": "ES1",
+          "index": 24,
+          "old_DA_mode": [
+            0,
+            1
+          ],
+          "new_RT_mode": [
+            0,
+            0
+          ],
+          "old_DA_power_mw": -0.0,
+          "new_RT_power_mw": -0.0,
+          "in_issued_first3": false
+        },
+        {
+          "resource": "ES1",
+          "index": 25,
+          "old_DA_mode": [
+            0,
+            1
+          ],
+          "new_RT_mode": [
+            0,
+            0
+          ],
+          "old_DA_power_mw": 33.333,
+          "new_RT_power_mw": -0.0,
+          "in_issued_first3": false
+        },
+        {
+          "resource": "ES2",
+          "index": 12,
+          "old_DA_mode": [
+            0,
+            1
+          ],
+          "new_RT_mode": [
+            1,
+            0
+          ],
+          "old_DA_power_mw": 66.667,
+          "new_RT_power_mw": 0.0,
+          "in_issued_first3": false
+        },
+        {
+          "resource": "ES2",
+          "index": 13,
+          "old_DA_mode": [
+            0,
+            1
+          ],
+          "new_RT_mode": [
+            1,
+            0
+          ],
+          "old_DA_power_mw": 66.667,
+          "new_RT_power_mw": -39.96264443349713,
+          "in_issued_first3": false
+        },
+        {
+          "resource": "ES2",
+          "index": 14,
+          "old_DA_mode": [
+            0,
+            1
+          ],
+          "new_RT_mode": [
+            1,
+            0
+          ],
+          "old_DA_power_mw": 66.667,
+          "new_RT_power_mw": 0.0,
+          "in_issued_first3": false
+        },
+        {
+          "resource": "ES2",
+          "index": 15,
+          "old_DA_mode": [
+            0,
+            1
+          ],
+          "new_RT_mode": [
+            1,
+            0
+          ],
+          "old_DA_power_mw": 66.667,
+          "new_RT_power_mw": -10.643561157497288,
+          "in_issued_first3": false
+        },
+        {
+          "resource": "ES2",
+          "index": 16,
+          "old_DA_mode": [
+            0,
+            1
+          ],
+          "new_RT_mode": [
+            1,
+            0
+          ],
+          "old_DA_power_mw": 66.667,
+          "new_RT_power_mw": -20.548806024496116,
+          "in_issued_first3": false
+        },
+        {
+          "resource": "ES2",
+          "index": 17,
+          "old_DA_mode": [
+            0,
+            1
+          ],
+          "new_RT_mode": [
+            1,
+            0
+          ],
+          "old_DA_power_mw": 66.667,
+          "new_RT_power_mw": -11.281548599498308,
+          "in_issued_first3": false
+        },
+        {
+          "resource": "ES2",
+          "index": 18,
+          "old_DA_mode": [
+            0,
+            1
+          ],
+          "new_RT_mode": [
+            1,
+            0
+          ],
+          "old_DA_power_mw": 66.667,
+          "new_RT_power_mw": -66.667,
+          "in_issued_first3": false
+        },
+        {
+          "resource": "ES2",
+          "index": 19,
+          "old_DA_mode": [
+            0,
+            1
+          ],
+          "new_RT_mode": [
+            1,
+            0
+          ],
+          "old_DA_power_mw": 40.78067453600024,
+          "new_RT_power_mw": -66.667,
+          "in_issued_first3": false
+        },
+        {
+          "resource": "ES2",
+          "index": 20,
+          "old_DA_mode": [
+            0,
+            1
+          ],
+          "new_RT_mode": [
+            1,
+            0
+          ],
+          "old_DA_power_mw": 31.571573110001083,
+          "new_RT_power_mw": 0.0,
+          "in_issued_first3": false
+        },
+        {
+          "resource": "ES2",
+          "index": 21,
+          "old_DA_mode": [
+            0,
+            1
+          ],
+          "new_RT_mode": [
+            1,
+            0
+          ],
+          "old_DA_power_mw": 22.74814757983319,
+          "new_RT_power_mw": -66.667,
+          "in_issued_first3": false
+        },
+        {
+          "resource": "ES2",
+          "index": 22,
+          "old_DA_mode": [
+            0,
+            1
+          ],
+          "new_RT_mode": [
+            1,
+            0
+          ],
+          "old_DA_power_mw": 14.310397945499313,
+          "new_RT_power_mw": -66.667,
+          "in_issued_first3": false
+        },
+        {
+          "resource": "ES2",
+          "index": 23,
+          "old_DA_mode": [
+            0,
+            1
+          ],
+          "new_RT_mode": [
+            1,
+            0
+          ],
+          "old_DA_power_mw": 66.667,
+          "new_RT_power_mw": -66.667,
+          "in_issued_first3": false
+        },
+        {
+          "resource": "ES2",
+          "index": 24,
+          "old_DA_mode": [
+            0,
+            1
+          ],
+          "new_RT_mode": [
+            1,
+            0
+          ],
+          "old_DA_power_mw": 31.169868866000243,
+          "new_RT_power_mw": -66.667,
+          "in_issued_first3": false
+        },
+        {
+          "resource": "ES2",
+          "index": 25,
+          "old_DA_mode": [
+            0,
+            1
+          ],
+          "new_RT_mode": [
+            1,
+            0
+          ],
+          "old_DA_power_mw": -0.0,
+          "new_RT_power_mw": -66.667,
+          "in_issued_first3": false
+        },
+        {
+          "resource": "ES2",
+          "index": 26,
+          "old_DA_mode": [
+            0,
+            1
+          ],
+          "new_RT_mode": [
+            1,
+            0
+          ],
+          "old_DA_power_mw": 66.667,
+          "new_RT_power_mw": -57.431749645996774,
+          "in_issued_first3": false
+        },
+        {
+          "resource": "ES3",
+          "index": 12,
+          "old_DA_mode": [
+            0,
+            1
+          ],
+          "new_RT_mode": [
+            1,
+            0
+          ],
+          "old_DA_power_mw": 33.333,
+          "new_RT_power_mw": -33.333,
+          "in_issued_first3": false
+        },
+        {
+          "resource": "ES3",
+          "index": 13,
+          "old_DA_mode": [
+            0,
+            1
+          ],
+          "new_RT_mode": [
+            1,
+            0
+          ],
+          "old_DA_power_mw": 33.333,
+          "new_RT_power_mw": -33.333,
+          "in_issued_first3": false
+        },
+        {
+          "resource": "ES3",
+          "index": 14,
+          "old_DA_mode": [
+            0,
+            1
+          ],
+          "new_RT_mode": [
+            1,
+            0
+          ],
+          "old_DA_power_mw": 33.333,
+          "new_RT_power_mw": -33.333,
+          "in_issued_first3": false
+        },
+        {
+          "resource": "ES3",
+          "index": 15,
+          "old_DA_mode": [
+            0,
+            1
+          ],
+          "new_RT_mode": [
+            1,
+            0
+          ],
+          "old_DA_power_mw": 33.333,
+          "new_RT_power_mw": -33.333,
+          "in_issued_first3": false
+        },
+        {
+          "resource": "ES3",
+          "index": 16,
+          "old_DA_mode": [
+            0,
+            1
+          ],
+          "new_RT_mode": [
+            1,
+            0
+          ],
+          "old_DA_power_mw": 33.333,
+          "new_RT_power_mw": -33.333,
+          "in_issued_first3": false
+        },
+        {
+          "resource": "ES3",
+          "index": 17,
+          "old_DA_mode": [
+            0,
+            1
+          ],
+          "new_RT_mode": [
+            1,
+            0
+          ],
+          "old_DA_power_mw": 26.21294910849963,
+          "new_RT_power_mw": -33.333,
+          "in_issued_first3": false
+        },
+        {
+          "resource": "ES3",
+          "index": 18,
+          "old_DA_mode": [
+            0,
+            1
+          ],
+          "new_RT_mode": [
+            1,
+            0
+          ],
+          "old_DA_power_mw": 33.333,
+          "new_RT_power_mw": -33.333,
+          "in_issued_first3": false
+        },
+        {
+          "resource": "ES3",
+          "index": 19,
+          "old_DA_mode": [
+            0,
+            1
+          ],
+          "new_RT_mode": [
+            1,
+            0
+          ],
+          "old_DA_power_mw": 33.333,
+          "new_RT_power_mw": -33.333,
+          "in_issued_first3": false
+        },
+        {
+          "resource": "ES3",
+          "index": 20,
+          "old_DA_mode": [
+            0,
+            1
+          ],
+          "new_RT_mode": [
+            1,
+            0
+          ],
+          "old_DA_power_mw": 33.333,
+          "new_RT_power_mw": -33.333,
+          "in_issued_first3": false
+        },
+        {
+          "resource": "ES3",
+          "index": 21,
+          "old_DA_mode": [
+            0,
+            1
+          ],
+          "new_RT_mode": [
+            1,
+            0
+          ],
+          "old_DA_power_mw": 33.333,
+          "new_RT_power_mw": -33.333,
+          "in_issued_first3": false
+        },
+        {
+          "resource": "ES3",
+          "index": 22,
+          "old_DA_mode": [
+            0,
+            1
+          ],
+          "new_RT_mode": [
+            1,
+            0
+          ],
+          "old_DA_power_mw": 33.333,
+          "new_RT_power_mw": -33.333,
+          "in_issued_first3": false
+        },
+        {
+          "resource": "ES3",
+          "index": 23,
+          "old_DA_mode": [
+            0,
+            1
+          ],
+          "new_RT_mode": [
+            1,
+            0
+          ],
+          "old_DA_power_mw": -0.0,
+          "new_RT_power_mw": -33.333,
+          "in_issued_first3": false
+        },
+        {
+          "resource": "ES3",
+          "index": 24,
+          "old_DA_mode": [
+            0,
+            1
+          ],
+          "new_RT_mode": [
+            1,
+            0
+          ],
+          "old_DA_power_mw": 33.333,
+          "new_RT_power_mw": -33.333,
+          "in_issued_first3": false
+        },
+        {
+          "resource": "ES3",
+          "index": 25,
+          "old_DA_mode": [
+            0,
+            1
+          ],
+          "new_RT_mode": [
+            1,
+            0
+          ],
+          "old_DA_power_mw": 33.333,
+          "new_RT_power_mw": -33.333,
+          "in_issued_first3": false
+        },
+        {
+          "resource": "ES3",
+          "index": 26,
+          "old_DA_mode": [
+            0,
+            1
+          ],
+          "new_RT_mode": [
+            1,
+            0
+          ],
+          "old_DA_power_mw": -0.0,
+          "new_RT_power_mw": -33.333,
+          "in_issued_first3": false
+        },
+        {
+          "resource": "ES4",
+          "index": 12,
+          "old_DA_mode": [
+            0,
+            1
+          ],
+          "new_RT_mode": [
+            1,
+            0
+          ],
+          "old_DA_power_mw": 50.0,
+          "new_RT_power_mw": -12.468741278666187,
+          "in_issued_first3": false
+        },
+        {
+          "resource": "ES4",
+          "index": 13,
+          "old_DA_mode": [
+            0,
+            1
+          ],
+          "new_RT_mode": [
+            1,
+            0
+          ],
+          "old_DA_power_mw": 50.0,
+          "new_RT_power_mw": 0.0,
+          "in_issued_first3": false
+        },
+        {
+          "resource": "ES4",
+          "index": 14,
+          "old_DA_mode": [
+            0,
+            1
+          ],
+          "new_RT_mode": [
+            1,
+            0
+          ],
+          "old_DA_power_mw": 50.0,
+          "new_RT_power_mw": -50.0,
+          "in_issued_first3": false
+        },
+        {
+          "resource": "ES4",
+          "index": 15,
+          "old_DA_mode": [
+            0,
+            1
+          ],
+          "new_RT_mode": [
+            1,
+            0
+          ],
+          "old_DA_power_mw": 50.0,
+          "new_RT_power_mw": -50.0,
+          "in_issued_first3": false
+        },
+        {
+          "resource": "ES4",
+          "index": 16,
+          "old_DA_mode": [
+            0,
+            1
+          ],
+          "new_RT_mode": [
+            1,
+            0
+          ],
+          "old_DA_power_mw": 50.0,
+          "new_RT_power_mw": 0.0,
+          "in_issued_first3": false
+        },
+        {
+          "resource": "ES4",
+          "index": 17,
+          "old_DA_mode": [
+            0,
+            1
+          ],
+          "new_RT_mode": [
+            1,
+            0
+          ],
+          "old_DA_power_mw": 50.0,
+          "new_RT_power_mw": 0.0,
+          "in_issued_first3": false
+        },
+        {
+          "resource": "ES4",
+          "index": 18,
+          "old_DA_mode": [
+            0,
+            1
+          ],
+          "new_RT_mode": [
+            1,
+            0
+          ],
+          "old_DA_power_mw": 50.0,
+          "new_RT_power_mw": -3.7198322613323285,
+          "in_issued_first3": false
+        },
+        {
+          "resource": "ES4",
+          "index": 19,
+          "old_DA_mode": [
+            0,
+            1
+          ],
+          "new_RT_mode": [
+            1,
+            0
+          ],
+          "old_DA_power_mw": 50.0,
+          "new_RT_power_mw": -32.55332546399825,
+          "in_issued_first3": false
+        },
+        {
+          "resource": "ES4",
+          "index": 20,
+          "old_DA_mode": [
+            0,
+            1
+          ],
+          "new_RT_mode": [
+            1,
+            0
+          ],
+          "old_DA_power_mw": 50.0,
+          "new_RT_power_mw": -50.0,
+          "in_issued_first3": false
+        },
+        {
+          "resource": "ES4",
+          "index": 21,
+          "old_DA_mode": [
+            0,
+            1
+          ],
+          "new_RT_mode": [
+            1,
+            0
+          ],
+          "old_DA_power_mw": 50.0,
+          "new_RT_power_mw": 0.0,
+          "in_issued_first3": false
+        },
+        {
+          "resource": "ES4",
+          "index": 22,
+          "old_DA_mode": [
+            0,
+            1
+          ],
+          "new_RT_mode": [
+            1,
+            0
+          ],
+          "old_DA_power_mw": 50.0,
+          "new_RT_power_mw": -37.51545979699978,
+          "in_issued_first3": false
+        },
+        {
+          "resource": "ES4",
+          "index": 23,
+          "old_DA_mode": [
+            0,
+            1
+          ],
+          "new_RT_mode": [
+            1,
+            0
+          ],
+          "old_DA_power_mw": 50.0,
+          "new_RT_power_mw": -50.0,
+          "in_issued_first3": false
+        },
+        {
+          "resource": "ES4",
+          "index": 24,
+          "old_DA_mode": [
+            0,
+            1
+          ],
+          "new_RT_mode": [
+            1,
+            0
+          ],
+          "old_DA_power_mw": 50.0,
+          "new_RT_power_mw": -25.4971311339998,
+          "in_issued_first3": false
+        },
+        {
+          "resource": "ES4",
+          "index": 25,
+          "old_DA_mode": [
+            0,
+            1
+          ],
+          "new_RT_mode": [
+            1,
+            0
+          ],
+          "old_DA_power_mw": 50.0,
+          "new_RT_power_mw": -33.130940389999466,
+          "in_issued_first3": false
+        },
+        {
+          "resource": "ES4",
+          "index": 26,
+          "old_DA_mode": [
+            0,
+            1
+          ],
+          "new_RT_mode": [
+            1,
+            0
+          ],
+          "old_DA_power_mw": 50.0,
+          "new_RT_power_mw": -50.0,
+          "in_issued_first3": false
+        },
+        {
+          "resource": "ES5",
+          "index": 12,
+          "old_DA_mode": [
+            0,
+            1
+          ],
+          "new_RT_mode": [
+            1,
+            0
+          ],
+          "old_DA_power_mw": 50.0,
+          "new_RT_power_mw": 0.0,
+          "in_issued_first3": false
+        },
+        {
+          "resource": "ES5",
+          "index": 13,
+          "old_DA_mode": [
+            0,
+            1
+          ],
+          "new_RT_mode": [
+            1,
+            0
+          ],
+          "old_DA_power_mw": 50.0,
+          "new_RT_power_mw": 0.0,
+          "in_issued_first3": false
+        },
+        {
+          "resource": "ES5",
+          "index": 14,
+          "old_DA_mode": [
+            0,
+            1
+          ],
+          "new_RT_mode": [
+            1,
+            0
+          ],
+          "old_DA_power_mw": 50.0,
+          "new_RT_power_mw": -0.4481739604998296,
+          "in_issued_first3": false
+        },
+        {
+          "resource": "ES5",
+          "index": 15,
+          "old_DA_mode": [
+            0,
+            1
+          ],
+          "new_RT_mode": [
+            1,
+            0
+          ],
+          "old_DA_power_mw": 50.0,
+          "new_RT_power_mw": 0.0,
+          "in_issued_first3": false
+        },
+        {
+          "resource": "ES5",
+          "index": 16,
+          "old_DA_mode": [
+            0,
+            1
+          ],
+          "new_RT_mode": [
+            1,
+            0
+          ],
+          "old_DA_power_mw": 50.0,
+          "new_RT_power_mw": -50.0,
+          "in_issued_first3": false
+        },
+        {
+          "resource": "ES5",
+          "index": 17,
+          "old_DA_mode": [
+            0,
+            1
+          ],
+          "new_RT_mode": [
+            1,
+            0
+          ],
+          "old_DA_power_mw": 50.0,
+          "new_RT_power_mw": -50.0,
+          "in_issued_first3": false
+        },
+        {
+          "resource": "ES5",
+          "index": 18,
+          "old_DA_mode": [
+            0,
+            1
+          ],
+          "new_RT_mode": [
+            1,
+            0
+          ],
+          "old_DA_power_mw": 50.0,
+          "new_RT_power_mw": 0.0,
+          "in_issued_first3": false
+        },
+        {
+          "resource": "ES5",
+          "index": 19,
+          "old_DA_mode": [
+            0,
+            1
+          ],
+          "new_RT_mode": [
+            1,
+            0
+          ],
+          "old_DA_power_mw": 50.0,
+          "new_RT_power_mw": 0.0,
+          "in_issued_first3": false
+        },
+        {
+          "resource": "ES5",
+          "index": 20,
+          "old_DA_mode": [
+            0,
+            1
+          ],
+          "new_RT_mode": [
+            1,
+            0
+          ],
+          "old_DA_power_mw": 50.0,
+          "new_RT_power_mw": -37.88058665066737,
+          "in_issued_first3": false
+        },
+        {
+          "resource": "ES5",
+          "index": 21,
+          "old_DA_mode": [
+            0,
+            1
+          ],
+          "new_RT_mode": [
+            1,
+            0
+          ],
+          "old_DA_power_mw": 50.0,
+          "new_RT_power_mw": -50.0,
+          "in_issued_first3": false
+        },
+        {
+          "resource": "ES5",
+          "index": 22,
+          "old_DA_mode": [
+            0,
+            1
+          ],
+          "new_RT_mode": [
+            1,
+            0
+          ],
+          "old_DA_power_mw": 50.0,
+          "new_RT_power_mw": 0.0,
+          "in_issued_first3": false
+        },
+        {
+          "resource": "ES5",
+          "index": 23,
+          "old_DA_mode": [
+            0,
+            1
+          ],
+          "new_RT_mode": [
+            1,
+            0
+          ],
+          "old_DA_power_mw": 50.0,
+          "new_RT_power_mw": -17.461351688835705,
+          "in_issued_first3": false
+        },
+        {
+          "resource": "ES5",
+          "index": 24,
+          "old_DA_mode": [
+            0,
+            1
+          ],
+          "new_RT_mode": [
+            1,
+            0
+          ],
+          "old_DA_power_mw": 50.0,
+          "new_RT_power_mw": -50.0,
+          "in_issued_first3": false
+        },
+        {
+          "resource": "ES5",
+          "index": 25,
+          "old_DA_mode": [
+            0,
+            1
+          ],
+          "new_RT_mode": [
+            1,
+            0
+          ],
+          "old_DA_power_mw": 50.0,
+          "new_RT_power_mw": -50.0,
+          "in_issued_first3": false
+        },
+        {
+          "resource": "ES5",
+          "index": 26,
+          "old_DA_mode": [
+            0,
+            1
+          ],
+          "new_RT_mode": [
+            1,
+            0
+          ],
+          "old_DA_power_mw": 50.0,
+          "new_RT_power_mw": -50.0,
+          "in_issued_first3": false
+        }
+      ],
+      "issued_storage_mode_difference_count": 0,
+      "near24_thermal_new_start_count": 0,
+      "near24_thermal_stop_count": 0,
+      "acceptance_sha256": "52dcb8b24917acbaa73c5da56deeda35e995f764cda46802db6cd5e9de0c7e59"
+    },
+    {
+      "window": 1,
+      "SCUC_status": "Optimal",
+      "SCUC_gap": 0.0,
+      "SCUC_objective": 810425.4337179221,
+      "SCED_status": "Optimal",
+      "SCED_objective": 810425.4337179199,
+      "max_fixed_prefix_drift": 0.0,
+      "SCED_full_KKT": {
+        "absolute_gap": 1.1641532182693481e-10,
+        "allowed_angle_column_names": [
+          "angle['6',206]",
+          "angle['6',253]",
+          "angle['6',254]",
+          "angle['6',255]",
+          "angle['6',259]"
+        ],
+        "angle_stationarity_tolerance": 1e-08,
+        "checks": "all rows and columns with fsum accumulation",
+        "dual_objective": 810425.4337179221,
+        "max_complementarity": 1.1356841393232342e-10,
+        "max_dual_sign_violation": 2.5295100223427587e-09,
+        "max_free_angle_stationarity": 0.0,
+        "max_non_angle_dual_sign_violation": 2.5295100223427587e-09,
+        "max_primal_violation": 4.6426862354564946e-11,
+        "objective_complementarity_tolerance": 0.0008204254337179223,
+        "passed": true,
+        "primal_objective": 810425.4337179222,
+        "raw_witness_unchanged": true,
+        "rows": 248241,
+        "scoped_angle_columns": [
+          {
+            "absolute_residual": 0.0,
+            "name": "angle['6',206]",
+            "stationarity_residual": 0.0
+          },
+          {
+            "absolute_residual": 0.0,
+            "name": "angle['6',253]",
+            "stationarity_residual": 0.0
+          },
+          {
+            "absolute_residual": 0.0,
+            "name": "angle['6',254]",
+            "stationarity_residual": 0.0
+          },
+          {
+            "absolute_residual": 0.0,
+            "name": "angle['6',255]",
+            "stationarity_residual": 0.0
+          },
+          {
+            "absolute_residual": 0.0,
+            "name": "angle['6',259]",
+            "stationarity_residual": 0.0
+          }
+        ],
+        "strict_legacy_1e_8_pass": true,
+        "variables": 264048,
+        "worst_free_angle": null
+      },
+      "storage_mode_differences_vs_DA": [
+        {
+          "resource": "ES1",
+          "index": 12,
+          "old_DA_mode": [
+            0,
+            1
+          ],
+          "new_RT_mode": [
+            1,
+            0
+          ],
+          "old_DA_power_mw": 33.333,
+          "new_RT_power_mw": -0.0,
+          "in_issued_first3": false
+        },
+        {
+          "resource": "ES1",
+          "index": 13,
+          "old_DA_mode": [
+            0,
+            1
+          ],
+          "new_RT_mode": [
+            1,
+            0
+          ],
+          "old_DA_power_mw": 33.333,
+          "new_RT_power_mw": -0.0,
+          "in_issued_first3": false
+        },
+        {
+          "resource": "ES1",
+          "index": 14,
+          "old_DA_mode": [
+            0,
+            1
+          ],
+          "new_RT_mode": [
+            1,
+            0
+          ],
+          "old_DA_power_mw": 33.333,
+          "new_RT_power_mw": -0.0,
+          "in_issued_first3": false
+        },
+        {
+          "resource": "ES1",
+          "index": 15,
+          "old_DA_mode": [
+            0,
+            1
+          ],
+          "new_RT_mode": [
+            1,
+            0
+          ],
+          "old_DA_power_mw": 33.333,
+          "new_RT_power_mw": -0.0,
+          "in_issued_first3": false
+        },
+        {
+          "resource": "ES1",
+          "index": 16,
+          "old_DA_mode": [
+            0,
+            1
+          ],
+          "new_RT_mode": [
+            1,
+            0
+          ],
+          "old_DA_power_mw": 33.333,
+          "new_RT_power_mw": -18.73094755400001,
+          "in_issued_first3": false
+        },
+        {
+          "resource": "ES1",
+          "index": 17,
+          "old_DA_mode": [
+            0,
+            1
+          ],
+          "new_RT_mode": [
+            1,
+            0
+          ],
+          "old_DA_power_mw": 33.333,
+          "new_RT_power_mw": -0.0,
+          "in_issued_first3": false
+        },
+        {
+          "resource": "ES1",
+          "index": 18,
+          "old_DA_mode": [
+            0,
+            1
+          ],
+          "new_RT_mode": [
+            1,
+            0
+          ],
+          "old_DA_power_mw": 16.655775962000728,
+          "new_RT_power_mw": -19.624391776666698,
+          "in_issued_first3": false
+        },
+        {
+          "resource": "ES1",
+          "index": 19,
+          "old_DA_mode": [
+            0,
+            1
+          ],
+          "new_RT_mode": [
+            1,
+            0
+          ],
+          "old_DA_power_mw": 33.333,
+          "new_RT_power_mw": -20.086616007999964,
+          "in_issued_first3": false
+        },
+        {
+          "resource": "ES1",
+          "index": 20,
+          "old_DA_mode": [
+            0,
+            1
+          ],
+          "new_RT_mode": [
+            1,
+            0
+          ],
+          "old_DA_power_mw": 33.333,
+          "new_RT_power_mw": -0.0,
+          "in_issued_first3": false
+        },
+        {
+          "resource": "ES1",
+          "index": 21,
+          "old_DA_mode": [
+            0,
+            1
+          ],
+          "new_RT_mode": [
+            1,
+            0
+          ],
+          "old_DA_power_mw": 33.333,
+          "new_RT_power_mw": -0.0,
+          "in_issued_first3": false
+        },
+        {
+          "resource": "ES1",
+          "index": 22,
+          "old_DA_mode": [
+            0,
+            1
+          ],
+          "new_RT_mode": [
+            1,
+            0
+          ],
+          "old_DA_power_mw": 33.333,
+          "new_RT_power_mw": -21.508142257500026,
+          "in_issued_first3": false
+        },
+        {
+          "resource": "ES1",
+          "index": 23,
+          "old_DA_mode": [
+            0,
+            1
+          ],
+          "new_RT_mode": [
+            1,
+            0
+          ],
+          "old_DA_power_mw": 33.333,
+          "new_RT_power_mw": -0.0,
+          "in_issued_first3": false
+        },
+        {
+          "resource": "ES1",
+          "index": 24,
+          "old_DA_mode": [
+            0,
+            1
+          ],
+          "new_RT_mode": [
+            1,
+            0
+          ],
+          "old_DA_power_mw": -0.0,
+          "new_RT_power_mw": -22.49159578483335,
+          "in_issued_first3": false
+        },
+        {
+          "resource": "ES1",
+          "index": 25,
+          "old_DA_mode": [
+            0,
+            1
+          ],
+          "new_RT_mode": [
+            1,
+            0
+          ],
+          "old_DA_power_mw": 33.333,
+          "new_RT_power_mw": -23.002123034500016,
+          "in_issued_first3": false
+        },
+        {
+          "resource": "ES1",
+          "index": 26,
+          "old_DA_mode": [
+            0,
+            1
+          ],
+          "new_RT_mode": [
+            1,
+            0
+          ],
+          "old_DA_power_mw": -0.0,
+          "new_RT_power_mw": -0.0,
+          "in_issued_first3": false
+        },
+        {
+          "resource": "ES1",
+          "index": 27,
+          "old_DA_mode": [
+            0,
+            1
+          ],
+          "new_RT_mode": [
+            0,
+            0
+          ],
+          "old_DA_power_mw": 24.134537310661795,
+          "new_RT_power_mw": -0.0,
+          "in_issued_first3": false
+        },
+        {
+          "resource": "ES1",
+          "index": 28,
+          "old_DA_mode": [
+            0,
+            1
+          ],
+          "new_RT_mode": [
+            1,
+            0
+          ],
+          "old_DA_power_mw": 10.534245109337219,
+          "new_RT_power_mw": -24.572838294999997,
+          "in_issued_first3": false
+        },
+        {
+          "resource": "ES1",
+          "index": 29,
+          "old_DA_mode": [
+            0,
+            1
+          ],
+          "new_RT_mode": [
+            1,
+            0
+          ],
+          "old_DA_power_mw": 33.333,
+          "new_RT_power_mw": -11.68072121816715,
+          "in_issued_first3": false
+        },
+        {
+          "resource": "ES2",
+          "index": 12,
+          "old_DA_mode": [
+            0,
+            1
+          ],
+          "new_RT_mode": [
+            1,
+            0
+          ],
+          "old_DA_power_mw": 66.667,
+          "new_RT_power_mw": 0.0,
+          "in_issued_first3": false
+        },
+        {
+          "resource": "ES2",
+          "index": 13,
+          "old_DA_mode": [
+            0,
+            1
+          ],
+          "new_RT_mode": [
+            1,
+            0
+          ],
+          "old_DA_power_mw": 66.667,
+          "new_RT_power_mw": -39.96264443349992,
+          "in_issued_first3": false
+        },
+        {
+          "resource": "ES2",
+          "index": 14,
+          "old_DA_mode": [
+            0,
+            1
+          ],
+          "new_RT_mode": [
+            1,
+            0
+          ],
+          "old_DA_power_mw": 66.667,
+          "new_RT_power_mw": -0.4481739605003554,
+          "in_issued_first3": false
+        },
+        {
+          "resource": "ES2",
+          "index": 15,
+          "old_DA_mode": [
+            0,
+            1
+          ],
+          "new_RT_mode": [
+            1,
+            0
+          ],
+          "old_DA_power_mw": 66.667,
+          "new_RT_power_mw": -10.643561157498254,
+          "in_issued_first3": false
+        },
+        {
+          "resource": "ES2",
+          "index": 16,
+          "old_DA_mode": [
+            0,
+            1
+          ],
+          "new_RT_mode": [
+            1,
+            0
+          ],
+          "old_DA_power_mw": 66.667,
+          "new_RT_power_mw": -1.8178584705006244,
+          "in_issued_first3": false
+        },
+        {
+          "resource": "ES2",
+          "index": 17,
+          "old_DA_mode": [
+            0,
+            1
+          ],
+          "new_RT_mode": [
+            1,
+            0
+          ],
+          "old_DA_power_mw": 66.667,
+          "new_RT_power_mw": -66.667,
+          "in_issued_first3": false
+        },
+        {
+          "resource": "ES2",
+          "index": 18,
+          "old_DA_mode": [
+            0,
+            1
+          ],
+          "new_RT_mode": [
+            1,
+            0
+          ],
+          "old_DA_power_mw": 66.667,
+          "new_RT_power_mw": 0.0,
+          "in_issued_first3": false
+        },
+        {
+          "resource": "ES2",
+          "index": 19,
+          "old_DA_mode": [
+            0,
+            1
+          ],
+          "new_RT_mode": [
+            1,
+            0
+          ],
+          "old_DA_power_mw": 40.78067453600024,
+          "new_RT_power_mw": -29.13370945600144,
+          "in_issued_first3": false
+        },
+        {
+          "resource": "ES2",
+          "index": 20,
+          "old_DA_mode": [
+            0,
+            1
+          ],
+          "new_RT_mode": [
+            1,
+            0
+          ],
+          "old_DA_power_mw": 31.571573110001083,
+          "new_RT_power_mw": -58.429426890003214,
+          "in_issued_first3": false
+        },
+        {
+          "resource": "ES2",
+          "index": 21,
+          "old_DA_mode": [
+            0,
+            1
+          ],
+          "new_RT_mode": [
+            1,
+            0
+          ],
+          "old_DA_power_mw": 22.74814757983319,
+          "new_RT_power_mw": -66.667,
+          "in_issued_first3": false
+        },
+        {
+          "resource": "ES2",
+          "index": 22,
+          "old_DA_mode": [
+            0,
+            1
+          ],
+          "new_RT_mode": [
+            1,
+            0
+          ],
+          "old_DA_power_mw": 14.310397945499313,
+          "new_RT_power_mw": -4.182459796999666,
+          "in_issued_first3": false
+        },
+        {
+          "resource": "ES2",
+          "index": 23,
+          "old_DA_mode": [
+            0,
+            1
+          ],
+          "new_RT_mode": [
+            1,
+            0
+          ],
+          "old_DA_power_mw": 66.667,
+          "new_RT_power_mw": -66.667,
+          "in_issued_first3": false
+        },
+        {
+          "resource": "ES2",
+          "index": 24,
+          "old_DA_mode": [
+            0,
+            1
+          ],
+          "new_RT_mode": [
+            1,
+            0
+          ],
+          "old_DA_power_mw": 31.169868866000243,
+          "new_RT_power_mw": -66.667,
+          "in_issued_first3": false
+        },
+        {
+          "resource": "ES2",
+          "index": 25,
+          "old_DA_mode": [
+            0,
+            1
+          ],
+          "new_RT_mode": [
+            1,
+            0
+          ],
+          "old_DA_power_mw": -0.0,
+          "new_RT_power_mw": -66.667,
+          "in_issued_first3": false
+        },
+        {
+          "resource": "ES2",
+          "index": 26,
+          "old_DA_mode": [
+            0,
+            1
+          ],
+          "new_RT_mode": [
+            1,
+            0
+          ],
+          "old_DA_power_mw": 66.667,
+          "new_RT_power_mw": -66.667,
+          "in_issued_first3": false
+        },
+        {
+          "resource": "ES2",
+          "index": 27,
+          "old_DA_mode": [
+            0,
+            1
+          ],
+          "new_RT_mode": [
+            1,
+            0
+          ],
+          "old_DA_power_mw": 17.86399502650471,
+          "new_RT_power_mw": -64.66846766283159,
+          "in_issued_first3": false
+        },
+        {
+          "resource": "ES2",
+          "index": 28,
+          "old_DA_mode": [
+            0,
+            1
+          ],
+          "new_RT_mode": [
+            1,
+            0
+          ],
+          "old_DA_power_mw": 66.667,
+          "new_RT_power_mw": -66.667,
+          "in_issued_first3": false
+        },
+        {
+          "resource": "ES2",
+          "index": 29,
+          "old_DA_mode": [
+            0,
+            1
+          ],
+          "new_RT_mode": [
+            1,
+            0
+          ],
+          "old_DA_power_mw": -0.0,
+          "new_RT_power_mw": -66.667,
+          "in_issued_first3": false
+        },
+        {
+          "resource": "ES3",
+          "index": 12,
+          "old_DA_mode": [
+            0,
+            1
+          ],
+          "new_RT_mode": [
+            1,
+            0
+          ],
+          "old_DA_power_mw": 33.333,
+          "new_RT_power_mw": -33.333,
+          "in_issued_first3": false
+        },
+        {
+          "resource": "ES3",
+          "index": 13,
+          "old_DA_mode": [
+            0,
+            1
+          ],
+          "new_RT_mode": [
+            1,
+            0
+          ],
+          "old_DA_power_mw": 33.333,
+          "new_RT_power_mw": -33.333,
+          "in_issued_first3": false
+        },
+        {
+          "resource": "ES3",
+          "index": 14,
+          "old_DA_mode": [
+            0,
+            1
+          ],
+          "new_RT_mode": [
+            1,
+            0
+          ],
+          "old_DA_power_mw": 33.333,
+          "new_RT_power_mw": -33.333,
+          "in_issued_first3": false
+        },
+        {
+          "resource": "ES3",
+          "index": 15,
+          "old_DA_mode": [
+            0,
+            1
+          ],
+          "new_RT_mode": [
+            1,
+            0
+          ],
+          "old_DA_power_mw": 33.333,
+          "new_RT_power_mw": -33.333,
+          "in_issued_first3": false
+        },
+        {
+          "resource": "ES3",
+          "index": 16,
+          "old_DA_mode": [
+            0,
+            1
+          ],
+          "new_RT_mode": [
+            1,
+            0
+          ],
+          "old_DA_power_mw": 33.333,
+          "new_RT_power_mw": -33.333,
+          "in_issued_first3": false
+        },
+        {
+          "resource": "ES3",
+          "index": 17,
+          "old_DA_mode": [
+            0,
+            1
+          ],
+          "new_RT_mode": [
+            1,
+            0
+          ],
+          "old_DA_power_mw": 26.21294910849963,
+          "new_RT_power_mw": -33.333,
+          "in_issued_first3": false
+        },
+        {
+          "resource": "ES3",
+          "index": 18,
+          "old_DA_mode": [
+            0,
+            1
+          ],
+          "new_RT_mode": [
+            1,
+            0
+          ],
+          "old_DA_power_mw": 33.333,
+          "new_RT_power_mw": -33.333,
+          "in_issued_first3": false
+        },
+        {
+          "resource": "ES3",
+          "index": 19,
+          "old_DA_mode": [
+            0,
+            1
+          ],
+          "new_RT_mode": [
+            1,
+            0
+          ],
+          "old_DA_power_mw": 33.333,
+          "new_RT_power_mw": -33.333,
+          "in_issued_first3": false
+        },
+        {
+          "resource": "ES3",
+          "index": 20,
+          "old_DA_mode": [
+            0,
+            1
+          ],
+          "new_RT_mode": [
+            1,
+            0
+          ],
+          "old_DA_power_mw": 33.333,
+          "new_RT_power_mw": -33.333,
+          "in_issued_first3": false
+        },
+        {
+          "resource": "ES3",
+          "index": 21,
+          "old_DA_mode": [
+            0,
+            1
+          ],
+          "new_RT_mode": [
+            1,
+            0
+          ],
+          "old_DA_power_mw": 33.333,
+          "new_RT_power_mw": -33.333,
+          "in_issued_first3": false
+        },
+        {
+          "resource": "ES3",
+          "index": 22,
+          "old_DA_mode": [
+            0,
+            1
+          ],
+          "new_RT_mode": [
+            1,
+            0
+          ],
+          "old_DA_power_mw": 33.333,
+          "new_RT_power_mw": -33.333,
+          "in_issued_first3": false
+        },
+        {
+          "resource": "ES3",
+          "index": 23,
+          "old_DA_mode": [
+            0,
+            1
+          ],
+          "new_RT_mode": [
+            1,
+            0
+          ],
+          "old_DA_power_mw": -0.0,
+          "new_RT_power_mw": -33.333,
+          "in_issued_first3": false
+        },
+        {
+          "resource": "ES3",
+          "index": 24,
+          "old_DA_mode": [
+            0,
+            1
+          ],
+          "new_RT_mode": [
+            1,
+            0
+          ],
+          "old_DA_power_mw": 33.333,
+          "new_RT_power_mw": -33.333,
+          "in_issued_first3": false
+        },
+        {
+          "resource": "ES3",
+          "index": 25,
+          "old_DA_mode": [
+            0,
+            1
+          ],
+          "new_RT_mode": [
+            1,
+            0
+          ],
+          "old_DA_power_mw": 33.333,
+          "new_RT_power_mw": -33.333,
+          "in_issued_first3": false
+        },
+        {
+          "resource": "ES3",
+          "index": 26,
+          "old_DA_mode": [
+            0,
+            1
+          ],
+          "new_RT_mode": [
+            1,
+            0
+          ],
+          "old_DA_power_mw": -0.0,
+          "new_RT_power_mw": -33.333,
+          "in_issued_first3": false
+        },
+        {
+          "resource": "ES3",
+          "index": 27,
+          "old_DA_mode": [
+            0,
+            1
+          ],
+          "new_RT_mode": [
+            1,
+            0
+          ],
+          "old_DA_power_mw": -0.0,
+          "new_RT_power_mw": -33.333,
+          "in_issued_first3": false
+        },
+        {
+          "resource": "ES3",
+          "index": 28,
+          "old_DA_mode": [
+            0,
+            1
+          ],
+          "new_RT_mode": [
+            1,
+            0
+          ],
+          "old_DA_power_mw": -0.0,
+          "new_RT_power_mw": -33.333,
+          "in_issued_first3": false
+        },
+        {
+          "resource": "ES3",
+          "index": 29,
+          "old_DA_mode": [
+            0,
+            1
+          ],
+          "new_RT_mode": [
+            1,
+            0
+          ],
+          "old_DA_power_mw": -0.0,
+          "new_RT_power_mw": -33.333,
+          "in_issued_first3": false
+        },
+        {
+          "resource": "ES4",
+          "index": 12,
+          "old_DA_mode": [
+            0,
+            1
+          ],
+          "new_RT_mode": [
+            1,
+            0
+          ],
+          "old_DA_power_mw": 50.0,
+          "new_RT_power_mw": -29.47711490649857,
+          "in_issued_first3": false
+        },
+        {
+          "resource": "ES4",
+          "index": 13,
+          "old_DA_mode": [
+            0,
+            1
+          ],
+          "new_RT_mode": [
+            1,
+            0
+          ],
+          "old_DA_power_mw": 50.0,
+          "new_RT_power_mw": 0.0,
+          "in_issued_first3": false
+        },
+        {
+          "resource": "ES4",
+          "index": 14,
+          "old_DA_mode": [
+            0,
+            1
+          ],
+          "new_RT_mode": [
+            1,
+            0
+          ],
+          "old_DA_power_mw": 50.0,
+          "new_RT_power_mw": -50.0,
+          "in_issued_first3": false
+        },
+        {
+          "resource": "ES4",
+          "index": 15,
+          "old_DA_mode": [
+            0,
+            1
+          ],
+          "new_RT_mode": [
+            1,
+            0
+          ],
+          "old_DA_power_mw": 50.0,
+          "new_RT_power_mw": 0.0,
+          "in_issued_first3": false
+        },
+        {
+          "resource": "ES4",
+          "index": 16,
+          "old_DA_mode": [
+            0,
+            1
+          ],
+          "new_RT_mode": [
+            1,
+            0
+          ],
+          "old_DA_power_mw": 50.0,
+          "new_RT_power_mw": 0.0,
+          "in_issued_first3": false
+        },
+        {
+          "resource": "ES4",
+          "index": 17,
+          "old_DA_mode": [
+            0,
+            1
+          ],
+          "new_RT_mode": [
+            1,
+            0
+          ],
+          "old_DA_power_mw": 50.0,
+          "new_RT_power_mw": -13.787050891500542,
+          "in_issued_first3": false
+        },
+        {
+          "resource": "ES4",
+          "index": 18,
+          "old_DA_mode": [
+            0,
+            1
+          ],
+          "new_RT_mode": [
+            1,
+            0
+          ],
+          "old_DA_power_mw": 50.0,
+          "new_RT_power_mw": -20.386832261334064,
+          "in_issued_first3": false
+        },
+        {
+          "resource": "ES4",
+          "index": 19,
+          "old_DA_mode": [
+            0,
+            1
+          ],
+          "new_RT_mode": [
+            0,
+            0
+          ],
+          "old_DA_power_mw": 50.0,
+          "new_RT_power_mw": -0.0,
+          "in_issued_first3": false
+        },
+        {
+          "resource": "ES4",
+          "index": 20,
+          "old_DA_mode": [
+            0,
+            1
+          ],
+          "new_RT_mode": [
+            1,
+            0
+          ],
+          "old_DA_power_mw": 50.0,
+          "new_RT_power_mw": -50.0,
+          "in_issued_first3": false
+        },
+        {
+          "resource": "ES4",
+          "index": 21,
+          "old_DA_mode": [
+            0,
+            1
+          ],
+          "new_RT_mode": [
+            1,
+            0
+          ],
+          "old_DA_power_mw": 50.0,
+          "new_RT_power_mw": -50.0,
+          "in_issued_first3": false
+        },
+        {
+          "resource": "ES4",
+          "index": 22,
+          "old_DA_mode": [
+            0,
+            1
+          ],
+          "new_RT_mode": [
+            1,
+            0
+          ],
+          "old_DA_power_mw": 50.0,
+          "new_RT_power_mw": -50.0,
+          "in_issued_first3": false
+        },
+        {
+          "resource": "ES4",
+          "index": 23,
+          "old_DA_mode": [
+            0,
+            1
+          ],
+          "new_RT_mode": [
+            1,
+            0
+          ],
+          "old_DA_power_mw": 50.0,
+          "new_RT_power_mw": -17.461351688834327,
+          "in_issued_first3": false
+        },
+        {
+          "resource": "ES4",
+          "index": 24,
+          "old_DA_mode": [
+            0,
+            1
+          ],
+          "new_RT_mode": [
+            1,
+            0
+          ],
+          "old_DA_power_mw": 50.0,
+          "new_RT_power_mw": -3.0055353491663936,
+          "in_issued_first3": false
+        },
+        {
+          "resource": "ES4",
+          "index": 25,
+          "old_DA_mode": [
+            0,
+            1
+          ],
+          "new_RT_mode": [
+            1,
+            0
+          ],
+          "old_DA_power_mw": 50.0,
+          "new_RT_power_mw": -10.128817355498711,
+          "in_issued_first3": false
+        },
+        {
+          "resource": "ES4",
+          "index": 26,
+          "old_DA_mode": [
+            0,
+            1
+          ],
+          "new_RT_mode": [
+            1,
+            0
+          ],
+          "old_DA_power_mw": 50.0,
+          "new_RT_power_mw": -50.0,
+          "in_issued_first3": false
+        },
+        {
+          "resource": "ES4",
+          "index": 27,
+          "old_DA_mode": [
+            0,
+            1
+          ],
+          "new_RT_mode": [
+            1,
+            0
+          ],
+          "old_DA_power_mw": 50.0,
+          "new_RT_power_mw": -50.0,
+          "in_issued_first3": false
+        },
+        {
+          "resource": "ES4",
+          "index": 28,
+          "old_DA_mode": [
+            0,
+            1
+          ],
+          "new_RT_mode": [
+            1,
+            0
+          ],
+          "old_DA_power_mw": 50.0,
+          "new_RT_power_mw": -50.0,
+          "in_issued_first3": false
+        },
+        {
+          "resource": "ES4",
+          "index": 29,
+          "old_DA_mode": [
+            0,
+            1
+          ],
+          "new_RT_mode": [
+            1,
+            0
+          ],
+          "old_DA_power_mw": 50.0,
+          "new_RT_power_mw": -50.0,
+          "in_issued_first3": false
+        },
+        {
+          "resource": "ES5",
+          "index": 12,
+          "old_DA_mode": [
+            0,
+            1
+          ],
+          "new_RT_mode": [
+            1,
+            0
+          ],
+          "old_DA_power_mw": 50.0,
+          "new_RT_power_mw": -0.0,
+          "in_issued_first3": false
+        },
+        {
+          "resource": "ES5",
+          "index": 13,
+          "old_DA_mode": [
+            0,
+            1
+          ],
+          "new_RT_mode": [
+            1,
+            0
+          ],
+          "old_DA_power_mw": 50.0,
+          "new_RT_power_mw": 0.0,
+          "in_issued_first3": false
+        },
+        {
+          "resource": "ES5",
+          "index": 14,
+          "old_DA_mode": [
+            0,
+            1
+          ],
+          "new_RT_mode": [
+            1,
+            0
+          ],
+          "old_DA_power_mw": 50.0,
+          "new_RT_power_mw": 0.0,
+          "in_issued_first3": false
+        },
+        {
+          "resource": "ES5",
+          "index": 15,
+          "old_DA_mode": [
+            0,
+            1
+          ],
+          "new_RT_mode": [
+            1,
+            0
+          ],
+          "old_DA_power_mw": 50.0,
+          "new_RT_power_mw": -50.0,
+          "in_issued_first3": false
+        },
+        {
+          "resource": "ES5",
+          "index": 16,
+          "old_DA_mode": [
+            0,
+            1
+          ],
+          "new_RT_mode": [
+            1,
+            0
+          ],
+          "old_DA_power_mw": 50.0,
+          "new_RT_power_mw": -50.0,
+          "in_issued_first3": false
+        },
+        {
+          "resource": "ES5",
+          "index": 17,
+          "old_DA_mode": [
+            0,
+            1
+          ],
+          "new_RT_mode": [
+            1,
+            0
+          ],
+          "old_DA_power_mw": 50.0,
+          "new_RT_power_mw": 0.0,
+          "in_issued_first3": false
+        },
+        {
+          "resource": "ES5",
+          "index": 18,
+          "old_DA_mode": [
+            0,
+            1
+          ],
+          "new_RT_mode": [
+            1,
+            0
+          ],
+          "old_DA_power_mw": 50.0,
+          "new_RT_power_mw": -50.0,
+          "in_issued_first3": false
+        },
+        {
+          "resource": "ES5",
+          "index": 19,
+          "old_DA_mode": [
+            0,
+            1
+          ],
+          "new_RT_mode": [
+            1,
+            0
+          ],
+          "old_DA_power_mw": 50.0,
+          "new_RT_power_mw": -50.0,
+          "in_issued_first3": false
+        },
+        {
+          "resource": "ES5",
+          "index": 20,
+          "old_DA_mode": [
+            0,
+            1
+          ],
+          "new_RT_mode": [
+            1,
+            0
+          ],
+          "old_DA_power_mw": 50.0,
+          "new_RT_power_mw": 0.0,
+          "in_issued_first3": false
+        },
+        {
+          "resource": "ES5",
+          "index": 21,
+          "old_DA_mode": [
+            0,
+            1
+          ],
+          "new_RT_mode": [
+            1,
+            0
+          ],
+          "old_DA_power_mw": 50.0,
+          "new_RT_power_mw": -0.5858524201648905,
+          "in_issued_first3": false
+        },
+        {
+          "resource": "ES5",
+          "index": 22,
+          "old_DA_mode": [
+            0,
+            1
+          ],
+          "new_RT_mode": [
+            1,
+            0
+          ],
+          "old_DA_power_mw": 50.0,
+          "new_RT_power_mw": -50.0,
+          "in_issued_first3": false
+        },
+        {
+          "resource": "ES5",
+          "index": 23,
+          "old_DA_mode": [
+            0,
+            1
+          ],
+          "new_RT_mode": [
+            1,
+            0
+          ],
+          "old_DA_power_mw": 50.0,
+          "new_RT_power_mw": -50.0,
+          "in_issued_first3": false
+        },
+        {
+          "resource": "ES5",
+          "index": 24,
+          "old_DA_mode": [
+            0,
+            1
+          ],
+          "new_RT_mode": [
+            1,
+            0
+          ],
+          "old_DA_power_mw": 50.0,
+          "new_RT_power_mw": -50.0,
+          "in_issued_first3": false
+        },
+        {
+          "resource": "ES5",
+          "index": 25,
+          "old_DA_mode": [
+            0,
+            1
+          ],
+          "new_RT_mode": [
+            1,
+            0
+          ],
+          "old_DA_power_mw": 50.0,
+          "new_RT_power_mw": -50.0,
+          "in_issued_first3": false
+        },
+        {
+          "resource": "ES5",
+          "index": 26,
+          "old_DA_mode": [
+            0,
+            1
+          ],
+          "new_RT_mode": [
+            1,
+            0
+          ],
+          "old_DA_power_mw": 50.0,
+          "new_RT_power_mw": -40.76474964599815,
+          "in_issued_first3": false
+        },
+        {
+          "resource": "ES5",
+          "index": 27,
+          "old_DA_mode": [
+            0,
+            1
+          ],
+          "new_RT_mode": [
+            1,
+            0
+          ],
+          "old_DA_power_mw": 50.0,
+          "new_RT_power_mw": -50.0,
+          "in_issued_first3": false
+        },
+        {
+          "resource": "ES5",
+          "index": 28,
+          "old_DA_mode": [
+            0,
+            1
+          ],
+          "new_RT_mode": [
+            1,
+            0
+          ],
+          "old_DA_power_mw": 50.0,
+          "new_RT_power_mw": -30.268256145499436,
+          "in_issued_first3": false
+        },
+        {
+          "resource": "ES5",
+          "index": 29,
+          "old_DA_mode": [
+            0,
+            1
+          ],
+          "new_RT_mode": [
+            1,
+            0
+          ],
+          "old_DA_power_mw": 44.986278781828304,
+          "new_RT_power_mw": -50.0,
+          "in_issued_first3": false
+        }
+      ],
+      "issued_storage_mode_difference_count": 0,
+      "near24_thermal_new_start_count": 0,
+      "near24_thermal_stop_count": 0,
+      "acceptance_sha256": "f95a6f2835e04564388ade9f7b256c7a40135eba3d35d37b96c430ec2d9e9888"
+    }
+  ],
+  "total_native_starts": 5,
+  "accepted_native_solves": 4,
+  "preserved_failed_native": "W0_SCUC_native_v1:120s TimeLimit no incumbent",
+  "free48h_math_retained": true,
+  "tail_fixed_subset_used": false,
+  "simulated_clock": "2026-11-11T00:30:00+08:00",
+  "total_simulated_executed_cells": 6,
+  "initial_DA_assumed_executed_cells": 3,
+  "new_RT_simulated_executed_cells": 3,
+  "total_issued_cells": 9,
+  "new_RT_issued_cells": 6,
+  "W2_native_performed": false,
+  "thermal_recommitment_demonstrated": false,
+  "AGC_current_day_all5_stable": true,
+  "Dplus1_AGC_zero": true,
+  "independent_PRICE_pending": true,
+  "formal": false,
+  "AC_acceptance": false,
+  "payable": false,
+  "formal_bill": null
+}

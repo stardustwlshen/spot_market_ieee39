@@ -1,0 +1,51 @@
+{
+  "schema": "gd.research.r47.independent_rule_notes.v1",
+  "review_date": "2026-11-12",
+  "new_optimizer_calls": 0,
+  "regional_rules": {
+    "original_pdf": "guangdong_r21_day_verified_final_v1_20261112/source/rules/region202610_official.pdf",
+    "original_pdf_sha256": "978d7d7179e3629f8a86fb2d770470e1700b67c4bb867123b07a2d8f480c3caf",
+    "text_read": "guangdong_reset_recovery_20261112/rules/region.txt",
+    "independently_read": true,
+    "rules": {
+      "2.2.11.5": "Apply clearing price floor/cap per node and transaction period; preserve original raw price separately.",
+      "3.6.1.2": "Generator hourly price is arithmetic mean of the four 15-minute node prices, not an energy-weighted mean.",
+      "3.6.2": "Formal RT results require price verification and normally D+1 publication, D+2 when necessary.",
+      "3.6.2.1-3": "Incomplete clearing uses previous successful-period data; boundary/data errors and other wrong results require cause correction and recalculation. A numeric cap does not repair infeasibility or unknown native outcomes."
+    }
+  },
+  "guangdong_263": {
+    "url": "https://drc.gd.gov.cn/gkmlpt/content/4/4775/post_4775501.html",
+    "document": "粤发改价格〔2025〕263号",
+    "published": "2025-09-19",
+    "effective_from": "2025-11-01",
+    "known_expiry": null,
+    "public_baseline_yuan_MWh": {
+      "clearing_floor": -50,
+      "clearing_cap": 1800
+    },
+    "submission_cap_not_inferred_from_clearing_cap": true,
+    "basis": "builder independently retrieved and supplied full relevant official text; this reviewer direct re-fetch timed out",
+    "table_note_interpretation": "2025 provisional use, later adjustment allowed; no explicit year-end expiry. Do not automatically invalidate in 2026 and do not infer undisclosed/current operator settings.",
+    "dynamic_current_verified": false
+  },
+  "renewable_146": {
+    "url": "https://nfj.nea.gov.cn/xwzx/tzgg/202601/P020260104519707491129.pdf",
+    "document": "南方监能市场〔2025〕146号",
+    "document_date": "2025-12-19",
+    "independently_opened_official_PDF": true,
+    "article": "十一",
+    "PDF_pages": [
+      7,
+      8
+    ],
+    "formula_DA_participant": {
+      "long_term": "sum(Q_contract * (P_contract + P_DA_node - P_contract_reference_spot))",
+      "day_ahead": "(Q_DA - sum(Q_contract)) * P_DA_node",
+      "real_time": "(Q_metered - Q_DA) * P_RT_node"
+    },
+    "contract_reference": "Article 七 permits chosen DA or RT settlement reference locations. Reference price must be an explicit same-period input, not assumed equal to DA node price.",
+    "non_DA_participant": "Explicit no-DA-energy-settlement text does not itself supply a complete long-term/RT billing formula. Return typed missing for unsupported full billing.",
+    "scope": "R45 aggregated bus quantities do not prove registered trading-unit identity, actual metering, DA participation or contracts."
+  }
+}

@@ -1,0 +1,7 @@
+{
+  "name": "UI_smoke_regoff_3periods_retry",
+  "source": "仓库 config/",
+  "note": "UI真实滚动展示短测试；DA30秒/5%gap，非正式基线",
+  "created": "2026-11-02T01:57:05",
+  "modified": "2026-11-02T01:57:05"
+}

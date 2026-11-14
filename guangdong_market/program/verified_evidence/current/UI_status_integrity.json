@@ -1,0 +1,14 @@
+{
+  "status": "strict_expected_receipts_and_source_integrity_passed",
+  "negative_checks": [
+    "unverified DONE",
+    "empty pins",
+    "tampered witness",
+    "extra DONE cannot create completion",
+    "gap cannot be complete",
+    "plan source drift",
+    "ERROR takes priority over DONE count"
+  ],
+  "native_calls": 0,
+  "synthetic_fixtures_not_core_replay": true
+}

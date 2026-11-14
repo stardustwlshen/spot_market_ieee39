@@ -1,0 +1,64 @@
+{
+  "status": "research_unsafe",
+  "research_safe": false,
+  "thermal": [
+    {
+      "unit": "C1",
+      "p_AC_mw": 667.8355147912363,
+      "scheduled_p_mw": 636.0,
+      "slack_loss_adjustment_mw": 31.835514791236278,
+      "up_headroom_after_AGC_mw": -31.835514791236278,
+      "down_headroom_after_AGC_mw": 367.8355147912363,
+      "positive_available_mw": 0.0,
+      "accident_available_mw": 0.0
+    },
+    {
+      "unit": "C2",
+      "p_AC_mw": 698.3144595889985,
+      "scheduled_p_mw": 698.3144595889985,
+      "slack_loss_adjustment_mw": 0.0,
+      "up_headroom_after_AGC_mw": 16.68554041100151,
+      "down_headroom_after_AGC_mw": 363.3144595889985,
+      "positive_available_mw": 16.68554041100151,
+      "accident_available_mw": 16.68554041100151
+    },
+    {
+      "unit": "C3",
+      "p_AC_mw": 720.6036953118341,
+      "scheduled_p_mw": 720.6036953118341,
+      "slack_loss_adjustment_mw": 0.0,
+      "up_headroom_after_AGC_mw": 134.39630468816586,
+      "down_headroom_after_AGC_mw": 320.60369531183414,
+      "positive_available_mw": 134.39630468816586,
+      "accident_available_mw": 130.0
+    },
+    {
+      "unit": "CCGT",
+      "p_AC_mw": 385.4,
+      "scheduled_p_mw": 385.4,
+      "slack_loss_adjustment_mw": 0.0,
+      "up_headroom_after_AGC_mw": 291.6,
+      "down_headroom_after_AGC_mw": 65.39999999999998,
+      "positive_available_mw": 291.6,
+      "accident_available_mw": 275.0
+    },
+    {
+      "unit": "GT",
+      "p_AC_mw": 85.0,
+      "scheduled_p_mw": 85.0,
+      "slack_loss_adjustment_mw": 0.0,
+      "up_headroom_after_AGC_mw": 205.0,
+      "down_headroom_after_AGC_mw": 0.0,
+      "positive_available_mw": 205.0,
+      "accident_available_mw": 205.0
+    }
+  ],
+  "positive_available_mw": 647.6818450991674,
+  "accident_available_mw": 626.6855404110015,
+  "positive_requirement_mw": 400,
+  "accident_requirement_mw": 400,
+  "synthetic_AGC50_headroom_preserved": false,
+  "fixed_PQ_service_credit": 0,
+  "slack_adjustment_not_settlement": true,
+  "formal_security_certification": false
+}

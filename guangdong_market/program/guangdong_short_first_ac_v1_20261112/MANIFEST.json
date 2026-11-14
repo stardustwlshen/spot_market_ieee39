@@ -1,0 +1,69 @@
+{
+  "files": [
+    {
+      "path": "AC.log",
+      "sha256": "8bebd47edab373afb19526c4026fe505443d5c0b57d19247843dc5294f5bec92"
+    },
+    {
+      "path": "ACCEPTANCE_BINDING.json",
+      "sha256": "b21d60553d5f8274268a0aef6ec91690b83bd64af21d0883a2c99dc901f7d751"
+    },
+    {
+      "path": "AC_RESULT.json",
+      "sha256": "92f9128a4010d8ce9a9642367de8f4a7ebe77bd494bfac47099af5204cbba245"
+    },
+    {
+      "path": "AC_STARTED.json",
+      "sha256": "0ae7568310cadbc306c7b7f88ee760c217e4974b24738b8197e91cdfefacf4b4"
+    },
+    {
+      "path": "CAPACITY_POSTCHECK.json",
+      "sha256": "fb22b14ac1ae8e133490f8cf5beca56d2a8f188a8edfb4774eb742741a550aaa"
+    },
+    {
+      "path": "FIXED_P_OBSTRUCTION.json",
+      "sha256": "8a8d3e6f9fb93f4e8bc2aeb004d54b437e45bd276b021cc372adaebf567f9eb0"
+    },
+    {
+      "path": "MAPPING.json",
+      "sha256": "b750d90c9da5aa1bad5db815cc3f5d267ecc5bbcd22aec10658109bbf6e09c47"
+    },
+    {
+      "path": "PAYLOAD.json",
+      "sha256": "e283180cf0dae313c219ea0ba28c8d21b53b9686c53850924f8cb59beb3036eb"
+    },
+    {
+      "path": "PRECHECK.json",
+      "sha256": "f8c94fec01dce815d312f607052c80f897d9021588853a8b4bc05946daca9ad1"
+    },
+    {
+      "path": "README.md",
+      "sha256": "8efaa9684d30f6e062b35a3690d22f47e45f22326b27d0a7b8ed945f99d3c858"
+    },
+    {
+      "path": "SUMMARY.json",
+      "sha256": "e1a64f7383fe7e0f35d7f6ebfcb36fdc1af67be1a85981cca0fc62a3b2951260"
+    },
+    {
+      "path": "adapter_diagnostic.py",
+      "sha256": "0d17a1fdc2159af9f22d111ef0779ca780a4e53bef8c33a5b75fccd63742b6e7"
+    },
+    {
+      "path": "prepare_first.py",
+      "sha256": "00d8766955ab40286f50521c4204089f28e99ffc3d9f09c458bb5efedf74f86d"
+    },
+    {
+      "path": "review_obstruction.py",
+      "sha256": "4c772eaffa42244e994264f61129f39b0ea4d9bc6565cc335c43835a7d7e5d2d"
+    },
+    {
+      "path": "run_AC_once.py",
+      "sha256": "516c8fea6e476d2f55ce679897c04a2b01c8f280b621268221724aee9fd3da65"
+    }
+  ],
+  "actual_AC_calls": 1,
+  "new_optimization_calls": 0,
+  "status": "original_Q0_first_short_point_unsafe",
+  "formal_release": false,
+  "security_release": false
+}

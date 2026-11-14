@@ -1,0 +1,96 @@
+{
+  "files": [
+    {
+      "path": "CAPABILITY_CONTRACT.json",
+      "sha256": "0bc478354e0cb6594f0d05b140ec7b4626b494afa4c487304e1a395708a4c686"
+    },
+    {
+      "path": "DIAGNOSTIC.log",
+      "sha256": "93e9af831c5708b1d63ca4d1166613efaf310f17750cd80be0fb37736b90aa83"
+    },
+    {
+      "path": "DIAGNOSTIC_SUMMARY.json",
+      "sha256": "2f1505d0dbab4ef5f3b05da96f949233a1e0dc7f2378b971af8a34628d6abb7c"
+    },
+    {
+      "path": "FAILED_CONTROL_LOCATION.json",
+      "sha256": "dca9fef2b54a9d18b6eb1f447d7cd993c43949cef7f2a8ac7057416d7c8247e5"
+    },
+    {
+      "path": "FAILED_LOCATION.log",
+      "sha256": "dca9fef2b54a9d18b6eb1f447d7cd993c43949cef7f2a8ac7057416d7c8247e5"
+    },
+    {
+      "path": "FINAL_STATUS.json",
+      "sha256": "1d265bcb92d9f894f8f9b81c36998e6a8b5cc82bf178c5635bc522c29364e13e"
+    },
+    {
+      "path": "INITIAL.log",
+      "sha256": "e469064a8bb2f08d37f3fc98563fe84a9d852af136a18a2514b805fc479186bb"
+    },
+    {
+      "path": "LEGAL_INITIAL_AC.json",
+      "sha256": "7d5e4d132581c596c67bb75a9bc1ba15558a753dfa447785b05fd9972dba70f5"
+    },
+    {
+      "path": "LEGAL_INITIAL_MAPPING.json",
+      "sha256": "7263d166650a0564f57d0e3b15a00da5d61120cfcee7a334b626aaba0c538a85"
+    },
+    {
+      "path": "LEGAL_INITIAL_POLICY.json",
+      "sha256": "dcac1c7a486edb193316a13e339849a27aa60bba0aab9df912d8b2d1faf1187a"
+    },
+    {
+      "path": "LEGAL_INITIAL_STARTED.json",
+      "sha256": "cfee95b20192730c3375605065207e1f73505801cfa7baa9766b9a20f8713bd4"
+    },
+    {
+      "path": "README.md",
+      "sha256": "1e2b611c08e7dbe6146b3969b2cfc3fb12e6cdc546175d12315ca353adf3b6d8"
+    },
+    {
+      "path": "analyze_failed_controls.py",
+      "sha256": "be1c28de32de5f05f09984a2250aba1d0cfdd33431831a313890778b51cf8f9a"
+    },
+    {
+      "path": "diagnose_once.py",
+      "sha256": "44ed387c1121f074d5a370a15e5863c3a0f1a7955e7c2ae9493b499c8414c8a8"
+    },
+    {
+      "path": "diagnostic_once/COMPLETED.json",
+      "sha256": "efbcb1227a9d3e03ac2b7547c51befaad18680d59fc5cf0fbc44ea5408ea13b1"
+    },
+    {
+      "path": "diagnostic_once/INITIAL_STATE_REVIEW.json",
+      "sha256": "96ff93bd6a6b0a2d922074fd6841045ebb7a9b2629b5b0cfd92cca33d76a11ab"
+    },
+    {
+      "path": "diagnostic_once/JACOBIAN_CHECK.json",
+      "sha256": "0bbf81d77a37f7ee363b90025127128918cebc02ff25c1f4b20ea67141e64b0a"
+    },
+    {
+      "path": "diagnostic_once/MODEL_PLAN.json",
+      "sha256": "adfab476ebe4e405e12d9b1d9298331711ef77295f5a57cb3aaecba727cdf0b1"
+    },
+    {
+      "path": "diagnostic_once/RESULT.json",
+      "sha256": "831dda556cecfe1ac02e94f01141a18a406836ee852a39e6a01322190eff7892"
+    },
+    {
+      "path": "diagnostic_once/STARTED.json",
+      "sha256": "4f634c8b78ac45cf466debd1fa97ce18a583cbb7c0f779c9dfd47e6f43f1b361"
+    },
+    {
+      "path": "final_review.py",
+      "sha256": "1be88e2dda505ca7d45f30087a9d28cf0b699dd993fd7ec91053143ee530c491"
+    },
+    {
+      "path": "legal_initial_once.py",
+      "sha256": "05de46f520390dd49d8df2fcc03e378dc55fb59d5b9ff2692d292ea1ce5549af"
+    }
+  ],
+  "status": "rejected_not_safe",
+  "newLP": 0,
+  "newAC": 1,
+  "newDiagnostic": 1
+}

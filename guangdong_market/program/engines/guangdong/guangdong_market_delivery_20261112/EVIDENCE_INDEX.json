@@ -1,0 +1,47 @@
+{
+  "note": "External original-workspace evidence; paths are identifiers, not runtime dependencies. Raw solutions not copied.",
+  "entries": {
+    "RT96": {
+      "relative_original_workspace_path": "guangdong_r70_full_day_final_review_20261112/final_v1/FINAL_REVIEW.json",
+      "bundled": false,
+      "sha256": "75de734b4c96e0565915311b59fe802a6cca1ff4b5cf7f390593422fe46314e5"
+    },
+    "PRICE96": {
+      "relative_original_workspace_path": "guangdong_r74_price_summary_20261112/actual_day_v1/PRICE_SUMMARY.json",
+      "bundled": false,
+      "sha256": "dd730f0ff68f794a308cae2f0a39d37d09dfe303ce084093e0556302ca99c8e2"
+    },
+    "simulated_energy480": {
+      "relative_original_workspace_path": "guangdong_r75_daily_simulated_settlement_20261112/actual_day_v1/RESULT.json",
+      "bundled": false,
+      "sha256": "125bbf32498cbb3b836b2238ccc52d02e206cd2d5c462ac4dfba6fb29be343a5"
+    },
+    "AGC_counterfactual": {
+      "relative_original_workspace_path": "guangdong_r76_agc_curtailment_comparison_20261112/RESULT.json",
+      "bundled": false,
+      "sha256": "6fb2b5394d183eb3839216faf5c772eef2ad205f4e598820c955594417e2fd17"
+    }
+  },
+  "bundled_read_only_summaries": {
+    "R67": {
+      "path": "evidence/R67_SUMMARY.json",
+      "sha256": "00c368d2280db17cff6480f3c4df644c2c58e18467513d23c92ba719de1d727a",
+      "bytes": 1144
+    },
+    "R74": {
+      "path": "evidence/R74_SUMMARY.json",
+      "sha256": "119c917ea93b3bfaa7f1958f70915d9ec6933d0a3bb133216a76f36ecea8a29f",
+      "bytes": 2977
+    },
+    "R75": {
+      "path": "evidence/R75_SUMMARY.json",
+      "sha256": "96f95615c0e49a1a83c311a74f1496ec597d4d4ed540a435fab23f570613d9f6",
+      "bytes": 3722
+    },
+    "R80": {
+      "path": "evidence/R80_EVENT_SUMMARY.json",
+      "sha256": "a25795b2ba87641e4fbb07735890c32fff612d296365fd220cfea2f41b8391a1",
+      "bytes": 2173
+    }
+  }
+}

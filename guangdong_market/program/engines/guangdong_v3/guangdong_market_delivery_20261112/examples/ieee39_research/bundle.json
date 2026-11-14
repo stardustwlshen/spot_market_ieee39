@@ -1,0 +1,8 @@
+{
+  "schema": "gd.delivery.scuc_inputs.v1",
+  "case_file": "case.json",
+  "grid_file": "grid.json",
+  "policy_file": "policy.json",
+  "agc_file": "agc.json",
+  "basis": "preserved uniform-event explicit synthetic IEEE39 research; NOT actual qualification/operating data"
+}

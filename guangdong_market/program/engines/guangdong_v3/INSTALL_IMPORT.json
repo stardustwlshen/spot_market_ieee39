@@ -1,0 +1,8 @@
+{
+  "highspy": "1.15.1",
+  "pyomo": "6.10.1",
+  "numpy": "2.4.6",
+  "scipy": "1.18.1",
+  "native_calls": 0,
+  "test": "existing installed environment import, not clean network installation"
+}

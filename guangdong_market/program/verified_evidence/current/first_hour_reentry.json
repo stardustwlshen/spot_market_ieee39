@@ -1,0 +1,11 @@
+{
+  "status": "completed_reentry_no_new_native",
+  "tree_unchanged": true,
+  "new_native_calls": 0,
+  "result": {
+    "status": "completed_research_batch",
+    "windows": 4,
+    "formal": false,
+    "native_calls": "inspect individual native receipts"
+  }
+}

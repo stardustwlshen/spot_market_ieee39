@@ -1,0 +1,392 @@
+{
+  "vendor/guangdong_r73_agc_parameter_interface_20261112/adapter.py": {
+    "origin": "guangdong_r73_agc_parameter_interface_20261112/adapter.py",
+    "sha256": "8cad9f2ebeec94e3cc01cbb209be6dbe078bbf1908c4b283a6b1c105e7cb982c",
+    "modified": false
+  },
+  "vendor/guangdong_r73_agc_parameter_interface_20261112/projection.py": {
+    "origin": "guangdong_r73_agc_parameter_interface_20261112/projection.py",
+    "sha256": "a30a66793ea4e2c6763532ba0877273cf3801621c3dcf7ee2cdd3b25892af0cc",
+    "modified": false
+  },
+  "vendor/guangdong_r73_agc_parameter_interface_20261112/example.synthetic.json": {
+    "origin": "guangdong_r73_agc_parameter_interface_20261112/example.synthetic.json",
+    "sha256": "14bab01e6b3119fa07943b77eb1e72a06d8e1f190dc12281a881caf7abfda2a1",
+    "modified": false
+  },
+  "vendor/guangdong_r73_agc_parameter_interface_20261112/README.md": {
+    "origin": "guangdong_r73_agc_parameter_interface_20261112/README.md",
+    "sha256": "3b3254e0d1a8831ca091c9d986d376c41401f64de0700af20f48364665f874a7",
+    "modified": false
+  },
+  "vendor/guangdong_r77_agc_safety_gate_20261112/gate.py": {
+    "origin": "guangdong_r77_agc_safety_gate_20261112/gate.py",
+    "sha256": "d12d6a0de085c3f5eb15f9ddae4b77fff584b74ffa411ad867bfb7838ddf3fbd",
+    "modified": false
+  },
+  "vendor/guangdong_r77_agc_safety_gate_20261112/example.synthetic.json": {
+    "origin": "guangdong_r77_agc_safety_gate_20261112/example.synthetic.json",
+    "sha256": "8292a920a74853ed6320cbe84f5625dbf98273a593e959ed5ddb51a9b072c805",
+    "modified": false
+  },
+  "vendor/guangdong_r77_agc_safety_gate_20261112/README.md": {
+    "origin": "guangdong_r77_agc_safety_gate_20261112/README.md",
+    "sha256": "9017a26bf838ae3ba5da74514d2154c61ec78f4e276799bebc54ff12ecc5d187",
+    "modified": false
+  },
+  "vendor/guangdong_r77_agc_safety_gate_20261112/CURRENT_CHAIN.json": {
+    "origin": "guangdong_r77_agc_safety_gate_20261112/CURRENT_CHAIN.json",
+    "sha256": "88407dfb267962302fc8a69d6ebf64444ff57828154d0439a25cac7d9844626e",
+    "modified": false
+  },
+  "vendor/guangdong_r78_storage_agc_competition_20261112/storage.py": {
+    "origin": "guangdong_r78_storage_agc_competition_20261112/storage.py",
+    "sha256": "5b24c0037040ebb21f6700baf88680dc656d78835d5d75646fc3212d61e924c8",
+    "modified": false
+  },
+  "vendor/guangdong_r78_storage_agc_competition_20261112/example.synthetic.json": {
+    "origin": "guangdong_r78_storage_agc_competition_20261112/example.synthetic.json",
+    "sha256": "d3fd0c3adfe5a67ea0b5f0e3a41702c3d41a0a4d8c723211de995f77c6ad8bd5",
+    "modified": false
+  },
+  "vendor/guangdong_r78_storage_agc_competition_20261112/SOURCE_SPEC.md": {
+    "origin": "guangdong_r78_storage_agc_competition_20261112/SOURCE_SPEC.md",
+    "sha256": "04aead5850e5c25a5ff4ab42c01e3653f86470220175972623757d9f0293e6d6",
+    "modified": false
+  },
+  "vendor/guangdong_r78_storage_agc_competition_20261112/PAGE_HASHES.json": {
+    "origin": "guangdong_r78_storage_agc_competition_20261112/PAGE_HASHES.json",
+    "sha256": "034796f16114dd92aeb4cffc49981e3b7346a6eca576fc6b2efef8ba54d8818c",
+    "modified": false
+  },
+  "vendor/guangdong_r78_storage_agc_competition_20261112/README.md": {
+    "origin": "guangdong_r78_storage_agc_competition_20261112/README.md",
+    "sha256": "c289837038b6298b4e96929a45700bfa0ca3b4e7dfbad92af4e1eca81d947bb1",
+    "modified": false
+  },
+  "vendor/guangdong_r79_mixed_agc_projection_20261112/mixed.py": {
+    "origin": "guangdong_r79_mixed_agc_projection_20261112/mixed.py",
+    "sha256": "e69c8c843beb0ff9f47746c7327f4f59061aad479bfbf4493c8dded65d9f6e6e",
+    "modified": false
+  },
+  "vendor/guangdong_r79_mixed_agc_projection_20261112/SOURCE_PINS.json": {
+    "origin": "guangdong_r79_mixed_agc_projection_20261112/SOURCE_PINS.json",
+    "sha256": "680a3a60b4a2f1fea40e8cc697de4a293e765fa6dbd323561aa77e60a29afd33",
+    "modified": false
+  },
+  "vendor/guangdong_r79_mixed_agc_projection_20261112/example.synthetic.json": {
+    "origin": "guangdong_r79_mixed_agc_projection_20261112/example.synthetic.json",
+    "sha256": "e5fb024cf80a690632a99fa1a955f5942393842b5e73e10ed412b0a3ce2e343a",
+    "modified": false
+  },
+  "vendor/guangdong_r79_mixed_agc_projection_20261112/README.md": {
+    "origin": "guangdong_r79_mixed_agc_projection_20261112/README.md",
+    "sha256": "02ebd157cba3fcaa2d4654cf9ccdfea935030c5be2ebfa6932fade0420c2faeb",
+    "modified": false
+  },
+  "vendor/guangdong_after_reset_r23_compressed_20261112/repo/src/smm/gd_da_battery_candidate.py": {
+    "origin": "guangdong_after_reset_r23_compressed_20261112/repo/src/smm/gd_da_battery_candidate.py",
+    "sha256": "2266302b7b6759fbde16905e00c99e82e27cf1d9709f99dd6fa8e6ceb2ab3d1a",
+    "modified": false
+  },
+  "vendor/guangdong_after_reset_r23_compressed_20261112/repo/src/smm/gd_da_candidate.py": {
+    "origin": "guangdong_after_reset_r23_compressed_20261112/repo/src/smm/gd_da_candidate.py",
+    "sha256": "b22015caae82daaf24520617557f76dcab98b0caa46a1ba3df3fad7be468fd50",
+    "modified": false
+  },
+  "vendor/guangdong_after_reset_r23_compressed_20261112/repo/src/smm/gd_da_ieee39.py": {
+    "origin": "guangdong_after_reset_r23_compressed_20261112/repo/src/smm/gd_da_ieee39.py",
+    "sha256": "61da3b0e03f5ea68d947afa07cc10c43cc97013261cc0eaaa51ed00686f249ed",
+    "modified": false
+  },
+  "vendor/guangdong_after_reset_r23_compressed_20261112/repo/src/smm/gd_da_prepared_boundary.py": {
+    "origin": "guangdong_after_reset_r23_compressed_20261112/repo/src/smm/gd_da_prepared_boundary.py",
+    "sha256": "f061b222ac92f0cd53716d6e88d61aa1714850a9d353f1fe8bf251250f4e60a6",
+    "modified": false
+  },
+  "vendor/guangdong_after_reset_r23_compressed_20261112/repo/src/smm/gd_energy_core.py": {
+    "origin": "guangdong_after_reset_r23_compressed_20261112/repo/src/smm/gd_energy_core.py",
+    "sha256": "d824f86da28802fe723b6d9004884820fce74e2b37df8c19fd8839f913fe16ef",
+    "modified": false
+  },
+  "vendor/guangdong_after_reset_r23_compressed_20261112/repo/src/smm/gd_horizon.py": {
+    "origin": "guangdong_after_reset_r23_compressed_20261112/repo/src/smm/gd_horizon.py",
+    "sha256": "db95086b1cd253ced4acc24ad33d2cdbebc5d4ea5a2e429e4960ed3b2cb7629c",
+    "modified": false
+  },
+  "vendor/guangdong_after_reset_r23_compressed_20261112/repo/src/smm/gd_lmp.py": {
+    "origin": "guangdong_after_reset_r23_compressed_20261112/repo/src/smm/gd_lmp.py",
+    "sha256": "39fe1197238b8bd6528fdbbeebddbaa8e0bb882bd25fdcf2bd8810a8436990e0",
+    "modified": false
+  },
+  "vendor/guangdong_after_reset_r23_compressed_20261112/repo/src/smm/gd_october_day_inputs.py": {
+    "origin": "guangdong_after_reset_r23_compressed_20261112/repo/src/smm/gd_october_day_inputs.py",
+    "sha256": "cd88778e6cc8c00260918d3afa726fbc88b4975d0f2e6f8584231f6060a99291",
+    "modified": false
+  },
+  "vendor/guangdong_after_reset_r23_compressed_20261112/repo/src/smm/gd_october_fixed_renewable_capacity_v4.py": {
+    "origin": "guangdong_after_reset_r23_compressed_20261112/repo/src/smm/gd_october_fixed_renewable_capacity_v4.py",
+    "sha256": "a27af8b45fe6ebd914224a208b2acf99048e007cdba047085f126589aa09100e",
+    "modified": false
+  },
+  "vendor/guangdong_after_reset_r23_compressed_20261112/repo/src/smm/gd_october_forecast_inputs.py": {
+    "origin": "guangdong_after_reset_r23_compressed_20261112/repo/src/smm/gd_october_forecast_inputs.py",
+    "sha256": "34e2eb03fc0ed18644f5a2568b8e94994c75deb6a91abe6afcfedf93920a739a",
+    "modified": false
+  },
+  "vendor/guangdong_after_reset_r23_compressed_20261112/repo/src/smm/gd_october_ieee39_capacity_v2.py": {
+    "origin": "guangdong_after_reset_r23_compressed_20261112/repo/src/smm/gd_october_ieee39_capacity_v2.py",
+    "sha256": "8dbe954da5df6c3df36b292e6a2ce6b655ac50d2e67bb8e754501e1dce0ae3e6",
+    "modified": false
+  },
+  "vendor/guangdong_after_reset_r23_compressed_20261112/repo/src/smm/gd_october_ieee39_scenario.py": {
+    "origin": "guangdong_after_reset_r23_compressed_20261112/repo/src/smm/gd_october_ieee39_scenario.py",
+    "sha256": "dfd9fd579452e4ca7c5e246a9beee667016c90b255c9d47aa5491ec039e0eed0",
+    "modified": false
+  },
+  "vendor/guangdong_after_reset_r23_compressed_20261112/repo/src/smm/gd_october_input_bridge.py": {
+    "origin": "guangdong_after_reset_r23_compressed_20261112/repo/src/smm/gd_october_input_bridge.py",
+    "sha256": "c40168b34d14d36a4cdde0f7591e67cd4f9264d48b20ff53aae16c307e556f6b",
+    "modified": false
+  },
+  "vendor/guangdong_after_reset_r23_compressed_20261112/repo/src/smm/gd_october_job_codec.py": {
+    "origin": "guangdong_after_reset_r23_compressed_20261112/repo/src/smm/gd_october_job_codec.py",
+    "sha256": "a0502006796a3ba4c2f4f358356cd2120a91a0e3ba6002c5069757b8c07c6412",
+    "modified": false
+  },
+  "vendor/guangdong_after_reset_r23_compressed_20261112/repo/src/smm/gd_october_native_inputs.py": {
+    "origin": "guangdong_after_reset_r23_compressed_20261112/repo/src/smm/gd_october_native_inputs.py",
+    "sha256": "1560b3c4cf38b852c8b767ce7908745e421ca94006da85ed53355f21fb1feb4c",
+    "modified": false
+  },
+  "vendor/guangdong_after_reset_r23_compressed_20261112/repo/src/smm/gd_october_native_roll.py": {
+    "origin": "guangdong_after_reset_r23_compressed_20261112/repo/src/smm/gd_october_native_roll.py",
+    "sha256": "e61b32dc1532dd857ee52cf253bf83a7ebd5cf11b848048b7d23b0e5a017e488",
+    "modified": false
+  },
+  "vendor/guangdong_after_reset_r23_compressed_20261112/repo/src/smm/gd_october_native_snapshot.py": {
+    "origin": "guangdong_after_reset_r23_compressed_20261112/repo/src/smm/gd_october_native_snapshot.py",
+    "sha256": "827884f0bef305e1644f6fdcaa821ee64152927702383348275e68b08d6a282f",
+    "modified": false
+  },
+  "vendor/guangdong_after_reset_r23_compressed_20261112/repo/src/smm/gd_october_native_solve.py": {
+    "origin": "guangdong_after_reset_r23_compressed_20261112/repo/src/smm/gd_october_native_solve.py",
+    "sha256": "d5cc8ff4911f6bdd5c3f9b73ad089ed3d138d77821cfc82b25800f29fa8432eb",
+    "modified": false
+  },
+  "vendor/guangdong_after_reset_r23_compressed_20261112/repo/src/smm/gd_october_pricing_inputs.py": {
+    "origin": "guangdong_after_reset_r23_compressed_20261112/repo/src/smm/gd_october_pricing_inputs.py",
+    "sha256": "4dce344772c0f40ae66ace7788c8d37144cf023e6eaece2e6b6ad1f15900e211",
+    "modified": false
+  },
+  "vendor/guangdong_after_reset_r23_compressed_20261112/repo/src/smm/gd_october_pricing_model.py": {
+    "origin": "guangdong_after_reset_r23_compressed_20261112/repo/src/smm/gd_october_pricing_model.py",
+    "sha256": "839878f933f1fa30a5b5a7a455b146379f12e89b192a04a8946d81c1467687d2",
+    "modified": false
+  },
+  "vendor/guangdong_after_reset_r23_compressed_20261112/repo/src/smm/gd_october_pricing_native_bridge.py": {
+    "origin": "guangdong_after_reset_r23_compressed_20261112/repo/src/smm/gd_october_pricing_native_bridge.py",
+    "sha256": "eaa46dc1f52b7f69a05cb0a3ed69880cb19333b702505dc5fdc3db9090fcb7ff",
+    "modified": false
+  },
+  "vendor/guangdong_after_reset_r23_compressed_20261112/repo/src/smm/gd_october_pricing_network.py": {
+    "origin": "guangdong_after_reset_r23_compressed_20261112/repo/src/smm/gd_october_pricing_network.py",
+    "sha256": "e76a7d50b8a91724933329b5ce3ac9b6afbc4b5e7a2380a9169e720baf441973",
+    "modified": false
+  },
+  "vendor/guangdong_after_reset_r23_compressed_20261112/repo/src/smm/gd_october_pricing_rules.py": {
+    "origin": "guangdong_after_reset_r23_compressed_20261112/repo/src/smm/gd_october_pricing_rules.py",
+    "sha256": "b0456843b37ce1676774740165c5445a3a7696cf0d5723353a57feac40f73604",
+    "modified": false
+  },
+  "vendor/guangdong_after_reset_r23_compressed_20261112/repo/src/smm/gd_october_pricing_storage.py": {
+    "origin": "guangdong_after_reset_r23_compressed_20261112/repo/src/smm/gd_october_pricing_storage.py",
+    "sha256": "912451fe2382cd7ae72112ae14e20656220f322c237ee40a3e82eaf54dd59e60",
+    "modified": false
+  },
+  "vendor/guangdong_after_reset_r23_compressed_20261112/repo/src/smm/gd_october_pricing_thermal_v4.py": {
+    "origin": "guangdong_after_reset_r23_compressed_20261112/repo/src/smm/gd_october_pricing_thermal_v4.py",
+    "sha256": "dfa4b2406bef697b66ccccb307f028bffd11062a7ea52706ad70f07aec242414",
+    "modified": false
+  },
+  "vendor/guangdong_after_reset_r23_compressed_20261112/repo/src/smm/gd_october_research_forecast.py": {
+    "origin": "guangdong_after_reset_r23_compressed_20261112/repo/src/smm/gd_october_research_forecast.py",
+    "sha256": "b3e33e1df8a13854c82dbc2d73291e889330568cfe4ea6fa396bb931444f78d7",
+    "modified": false
+  },
+  "vendor/guangdong_after_reset_r23_compressed_20261112/repo/src/smm/gd_october_research_thermal.py": {
+    "origin": "guangdong_after_reset_r23_compressed_20261112/repo/src/smm/gd_october_research_thermal.py",
+    "sha256": "354a08102d816b8cfd482aa362ccf744e42b268f855517c28e78ec41bf3a3998",
+    "modified": false
+  },
+  "vendor/guangdong_after_reset_r23_compressed_20261112/repo/src/smm/gd_october_roll.py": {
+    "origin": "guangdong_after_reset_r23_compressed_20261112/repo/src/smm/gd_october_roll.py",
+    "sha256": "f40ccc83b321c5e5b2f0db172c43c12ba033b510be5cb9ef505fdc81c84d0cc1",
+    "modified": false
+  },
+  "vendor/guangdong_after_reset_r23_compressed_20261112/repo/src/smm/gd_october_rt_contract.py": {
+    "origin": "guangdong_after_reset_r23_compressed_20261112/repo/src/smm/gd_october_rt_contract.py",
+    "sha256": "9ec43df08a068ef8f24e66b573531e11166ff6ec2f432f528d35acd1fcc87b14",
+    "modified": false
+  },
+  "vendor/guangdong_after_reset_r23_compressed_20261112/repo/src/smm/gd_october_run_identity.py": {
+    "origin": "guangdong_after_reset_r23_compressed_20261112/repo/src/smm/gd_october_run_identity.py",
+    "sha256": "2563edf1ff01d3d8a822b99ca9a1ad786a3ff72ee3c843246b0a8c5adfc28e33",
+    "modified": false
+  },
+  "vendor/guangdong_after_reset_r23_compressed_20261112/repo/src/smm/gd_october_sced.py": {
+    "origin": "guangdong_after_reset_r23_compressed_20261112/repo/src/smm/gd_october_sced.py",
+    "sha256": "fd8591b8d19106695e55ab8841e19f6ea66548dde83331c3defba69edc9c226a",
+    "modified": false
+  },
+  "vendor/guangdong_after_reset_r23_compressed_20261112/repo/src/smm/gd_october_storage.py": {
+    "origin": "guangdong_after_reset_r23_compressed_20261112/repo/src/smm/gd_october_storage.py",
+    "sha256": "87a1f3f082826f4509bd6b20ebde3cd71b808a64beec9cef36b367da906bf207",
+    "modified": false
+  },
+  "vendor/guangdong_after_reset_r23_compressed_20261112/repo/src/smm/gd_october_storage_capacity_v3.py": {
+    "origin": "guangdong_after_reset_r23_compressed_20261112/repo/src/smm/gd_october_storage_capacity_v3.py",
+    "sha256": "294f52354deaa7c6cde542ed867f5c460dfcd4f0256c20b31287ee8363522877",
+    "modified": false
+  },
+  "vendor/guangdong_after_reset_r23_compressed_20261112/repo/src/smm/gd_october_thermal.py": {
+    "origin": "guangdong_after_reset_r23_compressed_20261112/repo/src/smm/gd_october_thermal.py",
+    "sha256": "783fd6b26a275837f87eb0bc389ccb7a371466d95076075414f96870c0cd227d",
+    "modified": false
+  },
+  "vendor/guangdong_after_reset_r23_compressed_20261112/repo/src/smm/gd_october_window_job.py": {
+    "origin": "guangdong_after_reset_r23_compressed_20261112/repo/src/smm/gd_october_window_job.py",
+    "sha256": "d3e24429cfb98656261e14ec26116df432ede754fdb4cf0fe7752ecf52002181",
+    "modified": false
+  },
+  "vendor/guangdong_after_reset_r23_compressed_20261112/repo/src/smm/gd_price_basis.py": {
+    "origin": "guangdong_after_reset_r23_compressed_20261112/repo/src/smm/gd_price_basis.py",
+    "sha256": "cc2f6f37ca6507079df7aece494a6cc8259c7edc170a3cd46cda9b84b5d5186d",
+    "modified": false
+  },
+  "vendor/guangdong_after_reset_r23_compressed_20261112/repo/src/smm/gd_price_research.py": {
+    "origin": "guangdong_after_reset_r23_compressed_20261112/repo/src/smm/gd_price_research.py",
+    "sha256": "6bf57c0f18f9efea05c0e960082da69eae86011ca5edbc567b65219923381844",
+    "modified": false
+  },
+  "vendor/guangdong_after_reset_r23_compressed_20261112/repo/src/smm/gd_r23_equivalent_compression.py": {
+    "origin": "guangdong_after_reset_r23_compressed_20261112/repo/src/smm/gd_r23_equivalent_compression.py",
+    "sha256": "c7d1bbb3062932fdc0c4198c564c3228ac9744c69fda6bf07e98ff679245112f",
+    "modified": false
+  },
+  "vendor/guangdong_after_reset_r23_compressed_20261112/repo/src/smm/gd_r23_scuc_contract.py": {
+    "origin": "guangdong_after_reset_r23_compressed_20261112/repo/src/smm/gd_r23_scuc_contract.py",
+    "sha256": "7687112d5c3106b908609ec462c781feea911e5339ae229b01886953453cb7ee",
+    "modified": false
+  },
+  "vendor/guangdong_after_reset_r23_compressed_20261112/repo/src/smm/gd_solve.py": {
+    "origin": "guangdong_after_reset_r23_compressed_20261112/repo/src/smm/gd_solve.py",
+    "sha256": "2c46623953d41244aef39dcceca44090d45fcd9adea220778704cef76e1525a7",
+    "modified": false
+  },
+  "vendor/guangdong_after_reset_r23_compressed_20261112/repo/src/smm/highs_gap.py": {
+    "origin": "guangdong_after_reset_r23_compressed_20261112/repo/src/smm/highs_gap.py",
+    "sha256": "730728d74f46d6668dfad6037f0b7d66e7fbc13dff24bdfceb3091609fc1a096",
+    "modified": false
+  },
+  "vendor/guangdong_after_reset_r23_compressed_20261112/repo/src/smm/highs_solver.py": {
+    "origin": "guangdong_after_reset_r23_compressed_20261112/repo/src/smm/highs_solver.py",
+    "sha256": "3c87143c161367b33e5c9cd6e9755f829e5c07dbc7dd0a5d7c96cd0e4fc1571e",
+    "modified": false
+  },
+  "vendor/guangdong_after_reset_r23_compressed_20261112/repo/src/smm/highs_worker.py": {
+    "origin": "guangdong_after_reset_r23_compressed_20261112/repo/src/smm/highs_worker.py",
+    "sha256": "dc439a81e2cb2eb2a3595d24f0c8ead08ffa633387a259a868f1d0d9fcdc46ea",
+    "modified": false
+  },
+  "vendor/guangdong_r56_market_builder_20261112/market_builder.py": {
+    "origin": "guangdong_r56_market_builder_20261112/market_builder.py",
+    "sha256": "85b2ae39f522b4549dcec98adb9305f5ab289322247feb0d7f35c85c431bb256",
+    "modified": false
+  },
+  "vendor/guangdong_r56_market_builder_20261112/physical_builder.py": {
+    "origin": "guangdong_r56_market_builder_20261112/physical_builder.py",
+    "sha256": "3093eb98f481999616157586929e564929fb52c48eae2437329d0861afb1cd7a",
+    "modified": false
+  },
+  "vendor/guangdong_r68_three_state_builder_20261112/integration.py": {
+    "origin": "guangdong_r68_three_state_builder_20261112/integration.py",
+    "sha256": "1da8332c62d4d98fb62a0bf19868741bfb1f9a93b0dfa0396d3b262d18074a78",
+    "modified": false
+  },
+  "vendor/guangdong_r68_three_state_builder_20261112/events5.py": {
+    "origin": "guangdong_r68_three_state_builder_20261112/events5.py",
+    "sha256": "7d69acdcb1568cdddca1b3461672ab0fe428ece3c91e11d24605b00299b5823d",
+    "modified": false
+  },
+  "vendor/guangdong_r68_three_state_builder_20261112/prepare_small.py": {
+    "origin": "guangdong_r68_three_state_builder_20261112/prepare_small.py",
+    "sha256": "bf474b72d9c0df60dbc751420a98fb2ef14421cdea5a01aacfe70ba8899676ac",
+    "modified": false
+  },
+  "vendor/guangdong_r65_three_state_startup_20261112/startup.py": {
+    "origin": "guangdong_r65_three_state_startup_20261112/startup.py",
+    "sha256": "d9d4acaa6dad1f07c8363730e21bb9fe6cfa8311e6320cfda38157fa9be49076",
+    "modified": false
+  },
+  "vendor/guangdong_r65_three_state_startup_20261112/prepare.py": {
+    "origin": "guangdong_r65_three_state_startup_20261112/prepare.py",
+    "sha256": "89d9ca8eef006f67f35f15b3b19cf03446e699ba984f854f670a317a6514df28",
+    "modified": false
+  },
+  "vendor/guangdong_r65_three_state_startup_20261112/standard_counted_worker.py": {
+    "origin": "guangdong_r65_three_state_startup_20261112/standard_counted_worker.py",
+    "sha256": "96dfd2d81053f3a41dcc42a6078d99d1900eb8dbf20bda0b8bee59804e55f637",
+    "modified": false
+  },
+  "vendor/guangdong_market_program_v22_20261112/preflight.py": {
+    "origin": "guangdong_market_program_v22_20261112/preflight.py",
+    "sha256": "ab2a3a53310441a01d673f15aa7a70858110e2eb659d5e21202bd025c13cea05",
+    "modified": false
+  },
+  "vendor/guangdong_r80_rolling_rt_scuc_20261112/model.py": {
+    "origin": "guangdong_r80_rolling_rt_scuc_20261112/model.py",
+    "sha256": "53bba1e4f8b29242819cef525e4e24e95c898e3741ca330f33f82c9591ba74fc",
+    "modified": false
+  },
+  "vendor/guangdong_r80_rolling_rt_scuc_20261112/protocol.py": {
+    "origin": "guangdong_r80_rolling_rt_scuc_20261112/protocol.py",
+    "sha256": "68e9b1faf2b24073ca9c2edb4b6a9c78c845bdaa47127d0b7a850803d35e052b",
+    "modified": false
+  },
+  "vendor/guangdong_r80_rolling_rt_scuc_20261112/runner.py": {
+    "origin": "guangdong_r80_rolling_rt_scuc_20261112/runner.py",
+    "sha256": "c40c956823552512fc12267aedb7099c629ea9587ab46692df58c0e3b9904d1b",
+    "modified": false
+  },
+  "vendor/guangdong_r80_rolling_rt_scuc_20261112/README.md": {
+    "origin": "guangdong_r80_rolling_rt_scuc_20261112/README.md",
+    "sha256": "0b64d007f02df6ede90667e41165cffc091f996642afbbccf1ce5b4353a2eca0",
+    "modified": false
+  },
+  "vendor/guangdong_r80_rt_recommitment_20261112/RULE_CONTRACT.md": {
+    "origin": "guangdong_r80_rt_recommitment_20261112/RULE_CONTRACT.md",
+    "sha256": "99e7af1b2eaa1ed29164f0399ff1a2eeed7c40768c3c0d48261a228c5df6eb8d",
+    "modified": false
+  },
+  "vendor/guangdong_r65_three_state_startup_20261112/preflight.py": {
+    "origin": "guangdong_r65_three_state_startup_20261112/preflight.py",
+    "sha256": "ab2a3a53310441a01d673f15aa7a70858110e2eb659d5e21202bd025c13cea05",
+    "modified": false
+  },
+  "vendor/guangdong_r46_curtailable_full_day_20261112/r46smm/__init__.py": {
+    "origin": "guangdong_r46_curtailable_full_day_20261112/r46smm/__init__.py",
+    "sha256": "8b396c207905035b173903ea12377ccc3d2906997b8c26e7195a8d778b5b0448",
+    "modified": false
+  },
+  "vendor/guangdong_r46_curtailable_full_day_20261112/r46smm/gd_r15_da_rt_bridge.py": {
+    "origin": "guangdong_r46_curtailable_full_day_20261112/r46smm/gd_r15_da_rt_bridge.py",
+    "sha256": "f2aa57bf09151c11bca7e8ffd55e19b993431f89aceeaa733418d20dab10d5e9",
+    "modified": false
+  },
+  "vendor/guangdong_r21_day_verified_final_v1_20261112/source/repo/src/smm/gd_r16_native_support.py": {
+    "origin": "guangdong_r21_day_verified_final_v1_20261112/source/repo/src/smm/gd_r16_native_support.py",
+    "sha256": "a304d7ad8a5122a67e3fc65adb1d96f379188399974786fb9f7200ace85256cb",
+    "modified": false
+  }
+}

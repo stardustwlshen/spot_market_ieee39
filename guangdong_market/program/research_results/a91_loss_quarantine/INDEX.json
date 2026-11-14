@@ -1,0 +1,12 @@
+{
+  "schema": "gd.agc.frozen.display.v1",
+  "original_output": "/workspace/scratch/42c5fe32dad0/guangdong_v18_completion_validation_20261113/loss_gate_normal_entry/fresh_context/live_market_sessions/loss_gate_normal_entry",
+  "branch_id": "unified-first-hour-fa2fa7fc791d46489379067d9c2585a3",
+  "files": {
+    "STATUS.json": "f5aefa2a8a25358d06e42c680d6e61df378798cf9cee06cb358b0bf35b9456f9"
+  },
+  "publication_allowed": false,
+  "live_restore_allowed": false,
+  "source_version": "a91ef2ecd521067c27bb7224dde20739a7a7baefc51b970201a1e094cd0977e7",
+  "verification_scope": "captured through original live source gates; content display only after update; no math revalidation"
+}

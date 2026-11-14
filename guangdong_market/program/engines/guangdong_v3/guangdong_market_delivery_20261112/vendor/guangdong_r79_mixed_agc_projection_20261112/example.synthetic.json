@@ -1,0 +1,288 @@
+{
+  "schema": "gd.agc.mixed.r79.v1",
+  "mode": "research",
+  "thermal": {
+    "schema": "gd.agc.r73.v1",
+    "mode": "research",
+    "scope": "guangdong_local_research_projection",
+    "cross_zone_exchange_assumption": 0,
+    "as_of": "2026-11-12T00:30:00+08:00",
+    "hour_start": "2026-11-12T01:00:00+08:00",
+    "parameters": {
+      "bid_floor": {
+        "value": 3,
+        "unit": "yuan/MW_mileage",
+        "version": "synthetic_v1",
+        "source": "shared synthetic source",
+        "source_grade": "research_assumption",
+        "available_at": "2026-11-11T00:00:00+08:00",
+        "effective_from": "2026-11-12T00:00:00+08:00",
+        "effective_to": "2026-11-13T00:00:00+08:00"
+      },
+      "distribution_zone_demand_mw": {
+        "value": 200,
+        "unit": "MW",
+        "version": "synthetic_v1",
+        "source": "shared synthetic source",
+        "source_grade": "research_assumption",
+        "available_at": "2026-11-11T00:00:00+08:00",
+        "effective_from": "2026-11-12T00:00:00+08:00",
+        "effective_to": "2026-11-13T00:00:00+08:00"
+      },
+      "provincial_procurement_target_mw": {
+        "value": 100,
+        "unit": "MW",
+        "version": "synthetic_v1",
+        "source": "explicit synthetic test, not current Guangdong value",
+        "source_grade": "research_assumption",
+        "available_at": "2026-11-11T00:00:00+08:00",
+        "effective_from": "2026-11-12T00:00:00+08:00",
+        "effective_to": "2026-11-13T00:00:00+08:00"
+      },
+      "local_reserved_floor_mw": {
+        "value": 0,
+        "unit": "MW",
+        "version": "synthetic_v1",
+        "source": "explicit synthetic test, not current Guangdong value",
+        "source_grade": "research_assumption",
+        "available_at": "2026-11-11T00:00:00+08:00",
+        "effective_from": "2026-11-12T00:00:00+08:00",
+        "effective_to": "2026-11-13T00:00:00+08:00"
+      },
+      "full_control_area_kmax": {
+        "value": 3,
+        "unit": "dimensionless",
+        "version": "synthetic_v1",
+        "source": "shared synthetic source",
+        "source_grade": "research_assumption",
+        "available_at": "2026-11-11T00:00:00+08:00",
+        "effective_from": "2026-11-12T00:00:00+08:00",
+        "effective_to": "2026-11-13T00:00:00+08:00"
+      }
+    },
+    "units": [
+      {
+        "resource_id": "T0",
+        "plant_id": "P0",
+        "participant_type": "generator",
+        "submitted": true,
+        "region": "Guangdong",
+        "kind": "thermal",
+        "qualified": true,
+        "qualification_evidence": "SYNTHETIC ONLY",
+        "available_at": "2026-11-11T00:00:00+08:00",
+        "stable_online": true,
+        "k": 1,
+        "k1": 1,
+        "bid": 3,
+        "declared_ratio": 0.05,
+        "capacity_excluding_outage_mw": 1000,
+        "zone": "GD_fixture"
+      },
+      {
+        "resource_id": "T1",
+        "plant_id": "P1",
+        "participant_type": "generator",
+        "submitted": true,
+        "region": "Guangdong",
+        "kind": "thermal",
+        "qualified": true,
+        "qualification_evidence": "SYNTHETIC ONLY",
+        "available_at": "2026-11-11T00:00:00+08:00",
+        "stable_online": true,
+        "k": 1,
+        "k1": 1,
+        "bid": 4,
+        "declared_ratio": 0.05,
+        "capacity_excluding_outage_mw": 1000,
+        "zone": "GD_fixture"
+      },
+      {
+        "resource_id": "T2",
+        "plant_id": "P2",
+        "participant_type": "generator",
+        "submitted": true,
+        "region": "Guangdong",
+        "kind": "thermal",
+        "qualified": true,
+        "qualification_evidence": "SYNTHETIC ONLY",
+        "available_at": "2026-11-11T00:00:00+08:00",
+        "stable_online": true,
+        "k": 1,
+        "k1": 1,
+        "bid": 5,
+        "declared_ratio": 0.05,
+        "capacity_excluding_outage_mw": 1000,
+        "zone": "GD_fixture"
+      },
+      {
+        "resource_id": "T3",
+        "plant_id": "P3",
+        "participant_type": "generator",
+        "submitted": true,
+        "region": "Guangdong",
+        "kind": "thermal",
+        "qualified": true,
+        "qualification_evidence": "SYNTHETIC ONLY",
+        "available_at": "2026-11-11T00:00:00+08:00",
+        "stable_online": true,
+        "k": 1,
+        "k1": 1,
+        "bid": 6,
+        "declared_ratio": 0.05,
+        "capacity_excluding_outage_mw": 1000,
+        "zone": "GD_fixture"
+      },
+      {
+        "resource_id": "T4",
+        "plant_id": "P4",
+        "participant_type": "generator",
+        "submitted": true,
+        "region": "Guangdong",
+        "kind": "thermal",
+        "qualified": true,
+        "qualification_evidence": "SYNTHETIC ONLY",
+        "available_at": "2026-11-11T00:00:00+08:00",
+        "stable_online": true,
+        "k": 1,
+        "k1": 1,
+        "bid": 7,
+        "declared_ratio": 0.05,
+        "capacity_excluding_outage_mw": 1000,
+        "zone": "GD_fixture"
+      },
+      {
+        "resource_id": "T5",
+        "plant_id": "P5",
+        "participant_type": "generator",
+        "submitted": true,
+        "region": "Guangdong",
+        "kind": "thermal",
+        "qualified": true,
+        "qualification_evidence": "SYNTHETIC ONLY",
+        "available_at": "2026-11-11T00:00:00+08:00",
+        "stable_online": true,
+        "k": 1,
+        "k1": 1,
+        "bid": 8,
+        "declared_ratio": 0.05,
+        "capacity_excluding_outage_mw": 1000,
+        "zone": "GD_fixture"
+      }
+    ]
+  },
+  "storage": {
+    "schema": "gd.agc.storage.r78.v1",
+    "mode": "research",
+    "hour_start": "2026-11-12T01:00:00+08:00",
+    "as_of": "2026-11-12T00:30:00+08:00",
+    "zone": "GD_fixture",
+    "population": {
+      "complete": true,
+      "zone": "GD_fixture",
+      "demand_mw": "200",
+      "evidence": {
+        "id": "fixture",
+        "source": "shared synthetic source",
+        "source_grade": "research",
+        "hour_start": "2026-11-12T01:00:00+08:00",
+        "as_of": "2026-11-11T00:00:00+08:00"
+      },
+      "offers": [
+        {
+          "resource_id": "D",
+          "participant_type": "independent_storage_third_party",
+          "zone": "GD_fixture",
+          "evidence": {
+            "id": "fixture",
+            "source": "shared synthetic source",
+            "source_grade": "research",
+            "hour_start": "2026-11-12T01:00:00+08:00",
+            "as_of": "2026-11-11T00:00:00+08:00"
+          },
+          "submitted": true,
+          "normal_service": true,
+          "operator_excluded": false,
+          "participation_mode": "simultaneous_energy_agc",
+          "qualification": {
+            "market_registered": true,
+            "dispatch_direct_control": true,
+            "dispatch_agreement": true,
+            "purchase_sale_contract": true,
+            "agc_capable": true,
+            "initial_model_performance_test": true,
+            "autor_test_published": true,
+            "simultaneous_energy_market_qualified": true,
+            "simultaneous_technical_test_completed": true,
+            "evidence": {
+              "id": "fixture",
+              "source": "shared synthetic source",
+              "source_grade": "research",
+              "hour_start": "2026-11-12T01:00:00+08:00",
+              "as_of": "2026-11-11T00:00:00+08:00"
+            },
+            "sustained_response_hours": "1",
+            "autor_test_hours": "8"
+          },
+          "rated_power_mw": "100",
+          "installed_capacity_mw": "100",
+          "declared_capacity_mw": "40",
+          "bid_yuan_per_mw_mileage": "3",
+          "k": "3",
+          "k1": "1"
+        }
+      ]
+    },
+    "parameters": {
+      "version": "scan_baseline_fixture_not_current",
+      "evidence": {
+        "id": "fixture",
+        "source": "shared synthetic source",
+        "source_grade": "research",
+        "hour_start": "2026-11-12T01:00:00+08:00",
+        "as_of": "2026-11-11T00:00:00+08:00"
+      },
+      "effective_from": "2026-11-12T00:00:00+08:00",
+      "effective_to": "2026-11-13T00:00:00+08:00",
+      "values": {
+        "G": "80",
+        "H": "20",
+        "QLL": ".2",
+        "Ux": ".7",
+        "Uy": "2.5",
+        "zx": ".4",
+        "zy": ".6",
+        "Qlb": "5",
+        "bid_floor": "3",
+        "bid_upper": "15",
+        "lambdaI": ".5",
+        "lambdaII": ".25",
+        "lambdaIII": ".25",
+        "KI_upper": "5",
+        "Lss_hours": "1",
+        "Ts_hours": "8"
+      }
+    },
+    "performance_universe": {
+      "scope": "entire_southern_unified_control_area",
+      "complete": true,
+      "kmax": "3",
+      "evidence": {
+        "id": "fixture",
+        "source": "shared synthetic source",
+        "source_grade": "research",
+        "hour_start": "2026-11-12T01:00:00+08:00",
+        "as_of": "2026-11-11T00:00:00+08:00"
+      }
+    }
+  },
+  "common_binding": {
+    "zone": "GD_fixture",
+    "source_ids": {
+      "synthetic_v1": "fixture"
+    }
+  },
+  "floor_crossing_policy": "exclude_crossing_unit",
+  "exact_tie_policy": "resource_id_research",
+  "candidate_price_cap": "15"
+}

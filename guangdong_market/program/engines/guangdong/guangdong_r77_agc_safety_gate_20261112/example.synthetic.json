@@ -1,0 +1,258 @@
+{
+  "schema": "gd.agc.safety.r77.v1",
+  "mode": "research",
+  "hour_start": "2026-11-12T01:00:00+08:00",
+  "gate_as_of": "2026-11-12T00:30:00+08:00",
+  "procurement_target_mw": 60,
+  "awarded_units": [
+    {
+      "resource_id": "a",
+      "kind": "thermal",
+      "awarded_mw": 20,
+      "sorting_price": 5,
+      "P": 0.9,
+      "k1": 2,
+      "award_evidence": {
+        "id": "synthetic",
+        "source": "synthetic fixture",
+        "source_grade": "research",
+        "as_of": "2026-11-12T00:00:00+08:00",
+        "hour_start": "2026-11-12T01:00:00+08:00"
+      },
+      "checks": {
+        "agc_normal": {
+          "status": "pass",
+          "reason": "synthetic explicitly checked",
+          "evidence": {
+            "id": "synthetic",
+            "source": "synthetic fixture",
+            "source_grade": "research",
+            "as_of": "2026-11-12T00:00:00+08:00",
+            "hour_start": "2026-11-12T01:00:00+08:00"
+          }
+        },
+        "capacity_balance": {
+          "status": "pass",
+          "reason": "synthetic explicitly checked",
+          "evidence": {
+            "id": "synthetic",
+            "source": "synthetic fixture",
+            "source_grade": "research",
+            "as_of": "2026-11-12T00:00:00+08:00",
+            "hour_start": "2026-11-12T01:00:00+08:00"
+          }
+        },
+        "network_sections": {
+          "status": "pass",
+          "reason": "synthetic explicitly checked",
+          "evidence": {
+            "id": "synthetic",
+            "source": "synthetic fixture",
+            "source_grade": "research",
+            "as_of": "2026-11-12T00:00:00+08:00",
+            "hour_start": "2026-11-12T01:00:00+08:00"
+          }
+        },
+        "hydro_vibration": {
+          "status": "not_applicable",
+          "reason": "thermal resource",
+          "evidence": {
+            "id": "synthetic",
+            "source": "synthetic fixture",
+            "source_grade": "research",
+            "as_of": "2026-11-12T00:00:00+08:00",
+            "hour_start": "2026-11-12T01:00:00+08:00"
+          }
+        },
+        "storage_soc": {
+          "status": "not_applicable",
+          "reason": "thermal resource",
+          "evidence": {
+            "id": "synthetic",
+            "source": "synthetic fixture",
+            "source_grade": "research",
+            "as_of": "2026-11-12T00:00:00+08:00",
+            "hour_start": "2026-11-12T01:00:00+08:00"
+          }
+        },
+        "no_increase_curtailment": {
+          "status": "pass",
+          "reason": "synthetic explicitly checked",
+          "evidence": {
+            "id": "synthetic",
+            "source": "synthetic fixture",
+            "source_grade": "research",
+            "as_of": "2026-11-12T00:00:00+08:00",
+            "hour_start": "2026-11-12T01:00:00+08:00"
+          }
+        }
+      }
+    },
+    {
+      "resource_id": "b",
+      "kind": "thermal",
+      "awarded_mw": 20,
+      "sorting_price": 5,
+      "P": 0.8,
+      "k1": 2,
+      "award_evidence": {
+        "id": "synthetic",
+        "source": "synthetic fixture",
+        "source_grade": "research",
+        "as_of": "2026-11-12T00:00:00+08:00",
+        "hour_start": "2026-11-12T01:00:00+08:00"
+      },
+      "checks": {
+        "agc_normal": {
+          "status": "pass",
+          "reason": "synthetic explicitly checked",
+          "evidence": {
+            "id": "synthetic",
+            "source": "synthetic fixture",
+            "source_grade": "research",
+            "as_of": "2026-11-12T00:00:00+08:00",
+            "hour_start": "2026-11-12T01:00:00+08:00"
+          }
+        },
+        "capacity_balance": {
+          "status": "pass",
+          "reason": "synthetic explicitly checked",
+          "evidence": {
+            "id": "synthetic",
+            "source": "synthetic fixture",
+            "source_grade": "research",
+            "as_of": "2026-11-12T00:00:00+08:00",
+            "hour_start": "2026-11-12T01:00:00+08:00"
+          }
+        },
+        "network_sections": {
+          "status": "pass",
+          "reason": "synthetic explicitly checked",
+          "evidence": {
+            "id": "synthetic",
+            "source": "synthetic fixture",
+            "source_grade": "research",
+            "as_of": "2026-11-12T00:00:00+08:00",
+            "hour_start": "2026-11-12T01:00:00+08:00"
+          }
+        },
+        "hydro_vibration": {
+          "status": "not_applicable",
+          "reason": "thermal resource",
+          "evidence": {
+            "id": "synthetic",
+            "source": "synthetic fixture",
+            "source_grade": "research",
+            "as_of": "2026-11-12T00:00:00+08:00",
+            "hour_start": "2026-11-12T01:00:00+08:00"
+          }
+        },
+        "storage_soc": {
+          "status": "not_applicable",
+          "reason": "thermal resource",
+          "evidence": {
+            "id": "synthetic",
+            "source": "synthetic fixture",
+            "source_grade": "research",
+            "as_of": "2026-11-12T00:00:00+08:00",
+            "hour_start": "2026-11-12T01:00:00+08:00"
+          }
+        },
+        "no_increase_curtailment": {
+          "status": "pass",
+          "reason": "synthetic explicitly checked",
+          "evidence": {
+            "id": "synthetic",
+            "source": "synthetic fixture",
+            "source_grade": "research",
+            "as_of": "2026-11-12T00:00:00+08:00",
+            "hour_start": "2026-11-12T01:00:00+08:00"
+          }
+        }
+      }
+    },
+    {
+      "resource_id": "c",
+      "kind": "thermal",
+      "awarded_mw": 20,
+      "sorting_price": 5,
+      "P": 0.8,
+      "k1": 1,
+      "award_evidence": {
+        "id": "synthetic",
+        "source": "synthetic fixture",
+        "source_grade": "research",
+        "as_of": "2026-11-12T00:00:00+08:00",
+        "hour_start": "2026-11-12T01:00:00+08:00"
+      },
+      "checks": {
+        "agc_normal": {
+          "status": "pass",
+          "reason": "synthetic explicitly checked",
+          "evidence": {
+            "id": "synthetic",
+            "source": "synthetic fixture",
+            "source_grade": "research",
+            "as_of": "2026-11-12T00:00:00+08:00",
+            "hour_start": "2026-11-12T01:00:00+08:00"
+          }
+        },
+        "capacity_balance": {
+          "status": "pass",
+          "reason": "synthetic explicitly checked",
+          "evidence": {
+            "id": "synthetic",
+            "source": "synthetic fixture",
+            "source_grade": "research",
+            "as_of": "2026-11-12T00:00:00+08:00",
+            "hour_start": "2026-11-12T01:00:00+08:00"
+          }
+        },
+        "network_sections": {
+          "status": "pass",
+          "reason": "synthetic explicitly checked",
+          "evidence": {
+            "id": "synthetic",
+            "source": "synthetic fixture",
+            "source_grade": "research",
+            "as_of": "2026-11-12T00:00:00+08:00",
+            "hour_start": "2026-11-12T01:00:00+08:00"
+          }
+        },
+        "hydro_vibration": {
+          "status": "not_applicable",
+          "reason": "thermal resource",
+          "evidence": {
+            "id": "synthetic",
+            "source": "synthetic fixture",
+            "source_grade": "research",
+            "as_of": "2026-11-12T00:00:00+08:00",
+            "hour_start": "2026-11-12T01:00:00+08:00"
+          }
+        },
+        "storage_soc": {
+          "status": "not_applicable",
+          "reason": "thermal resource",
+          "evidence": {
+            "id": "synthetic",
+            "source": "synthetic fixture",
+            "source_grade": "research",
+            "as_of": "2026-11-12T00:00:00+08:00",
+            "hour_start": "2026-11-12T01:00:00+08:00"
+          }
+        },
+        "no_increase_curtailment": {
+          "status": "pass",
+          "reason": "synthetic explicitly checked",
+          "evidence": {
+            "id": "synthetic",
+            "source": "synthetic fixture",
+            "source_grade": "research",
+            "as_of": "2026-11-12T00:00:00+08:00",
+            "hour_start": "2026-11-12T01:00:00+08:00"
+          }
+        }
+      }
+    }
+  ]
+}

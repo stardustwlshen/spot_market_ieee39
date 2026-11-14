@@ -1,0 +1,26 @@
+{
+  "activation_allowed": false,
+  "active_launcher_modified": false,
+  "artifacts": {
+    "STORAGE_POLICY.json": "5b25f9fa819392d7c6ee628ce9660d2fb8f8d6c3cc14af7313fdf9e48d6ff427",
+    "checked_mip_worker.py": "d72a1da2fbaa08c7ff2f45f96a89a6bf51f08e0000ad6fefa9d90778da06fdaf",
+    "generate_profile.py": "fd1cdde85163f03dd04a3ebd34cd15331d64fbef1225197794d813e7909dd2c0",
+    "matrix_warning_guard.py": "86804a89968ddf2362e91f6b37319fb10866bf57dc264bbeac99c93113b579c8",
+    "validate_actual_import.py": "77fab2cef99ad52e930ca7b52d2fe40b9c82c257dc6a234f716be7276710ee14"
+  },
+  "generator_source_pins": {
+    "/workspace/scratch/42c5fe32dad0/guangdong_market_delivery_full_20261112/guangdong_pipeline_20261112/transport_recovery_v2/matrix_warning_guard.py": "86804a89968ddf2362e91f6b37319fb10866bf57dc264bbeac99c93113b579c8",
+    "/workspace/scratch/42c5fe32dad0/guangdong_market_delivery_full_20261112/guangdong_pipeline_20261112/transport_recovery_v2/prepare_transport.py": "88f80ad64311717cf33cdef5a08a8f03feff93c3606543153ae57de7c2893fde",
+    "/workspace/scratch/42c5fe32dad0/guangdong_market_delivery_full_20261112/guangdong_pipeline_20261112/transport_recovery_v2/validate_actual_import.py": "371dc56a920d1e8aff122178c44c6b4053cdbfc59a3363f82079a6dd9a6d2ff6"
+  },
+  "input_pins": {
+    "/workspace/scratch/42c5fe32dad0/guangdong_pipeline_20261112/pure_fresh_run_v1/da_scuc/names.json": "7d6043ef27e473729cbb48697b2ec6a0815a44cb10a7131d305106dcfc77d0b7",
+    "/workspace/scratch/42c5fe32dad0/guangdong_pipeline_20261112/pure_fresh_run_v1/da_scuc/network_plan.json": "a56697b65993b2ea1b97225f4a5c01b8966a68166bee7cc3a105af062c809a2b",
+    "/workspace/scratch/42c5fe32dad0/guangdong_pipeline_20261112/pure_fresh_run_v1/da_scuc/template.json": "1a6c4f3e061c784c6524ecc555d702d9eccba8ea0e8ed4e04b371fdbbd67be32"
+  },
+  "model_import_calls": 0,
+  "next_step": "Explicit import-only validation, then a separately pinned transport revision; generation is not activation or cross-platform validation.",
+  "optimization_calls": 0,
+  "run": "/workspace/scratch/42c5fe32dad0/guangdong_pipeline_20261112/pure_fresh_run_v1",
+  "schema": "gd.delivery.matrix_profile_candidate.v1"
+}

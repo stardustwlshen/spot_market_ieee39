@@ -1,0 +1,18 @@
+# Fresh RT PRICE / simulation settlement
+
+`rt_price_settlement.py` contains no native call. `build_rt_price(local24_input, receipt)` builds the PRICE model from this input, applies frozen R61 C pricing-state boundaries and R74 quarter-domain transform. It does not invoke any old preparation function or read old run responses. Return: `(payload, names, trace)`.
+
+Receipt: `stage='RT', accepted=True, run_id, source_contract_sha256, local_input_content_sha256, window, event_id, request_sha256, response_sha256, research_only=True`. Content hash uses `digest()` here; raw-file hashes remain separately bound by the actual producer. This receipt must be constructed from the current actual acceptance, never a proposed fixture. Build supports the retained ten-resource/five-VRE, stable-thermal, bid−50 research contract; unsupported transitions or inventories reject, rather than silently invent a map. No RT dual enters PRICE.
+
+`load_execution(run_root, rt_root, da_artifacts_path)` consumes new relative-hash DA `gd.pipeline.da_artifacts.v1` references and R67-shaped current actual RT receipts. Requires96 accepted windows/288 executed cells, matching drain/report, dates, source identity, commands and local input hashes. Source contract must bind this DA physical artifact. Returns source/cells/DA/inputs/receipt/source_pins.
+
+`load_prices(..., price_manifest_path, execution_bundle, price_limit_spec=...)` requires `gd.pipeline.rt_price_manifest.v1` with96 records `{window, receipt:{path,sha256}, response:{path,sha256}}`. Per-window PRICE receipt: window, status=`verified_research_raw_price`, KKT.passed, raw_prices39, response_sha256, source_contract_sha256, run_id, local_input_content_sha256, RT_dual_used=False. Raw native must be Optimal/primal/dual-valid. All files must remain inside this new run, and all hashes rechecked. Missing/nonoptimal/duplicate prices reject; no fallback or zero.
+
+The caller supplies explicit R47 PriceLimitSpec. Quarter clipping precedes four-point hourly mean. Raw trace retained. Research bounded price is not official market/settlement price. `compute_settlement(...)` requires explicit synthetic participating/known-empty-contract assumptions; unknown contracts are not zero. It loads only exact retained R75 `assumptions`/`compute` function bodies in an isolated arithmetic namespace, without executing old fixed RUN/DA readers. The ≤1e−9 MWh wrong-sign accounting normalization and raw/delta record remain unchanged. Output is simulation only, actual_meter/formal_bill=None/payable=False.
+
+Tests:5 pure checks including fresh-input serialized payload/names equality against retained R74 W0 oracle. Historical input is only a test oracle, not a production dependency. No optimizer, no KKT rerun, no existing source modified.
+
+## Exact JSON transport and manifest identity
+Use `run_protocol.write(path, json_safe(value))` for hour prices, raw traces and settlement outputs, or `dumps_exact(value)` when writing bytes/text directly. Decimal values become exact decimal strings (never floats), datetimes ISO strings, tuples JSON arrays, dataclasses recursively mapped. Price kind labels and null formal-bill fields remain unchanged. JSON numeric strings must be read back with Decimal for arithmetic.
+
+PRICE manifest also requires top-level `run_id` and `source_contract_sha256` matching the execution receipt. Before indexing any execution input, the loader validates exactly96 unique integer windows0..95 (bool, negative,96+, duplicates rejected). Per-record actual input/response/KKT binding follows. Seven pure tests pass including exact money/price transport roundtrip and manifest failures.

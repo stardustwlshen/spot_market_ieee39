@@ -1,0 +1,79 @@
+{
+  "DA_artifacts_sha256": "e8e5a00f68a52ccbcdcb55d9ea4dac8fd4209a5e57fcf6cd66de8808cafb66c1",
+  "KKT_repeated": false,
+  "PRICE_manifest_sha256": "590d087fd9eb10ffa10f4b775430a249e911fd8e3f42b27b3285dfd45ede1d25",
+  "accepted_RT": 96,
+  "accepted_independent_PRICE": 96,
+  "calendar_hour_BESS_direction_checked": true,
+  "dated_internal_throughput_MWh": {
+    "ES1": 378.5707018467571,
+    "ES2": 726.1216994903552,
+    "ES3": 400.00000000000034,
+    "ES4": 740.6912526339195,
+    "ES5": 822.4857737983396
+  },
+  "day_end": "2026-11-12T00:00:00+08:00",
+  "executed_cells_report": 288,
+  "final_SOC_MWh": {
+    "ES1": 100.0,
+    "ES2": 200.0,
+    "ES3": 100.0,
+    "ES4": 300.0,
+    "ES5": 300.0
+  },
+  "formal_market_complete": false,
+  "issued_cells": 288,
+  "max_PRICE_saved_KKT_primal": 3.353761712787673e-12,
+  "max_RT_saved_KKT_primal": 1.0153655694011832e-11,
+  "max_independent_SOC_step_error_MWh": 2.8421709430404007e-13,
+  "next_day_tail_not_counted_as_execution": true,
+  "numeric_ledger_adjustments": [
+    {
+      "accounted_internal_throughput_mwh": 0.0,
+      "adjustment_mwh": 5.684341886080802e-14,
+      "cell_end": "2026-11-11T13:50:00+08:00",
+      "cell_start": "2026-11-11T13:45:00+08:00",
+      "date": "2026-11-11",
+      "physical_SOC_unchanged": true,
+      "physical_power_unchanged": true,
+      "raw_internal_throughput_mwh": -5.684341886080802e-14,
+      "resource": "ES3",
+      "tolerance_mwh": 1e-09
+    },
+    {
+      "accounted_internal_throughput_mwh": 0.0,
+      "adjustment_mwh": 7.958078640513122e-13,
+      "cell_end": "2026-11-11T14:05:00+08:00",
+      "cell_start": "2026-11-11T14:00:00+08:00",
+      "date": "2026-11-11",
+      "physical_SOC_unchanged": true,
+      "physical_power_unchanged": true,
+      "raw_internal_throughput_mwh": -7.958078640513122e-13,
+      "resource": "ES4",
+      "tolerance_mwh": 1e-09
+    },
+    {
+      "accounted_internal_throughput_mwh": 0.0,
+      "adjustment_mwh": 2.8421709430404007e-13,
+      "cell_end": "2026-11-11T23:10:00+08:00",
+      "cell_start": "2026-11-11T23:05:00+08:00",
+      "date": "2026-11-11",
+      "physical_SOC_unchanged": true,
+      "physical_power_unchanged": true,
+      "raw_internal_throughput_mwh": -2.8421709430404007e-13,
+      "resource": "ES3",
+      "tolerance_mwh": 1e-09
+    }
+  ],
+  "optimizer_calls": 0,
+  "passed": true,
+  "prefix_hashes_unchanged": 41,
+  "quarter_node_prices": 3744,
+  "reserve_requirements_MW_each": 400,
+  "schema": "gd.fresh_day.independent_receipt_physics.v1",
+  "scope": "Hash/receipt continuity and independent issued-cell physics; saved KKT not recomputed; simulated execution not metering; energy arithmetic independently reviewed separately",
+  "settlement_sha256": "a6fd886a7950d3de15e72521ab8c03faa984d9727def124b37e147d1bed7b9fa",
+  "source_run": "gd-760dddd43b9a4f24af0b58f1af0c4e8a",
+  "thermal_and_battery_ramps_checked": true,
+  "unqualified_VRE_and_BESS_reserve_credit": false
+}

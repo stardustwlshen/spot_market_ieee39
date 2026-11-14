@@ -1,0 +1,152 @@
+{
+  "files": [
+    {
+      "path": "CAPABILITY_CONTRACT.json",
+      "sha256": "0bc478354e0cb6594f0d05b140ec7b4626b494afa4c487304e1a395708a4c686"
+    },
+    {
+      "path": "CONTROL_DIAGNOSTIC.log",
+      "sha256": "f8347312b52a3b0bc8e6569e6ce7670e2a86d0b3825f96c1bfec0be7179257e4"
+    },
+    {
+      "path": "DIAGNOSTIC_SUMMARY.json",
+      "sha256": "e7fd711d2e57ea03ff13880c92c36ce248fa5f238552f69c91f8a409ddeb37b1"
+    },
+    {
+      "path": "FAILED_CONTROL_LOCATION.json",
+      "sha256": "da441ef2977bef8ab21c3b79c92cb091b33ce6fea45a5d1ad4f691390f98a273"
+    },
+    {
+      "path": "FAILED_LOCATION.log",
+      "sha256": "da441ef2977bef8ab21c3b79c92cb091b33ce6fea45a5d1ad4f691390f98a273"
+    },
+    {
+      "path": "FINAL_STATUS.json",
+      "sha256": "f03d966c9ac8ced507643fe095c889808e203e33004773550088c2a7d2a45fe1"
+    },
+    {
+      "path": "README.md",
+      "sha256": "4d5a2eb8eb9699e6e088a24b9a9988372281351a526ddfe1fee07f55ef702ae9"
+    },
+    {
+      "path": "ROUND1.log",
+      "sha256": "768ca6082572acaa30044ec9653f36b39eea18f5fb30c3ed9e62096c4a9f62c3"
+    },
+    {
+      "path": "ROUND1_PREFLIGHT.log",
+      "sha256": "ccb2b47cff6c96eb3a3a125d2e9bdffe47ebd6aa5421768a800f596fd322a1d2"
+    },
+    {
+      "path": "analyze_failed_controls.py",
+      "sha256": "08199f6d190275fe62cb161cb7503ef314990cecbcac09cadc107c309f195354"
+    },
+    {
+      "path": "diagnose_controls_once.py",
+      "sha256": "728b5d12db435a713031bb530d01d3f9eb9855d3659d868ee50345b3640268c4"
+    },
+    {
+      "path": "diagnostic_once/COMPLETED.json",
+      "sha256": "ddddaa6b7abbeb8c322779506477da52031bd73bb7bae8661a2483dcbbd94619"
+    },
+    {
+      "path": "diagnostic_once/INITIAL_STATE_REVIEW.json",
+      "sha256": "055a1cce7c314cbe4ce1eb677e8c5fe48f1f1503a76d48defe8b28c9a10551d4"
+    },
+    {
+      "path": "diagnostic_once/JACOBIAN_CHECK.json",
+      "sha256": "c2efcfcd3d83691bdc65005ca9ced8e5e9d95c9e791e94f2cc39e7ff8f918ad4"
+    },
+    {
+      "path": "diagnostic_once/MODEL_PLAN.json",
+      "sha256": "eb00cc6b8507a68ce1316e60acfbfe547de3ffb94d28e5396c2658f4af53bdf4"
+    },
+    {
+      "path": "diagnostic_once/RESULT.json",
+      "sha256": "3cfcb8a90cfb625817384e1d660bc40a5f160d5f24acfdcab096e14c0ebe3b50"
+    },
+    {
+      "path": "diagnostic_once/STARTED.json",
+      "sha256": "ebf5b0400ac6118f30ecf5f8dce756ab3d695e4ff0816f437c29092ab6551a67"
+    },
+    {
+      "path": "export_point.py",
+      "sha256": "7d2bcc5d51764d73c5c888f8df0f4ba4dc4d24c7348009de5757c3dddbd931b0"
+    },
+    {
+      "path": "final_review.py",
+      "sha256": "1f633af32027b6bf25bf606f73112cd410effc168c2c5acbbce7f7040012d611"
+    },
+    {
+      "path": "round_1/ACCEPTANCE_BINDING.json",
+      "sha256": "bddd146e583dc106232f86354af19007832fd69c23e3aab1348d2a7f5a055a2d"
+    },
+    {
+      "path": "round_1/AC_RESULT.json",
+      "sha256": "2ee8c714912432adb6f1b4d41f20ed8ae45cf5df5bfa9d6a5c843f39d567b398"
+    },
+    {
+      "path": "round_1/AC_STARTED.json",
+      "sha256": "ab532f758229b7fd94ebd2f134e2acf1b58e3b356111d6109d31b856d565c49e"
+    },
+    {
+      "path": "round_1/COMPLETED_LP.json",
+      "sha256": "5401f4e0b244f813bab1e0d8499f9feb42da3c40e69f50326d401c7c0f2d9c4d"
+    },
+    {
+      "path": "round_1/LOSS_FEEDBACK.json",
+      "sha256": "3dabcf39076d868c9f60e139d74ceb6255ff73916752b5398304bf4434740ac5"
+    },
+    {
+      "path": "round_1/MAPPING.json",
+      "sha256": "0c4b39bda379ae344ea70dca07a3076b98884d3135abb79491446ff6a57a8e98"
+    },
+    {
+      "path": "round_1/NAMES.json",
+      "sha256": "a7dde5d7aee0b6d5ff30a41d1080feb9bb3bd87f37851592f9e85deeda267a89"
+    },
+    {
+      "path": "round_1/PAYLOAD.json",
+      "sha256": "74c9da6bf6b3dc40b497cf51e277b8a2b1273d31356b0d088519ec1bfc7f547e"
+    },
+    {
+      "path": "round_1/PRECHECK.json",
+      "sha256": "452fa0eca0c8b12c0c11046961832aef1fd09709f9c92ac2189c96bb7fd62d62"
+    },
+    {
+      "path": "round_1/SCED/COMPLETED.json",
+      "sha256": "9380ea5b8f0be288af1a1301d52aa6c109991bcca4cfc899b0f17651e4f21107"
+    },
+    {
+      "path": "round_1/SCED/JOB.json",
+      "sha256": "bc636c8858edf2d1603a471d8ff0c4a0c8092ab7a44428e1007644523bd9719d"
+    },
+    {
+      "path": "round_1/SCED/request.json.gz",
+      "sha256": "b50f8c76f42aaf076f3928c55eff42b3214f07807b052883a9ee1855013b9442"
+    },
+    {
+      "path": "round_1/SCED/response.json.gz",
+      "sha256": "f036600aead22bea2e9b98767e1e967988f33566944800b60f8c3bed88b7401d"
+    },
+    {
+      "path": "round_1/SCED/worker.log.gz",
+      "sha256": "cdfc6d8cfb6fc6c73febdcfd2e4b8c2e2d8765d86c9c4b1c9680e8afd2272946"
+    },
+    {
+      "path": "round_1/SCED_REVIEW.json",
+      "sha256": "cddd297d807da34d2df6a3469cbc0b8b10eb8941da0861bf47232e9d0a3b2acf"
+    },
+    {
+      "path": "round_1/SUMMARY.json",
+      "sha256": "1dfeddd81cdd119c61c07dfdde66e483decf19b0398b02d64a78b742d1a8727b"
+    },
+    {
+      "path": "run_round.py",
+      "sha256": "a12d51d4451e6111d57b843efa6d979e39932af48474663d0e106d909090d2d1"
+    }
+  ],
+  "status": "not_safe_candidate",
+  "new_LP": 1,
+  "new_AC": 1,
+  "bounded_QV": 1
+}

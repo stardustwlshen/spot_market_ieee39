@@ -1,0 +1,25 @@
+{
+  "status": "two_bounded_methods_no_accepted_point",
+  "diagnostic_attempts": 3,
+  "compatibility_failures_before_first_Newton_step": 1,
+  "nontrivial_optimizer_runs": 2,
+  "additional_AC_calls": 0,
+  "new_HiGHS_calls": 0,
+  "PIPS": "15 iterations numerical failure; last point violates AC/V/ramp/linear constraints",
+  "SLSQP": {
+    "solver_success": false,
+    "message": "Positive directional derivative for linesearch",
+    "iterations": 35,
+    "max_AC_equality_residual_pu": 1.3331521223625842,
+    "max_squared_branch_flow_violation_pu": 0.0,
+    "max_bound_violation_pu": 0.0,
+    "max_reserve_linear_violation_pu": 0.0,
+    "strict_feasible_candidate": false,
+    "not_infeasibility_proof": true
+  },
+  "SLSQP_elapsed_seconds": 4.090854319998471,
+  "no_physical_infeasibility_claim": true,
+  "original_P_Q_V_network_400_limits_preserved": true,
+  "not_formal_safety_acceptance": true,
+  "no_further_automatic_trials": true
+}

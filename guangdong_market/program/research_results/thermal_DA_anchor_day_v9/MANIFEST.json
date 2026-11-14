@@ -1,0 +1,22 @@
+{
+  "schema": "gd.readonly.thermal_DA_anchor_day.v9",
+  "files": {
+    "VERIFIED_STAGE_BACKUP.json": "6e9b3e410fcf92f073938a9fc41f6510948d7e63211239cfe22f27e2248e8a95",
+    "ACCOUNT_COMPARISON.json": "b48e47ea7a042f349ea7b1398e455c029e4ea31cf495495744c07c8f6c9f2df1",
+    "SOURCE_INDEX.json": "3a44c1f90ced6c553342fb0df7b7221f732313c6fe6e49d5c06ca33a7cfad01b",
+    "EXECUTED_CELLS.csv": "2d52e8c5aa31676dea7ab89d7747b40f0416d8a8496ef46cf401d159efecb229",
+    "BRANCH96_INDEX.json": "4e0bc943417c833b25d075e715b8ea45218f72d293e4a64e0ea24f5103590815",
+    "SUMMARY.json": "925c8483c76088fd28c55e1940eb9807da1282b29fa1350d30f2c5fd514c9927",
+    "HOURS.csv": "cac6797ebc57009025983b86cfaf6d4a88fa85f2a620b4882f47df2e714cbbba",
+    "LEDGER.json": "da0cdc43f14512acc1ddd55920bdc35431b738cf6ab55f0a841888cf796a3c67",
+    "LEDGER.csv": "1c9642f3772dfa04e346525850402ff95c0819f3d180185c865e3736f4a8efed",
+    "QUARTER_PRICES.csv": "3e47f3c64dcc9e63c5404f7b620479f200fa9faa928023fcac6b2529f7196981"
+  },
+  "DA_identity": {
+    "run_id": "gd-760dddd43b9a4f24af0b58f1af0c4e8a",
+    "case_sha256": "c10e5cbfbe0f39f028d10cb2b2d30003e803033a3d883f4c753339bc9c1cdbe9",
+    "SCED_response_sha256": "615e7dafe88fc3d9efdc444f394014ab7d6112a88418122976eb0d6b9afb620a"
+  },
+  "status_preserved": "thermal_DA_reference_research_day_accounting_verified",
+  "new_v9_native_day": false
+}

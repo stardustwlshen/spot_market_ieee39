@@ -1,0 +1,12 @@
+{
+  "schema": "gd.agc.frozen.display.v1",
+  "original_output": "/workspace/scratch/42c5fe32dad0/guangdong_v18_completion_validation_20261113/gated_normal_entry/fresh_context/live_market_sessions/candidate_gate_normal_entry",
+  "branch_id": "unified-first-hour-146b17876d7f40729b0b4317bc9116aa",
+  "files": {
+    "STATUS.json": "a4e2d50c2b83244c7ed3f2088651741db0be7af7374cd6f8d722172e0d796afa"
+  },
+  "publication_allowed": false,
+  "live_restore_allowed": false,
+  "source_version": "20fe47def452fc51e28bf211d513408e888266ab33384e1d17a9aafeb74aed23",
+  "verification_scope": "captured through original source gates; content display only after update, no math revalidation"
+}

@@ -1,0 +1,10 @@
+{
+  "/workspace/scratch/42c5fe32dad0/guangdong_v18_completion_validation_20261113/gated_normal_entry/fresh_context/live_market_sessions/candidate_gate_normal_entry": {
+    "bundle": "../research_results/20fe_candidate_quarantine",
+    "index_sha256": "d8e23f0ba109acb15993ff62d1b7bb15d0d13090f1e710593902528a430c52d9"
+  },
+  "/workspace/scratch/42c5fe32dad0/guangdong_v18_completion_validation_20261113/loss_gate_normal_entry/fresh_context/live_market_sessions/loss_gate_normal_entry": {
+    "bundle": "../research_results/a91_loss_quarantine",
+    "index_sha256": "c4f19dffc910521baee2dc479cd78fe22de04cfa3e1c1b53878349e1ad3ee5e6"
+  }
+}

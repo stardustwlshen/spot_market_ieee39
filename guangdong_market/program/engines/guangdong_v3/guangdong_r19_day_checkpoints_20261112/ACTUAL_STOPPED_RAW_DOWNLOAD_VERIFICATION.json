@@ -1,0 +1,44 @@
+{
+  "status": "all_stopped_native_parts_actually_downloaded_and_restored",
+  "bundle_tree_sha256": "c628ee177d479ecc57520e69645261bb87a1cd417ed67cdda7504b5b508d13cc",
+  "bundle_files": 1289,
+  "bundle_bytes": 153272234,
+  "native_subtree_files": 1278,
+  "native_subtree_bytes": 153245863,
+  "native_subtree_sha256": "d90f2587df1e753d1cef726c892870e243dee57de7ffae5f40db5bbed9ccf8c9",
+  "parts": [
+    {
+      "archive": "广东省内程序_R19实际79次运行及边界拒绝原证据_20261112_分卷1共5.zip",
+      "sha256": "97d92f938fb37f45c4b1fd9cca76c1558b1bcae49c849e4fef4f851d6d48bc21",
+      "files": 318,
+      "raw_bytes": 32492155
+    },
+    {
+      "archive": "广东省内程序_R19实际79次运行及边界拒绝原证据_20261112_分卷2共5.zip",
+      "sha256": "d9fb3ffd296f48b2f62acb10b37680db777906ce7d4fca531d3a6952a0287389",
+      "files": 262,
+      "raw_bytes": 32459655
+    },
+    {
+      "archive": "广东省内程序_R19实际79次运行及边界拒绝原证据_20261112_分卷3共5.zip",
+      "sha256": "ce3d3d5dfe5119c5252234e13095ed35beb8a0df8abc6f8b798384b239754541",
+      "files": 255,
+      "raw_bytes": 32487410
+    },
+    {
+      "archive": "广东省内程序_R19实际79次运行及边界拒绝原证据_20261112_分卷4共5.zip",
+      "sha256": "6b14c460499877c488022adfa4ed84534d384344a0e004ab6c161bdda3dd9ba5",
+      "files": 256,
+      "raw_bytes": 32499530
+    },
+    {
+      "archive": "广东省内程序_R19实际79次运行及边界拒绝原证据_20261112_分卷5共5.zip",
+      "sha256": "f046a6f1d2c2c16a7bdd17b0c5c969f4166c5660717f3319912057957f5cb410",
+      "files": 198,
+      "raw_bytes": 23333484
+    }
+  ],
+  "new_native_calls": 0,
+  "numerical_review_pending": true,
+  "full_day_accepted": false
+}

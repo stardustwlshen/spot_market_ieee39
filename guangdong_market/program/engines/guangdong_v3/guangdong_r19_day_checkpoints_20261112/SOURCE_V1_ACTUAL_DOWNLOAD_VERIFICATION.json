@@ -1,0 +1,21 @@
+{
+  "status": "all_source_parts_actually_downloaded_and_restored",
+  "source_tree_sha256": "97d50dfea4775c42eb9f613deada52050d4724827f15b766bd3c16e2a7d60b64",
+  "source_files": 957,
+  "source_bytes": 34066277,
+  "parts": [
+    {
+      "archive": "广东省内程序_R19因果端值研究候选源码_20261112_分卷1共2.zip",
+      "sha256": "e574128b19798baf2fdf99f112853f00103db2afb53bc39e44ac2a7896631c08",
+      "files": 955,
+      "raw_bytes": 31636519
+    },
+    {
+      "archive": "广东省内程序_R19因果端值研究候选源码_20261112_分卷2共2.zip",
+      "sha256": "19b35b9c43b61c51eea61d4b2536d6fe5fb27274b61313acbb74ae00f8362889",
+      "files": 2,
+      "raw_bytes": 2429758
+    }
+  ],
+  "new_native_calls": 0
+}

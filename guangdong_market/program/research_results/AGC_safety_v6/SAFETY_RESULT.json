@@ -1,0 +1,20 @@
+{
+  "R77_gate_sha256": "5dd7645214dde59d546a5d85eeb999ae921a0c462f4fda21704ce35045384768",
+  "comparison_sha256": "b5dbb674f384a5d453aa471a19ad5445b170b396cb15268a68dd637689af8972",
+  "dispatch_authorized": false,
+  "formal": false,
+  "requires_AC_and_security": true,
+  "requires_unit_specific_or_system_reclearing_investigation": true,
+  "research_no_increase_check": "fail",
+  "safety_release": false,
+  "schema": "gd.research.short_AGC_safety_result.v1",
+  "status": "research_AGC_safety_not_released",
+  "unit_attribution_not_established": true,
+  "unit_removals": [],
+  "inherited_synthetic_quote_source": {
+    "path": "guangdong_agc_joint_safety_loop_v1_20261112/candidate_v3_causal_receipted/thermal_input.json",
+    "sha256": "042b28cbfd270dcd688c2c231847d8b0a900e0ebd9d3bd50b7eb1d787d4fd488",
+    "not_actual_performance": true,
+    "not_new_H12_clearing": true
+  }
+}

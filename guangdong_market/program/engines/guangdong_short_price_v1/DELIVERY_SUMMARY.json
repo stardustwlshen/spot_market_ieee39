@@ -1,0 +1,38 @@
+{
+  "status": "frozen_installable_short_PRICE_entry_after_resume",
+  "entry": "guangdong_short_price_user_cli_v1_20261112/program.py",
+  "program_sha256": "6563be6606634537b9e10c248c63304f77d5dbd45a34526cbaefb48777c7de54",
+  "manifest_sha256": "6cb94c7ad05fca98cb9e5f21d8a83dd7aabd3934045cffda43607150b8105237",
+  "files": 358,
+  "source_bytes": 5780087,
+  "source_and_installed_all_hashes_verified": true,
+  "installed_root": "install_final",
+  "actual_installed_prepared": "installed_actual_edited_pure_v1",
+  "prepared_columns": 2631,
+  "prepared_rows": 1797,
+  "selected_short_run": "ieee39-cloud/repo/runs_guangdong/ui_short_edited_v1",
+  "native_occurrences_in_new_entry": 0,
+  "native_calls_this_recovery": 0,
+  "unknown_native_occurrences": 0,
+  "already_completed": [
+    "actual edited parameters/prepare",
+    "installed edited parameters/prepare",
+    "installed dryrun ready0native",
+    "old v25 price raw/KKT read",
+    "old v26 hour read"
+  ],
+  "resumed_tests_log": "RESUMED_TESTS.log",
+  "formal": false,
+  "safety_release": false,
+  "payable": false,
+  "remaining": [
+    "original homepage actual new PRICE not yet exercised",
+    "new edited hour lacks12executed cells and must reject",
+    "RT CLIv2 import/AGC/midnight unsupported in this fixedv1 registry",
+    "cold/warm/hot and active price intervals unsupported",
+    "final AC feedback marginal domain not certified"
+  ],
+  "resumed_tests_passed": 3,
+  "actual_incomplete_hour_rejected_without_output": true,
+  "incomplete_hour_log": "INCOMPLETE_HOUR_REJECT.log"
+}

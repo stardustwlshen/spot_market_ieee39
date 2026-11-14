@@ -1,0 +1,733 @@
+{
+  "thermal": {
+    "C1": {
+      "P_min_MW": 587.5,
+      "P_max_MW": 636.0,
+      "source_bounds": {
+        "raw_with_AGC": [
+          300.0,
+          636.0
+        ],
+        "previous_endpoint_ramp": [
+          587.5,
+          684.5
+        ],
+        "next_endpoint_ramp": [
+          587.5,
+          684.5
+        ]
+      },
+      "original_P_MW": 636.0
+    },
+    "C2": {
+      "P_min_MW": 660.5,
+      "P_max_MW": 698.3144595889985,
+      "source_bounds": {
+        "raw_with_AGC": [
+          335.0,
+          715.0
+        ],
+        "previous_endpoint_ramp": [
+          589.3144595889985,
+          698.3144595889985
+        ],
+        "next_endpoint_ramp": [
+          660.5,
+          769.5
+        ]
+      },
+      "original_P_MW": 698.3144595889985
+    },
+    "C3": {
+      "P_min_MW": 720.6036953118341,
+      "P_max_MW": 720.6036953118341,
+      "source_bounds": {
+        "raw_with_AGC": [
+          400.0,
+          855.0
+        ],
+        "previous_endpoint_ramp": [
+          590.6036953118341,
+          720.6036953118341
+        ],
+        "next_endpoint_ramp": [
+          720.6036953118341,
+          850.6036953118341
+        ]
+      },
+      "original_P_MW": 720.6036953118341
+    },
+    "CCGT": {
+      "P_min_MW": 320.0,
+      "P_max_MW": 457.5,
+      "source_bounds": {
+        "raw_with_AGC": [
+          320.0,
+          677.0
+        ],
+        "previous_endpoint_ramp": [
+          182.5,
+          457.5
+        ],
+        "next_endpoint_ramp": [
+          192.3415422201661,
+          467.3415422201661
+        ]
+      },
+      "original_P_MW": 385.4
+    },
+    "GT": {
+      "P_min_MW": 85.0,
+      "P_max_MW": 220.0,
+      "source_bounds": {
+        "raw_with_AGC": [
+          85.0,
+          290.0
+        ],
+        "previous_endpoint_ramp": [
+          -50.0,
+          220.0
+        ],
+        "next_endpoint_ramp": [
+          -50.0,
+          220.0
+        ]
+      },
+      "original_P_MW": 85.0
+    }
+  },
+  "battery": {
+    "ES4": {
+      "P_min_MW": 0.0,
+      "P_max_MW": 150.0,
+      "original_P_MW": 50.0,
+      "discharge_only_integer_mode_unchanged": true,
+      "other47_charge_discharge_fixed": true,
+      "all48_energy_shift_per_deltaP": -0.08771929824561404,
+      "restrictions": [
+        {
+          "name": "battery.discharge[ES4,0]",
+          "delta_min": -50.0,
+          "delta_max": null
+        },
+        {
+          "name": "battery.energy[ES4,0]",
+          "delta_min": -2936.0,
+          "delta_max": 2535.999999999999
+        },
+        {
+          "name": "battery.energy[ES4,1]",
+          "delta_min": -2936.0,
+          "delta_max": 2535.999999999999
+        },
+        {
+          "name": "battery.energy[ES4,2]",
+          "delta_min": -2936.0,
+          "delta_max": 2535.999999999999
+        },
+        {
+          "name": "battery.energy[ES4,3]",
+          "delta_min": -2936.0,
+          "delta_max": 2535.999999999999
+        },
+        {
+          "name": "battery.energy[ES4,4]",
+          "delta_min": -2936.0,
+          "delta_max": 2535.999999999999
+        },
+        {
+          "name": "battery.energy[ES4,5]",
+          "delta_min": -2936.0,
+          "delta_max": 2535.999999999999
+        },
+        {
+          "name": "battery.energy[ES4,6]",
+          "delta_min": -2936.0,
+          "delta_max": 2535.999999999999
+        },
+        {
+          "name": "battery.energy[ES4,7]",
+          "delta_min": -2936.0,
+          "delta_max": 2535.999999999999
+        },
+        {
+          "name": "battery.energy[ES4,8]",
+          "delta_min": -2936.0,
+          "delta_max": 2535.999999999999
+        },
+        {
+          "name": "battery.energy[ES4,9]",
+          "delta_min": -2936.0,
+          "delta_max": 2535.999999999999
+        },
+        {
+          "name": "battery.energy[ES4,10]",
+          "delta_min": -2936.0,
+          "delta_max": 2535.999999999999
+        },
+        {
+          "name": "battery.energy[ES4,11]",
+          "delta_min": -2936.0,
+          "delta_max": 2535.999999999999
+        },
+        {
+          "name": "battery.energy[ES4,12]",
+          "delta_min": -2890.8750000000005,
+          "delta_max": 2581.124999999999
+        },
+        {
+          "name": "battery.energy[ES4,13]",
+          "delta_min": -2845.7500000000005,
+          "delta_max": 2626.2499999999986
+        },
+        {
+          "name": "battery.energy[ES4,14]",
+          "delta_min": -2800.625000000001,
+          "delta_max": 2671.3749999999986
+        },
+        {
+          "name": "battery.energy[ES4,15]",
+          "delta_min": -2755.500000000001,
+          "delta_max": 2716.499999999998
+        },
+        {
+          "name": "battery.energy[ES4,16]",
+          "delta_min": -2711.0786562687435,
+          "delta_max": 2760.9213437312555
+        },
+        {
+          "name": "battery.energy[ES4,17]",
+          "delta_min": -2665.953656268744,
+          "delta_max": 2806.0463437312555
+        },
+        {
+          "name": "battery.energy[ES4,18]",
+          "delta_min": -2624.2309277556024,
+          "delta_max": 2847.769072244397
+        },
+        {
+          "name": "battery.energy[ES4,19]",
+          "delta_min": -2624.2309277556024,
+          "delta_max": 2847.769072244397
+        },
+        {
+          "name": "battery.energy[ES4,20]",
+          "delta_min": -2579.1059277556024,
+          "delta_max": 2892.894072244397
+        },
+        {
+          "name": "battery.energy[ES4,21]",
+          "delta_min": -2533.980927755603,
+          "delta_max": 2938.0190722443967
+        },
+        {
+          "name": "battery.energy[ES4,22]",
+          "delta_min": -2533.980927755603,
+          "delta_max": 2938.0190722443967
+        },
+        {
+          "name": "battery.energy[ES4,23]",
+          "delta_min": -2488.855927755603,
+          "delta_max": 2983.1440722443967
+        },
+        {
+          "name": "battery.energy[ES4,24]",
+          "delta_min": -2445.534603189898,
+          "delta_max": 3026.4653968101015
+        },
+        {
+          "name": "battery.energy[ES4,25]",
+          "delta_min": -2400.409603189898,
+          "delta_max": 3071.5903968101015
+        },
+        {
+          "name": "battery.energy[ES4,26]",
+          "delta_min": -2355.2846031898985,
+          "delta_max": 3116.715396810101
+        },
+        {
+          "name": "battery.energy[ES4,27]",
+          "delta_min": -2316.9383972399546,
+          "delta_max": 3155.061602760045
+        },
+        {
+          "name": "battery.energy[ES4,28]",
+          "delta_min": -2271.813397239955,
+          "delta_max": 3200.1866027600445
+        },
+        {
+          "name": "battery.energy[ES4,29]",
+          "delta_min": -2226.688397239955,
+          "delta_max": 3245.3116027600445
+        },
+        {
+          "name": "battery.energy[ES4,30]",
+          "delta_min": -2181.5633972399555,
+          "delta_max": 3290.436602760044
+        },
+        {
+          "name": "battery.energy[ES4,31]",
+          "delta_min": -2136.4383972399555,
+          "delta_max": 3335.561602760044
+        },
+        {
+          "name": "battery.energy[ES4,32]",
+          "delta_min": -2091.313397239956,
+          "delta_max": 3380.6866027600436
+        },
+        {
+          "name": "battery.energy[ES4,33]",
+          "delta_min": -2046.188397239956,
+          "delta_max": 3425.8116027600436
+        },
+        {
+          "name": "battery.energy[ES4,34]",
+          "delta_min": -2001.0633972399562,
+          "delta_max": 3470.936602760043
+        },
+        {
+          "name": "battery.energy[ES4,35]",
+          "delta_min": -1955.9383972399564,
+          "delta_max": 3516.061602760043
+        },
+        {
+          "name": "battery.energy[ES4,36]",
+          "delta_min": -1910.8133972399567,
+          "delta_max": 3561.1866027600427
+        },
+        {
+          "name": "battery.energy[ES4,37]",
+          "delta_min": -1865.6883972399569,
+          "delta_max": 3606.3116027600427
+        },
+        {
+          "name": "battery.energy[ES4,38]",
+          "delta_min": -1820.563397239957,
+          "delta_max": 3651.436602760042
+        },
+        {
+          "name": "battery.energy[ES4,39]",
+          "delta_min": -1775.4383972399573,
+          "delta_max": 3696.561602760042
+        },
+        {
+          "name": "battery.energy[ES4,40]",
+          "delta_min": -1730.3133972399576,
+          "delta_max": 3741.6866027600418
+        },
+        {
+          "name": "battery.energy[ES4,41]",
+          "delta_min": -1685.1883972399578,
+          "delta_max": 3786.8116027600418
+        },
+        {
+          "name": "battery.energy[ES4,42]",
+          "delta_min": -1640.063397239958,
+          "delta_max": 3831.9366027600413
+        },
+        {
+          "name": "battery.energy[ES4,43]",
+          "delta_min": -1594.9383972399582,
+          "delta_max": 3877.0616027600413
+        },
+        {
+          "name": "battery.energy[ES4,44]",
+          "delta_min": -1549.8133972399585,
+          "delta_max": 3922.186602760041
+        },
+        {
+          "name": "battery.energy[ES4,45]",
+          "delta_min": -1504.6883972399587,
+          "delta_max": 3967.311602760041
+        },
+        {
+          "name": "battery.energy[ES4,46]",
+          "delta_min": -1459.563397239959,
+          "delta_max": 4012.4366027600404
+        },
+        {
+          "name": "battery.energy[ES4,47]",
+          "delta_min": -1414.4383972399592,
+          "delta_max": 4057.5616027600404
+        },
+        {
+          "name": "battery.c_power[434]",
+          "delta_min": null,
+          "delta_max": 100.0
+        },
+        {
+          "name": "battery.c_ramp[289]",
+          "delta_min": null,
+          "delta_max": 150.0
+        },
+        {
+          "name": "battery.c_ramp[290]",
+          "delta_min": -150.0,
+          "delta_max": null
+        },
+        {
+          "name": "battery.c_ramp[291]",
+          "delta_min": -200.0,
+          "delta_max": null
+        },
+        {
+          "name": "battery.c_ramp[292]",
+          "delta_min": null,
+          "delta_max": 100.0
+        },
+        {
+          "name": "battery.c_cycle[4]",
+          "delta_min": null,
+          "delta_max": 11958.438397239954
+        },
+        {
+          "name": "battery.c_terminal[7]",
+          "delta_min": null,
+          "delta_max": 4057.5616027600404
+        },
+        {
+          "name": "battery.c_terminal[8]",
+          "delta_min": -1414.4383972399592,
+          "delta_max": null
+        }
+      ],
+      "endpoint_midpoint_block_checks": [
+        {
+          "P_MW": 0.0,
+          "all_battery_rows_max_violation": 2.5757174171303632e-14
+        },
+        {
+          "P_MW": 150.0,
+          "all_battery_rows_max_violation": 5.684341886080802e-14
+        },
+        {
+          "P_MW": 75.0,
+          "all_battery_rows_max_violation": 2.5757174171303632e-14
+        }
+      ]
+    },
+    "ES5": {
+      "P_min_MW": 0.0,
+      "P_max_MW": 150.0,
+      "original_P_MW": 19.160527609735574,
+      "discharge_only_integer_mode_unchanged": true,
+      "other47_charge_discharge_fixed": true,
+      "all48_energy_shift_per_deltaP": -0.08771929824561404,
+      "restrictions": [
+        {
+          "name": "battery.discharge[ES5,0]",
+          "delta_min": -19.160527609735574,
+          "delta_max": null
+        },
+        {
+          "name": "battery.energy[ES5,0]",
+          "delta_min": -2855.1605276097353,
+          "delta_max": 2616.8394723902643
+        },
+        {
+          "name": "battery.energy[ES5,1]",
+          "delta_min": -2855.1605276097353,
+          "delta_max": 2616.8394723902643
+        },
+        {
+          "name": "battery.energy[ES5,2]",
+          "delta_min": -2855.1605276097353,
+          "delta_max": 2616.8394723902643
+        },
+        {
+          "name": "battery.energy[ES5,3]",
+          "delta_min": -2855.1605276097353,
+          "delta_max": 2616.8394723902643
+        },
+        {
+          "name": "battery.energy[ES5,4]",
+          "delta_min": -2855.1605276097353,
+          "delta_max": 2616.8394723902643
+        },
+        {
+          "name": "battery.energy[ES5,5]",
+          "delta_min": -2855.1605276097353,
+          "delta_max": 2616.8394723902643
+        },
+        {
+          "name": "battery.energy[ES5,6]",
+          "delta_min": -2855.1605276097353,
+          "delta_max": 2616.8394723902643
+        },
+        {
+          "name": "battery.energy[ES5,7]",
+          "delta_min": -2855.1605276097353,
+          "delta_max": 2616.8394723902643
+        },
+        {
+          "name": "battery.energy[ES5,8]",
+          "delta_min": -2855.1605276097353,
+          "delta_max": 2616.8394723902643
+        },
+        {
+          "name": "battery.energy[ES5,9]",
+          "delta_min": -2855.1605276097353,
+          "delta_max": 2616.8394723902643
+        },
+        {
+          "name": "battery.energy[ES5,10]",
+          "delta_min": -2819.0942410085013,
+          "delta_max": 2652.905758991498
+        },
+        {
+          "name": "battery.energy[ES5,11]",
+          "delta_min": -2819.0942410085013,
+          "delta_max": 2652.905758991498
+        },
+        {
+          "name": "battery.energy[ES5,12]",
+          "delta_min": -2779.405394563858,
+          "delta_max": 2692.594605436141
+        },
+        {
+          "name": "battery.energy[ES5,13]",
+          "delta_min": -2760.860097126747,
+          "delta_max": 2711.1399028732526
+        },
+        {
+          "name": "battery.energy[ES5,14]",
+          "delta_min": -2760.860097126747,
+          "delta_max": 2711.1399028732526
+        },
+        {
+          "name": "battery.energy[ES5,15]",
+          "delta_min": -2760.860097126747,
+          "delta_max": 2711.1399028732526
+        },
+        {
+          "name": "battery.energy[ES5,16]",
+          "delta_min": -2715.735097126747,
+          "delta_max": 2756.264902873252
+        },
+        {
+          "name": "battery.energy[ES5,17]",
+          "delta_min": -2670.6100971267474,
+          "delta_max": 2801.389902873252
+        },
+        {
+          "name": "battery.energy[ES5,18]",
+          "delta_min": -2625.4850971267474,
+          "delta_max": 2846.5149028732517
+        },
+        {
+          "name": "battery.energy[ES5,19]",
+          "delta_min": -2591.6273946599554,
+          "delta_max": 2880.3726053400437
+        },
+        {
+          "name": "battery.energy[ES5,20]",
+          "delta_min": -2591.6273946599554,
+          "delta_max": 2880.3726053400437
+        },
+        {
+          "name": "battery.energy[ES5,21]",
+          "delta_min": -2568.6162338115196,
+          "delta_max": 2903.38376618848
+        },
+        {
+          "name": "battery.energy[ES5,22]",
+          "delta_min": -2523.4912338115196,
+          "delta_max": 2948.5087661884795
+        },
+        {
+          "name": "battery.energy[ES5,23]",
+          "delta_min": -2478.36623381152,
+          "delta_max": 2993.6337661884795
+        },
+        {
+          "name": "battery.energy[ES5,24]",
+          "delta_min": -2433.24123381152,
+          "delta_max": 3038.758766188479
+        },
+        {
+          "name": "battery.energy[ES5,25]",
+          "delta_min": -2388.1162338115205,
+          "delta_max": 3083.883766188479
+        },
+        {
+          "name": "battery.energy[ES5,26]",
+          "delta_min": -2342.9912338115205,
+          "delta_max": 3129.0087661884786
+        },
+        {
+          "name": "battery.energy[ES5,27]",
+          "delta_min": -2297.866233811521,
+          "delta_max": 3174.1337661884786
+        },
+        {
+          "name": "battery.energy[ES5,28]",
+          "delta_min": -2252.741233811521,
+          "delta_max": 3219.258766188478
+        },
+        {
+          "name": "battery.energy[ES5,29]",
+          "delta_min": -2207.6162338115214,
+          "delta_max": 3264.383766188478
+        },
+        {
+          "name": "battery.energy[ES5,30]",
+          "delta_min": -2162.4912338115214,
+          "delta_max": 3309.5087661884777
+        },
+        {
+          "name": "battery.energy[ES5,31]",
+          "delta_min": -2117.366233811522,
+          "delta_max": 3354.6337661884777
+        },
+        {
+          "name": "battery.energy[ES5,32]",
+          "delta_min": -2072.241233811522,
+          "delta_max": 3399.7587661884777
+        },
+        {
+          "name": "battery.energy[ES5,33]",
+          "delta_min": -2027.116233811522,
+          "delta_max": 3444.8837661884772
+        },
+        {
+          "name": "battery.energy[ES5,34]",
+          "delta_min": -1981.9912338115223,
+          "delta_max": 3490.0087661884772
+        },
+        {
+          "name": "battery.energy[ES5,35]",
+          "delta_min": -1936.8662338115225,
+          "delta_max": 3535.133766188477
+        },
+        {
+          "name": "battery.energy[ES5,36]",
+          "delta_min": -1891.7412338115228,
+          "delta_max": 3580.258766188477
+        },
+        {
+          "name": "battery.energy[ES5,37]",
+          "delta_min": -1846.616233811523,
+          "delta_max": 3625.3837661884763
+        },
+        {
+          "name": "battery.energy[ES5,38]",
+          "delta_min": -1801.4912338115232,
+          "delta_max": 3670.5087661884763
+        },
+        {
+          "name": "battery.energy[ES5,39]",
+          "delta_min": -1756.3662338115234,
+          "delta_max": 3715.633766188476
+        },
+        {
+          "name": "battery.energy[ES5,40]",
+          "delta_min": -1711.2412338115237,
+          "delta_max": 3760.758766188476
+        },
+        {
+          "name": "battery.energy[ES5,41]",
+          "delta_min": -1666.116233811524,
+          "delta_max": 3805.8837661884754
+        },
+        {
+          "name": "battery.energy[ES5,42]",
+          "delta_min": -1620.9912338115241,
+          "delta_max": 3851.0087661884754
+        },
+        {
+          "name": "battery.energy[ES5,43]",
+          "delta_min": -1575.8662338115244,
+          "delta_max": 3896.133766188475
+        },
+        {
+          "name": "battery.energy[ES5,44]",
+          "delta_min": -1530.7412338115246,
+          "delta_max": 3941.258766188475
+        },
+        {
+          "name": "battery.energy[ES5,45]",
+          "delta_min": -1485.6162338115248,
+          "delta_max": 3986.3837661884745
+        },
+        {
+          "name": "battery.energy[ES5,46]",
+          "delta_min": -1440.491233811525,
+          "delta_max": 4031.5087661884745
+        },
+        {
+          "name": "battery.energy[ES5,47]",
+          "delta_min": -1395.3662338115253,
+          "delta_max": 4076.633766188474
+        },
+        {
+          "name": "battery.c_power[578]",
+          "delta_min": null,
+          "delta_max": 130.83947239026443
+        },
+        {
+          "name": "battery.c_ramp[385]",
+          "delta_min": null,
+          "delta_max": 180.83947239026443
+        },
+        {
+          "name": "battery.c_ramp[386]",
+          "delta_min": -119.16052760973557,
+          "delta_max": null
+        },
+        {
+          "name": "battery.c_ramp[387]",
+          "delta_min": -169.16052760973557,
+          "delta_max": null
+        },
+        {
+          "name": "battery.c_ramp[388]",
+          "delta_min": null,
+          "delta_max": 130.83947239026443
+        },
+        {
+          "name": "battery.c_cycle[5]",
+          "delta_min": null,
+          "delta_max": 12101.04517859205
+        },
+        {
+          "name": "battery.c_terminal[9]",
+          "delta_min": null,
+          "delta_max": 4076.633766188474
+        },
+        {
+          "name": "battery.c_terminal[10]",
+          "delta_min": -1395.3662338115253,
+          "delta_max": null
+        }
+      ],
+      "endpoint_midpoint_block_checks": [
+        {
+          "P_MW": 0.0,
+          "all_battery_rows_max_violation": 2.5757174171303632e-14
+        },
+        {
+          "P_MW": 150.0,
+          "all_battery_rows_max_violation": 2.5757174171303632e-14
+        },
+        {
+          "P_MW": 75.0,
+          "all_battery_rows_max_violation": 2.5757174171303632e-14
+        }
+      ]
+    }
+  },
+  "all_other_P_fixed": true,
+  "all_integers_fixed": true,
+  "no_epsilon_lower_bound_added": true,
+  "full48_storage_SOC_terminal_cycle_ramp_projected": true,
+  "qualification_unchanged": true,
+  "not_complete_joint_network_feasible_domain": true,
+  "coupled_AC_and_reserve_constraints_still_required": true,
+  "new_LP_calls": 0,
+  "source_pins": {
+    "guangdong_short_loss_ac_loop_v1_20261112/round_1/SCED/request.json.gz": "b50f8c76f42aaf076f3928c55eff42b3214f07807b052883a9ee1855013b9442",
+    "guangdong_short_loss_ac_loop_v1_20261112/round_1/SCED/response.json.gz": "f036600aead22bea2e9b98767e1e967988f33566944800b60f8c3bed88b7401d",
+    "guangdong_short_loss_ac_loop_v1_20261112/round_1/PAYLOAD.json": "74c9da6bf6b3dc40b497cf51e277b8a2b1273d31356b0d088519ec1bfc7f547e",
+    "guangdong_short_pqv_redispatch_v3_20261112/derive_domain.py": "7eaa45a645af44650f9966d6558f3ac85682978efe06a3a0fd448ce894c774af"
+  }
+}

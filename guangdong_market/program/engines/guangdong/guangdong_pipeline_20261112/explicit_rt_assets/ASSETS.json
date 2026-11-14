@@ -1,0 +1,26 @@
+{
+  "schema": "gd.pipeline.rt_assets.v1",
+  "basis": "declared original synthetic research inputs, NOT fresh actual DA/RT or telemetry",
+  "day_start": "2026-11-11T00:00:00+08:00",
+  "files": {
+    "preparation": {
+      "path": "preparation.json",
+      "sha256": "2692af0682ed8e253b23d94808b3009e8558c013037072a447b150c2b6c190b6"
+    },
+    "static": {
+      "path": "static.json",
+      "sha256": "d738eb0c7ab89e7ae9826d4bddff4af403f2595cc1be5cfb61001873958024ab"
+    },
+    "priors": {
+      "path": "priors.codec.json",
+      "sha256": "a52c21dae0d71cad4812bb6517ffe95d234b8ed6b9160f0c11af79c59a36ffa5"
+    }
+  },
+  "original_sources": {
+    "/workspace/scratch/42c5fe32dad0/guangdong_r21_day_verified_final_v1_20261112/native_day_v1/publication.json": "89f1d68d295c1546ce0d6ece8eb42cf2f20215b5ad44a7d1dee893a52efff099",
+    "/workspace/scratch/42c5fe32dad0/guangdong_r14_core95_20261112/ieee39_native_v4b/reports/sced/input.json": "0522c162bc27a5dc05b29902c6265288e7c7bee4ab746bcaf31336bd7e029e58",
+    "/workspace/scratch/42c5fe32dad0/guangdong_r14_core95_20261112/input/historical_da_only/source_reconstructed_day_inputs.json": "cec7e26b76756885c640218dea024451351415f6012210463782aef3436a1a3b",
+    "/workspace/scratch/42c5fe32dad0/guangdong_after_reset_r23_native_20261112/native_once_v1/ieee39_separate_prepared_input.json": "c10e5cbfbe0f39f028d10cb2b2d30003e803033a3d883f4c753339bc9c1cdbe9"
+  },
+  "actual_result_fields_copied": false
+}

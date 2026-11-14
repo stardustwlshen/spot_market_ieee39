@@ -1,0 +1,38 @@
+{
+  "status": "passed",
+  "native_calls": 0,
+  "plan": {
+    "default_native_calls": 0,
+    "maximum_native_calls": 12,
+    "sequence": [
+      "seed PRICE",
+      "W0 pair / q1 PRICE",
+      "W1 pair / q2 PRICE",
+      "W2 pair / q3 PRICE",
+      "W3 pair / H0 arithmetic"
+    ],
+    "SCUC_calls": 4,
+    "SCED_calls": 4,
+    "PRICE_calls": 4,
+    "SCUC_seconds": 300,
+    "SCED_seconds": 120,
+    "PRICE_seconds": 60,
+    "SCED_solver": "simplex",
+    "threads": 1,
+    "mip_gap": 0.001,
+    "profile": "thermal_DA_DA_previous_quarter_anchor_research",
+    "automatic_fallback": false,
+    "durable_restart_supported": false,
+    "formal": false,
+    "publication_allowed": false
+  },
+  "hour": {
+    "status": "accepted",
+    "native_calls": 0,
+    "rows": 54,
+    "executed_cells": 12,
+    "total": "984919.7573504839122519145572",
+    "formal_bill": null
+  },
+  "raw_origin": "explicit historical registry; no new acceptance or solve"
+}

@@ -1,0 +1,501 @@
+{
+  "storage_inventory": {
+    "batteries": {
+      "ES1": {
+        "final_energy_mwh": 100.0,
+        "initial_energy_mwh": 100.0,
+        "mode": "idle",
+        "parameters": {
+          "bus": 19,
+          "ecap": 200,
+          "eta_c": 0.95,
+          "eta_d": 0.95,
+          "id": "ES1",
+          "pmax": 100,
+          "soc0": 0.5,
+          "soc_end_bid": 0.5,
+          "soc_max": 0.9,
+          "soc_min": 0.1
+        },
+        "power_mw": 0.0,
+        "reserve_credit_mw": 0.0
+      },
+      "ES2": {
+        "final_energy_mwh": 200.0,
+        "initial_energy_mwh": 200.0,
+        "mode": "idle",
+        "parameters": {
+          "bus": 16,
+          "ecap": 400,
+          "eta_c": 0.95,
+          "eta_d": 0.95,
+          "id": "ES2",
+          "pmax": 200,
+          "soc0": 0.5,
+          "soc_end_bid": 0.5,
+          "soc_max": 0.9,
+          "soc_min": 0.1
+        },
+        "power_mw": 0.0,
+        "reserve_credit_mw": 0.0
+      },
+      "ES3": {
+        "final_energy_mwh": 100.0,
+        "initial_energy_mwh": 100.0,
+        "mode": "idle",
+        "parameters": {
+          "bus": 25,
+          "ecap": 200,
+          "eta_c": 0.95,
+          "eta_d": 0.95,
+          "id": "ES3",
+          "pmax": 100,
+          "soc0": 0.5,
+          "soc_end_bid": 0.5,
+          "soc_max": 0.9,
+          "soc_min": 0.1
+        },
+        "power_mw": 0.0,
+        "reserve_credit_mw": 0.0
+      },
+      "ES4": {
+        "final_energy_mwh": 300.0,
+        "initial_energy_mwh": 300.0,
+        "mode": "idle",
+        "parameters": {
+          "bus": 4,
+          "ecap": 600,
+          "eta_c": 0.95,
+          "eta_d": 0.95,
+          "id": "ES4",
+          "pmax": 150,
+          "soc0": 0.5,
+          "soc_end_bid": 0.5,
+          "soc_max": 0.9,
+          "soc_min": 0.1
+        },
+        "power_mw": 0.0,
+        "reserve_credit_mw": 0.0
+      },
+      "ES5": {
+        "final_energy_mwh": 300.0,
+        "initial_energy_mwh": 300.0,
+        "mode": "idle",
+        "parameters": {
+          "bus": 8,
+          "ecap": 600,
+          "eta_c": 0.95,
+          "eta_d": 0.95,
+          "id": "ES5",
+          "pmax": 150,
+          "soc0": 0.5,
+          "soc_end_bid": 0.5,
+          "soc_max": 0.9,
+          "soc_min": 0.1
+        },
+        "power_mw": 0.0,
+        "reserve_credit_mw": 0.0
+      }
+    },
+    "pumped": {
+      "PS1": {
+        "lower_m3": 3200000.0,
+        "modes": {
+          "PS1_1": "off",
+          "PS1_2": "off"
+        },
+        "net_power_mw": 0.0,
+        "parameters": {
+          "bus": 2,
+          "e_gen": 9.6,
+          "e_pump": 12.6,
+          "enabled": true,
+          "id": "PS1",
+          "init_mode": "idle",
+          "max_gen_starts": 4,
+          "max_pump_starts": 2,
+          "n_units": 2,
+          "start_cost_gen": 2000,
+          "start_cost_pump": 4000,
+          "switch_gap": 1,
+          "unit_gen_max": 300,
+          "unit_gen_min": 150,
+          "unit_pump": 300,
+          "unit_pump_min": 210,
+          "v_total": 520,
+          "variable_speed": false,
+          "vdn_max": 470,
+          "vdn_min": 60,
+          "vup0": 200,
+          "vup_end_bid": 200,
+          "vup_max": 450,
+          "vup_min": 60
+        },
+        "reserve_credit_mw": 0.0,
+        "upper_m3": 2000000.0
+      }
+    }
+  },
+  "resources": {
+    "C1": {
+      "original_offer": [
+        {
+          "p_end": 290.0,
+          "p_start": 0.0,
+          "price": 280.0
+        },
+        {
+          "p_end": 361.2,
+          "p_start": 290.0,
+          "price": 280.0
+        },
+        {
+          "p_end": 432.4,
+          "p_start": 361.2,
+          "price": 285.6
+        },
+        {
+          "p_end": 503.6,
+          "p_start": 432.4,
+          "price": 294.0
+        },
+        {
+          "p_end": 574.8,
+          "p_start": 503.6,
+          "price": 305.2
+        },
+        {
+          "p_end": 646.0,
+          "p_start": 574.8,
+          "price": 319.2
+        }
+      ]
+    },
+    "C2": {
+      "original_offer": [
+        {
+          "p_end": 325.0,
+          "p_start": 0.0,
+          "price": 297.0
+        },
+        {
+          "p_end": 405.0,
+          "p_start": 325.0,
+          "price": 297.0
+        },
+        {
+          "p_end": 485.0,
+          "p_start": 405.0,
+          "price": 302.94
+        },
+        {
+          "p_end": 565.0,
+          "p_start": 485.0,
+          "price": 311.85
+        },
+        {
+          "p_end": 645.0,
+          "p_start": 565.0,
+          "price": 323.73
+        },
+        {
+          "p_end": 725.0,
+          "p_start": 645.0,
+          "price": 338.58
+        }
+      ]
+    },
+    "C3": {
+      "original_offer": [
+        {
+          "p_end": 390.0,
+          "p_start": 0.0,
+          "price": 315.0
+        },
+        {
+          "p_end": 485.0,
+          "p_start": 390.0,
+          "price": 315.0
+        },
+        {
+          "p_end": 580.0,
+          "p_start": 485.0,
+          "price": 321.3
+        },
+        {
+          "p_end": 675.0,
+          "p_start": 580.0,
+          "price": 330.75
+        },
+        {
+          "p_end": 770.0,
+          "p_start": 675.0,
+          "price": 343.35
+        },
+        {
+          "p_end": 865.0,
+          "p_start": 770.0,
+          "price": 359.1
+        }
+      ]
+    },
+    "CCGT": {
+      "original_offer": [
+        {
+          "p_end": 310.0,
+          "p_start": 0.0,
+          "price": 405.0
+        },
+        {
+          "p_end": 385.4,
+          "p_start": 310.0,
+          "price": 405.0
+        },
+        {
+          "p_end": 460.8,
+          "p_start": 385.4,
+          "price": 413.1
+        },
+        {
+          "p_end": 536.2,
+          "p_start": 460.8,
+          "price": 425.25
+        },
+        {
+          "p_end": 611.6,
+          "p_start": 536.2,
+          "price": 441.45
+        },
+        {
+          "p_end": 687.0,
+          "p_start": 611.6,
+          "price": 461.7
+        }
+      ]
+    },
+    "ES1": {
+      "original_curves": {
+        "charge": [
+          {
+            "p_end": 33.333,
+            "p_start": 0.0,
+            "price": 350.0
+          },
+          {
+            "p_end": 66.667,
+            "p_start": 33.333,
+            "price": 330.0
+          },
+          {
+            "p_end": 100.0,
+            "p_start": 66.667,
+            "price": 320.0
+          }
+        ],
+        "discharge": [
+          {
+            "p_end": 33.333,
+            "p_start": 0.0,
+            "price": 410.0
+          },
+          {
+            "p_end": 66.667,
+            "p_start": 33.333,
+            "price": 430.0
+          },
+          {
+            "p_end": 100.0,
+            "p_start": 66.667,
+            "price": 440.0
+          }
+        ]
+      }
+    },
+    "ES2": {
+      "original_curves": {
+        "charge": [
+          {
+            "p_end": 66.667,
+            "p_start": 0.0,
+            "price": 350.0
+          },
+          {
+            "p_end": 133.333,
+            "p_start": 66.667,
+            "price": 340.0
+          },
+          {
+            "p_end": 200.0,
+            "p_start": 133.333,
+            "price": 320.0
+          }
+        ],
+        "discharge": [
+          {
+            "p_end": 66.667,
+            "p_start": 0.0,
+            "price": 430.0
+          },
+          {
+            "p_end": 133.333,
+            "p_start": 66.667,
+            "price": 440.0
+          },
+          {
+            "p_end": 200.0,
+            "p_start": 133.333,
+            "price": 460.0
+          }
+        ]
+      }
+    },
+    "ES3": {
+      "original_curves": {
+        "charge": [
+          {
+            "p_end": 33.333,
+            "p_start": 0.0,
+            "price": 360.0
+          },
+          {
+            "p_end": 66.667,
+            "p_start": 33.333,
+            "price": 340.0
+          },
+          {
+            "p_end": 100.0,
+            "p_start": 66.667,
+            "price": 330.0
+          }
+        ],
+        "discharge": [
+          {
+            "p_end": 33.333,
+            "p_start": 0.0,
+            "price": 440.0
+          },
+          {
+            "p_end": 66.667,
+            "p_start": 33.333,
+            "price": 460.0
+          },
+          {
+            "p_end": 100.0,
+            "p_start": 66.667,
+            "price": 470.0
+          }
+        ]
+      }
+    },
+    "ES4": {
+      "original_curves": {
+        "charge": [
+          {
+            "p_end": 50.0,
+            "p_start": 0.0,
+            "price": 350.0
+          },
+          {
+            "p_end": 100.0,
+            "p_start": 50.0,
+            "price": 330.0
+          },
+          {
+            "p_end": 150.0,
+            "p_start": 100.0,
+            "price": 320.0
+          }
+        ],
+        "discharge": [
+          {
+            "p_end": 50.0,
+            "p_start": 0.0,
+            "price": 410.0
+          },
+          {
+            "p_end": 100.0,
+            "p_start": 50.0,
+            "price": 430.0
+          },
+          {
+            "p_end": 150.0,
+            "p_start": 100.0,
+            "price": 440.0
+          }
+        ]
+      }
+    },
+    "ES5": {
+      "original_curves": {
+        "charge": [
+          {
+            "p_end": 50.0,
+            "p_start": 0.0,
+            "price": 350.0
+          },
+          {
+            "p_end": 100.0,
+            "p_start": 50.0,
+            "price": 330.0
+          },
+          {
+            "p_end": 150.0,
+            "p_start": 100.0,
+            "price": 320.0
+          }
+        ],
+        "discharge": [
+          {
+            "p_end": 50.0,
+            "p_start": 0.0,
+            "price": 410.0
+          },
+          {
+            "p_end": 100.0,
+            "p_start": 50.0,
+            "price": 430.0
+          },
+          {
+            "p_end": 150.0,
+            "p_start": 100.0,
+            "price": 440.0
+          }
+        ]
+      }
+    },
+    "GT": {
+      "original_offer": [
+        {
+          "p_end": 75.0,
+          "p_start": 0.0,
+          "price": 620.0
+        },
+        {
+          "p_end": 120.0,
+          "p_start": 75.0,
+          "price": 620.0
+        },
+        {
+          "p_end": 165.0,
+          "p_start": 120.0,
+          "price": 632.4
+        },
+        {
+          "p_end": 210.0,
+          "p_start": 165.0,
+          "price": 651.0
+        },
+        {
+          "p_end": 255.0,
+          "p_start": 210.0,
+          "price": 675.8
+        },
+        {
+          "p_end": 300.0,
+          "p_start": 255.0,
+          "price": 706.8
+        }
+      ]
+    }
+  }
+}

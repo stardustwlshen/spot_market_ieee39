@@ -1,0 +1,11 @@
+{
+  "clearing_floor_CNY_MWh": -50,
+  "clearing_cap_CNY_MWh": 1800,
+  "declaration_floor_CNY_MWh": -50,
+  "declaration_cap": null,
+  "effective_from": "2025-11-01",
+  "effective_to": null,
+  "dynamic_current_verified": false,
+  "basis": "published_policy_basis_not_official_release",
+  "source": "https://drc.gd.gov.cn/gkmlpt/content/4/4775/post_4775501.html"
+}

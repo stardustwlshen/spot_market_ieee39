@@ -1,0 +1,42 @@
+{
+  "RESULT.json": {
+    "sha256": "6430213bd214faa5417100f5d0e1b456c3c0eb3b02051ced63fae9caf8277d20",
+    "bytes": 164
+  },
+  "tests.log": {
+    "sha256": "05f0c6f8a7918aee199f9622e29aae29357785ab3b2b8a549a713423a2946786",
+    "bytes": 99
+  },
+  "actual_binding.json": {
+    "sha256": "93a6154ae5c88b5b689384fd589197bbfad008cec9063460971f149b01714ca3",
+    "bytes": 32006
+  },
+  "tests_initial_12pass.log": {
+    "sha256": "468e689e139b7e68ec038b0c54b35b37f60c211560f04d323bfedafe3d5c6b74",
+    "bytes": 99
+  },
+  "test_r47.py": {
+    "sha256": "7626cca0508a248356318cd8c1e099ace099a38e90057c1f0fbf501f3ce0601b",
+    "bytes": 7264
+  },
+  "r47_settlement_inputs.py": {
+    "sha256": "a25028790d02ece2f868a6baa71272798d39257d828feea844453534cffa71e0",
+    "bytes": 6629
+  },
+  "README.md": {
+    "sha256": "b70cba32c4a0055ac9bfd9a18967abf5c108a2066a1f99a36e058cf9df65932c",
+    "bytes": 5457
+  },
+  "baseline_registry.json": {
+    "sha256": "98014d5685c917529f7604fe8faa7de772883d6eb5eb1f393e61bef5daa84cb9",
+    "bytes": 361
+  },
+  "INDEPENDENT_RULE_NOTES.json": {
+    "sha256": "88722d8b0cf7d0f24fea704100b65441d7c45f3aaed9aec36479c8ebaf59a663",
+    "bytes": 2919
+  },
+  "r47_price.py": {
+    "sha256": "6c8bf6cc0e73ae40d763f5ae8fb3a6156a743aee378de34ff2ba5be55bb59aef",
+    "bytes": 5066
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "entry": "guangdong_rt_short_user_cli_v1_20261112/program.py",
+  "interpreter": "current Python with pyomo, highspy 1.15.1, numpy",
+  "seed": "seed --da SELECTED_ACCEPTED_DA --run NEW_RUN",
+  "build": "build --run RUN --window W",
+  "preflight": "preflight --run RUN --window W",
+  "run_pure": "run --run RUN --window W",
+  "run_native": "run --run RUN --window W --execute-native",
+  "accept": "accept --run RUN --window W",
+  "handoff": "handoff --run RUN --window W --simulate-no-deviation",
+  "prepare_ui": ["seed", "build"],
+  "status_values": ["ready", "accepted", "blocked"],
+  "unknown_or_failed": "nonzero blocked; never restart existing unknown stage",
+  "completed_stage": "strict recheck actual gzip request/response before resume",
+  "accepted_repeat": "read-only; zero native",
+  "window": "W is accepted/prepared window, handoff produces W+1",
+  "clock": "cutoff=W*15min, predicted first controllable=cutoff+15min; issued and executed separately counted",
+  "supported": "explicit research uniform event curves; stable initial issued prefix; nonzero future startup notice currently rejected by handoff",
+  "formal": false,
+  "safety_release": false,
+  "install": "copy INSTALL_MANIFEST relative files under a common root; do not embed cloud absolute interpreter or root",
+  "no_native_on_install_test": true
+}

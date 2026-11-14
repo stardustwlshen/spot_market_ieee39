@@ -1,0 +1,1514 @@
+[
+  {
+    "resource": "C1",
+    "node": "31",
+    "technology": "coal",
+    "direction": "discharge",
+    "start": "2026-11-11T00:00:00+08:00",
+    "end": "2026-11-11T01:00:00+08:00",
+    "QDA_MWh": "636.0",
+    "simulated_executed_MWh": "636.0",
+    "deviation_MWh": "0.0",
+    "DA_hour_price": "327.24",
+    "RT_hour_price": "834.6450000000023925",
+    "components_CNY": {
+      "LT": "0.00",
+      "DA": "208124.640",
+      "RT_deviation": "0E-17"
+    },
+    "energy_amount_CNY": "208124.64000000000000000",
+    "engine": "R36.settle_energy retained typed formulas",
+    "channel": "simulation",
+    "actual_meter": null,
+    "formal_bill": null,
+    "payable": false,
+    "raw_signed_MWh": [
+      "636.0",
+      "636.0"
+    ]
+  },
+  {
+    "resource": "C2",
+    "node": "32",
+    "technology": "coal",
+    "direction": "discharge",
+    "start": "2026-11-11T00:00:00+08:00",
+    "end": "2026-11-11T01:00:00+08:00",
+    "QDA_MWh": "640.9769852417079",
+    "simulated_executed_MWh": "695.719076598166725",
+    "deviation_MWh": "54.742091356458825",
+    "DA_hour_price": "327.24",
+    "RT_hour_price": "834.64500000000225",
+    "components_CNY": {
+      "LT": "0.00",
+      "DA": "209753.308650496493196",
+      "RT_deviation": "45690.21284021169916183055203"
+    },
+    "energy_amount_CNY": "255443.5214907081923578305520",
+    "engine": "R36.settle_energy retained typed formulas",
+    "channel": "simulation",
+    "actual_meter": null,
+    "formal_bill": null,
+    "payable": false,
+    "raw_signed_MWh": [
+      "640.9769852417079",
+      "695.719076598166725"
+    ]
+  },
+  {
+    "resource": "C3",
+    "node": "38",
+    "technology": "coal",
+    "direction": "discharge",
+    "start": "2026-11-11T00:00:00+08:00",
+    "end": "2026-11-11T01:00:00+08:00",
+    "QDA_MWh": "632.8233917028334583333333333",
+    "simulated_executed_MWh": "743.70050409315305",
+    "deviation_MWh": "110.8771123903195916666666667",
+    "DA_hour_price": "327.24",
+    "RT_hour_price": "834.6450000000019625",
+    "components_CNY": {
+      "LT": "0.00",
+      "DA": "207085.1267008352209050000000",
+      "RT_deviation": "92543.02747101851318295806603"
+    },
+    "energy_amount_CNY": "299628.1541718537340879580660",
+    "engine": "R36.settle_energy retained typed formulas",
+    "channel": "simulation",
+    "actual_meter": null,
+    "formal_bill": null,
+    "payable": false,
+    "raw_signed_MWh": [
+      "632.8233917028334583333333333",
+      "743.70050409315305"
+    ]
+  },
+  {
+    "resource": "CCGT",
+    "node": "35",
+    "technology": "gas",
+    "direction": "discharge",
+    "start": "2026-11-11T00:00:00+08:00",
+    "end": "2026-11-11T01:00:00+08:00",
+    "QDA_MWh": "320.0",
+    "simulated_executed_MWh": "326.2701285183468666666666667",
+    "deviation_MWh": "6.2701285183468666666666667",
+    "DA_hour_price": "327.24",
+    "RT_hour_price": "834.64500000000245",
+    "components_CNY": {
+      "LT": "0.00",
+      "DA": "104716.800",
+      "RT_deviation": "5233.331417195635890814869978"
+    },
+    "energy_amount_CNY": "109950.1314171956358908148700",
+    "engine": "R36.settle_energy retained typed formulas",
+    "channel": "simulation",
+    "actual_meter": null,
+    "formal_bill": null,
+    "payable": false,
+    "raw_signed_MWh": [
+      "320.0",
+      "326.2701285183468666666666667"
+    ]
+  },
+  {
+    "resource": "GT",
+    "node": "36",
+    "technology": "gas",
+    "direction": "discharge",
+    "start": "2026-11-11T00:00:00+08:00",
+    "end": "2026-11-11T01:00:00+08:00",
+    "QDA_MWh": "85.0",
+    "simulated_executed_MWh": "85.0",
+    "deviation_MWh": "0.0",
+    "DA_hour_price": "327.24",
+    "RT_hour_price": "834.64500000000245",
+    "components_CNY": {
+      "LT": "0.00",
+      "DA": "27815.400",
+      "RT_deviation": "0E-15"
+    },
+    "energy_amount_CNY": "27815.400000000000000",
+    "engine": "R36.settle_energy retained typed formulas",
+    "channel": "simulation",
+    "actual_meter": null,
+    "formal_bill": null,
+    "payable": false,
+    "raw_signed_MWh": [
+      "85.0",
+      "85.0"
+    ]
+  },
+  {
+    "resource": "ES1",
+    "node": "19",
+    "technology": "independent_storage",
+    "direction": "discharge",
+    "start": "2026-11-11T00:00:00+08:00",
+    "end": "2026-11-11T01:00:00+08:00",
+    "QDA_MWh": "31.152375313722175",
+    "simulated_executed_MWh": "8.930375313722175",
+    "deviation_MWh": "-22.222000000000000",
+    "DA_hour_price": "327.24",
+    "RT_hour_price": "834.64500000000245",
+    "components_CNY": {
+      "LT": "0.00",
+      "DA": "10194.30329766244454700",
+      "RT_deviation": "-18547.48119000005444390000000"
+    },
+    "energy_amount_CNY": "-8353.17789233760989690000000",
+    "engine": "R36.settle_energy retained typed formulas",
+    "channel": "simulation",
+    "actual_meter": null,
+    "formal_bill": null,
+    "payable": false,
+    "raw_signed_MWh": [
+      "31.152375313722175",
+      "8.930375313722175"
+    ]
+  },
+  {
+    "resource": "ES1",
+    "node": "19",
+    "technology": "independent_storage",
+    "direction": "charge",
+    "start": "2026-11-11T00:00:00+08:00",
+    "end": "2026-11-11T01:00:00+08:00",
+    "QDA_MWh": "-0.0",
+    "simulated_executed_MWh": "-0.0",
+    "deviation_MWh": "0.0",
+    "DA_hour_price": "327.24",
+    "RT_hour_price": "834.64500000000245",
+    "components_CNY": {
+      "LT": "0.00",
+      "DA": "-0.000",
+      "RT_deviation": "0E-15"
+    },
+    "energy_amount_CNY": "0E-15",
+    "engine": "R36.settle_energy retained typed formulas",
+    "channel": "simulation",
+    "actual_meter": null,
+    "formal_bill": null,
+    "payable": false,
+    "raw_signed_MWh": [
+      "-0.0",
+      "-0.0"
+    ]
+  },
+  {
+    "resource": "ES2",
+    "node": "16",
+    "technology": "independent_storage",
+    "direction": "discharge",
+    "start": "2026-11-11T00:00:00+08:00",
+    "end": "2026-11-11T01:00:00+08:00",
+    "QDA_MWh": "61.11141666666666666666666667",
+    "simulated_executed_MWh": "11.11116666666666666666666667",
+    "deviation_MWh": "-50.00025000000000000000000000",
+    "DA_hour_price": "327.24",
+    "RT_hour_price": "834.64500000000245",
+    "components_CNY": {
+      "LT": "0.00",
+      "DA": "19998.09999000000000000000000",
+      "RT_deviation": "-41732.45866125012250061250000"
+    },
+    "energy_amount_CNY": "-21734.35867125012250061250000",
+    "engine": "R36.settle_energy retained typed formulas",
+    "channel": "simulation",
+    "actual_meter": null,
+    "formal_bill": null,
+    "payable": false,
+    "raw_signed_MWh": [
+      "61.11141666666666666666666667",
+      "11.11116666666666666666666667"
+    ]
+  },
+  {
+    "resource": "ES2",
+    "node": "16",
+    "technology": "independent_storage",
+    "direction": "charge",
+    "start": "2026-11-11T00:00:00+08:00",
+    "end": "2026-11-11T01:00:00+08:00",
+    "QDA_MWh": "-0.0",
+    "simulated_executed_MWh": "-0.0",
+    "deviation_MWh": "0.0",
+    "DA_hour_price": "327.24",
+    "RT_hour_price": "834.64500000000245",
+    "components_CNY": {
+      "LT": "0.00",
+      "DA": "-0.000",
+      "RT_deviation": "0E-15"
+    },
+    "energy_amount_CNY": "0E-15",
+    "engine": "R36.settle_energy retained typed formulas",
+    "channel": "simulation",
+    "actual_meter": null,
+    "formal_bill": null,
+    "payable": false,
+    "raw_signed_MWh": [
+      "-0.0",
+      "-0.0"
+    ]
+  },
+  {
+    "resource": "ES3",
+    "node": "25",
+    "technology": "independent_storage",
+    "direction": "discharge",
+    "start": "2026-11-11T00:00:00+08:00",
+    "end": "2026-11-11T01:00:00+08:00",
+    "QDA_MWh": "31.83446232836102183333333333",
+    "simulated_executed_MWh": "6.834712328361021833333333333",
+    "deviation_MWh": "-24.99975000000000000000000000",
+    "DA_hour_price": "327.24",
+    "RT_hour_price": "834.6450000000019625",
+    "components_CNY": {
+      "LT": "0.00",
+      "DA": "10417.50945233286078474000000",
+      "RT_deviation": "-20865.91633875004906200937500"
+    },
+    "energy_amount_CNY": "-10448.40688641718827726937500",
+    "engine": "R36.settle_energy retained typed formulas",
+    "channel": "simulation",
+    "actual_meter": null,
+    "formal_bill": null,
+    "payable": false,
+    "raw_signed_MWh": [
+      "31.83446232836102183333333333",
+      "6.834712328361021833333333333"
+    ]
+  },
+  {
+    "resource": "ES3",
+    "node": "25",
+    "technology": "independent_storage",
+    "direction": "charge",
+    "start": "2026-11-11T00:00:00+08:00",
+    "end": "2026-11-11T01:00:00+08:00",
+    "QDA_MWh": "-0.0",
+    "simulated_executed_MWh": "-0.0",
+    "deviation_MWh": "0.0",
+    "DA_hour_price": "327.24",
+    "RT_hour_price": "834.6450000000019625",
+    "components_CNY": {
+      "LT": "0.00",
+      "DA": "-0.000",
+      "RT_deviation": "0E-17"
+    },
+    "energy_amount_CNY": "0E-17",
+    "engine": "R36.settle_energy retained typed formulas",
+    "channel": "simulation",
+    "actual_meter": null,
+    "formal_bill": null,
+    "payable": false,
+    "raw_signed_MWh": [
+      "-0.0",
+      "-0.0"
+    ]
+  },
+  {
+    "resource": "ES4",
+    "node": "4",
+    "technology": "independent_storage",
+    "direction": "discharge",
+    "start": "2026-11-11T00:00:00+08:00",
+    "end": "2026-11-11T01:00:00+08:00",
+    "QDA_MWh": "50.0",
+    "simulated_executed_MWh": "12.83266773487504975",
+    "deviation_MWh": "-37.16733226512495025",
+    "DA_hour_price": "327.24",
+    "RT_hour_price": "834.6450000000022875",
+    "components_CNY": {
+      "LT": "0.00",
+      "DA": "16362.000",
+      "RT_deviation": "-31021.52803842529912168380647"
+    },
+    "energy_amount_CNY": "-14659.52803842529912168380647",
+    "engine": "R36.settle_energy retained typed formulas",
+    "channel": "simulation",
+    "actual_meter": null,
+    "formal_bill": null,
+    "payable": false,
+    "raw_signed_MWh": [
+      "50.0",
+      "12.83266773487504975"
+    ]
+  },
+  {
+    "resource": "ES4",
+    "node": "4",
+    "technology": "independent_storage",
+    "direction": "charge",
+    "start": "2026-11-11T00:00:00+08:00",
+    "end": "2026-11-11T01:00:00+08:00",
+    "QDA_MWh": "-0.0",
+    "simulated_executed_MWh": "-0.0",
+    "deviation_MWh": "0.0",
+    "DA_hour_price": "327.24",
+    "RT_hour_price": "834.6450000000022875",
+    "components_CNY": {
+      "LT": "0.00",
+      "DA": "-0.000",
+      "RT_deviation": "0E-17"
+    },
+    "energy_amount_CNY": "0E-17",
+    "engine": "R36.settle_energy retained typed formulas",
+    "channel": "simulation",
+    "actual_meter": null,
+    "formal_bill": null,
+    "payable": false,
+    "raw_signed_MWh": [
+      "-0.0",
+      "-0.0"
+    ]
+  },
+  {
+    "resource": "ES5",
+    "node": "8",
+    "technology": "independent_storage",
+    "direction": "discharge",
+    "start": "2026-11-11T00:00:00+08:00",
+    "end": "2026-11-11T01:00:00+08:00",
+    "QDA_MWh": "45.83333333333333333333333333",
+    "simulated_executed_MWh": "8.333333333333333333333333333",
+    "deviation_MWh": "-37.50000000000000000000000000",
+    "DA_hour_price": "327.24",
+    "RT_hour_price": "834.6450000000022875",
+    "components_CNY": {
+      "LT": "0.00",
+      "DA": "14998.50000000000000000000000",
+      "RT_deviation": "-31299.18750000008578125000000"
+    },
+    "energy_amount_CNY": "-16300.68750000008578125000000",
+    "engine": "R36.settle_energy retained typed formulas",
+    "channel": "simulation",
+    "actual_meter": null,
+    "formal_bill": null,
+    "payable": false,
+    "raw_signed_MWh": [
+      "45.83333333333333333333333333",
+      "8.333333333333333333333333333"
+    ]
+  },
+  {
+    "resource": "ES5",
+    "node": "8",
+    "technology": "independent_storage",
+    "direction": "charge",
+    "start": "2026-11-11T00:00:00+08:00",
+    "end": "2026-11-11T01:00:00+08:00",
+    "QDA_MWh": "-0.0",
+    "simulated_executed_MWh": "-0.0",
+    "deviation_MWh": "0.0",
+    "DA_hour_price": "327.24",
+    "RT_hour_price": "834.6450000000022875",
+    "components_CNY": {
+      "LT": "0.00",
+      "DA": "-0.000",
+      "RT_deviation": "0E-17"
+    },
+    "energy_amount_CNY": "0E-17",
+    "engine": "R36.settle_energy retained typed formulas",
+    "channel": "simulation",
+    "actual_meter": null,
+    "formal_bill": null,
+    "payable": false,
+    "raw_signed_MWh": [
+      "-0.0",
+      "-0.0"
+    ]
+  },
+  {
+    "resource": "VRE:1",
+    "node": "1",
+    "technology": "vre",
+    "direction": "discharge",
+    "start": "2026-11-11T00:00:00+08:00",
+    "end": "2026-11-11T01:00:00+08:00",
+    "QDA_MWh": "0.0",
+    "simulated_executed_MWh": "0.0",
+    "deviation_MWh": "0.0",
+    "DA_hour_price": "327.24",
+    "RT_hour_price": "834.64500000000114",
+    "components_CNY": {
+      "LT": "0",
+      "DA": "0.000",
+      "RT_deviation": "0E-15"
+    },
+    "energy_amount_CNY": "0E-15",
+    "engine": "R47.synthetic_participating_DA; simulated executed quantity explicitly mapped to research fixture only",
+    "channel": "simulation",
+    "actual_meter": null,
+    "formal_bill": null,
+    "payable": false,
+    "raw_signed_MWh": [
+      "0.0",
+      "0.0"
+    ]
+  },
+  {
+    "resource": "VRE:2",
+    "node": "2",
+    "technology": "vre",
+    "direction": "discharge",
+    "start": "2026-11-11T00:00:00+08:00",
+    "end": "2026-11-11T01:00:00+08:00",
+    "QDA_MWh": "0.0",
+    "simulated_executed_MWh": "0.0",
+    "deviation_MWh": "0.0",
+    "DA_hour_price": "327.24",
+    "RT_hour_price": "834.6450000000019625",
+    "components_CNY": {
+      "LT": "0",
+      "DA": "0.000",
+      "RT_deviation": "0E-17"
+    },
+    "energy_amount_CNY": "0E-17",
+    "engine": "R47.synthetic_participating_DA; simulated executed quantity explicitly mapped to research fixture only",
+    "channel": "simulation",
+    "actual_meter": null,
+    "formal_bill": null,
+    "payable": false,
+    "raw_signed_MWh": [
+      "0.0",
+      "0.0"
+    ]
+  },
+  {
+    "resource": "VRE:3",
+    "node": "3",
+    "technology": "vre",
+    "direction": "discharge",
+    "start": "2026-11-11T00:00:00+08:00",
+    "end": "2026-11-11T01:00:00+08:00",
+    "QDA_MWh": "0.0",
+    "simulated_executed_MWh": "0.0",
+    "deviation_MWh": "0.0",
+    "DA_hour_price": "327.24",
+    "RT_hour_price": "834.6450000000021",
+    "components_CNY": {
+      "LT": "0",
+      "DA": "0.000",
+      "RT_deviation": "0E-14"
+    },
+    "energy_amount_CNY": "0E-14",
+    "engine": "R47.synthetic_participating_DA; simulated executed quantity explicitly mapped to research fixture only",
+    "channel": "simulation",
+    "actual_meter": null,
+    "formal_bill": null,
+    "payable": false,
+    "raw_signed_MWh": [
+      "0.0",
+      "0.0"
+    ]
+  },
+  {
+    "resource": "VRE:4",
+    "node": "4",
+    "technology": "vre",
+    "direction": "discharge",
+    "start": "2026-11-11T00:00:00+08:00",
+    "end": "2026-11-11T01:00:00+08:00",
+    "QDA_MWh": "0.0",
+    "simulated_executed_MWh": "0.0",
+    "deviation_MWh": "0.0",
+    "DA_hour_price": "327.24",
+    "RT_hour_price": "834.6450000000022875",
+    "components_CNY": {
+      "LT": "0",
+      "DA": "0.000",
+      "RT_deviation": "0E-17"
+    },
+    "energy_amount_CNY": "0E-17",
+    "engine": "R47.synthetic_participating_DA; simulated executed quantity explicitly mapped to research fixture only",
+    "channel": "simulation",
+    "actual_meter": null,
+    "formal_bill": null,
+    "payable": false,
+    "raw_signed_MWh": [
+      "0.0",
+      "0.0"
+    ]
+  },
+  {
+    "resource": "VRE:5",
+    "node": "5",
+    "technology": "vre",
+    "direction": "discharge",
+    "start": "2026-11-11T00:00:00+08:00",
+    "end": "2026-11-11T01:00:00+08:00",
+    "QDA_MWh": "0.0",
+    "simulated_executed_MWh": "0.0",
+    "deviation_MWh": "0.0",
+    "DA_hour_price": "327.24",
+    "RT_hour_price": "834.64500000000241",
+    "components_CNY": {
+      "LT": "0",
+      "DA": "0.000",
+      "RT_deviation": "0E-15"
+    },
+    "energy_amount_CNY": "0E-15",
+    "engine": "R47.synthetic_participating_DA; simulated executed quantity explicitly mapped to research fixture only",
+    "channel": "simulation",
+    "actual_meter": null,
+    "formal_bill": null,
+    "payable": false,
+    "raw_signed_MWh": [
+      "0.0",
+      "0.0"
+    ]
+  },
+  {
+    "resource": "VRE:6",
+    "node": "6",
+    "technology": "vre",
+    "direction": "discharge",
+    "start": "2026-11-11T00:00:00+08:00",
+    "end": "2026-11-11T01:00:00+08:00",
+    "QDA_MWh": "0.0",
+    "simulated_executed_MWh": "0.0",
+    "deviation_MWh": "0.0",
+    "DA_hour_price": "327.24",
+    "RT_hour_price": "834.6450000000023925",
+    "components_CNY": {
+      "LT": "0",
+      "DA": "0.000",
+      "RT_deviation": "0E-17"
+    },
+    "energy_amount_CNY": "0E-17",
+    "engine": "R47.synthetic_participating_DA; simulated executed quantity explicitly mapped to research fixture only",
+    "channel": "simulation",
+    "actual_meter": null,
+    "formal_bill": null,
+    "payable": false,
+    "raw_signed_MWh": [
+      "0.0",
+      "0.0"
+    ]
+  },
+  {
+    "resource": "VRE:7",
+    "node": "7",
+    "technology": "vre",
+    "direction": "discharge",
+    "start": "2026-11-11T00:00:00+08:00",
+    "end": "2026-11-11T01:00:00+08:00",
+    "QDA_MWh": "0.0",
+    "simulated_executed_MWh": "0.0",
+    "deviation_MWh": "0.0",
+    "DA_hour_price": "327.24",
+    "RT_hour_price": "834.6450000000023175",
+    "components_CNY": {
+      "LT": "0",
+      "DA": "0.000",
+      "RT_deviation": "0E-17"
+    },
+    "energy_amount_CNY": "0E-17",
+    "engine": "R47.synthetic_participating_DA; simulated executed quantity explicitly mapped to research fixture only",
+    "channel": "simulation",
+    "actual_meter": null,
+    "formal_bill": null,
+    "payable": false,
+    "raw_signed_MWh": [
+      "0.0",
+      "0.0"
+    ]
+  },
+  {
+    "resource": "VRE:8",
+    "node": "8",
+    "technology": "vre",
+    "direction": "discharge",
+    "start": "2026-11-11T00:00:00+08:00",
+    "end": "2026-11-11T01:00:00+08:00",
+    "QDA_MWh": "0.0",
+    "simulated_executed_MWh": "0.0",
+    "deviation_MWh": "0.0",
+    "DA_hour_price": "327.24",
+    "RT_hour_price": "834.6450000000022875",
+    "components_CNY": {
+      "LT": "0",
+      "DA": "0.000",
+      "RT_deviation": "0E-17"
+    },
+    "energy_amount_CNY": "0E-17",
+    "engine": "R47.synthetic_participating_DA; simulated executed quantity explicitly mapped to research fixture only",
+    "channel": "simulation",
+    "actual_meter": null,
+    "formal_bill": null,
+    "payable": false,
+    "raw_signed_MWh": [
+      "0.0",
+      "0.0"
+    ]
+  },
+  {
+    "resource": "VRE:9",
+    "node": "9",
+    "technology": "vre",
+    "direction": "discharge",
+    "start": "2026-11-11T00:00:00+08:00",
+    "end": "2026-11-11T01:00:00+08:00",
+    "QDA_MWh": "0.0",
+    "simulated_executed_MWh": "0.0",
+    "deviation_MWh": "0.0",
+    "DA_hour_price": "327.24",
+    "RT_hour_price": "834.6450000000011",
+    "components_CNY": {
+      "LT": "0",
+      "DA": "0.000",
+      "RT_deviation": "0E-14"
+    },
+    "energy_amount_CNY": "0E-14",
+    "engine": "R47.synthetic_participating_DA; simulated executed quantity explicitly mapped to research fixture only",
+    "channel": "simulation",
+    "actual_meter": null,
+    "formal_bill": null,
+    "payable": false,
+    "raw_signed_MWh": [
+      "0.0",
+      "0.0"
+    ]
+  },
+  {
+    "resource": "VRE:10",
+    "node": "10",
+    "technology": "vre",
+    "direction": "discharge",
+    "start": "2026-11-11T00:00:00+08:00",
+    "end": "2026-11-11T01:00:00+08:00",
+    "QDA_MWh": "0.0",
+    "simulated_executed_MWh": "0.0",
+    "deviation_MWh": "0.0",
+    "DA_hour_price": "327.24",
+    "RT_hour_price": "834.64500000000225",
+    "components_CNY": {
+      "LT": "0",
+      "DA": "0.000",
+      "RT_deviation": "0E-15"
+    },
+    "energy_amount_CNY": "0E-15",
+    "engine": "R47.synthetic_participating_DA; simulated executed quantity explicitly mapped to research fixture only",
+    "channel": "simulation",
+    "actual_meter": null,
+    "formal_bill": null,
+    "payable": false,
+    "raw_signed_MWh": [
+      "0.0",
+      "0.0"
+    ]
+  },
+  {
+    "resource": "VRE:11",
+    "node": "11",
+    "technology": "vre",
+    "direction": "discharge",
+    "start": "2026-11-11T00:00:00+08:00",
+    "end": "2026-11-11T01:00:00+08:00",
+    "QDA_MWh": "0.0",
+    "simulated_executed_MWh": "0.0",
+    "deviation_MWh": "0.0",
+    "DA_hour_price": "327.24",
+    "RT_hour_price": "834.64500000000226",
+    "components_CNY": {
+      "LT": "0",
+      "DA": "0.000",
+      "RT_deviation": "0E-15"
+    },
+    "energy_amount_CNY": "0E-15",
+    "engine": "R47.synthetic_participating_DA; simulated executed quantity explicitly mapped to research fixture only",
+    "channel": "simulation",
+    "actual_meter": null,
+    "formal_bill": null,
+    "payable": false,
+    "raw_signed_MWh": [
+      "0.0",
+      "0.0"
+    ]
+  },
+  {
+    "resource": "VRE:12",
+    "node": "12",
+    "technology": "vre",
+    "direction": "discharge",
+    "start": "2026-11-11T00:00:00+08:00",
+    "end": "2026-11-11T01:00:00+08:00",
+    "QDA_MWh": "0.0",
+    "simulated_executed_MWh": "0.0",
+    "deviation_MWh": "0.0",
+    "DA_hour_price": "327.24",
+    "RT_hour_price": "834.64500000000225",
+    "components_CNY": {
+      "LT": "0",
+      "DA": "0.000",
+      "RT_deviation": "0E-15"
+    },
+    "energy_amount_CNY": "0E-15",
+    "engine": "R47.synthetic_participating_DA; simulated executed quantity explicitly mapped to research fixture only",
+    "channel": "simulation",
+    "actual_meter": null,
+    "formal_bill": null,
+    "payable": false,
+    "raw_signed_MWh": [
+      "0.0",
+      "0.0"
+    ]
+  },
+  {
+    "resource": "VRE:13",
+    "node": "13",
+    "technology": "vre",
+    "direction": "discharge",
+    "start": "2026-11-11T00:00:00+08:00",
+    "end": "2026-11-11T01:00:00+08:00",
+    "QDA_MWh": "0.0",
+    "simulated_executed_MWh": "0.0",
+    "deviation_MWh": "0.0",
+    "DA_hour_price": "327.24",
+    "RT_hour_price": "834.645000000002075",
+    "components_CNY": {
+      "LT": "0",
+      "DA": "0.000",
+      "RT_deviation": "0E-16"
+    },
+    "energy_amount_CNY": "0E-16",
+    "engine": "R47.synthetic_participating_DA; simulated executed quantity explicitly mapped to research fixture only",
+    "channel": "simulation",
+    "actual_meter": null,
+    "formal_bill": null,
+    "payable": false,
+    "raw_signed_MWh": [
+      "0.0",
+      "0.0"
+    ]
+  },
+  {
+    "resource": "VRE:14",
+    "node": "14",
+    "technology": "vre",
+    "direction": "discharge",
+    "start": "2026-11-11T00:00:00+08:00",
+    "end": "2026-11-11T01:00:00+08:00",
+    "QDA_MWh": "0.0",
+    "simulated_executed_MWh": "0.0",
+    "deviation_MWh": "0.0",
+    "DA_hour_price": "327.24",
+    "RT_hour_price": "834.645000000002225",
+    "components_CNY": {
+      "LT": "0",
+      "DA": "0.000",
+      "RT_deviation": "0E-16"
+    },
+    "energy_amount_CNY": "0E-16",
+    "engine": "R47.synthetic_participating_DA; simulated executed quantity explicitly mapped to research fixture only",
+    "channel": "simulation",
+    "actual_meter": null,
+    "formal_bill": null,
+    "payable": false,
+    "raw_signed_MWh": [
+      "0.0",
+      "0.0"
+    ]
+  },
+  {
+    "resource": "VRE:15",
+    "node": "15",
+    "technology": "vre",
+    "direction": "discharge",
+    "start": "2026-11-11T00:00:00+08:00",
+    "end": "2026-11-11T01:00:00+08:00",
+    "QDA_MWh": "0.0",
+    "simulated_executed_MWh": "0.0",
+    "deviation_MWh": "0.0",
+    "DA_hour_price": "327.24",
+    "RT_hour_price": "834.645000000002375",
+    "components_CNY": {
+      "LT": "0",
+      "DA": "0.000",
+      "RT_deviation": "0E-16"
+    },
+    "energy_amount_CNY": "0E-16",
+    "engine": "R47.synthetic_participating_DA; simulated executed quantity explicitly mapped to research fixture only",
+    "channel": "simulation",
+    "actual_meter": null,
+    "formal_bill": null,
+    "payable": false,
+    "raw_signed_MWh": [
+      "0.0",
+      "0.0"
+    ]
+  },
+  {
+    "resource": "VRE:16",
+    "node": "16",
+    "technology": "vre",
+    "direction": "discharge",
+    "start": "2026-11-11T00:00:00+08:00",
+    "end": "2026-11-11T01:00:00+08:00",
+    "QDA_MWh": "0.0",
+    "simulated_executed_MWh": "0.0",
+    "deviation_MWh": "0.0",
+    "DA_hour_price": "327.24",
+    "RT_hour_price": "834.64500000000245",
+    "components_CNY": {
+      "LT": "0",
+      "DA": "0.000",
+      "RT_deviation": "0E-15"
+    },
+    "energy_amount_CNY": "0E-15",
+    "engine": "R47.synthetic_participating_DA; simulated executed quantity explicitly mapped to research fixture only",
+    "channel": "simulation",
+    "actual_meter": null,
+    "formal_bill": null,
+    "payable": false,
+    "raw_signed_MWh": [
+      "0.0",
+      "0.0"
+    ]
+  },
+  {
+    "resource": "VRE:17",
+    "node": "17",
+    "technology": "vre",
+    "direction": "discharge",
+    "start": "2026-11-11T00:00:00+08:00",
+    "end": "2026-11-11T01:00:00+08:00",
+    "QDA_MWh": "0.0",
+    "simulated_executed_MWh": "0.0",
+    "deviation_MWh": "0.0",
+    "DA_hour_price": "327.24",
+    "RT_hour_price": "834.6450000000019625",
+    "components_CNY": {
+      "LT": "0",
+      "DA": "0.000",
+      "RT_deviation": "0E-17"
+    },
+    "energy_amount_CNY": "0E-17",
+    "engine": "R47.synthetic_participating_DA; simulated executed quantity explicitly mapped to research fixture only",
+    "channel": "simulation",
+    "actual_meter": null,
+    "formal_bill": null,
+    "payable": false,
+    "raw_signed_MWh": [
+      "0.0",
+      "0.0"
+    ]
+  },
+  {
+    "resource": "VRE:18",
+    "node": "18",
+    "technology": "vre",
+    "direction": "discharge",
+    "start": "2026-11-11T00:00:00+08:00",
+    "end": "2026-11-11T01:00:00+08:00",
+    "QDA_MWh": "0.0",
+    "simulated_executed_MWh": "0.0",
+    "deviation_MWh": "0.0",
+    "DA_hour_price": "327.24",
+    "RT_hour_price": "834.645000000002025",
+    "components_CNY": {
+      "LT": "0",
+      "DA": "0.000",
+      "RT_deviation": "0E-16"
+    },
+    "energy_amount_CNY": "0E-16",
+    "engine": "R47.synthetic_participating_DA; simulated executed quantity explicitly mapped to research fixture only",
+    "channel": "simulation",
+    "actual_meter": null,
+    "formal_bill": null,
+    "payable": false,
+    "raw_signed_MWh": [
+      "0.0",
+      "0.0"
+    ]
+  },
+  {
+    "resource": "VRE:19",
+    "node": "19",
+    "technology": "vre",
+    "direction": "discharge",
+    "start": "2026-11-11T00:00:00+08:00",
+    "end": "2026-11-11T01:00:00+08:00",
+    "QDA_MWh": "0.0",
+    "simulated_executed_MWh": "0.0",
+    "deviation_MWh": "0.0",
+    "DA_hour_price": "327.24",
+    "RT_hour_price": "834.64500000000245",
+    "components_CNY": {
+      "LT": "0",
+      "DA": "0.000",
+      "RT_deviation": "0E-15"
+    },
+    "energy_amount_CNY": "0E-15",
+    "engine": "R47.synthetic_participating_DA; simulated executed quantity explicitly mapped to research fixture only",
+    "channel": "simulation",
+    "actual_meter": null,
+    "formal_bill": null,
+    "payable": false,
+    "raw_signed_MWh": [
+      "0.0",
+      "0.0"
+    ]
+  },
+  {
+    "resource": "VRE:20",
+    "node": "20",
+    "technology": "vre",
+    "direction": "discharge",
+    "start": "2026-11-11T00:00:00+08:00",
+    "end": "2026-11-11T01:00:00+08:00",
+    "QDA_MWh": "0.0",
+    "simulated_executed_MWh": "0.0",
+    "deviation_MWh": "0.0",
+    "DA_hour_price": "327.24",
+    "RT_hour_price": "834.64500000000245",
+    "components_CNY": {
+      "LT": "0",
+      "DA": "0.000",
+      "RT_deviation": "0E-15"
+    },
+    "energy_amount_CNY": "0E-15",
+    "engine": "R47.synthetic_participating_DA; simulated executed quantity explicitly mapped to research fixture only",
+    "channel": "simulation",
+    "actual_meter": null,
+    "formal_bill": null,
+    "payable": false,
+    "raw_signed_MWh": [
+      "0.0",
+      "0.0"
+    ]
+  },
+  {
+    "resource": "VRE:21",
+    "node": "21",
+    "technology": "vre",
+    "direction": "discharge",
+    "start": "2026-11-11T00:00:00+08:00",
+    "end": "2026-11-11T01:00:00+08:00",
+    "QDA_MWh": "0.0",
+    "simulated_executed_MWh": "0.0",
+    "deviation_MWh": "0.0",
+    "DA_hour_price": "327.24",
+    "RT_hour_price": "834.64500000000245",
+    "components_CNY": {
+      "LT": "0",
+      "DA": "0.000",
+      "RT_deviation": "0E-15"
+    },
+    "energy_amount_CNY": "0E-15",
+    "engine": "R47.synthetic_participating_DA; simulated executed quantity explicitly mapped to research fixture only",
+    "channel": "simulation",
+    "actual_meter": null,
+    "formal_bill": null,
+    "payable": false,
+    "raw_signed_MWh": [
+      "0.0",
+      "0.0"
+    ]
+  },
+  {
+    "resource": "VRE:22",
+    "node": "22",
+    "technology": "vre",
+    "direction": "discharge",
+    "start": "2026-11-11T00:00:00+08:00",
+    "end": "2026-11-11T01:00:00+08:00",
+    "QDA_MWh": "0.0",
+    "simulated_executed_MWh": "0.0",
+    "deviation_MWh": "0.0",
+    "DA_hour_price": "327.24",
+    "RT_hour_price": "834.64500000000245",
+    "components_CNY": {
+      "LT": "0",
+      "DA": "0.000",
+      "RT_deviation": "0E-15"
+    },
+    "energy_amount_CNY": "0E-15",
+    "engine": "R47.synthetic_participating_DA; simulated executed quantity explicitly mapped to research fixture only",
+    "channel": "simulation",
+    "actual_meter": null,
+    "formal_bill": null,
+    "payable": false,
+    "raw_signed_MWh": [
+      "0.0",
+      "0.0"
+    ]
+  },
+  {
+    "resource": "VRE:23",
+    "node": "23",
+    "technology": "vre",
+    "direction": "discharge",
+    "start": "2026-11-11T00:00:00+08:00",
+    "end": "2026-11-11T01:00:00+08:00",
+    "QDA_MWh": "0.0",
+    "simulated_executed_MWh": "0.0",
+    "deviation_MWh": "0.0",
+    "DA_hour_price": "327.24",
+    "RT_hour_price": "834.64500000000245",
+    "components_CNY": {
+      "LT": "0",
+      "DA": "0.000",
+      "RT_deviation": "0E-15"
+    },
+    "energy_amount_CNY": "0E-15",
+    "engine": "R47.synthetic_participating_DA; simulated executed quantity explicitly mapped to research fixture only",
+    "channel": "simulation",
+    "actual_meter": null,
+    "formal_bill": null,
+    "payable": false,
+    "raw_signed_MWh": [
+      "0.0",
+      "0.0"
+    ]
+  },
+  {
+    "resource": "VRE:24",
+    "node": "24",
+    "technology": "vre",
+    "direction": "discharge",
+    "start": "2026-11-11T00:00:00+08:00",
+    "end": "2026-11-11T01:00:00+08:00",
+    "QDA_MWh": "0.0",
+    "simulated_executed_MWh": "0.0",
+    "deviation_MWh": "0.0",
+    "DA_hour_price": "327.24",
+    "RT_hour_price": "834.64500000000245",
+    "components_CNY": {
+      "LT": "0",
+      "DA": "0.000",
+      "RT_deviation": "0E-15"
+    },
+    "energy_amount_CNY": "0E-15",
+    "engine": "R47.synthetic_participating_DA; simulated executed quantity explicitly mapped to research fixture only",
+    "channel": "simulation",
+    "actual_meter": null,
+    "formal_bill": null,
+    "payable": false,
+    "raw_signed_MWh": [
+      "0.0",
+      "0.0"
+    ]
+  },
+  {
+    "resource": "VRE:25",
+    "node": "25",
+    "technology": "vre",
+    "direction": "discharge",
+    "start": "2026-11-11T00:00:00+08:00",
+    "end": "2026-11-11T01:00:00+08:00",
+    "QDA_MWh": "0.0",
+    "simulated_executed_MWh": "0.0",
+    "deviation_MWh": "0.0",
+    "DA_hour_price": "327.24",
+    "RT_hour_price": "834.6450000000019625",
+    "components_CNY": {
+      "LT": "0",
+      "DA": "0.000",
+      "RT_deviation": "0E-17"
+    },
+    "energy_amount_CNY": "0E-17",
+    "engine": "R47.synthetic_participating_DA; simulated executed quantity explicitly mapped to research fixture only",
+    "channel": "simulation",
+    "actual_meter": null,
+    "formal_bill": null,
+    "payable": false,
+    "raw_signed_MWh": [
+      "0.0",
+      "0.0"
+    ]
+  },
+  {
+    "resource": "VRE:26",
+    "node": "26",
+    "technology": "vre",
+    "direction": "discharge",
+    "start": "2026-11-11T00:00:00+08:00",
+    "end": "2026-11-11T01:00:00+08:00",
+    "QDA_MWh": "0.0",
+    "simulated_executed_MWh": "0.0",
+    "deviation_MWh": "0.0",
+    "DA_hour_price": "327.24",
+    "RT_hour_price": "834.6450000000019625",
+    "components_CNY": {
+      "LT": "0",
+      "DA": "0.000",
+      "RT_deviation": "0E-17"
+    },
+    "energy_amount_CNY": "0E-17",
+    "engine": "R47.synthetic_participating_DA; simulated executed quantity explicitly mapped to research fixture only",
+    "channel": "simulation",
+    "actual_meter": null,
+    "formal_bill": null,
+    "payable": false,
+    "raw_signed_MWh": [
+      "0.0",
+      "0.0"
+    ]
+  },
+  {
+    "resource": "VRE:27",
+    "node": "27",
+    "technology": "vre",
+    "direction": "discharge",
+    "start": "2026-11-11T00:00:00+08:00",
+    "end": "2026-11-11T01:00:00+08:00",
+    "QDA_MWh": "0.0",
+    "simulated_executed_MWh": "0.0",
+    "deviation_MWh": "0.0",
+    "DA_hour_price": "327.24",
+    "RT_hour_price": "834.6450000000019625",
+    "components_CNY": {
+      "LT": "0",
+      "DA": "0.000",
+      "RT_deviation": "0E-17"
+    },
+    "energy_amount_CNY": "0E-17",
+    "engine": "R47.synthetic_participating_DA; simulated executed quantity explicitly mapped to research fixture only",
+    "channel": "simulation",
+    "actual_meter": null,
+    "formal_bill": null,
+    "payable": false,
+    "raw_signed_MWh": [
+      "0.0",
+      "0.0"
+    ]
+  },
+  {
+    "resource": "VRE:28",
+    "node": "28",
+    "technology": "vre",
+    "direction": "discharge",
+    "start": "2026-11-11T00:00:00+08:00",
+    "end": "2026-11-11T01:00:00+08:00",
+    "QDA_MWh": "0.0",
+    "simulated_executed_MWh": "0.0",
+    "deviation_MWh": "0.0",
+    "DA_hour_price": "327.24",
+    "RT_hour_price": "834.6450000000019625",
+    "components_CNY": {
+      "LT": "0",
+      "DA": "0.000",
+      "RT_deviation": "0E-17"
+    },
+    "energy_amount_CNY": "0E-17",
+    "engine": "R47.synthetic_participating_DA; simulated executed quantity explicitly mapped to research fixture only",
+    "channel": "simulation",
+    "actual_meter": null,
+    "formal_bill": null,
+    "payable": false,
+    "raw_signed_MWh": [
+      "0.0",
+      "0.0"
+    ]
+  },
+  {
+    "resource": "VRE:29",
+    "node": "29",
+    "technology": "vre",
+    "direction": "discharge",
+    "start": "2026-11-11T00:00:00+08:00",
+    "end": "2026-11-11T01:00:00+08:00",
+    "QDA_MWh": "0.0",
+    "simulated_executed_MWh": "0.0",
+    "deviation_MWh": "0.0",
+    "DA_hour_price": "327.24",
+    "RT_hour_price": "834.6450000000019625",
+    "components_CNY": {
+      "LT": "0",
+      "DA": "0.000",
+      "RT_deviation": "0E-17"
+    },
+    "energy_amount_CNY": "0E-17",
+    "engine": "R47.synthetic_participating_DA; simulated executed quantity explicitly mapped to research fixture only",
+    "channel": "simulation",
+    "actual_meter": null,
+    "formal_bill": null,
+    "payable": false,
+    "raw_signed_MWh": [
+      "0.0",
+      "0.0"
+    ]
+  },
+  {
+    "resource": "VRE:30",
+    "node": "30",
+    "technology": "vre",
+    "direction": "discharge",
+    "start": "2026-11-11T00:00:00+08:00",
+    "end": "2026-11-11T01:00:00+08:00",
+    "QDA_MWh": "299.1141605483749758333333333",
+    "simulated_executed_MWh": "299.1141605483749758333333333",
+    "deviation_MWh": "0E-25",
+    "DA_hour_price": "327.24",
+    "RT_hour_price": "834.6450000000019625",
+    "components_CNY": {
+      "LT": "0",
+      "DA": "97882.11789785022709169999999",
+      "RT_deviation": "0E-41"
+    },
+    "energy_amount_CNY": "97882.11789785022709169999999",
+    "engine": "R47.synthetic_participating_DA; simulated executed quantity explicitly mapped to research fixture only",
+    "channel": "simulation",
+    "actual_meter": null,
+    "formal_bill": null,
+    "payable": false,
+    "raw_signed_MWh": [
+      "299.1141605483749758333333333",
+      "299.1141605483749758333333333"
+    ]
+  },
+  {
+    "resource": "VRE:31",
+    "node": "31",
+    "technology": "vre",
+    "direction": "discharge",
+    "start": "2026-11-11T00:00:00+08:00",
+    "end": "2026-11-11T01:00:00+08:00",
+    "QDA_MWh": "0.0",
+    "simulated_executed_MWh": "0.0",
+    "deviation_MWh": "0.0",
+    "DA_hour_price": "327.24",
+    "RT_hour_price": "834.6450000000023925",
+    "components_CNY": {
+      "LT": "0",
+      "DA": "0.000",
+      "RT_deviation": "0E-17"
+    },
+    "energy_amount_CNY": "0E-17",
+    "engine": "R47.synthetic_participating_DA; simulated executed quantity explicitly mapped to research fixture only",
+    "channel": "simulation",
+    "actual_meter": null,
+    "formal_bill": null,
+    "payable": false,
+    "raw_signed_MWh": [
+      "0.0",
+      "0.0"
+    ]
+  },
+  {
+    "resource": "VRE:32",
+    "node": "32",
+    "technology": "vre",
+    "direction": "discharge",
+    "start": "2026-11-11T00:00:00+08:00",
+    "end": "2026-11-11T01:00:00+08:00",
+    "QDA_MWh": "0.0",
+    "simulated_executed_MWh": "0.0",
+    "deviation_MWh": "0.0",
+    "DA_hour_price": "327.24",
+    "RT_hour_price": "834.64500000000225",
+    "components_CNY": {
+      "LT": "0",
+      "DA": "0.000",
+      "RT_deviation": "0E-15"
+    },
+    "energy_amount_CNY": "0E-15",
+    "engine": "R47.synthetic_participating_DA; simulated executed quantity explicitly mapped to research fixture only",
+    "channel": "simulation",
+    "actual_meter": null,
+    "formal_bill": null,
+    "payable": false,
+    "raw_signed_MWh": [
+      "0.0",
+      "0.0"
+    ]
+  },
+  {
+    "resource": "VRE:33",
+    "node": "33",
+    "technology": "vre",
+    "direction": "discharge",
+    "start": "2026-11-11T00:00:00+08:00",
+    "end": "2026-11-11T01:00:00+08:00",
+    "QDA_MWh": "0.0",
+    "simulated_executed_MWh": "0.0",
+    "deviation_MWh": "0.0",
+    "DA_hour_price": "327.24",
+    "RT_hour_price": "834.64500000000245",
+    "components_CNY": {
+      "LT": "0",
+      "DA": "0.000",
+      "RT_deviation": "0E-15"
+    },
+    "energy_amount_CNY": "0E-15",
+    "engine": "R47.synthetic_participating_DA; simulated executed quantity explicitly mapped to research fixture only",
+    "channel": "simulation",
+    "actual_meter": null,
+    "formal_bill": null,
+    "payable": false,
+    "raw_signed_MWh": [
+      "0.0",
+      "0.0"
+    ]
+  },
+  {
+    "resource": "VRE:34",
+    "node": "34",
+    "technology": "vre",
+    "direction": "discharge",
+    "start": "2026-11-11T00:00:00+08:00",
+    "end": "2026-11-11T01:00:00+08:00",
+    "QDA_MWh": "0.0",
+    "simulated_executed_MWh": "0.0",
+    "deviation_MWh": "0.0",
+    "DA_hour_price": "327.24",
+    "RT_hour_price": "834.64500000000245",
+    "components_CNY": {
+      "LT": "0",
+      "DA": "0.000",
+      "RT_deviation": "0E-15"
+    },
+    "energy_amount_CNY": "0E-15",
+    "engine": "R47.synthetic_participating_DA; simulated executed quantity explicitly mapped to research fixture only",
+    "channel": "simulation",
+    "actual_meter": null,
+    "formal_bill": null,
+    "payable": false,
+    "raw_signed_MWh": [
+      "0.0",
+      "0.0"
+    ]
+  },
+  {
+    "resource": "VRE:35",
+    "node": "35",
+    "technology": "vre",
+    "direction": "discharge",
+    "start": "2026-11-11T00:00:00+08:00",
+    "end": "2026-11-11T01:00:00+08:00",
+    "QDA_MWh": "0.0",
+    "simulated_executed_MWh": "0.0",
+    "deviation_MWh": "0.0",
+    "DA_hour_price": "327.24",
+    "RT_hour_price": "834.64500000000245",
+    "components_CNY": {
+      "LT": "0",
+      "DA": "0.000",
+      "RT_deviation": "0E-15"
+    },
+    "energy_amount_CNY": "0E-15",
+    "engine": "R47.synthetic_participating_DA; simulated executed quantity explicitly mapped to research fixture only",
+    "channel": "simulation",
+    "actual_meter": null,
+    "formal_bill": null,
+    "payable": false,
+    "raw_signed_MWh": [
+      "0.0",
+      "0.0"
+    ]
+  },
+  {
+    "resource": "VRE:36",
+    "node": "36",
+    "technology": "vre",
+    "direction": "discharge",
+    "start": "2026-11-11T00:00:00+08:00",
+    "end": "2026-11-11T01:00:00+08:00",
+    "QDA_MWh": "0.0",
+    "simulated_executed_MWh": "0.0",
+    "deviation_MWh": "0.0",
+    "DA_hour_price": "327.24",
+    "RT_hour_price": "834.64500000000245",
+    "components_CNY": {
+      "LT": "0",
+      "DA": "0.000",
+      "RT_deviation": "0E-15"
+    },
+    "energy_amount_CNY": "0E-15",
+    "engine": "R47.synthetic_participating_DA; simulated executed quantity explicitly mapped to research fixture only",
+    "channel": "simulation",
+    "actual_meter": null,
+    "formal_bill": null,
+    "payable": false,
+    "raw_signed_MWh": [
+      "0.0",
+      "0.0"
+    ]
+  },
+  {
+    "resource": "VRE:37",
+    "node": "37",
+    "technology": "vre",
+    "direction": "discharge",
+    "start": "2026-11-11T00:00:00+08:00",
+    "end": "2026-11-11T01:00:00+08:00",
+    "QDA_MWh": "175.9318890151249966666666667",
+    "simulated_executed_MWh": "175.9318890151249966666666667",
+    "deviation_MWh": "0E-25",
+    "DA_hour_price": "327.24",
+    "RT_hour_price": "834.6450000000019625",
+    "components_CNY": {
+      "LT": "0",
+      "DA": "57571.95136130950390920000001",
+      "RT_deviation": "0E-41"
+    },
+    "energy_amount_CNY": "57571.95136130950390920000001",
+    "engine": "R47.synthetic_participating_DA; simulated executed quantity explicitly mapped to research fixture only",
+    "channel": "simulation",
+    "actual_meter": null,
+    "formal_bill": null,
+    "payable": false,
+    "raw_signed_MWh": [
+      "175.9318890151249966666666667",
+      "175.9318890151249966666666667"
+    ]
+  },
+  {
+    "resource": "VRE:38",
+    "node": "38",
+    "technology": "vre",
+    "direction": "discharge",
+    "start": "2026-11-11T00:00:00+08:00",
+    "end": "2026-11-11T01:00:00+08:00",
+    "QDA_MWh": "0.0",
+    "simulated_executed_MWh": "0.0",
+    "deviation_MWh": "0.0",
+    "DA_hour_price": "327.24",
+    "RT_hour_price": "834.6450000000019625",
+    "components_CNY": {
+      "LT": "0",
+      "DA": "0.000",
+      "RT_deviation": "0E-17"
+    },
+    "energy_amount_CNY": "0E-17",
+    "engine": "R47.synthetic_participating_DA; simulated executed quantity explicitly mapped to research fixture only",
+    "channel": "simulation",
+    "actual_meter": null,
+    "formal_bill": null,
+    "payable": false,
+    "raw_signed_MWh": [
+      "0.0",
+      "0.0"
+    ]
+  },
+  {
+    "resource": "VRE:39",
+    "node": "39",
+    "technology": "vre",
+    "direction": "discharge",
+    "start": "2026-11-11T00:00:00+08:00",
+    "end": "2026-11-11T01:00:00+08:00",
+    "QDA_MWh": "0.0",
+    "simulated_executed_MWh": "0.0",
+    "deviation_MWh": "0.0",
+    "DA_hour_price": "327.24",
+    "RT_hour_price": "834.6450000000006",
+    "components_CNY": {
+      "LT": "0",
+      "DA": "0.000",
+      "RT_deviation": "0E-14"
+    },
+    "energy_amount_CNY": "0E-14",
+    "engine": "R47.synthetic_participating_DA; simulated executed quantity explicitly mapped to research fixture only",
+    "channel": "simulation",
+    "actual_meter": null,
+    "formal_bill": null,
+    "payable": false,
+    "raw_signed_MWh": [
+      "0.0",
+      "0.0"
+    ]
+  }
+]

@@ -1,0 +1,78 @@
+{
+  "schema": "gd.pipeline.independent.final_arithmetic.v1",
+  "status": "passed",
+  "run_id": "gd-760dddd43b9a4f24af0b58f1af0c4e8a",
+  "actual_RT_windows": 96,
+  "actual_PRICE_windows": 96,
+  "executed_cells": 288,
+  "settlement_rows": 480,
+  "checked_quarter_prices": 7488,
+  "clipped_quarter_prices": 1755,
+  "aggregation": "clip each quarter then arithmetic mean of four",
+  "components_CNY": {
+    "DA": "17794667.65868503776466726394",
+    "LT": "0E-16",
+    "RT_deviation": "1.1193576408391480000E-9"
+  },
+  "total_CNY": "17794667.65868503888402490477",
+  "roundoff_normalizations": [
+    {
+      "accounting_signed_MWh": "0",
+      "delta_MWh": "-8.376924884750655E-13",
+      "direction": "charge",
+      "raw_signed_MWh": "8.376924884750655E-13",
+      "reason": "native roundoff at zero; accounting only, original execution unchanged",
+      "resource": "ES4",
+      "source": "executed",
+      "start": "2026-11-11T14:00:00+08:00",
+      "threshold_MWh": "1E-9"
+    },
+    {
+      "accounting_signed_MWh": "0",
+      "delta_MWh": "-2.991758887410948333333333333E-13",
+      "direction": "charge",
+      "raw_signed_MWh": "2.991758887410948333333333333E-13",
+      "reason": "native roundoff at zero; accounting only, original execution unchanged",
+      "resource": "ES3",
+      "source": "executed",
+      "start": "2026-11-11T23:00:00+08:00",
+      "threshold_MWh": "1E-9"
+    }
+  ],
+  "physical_energy_conservation": {
+    "fixed_injection_MWh": "18511.67999999999991666666667",
+    "fixed_injection_financial_amount": null,
+    "load_MWh": "93127.78625664074986621666667",
+    "load_side_bill": null,
+    "modeled_resource_signed_net_MWh": "74616.10625664074949935834663",
+    "note": "System physical energy balances; financial totals cover specified modeled resources only. Fixed injections and load-side contracts/registration are not supplied, so no whole-system monetary conservation claim.",
+    "residual_MWh": "-4.501916533689166666666666667E-13"
+  },
+  "independent_energy_totals": {
+    "load_MWh": "93127.78625664074986621666657",
+    "fixed_injection_MWh": "18511.67999999999991666666666",
+    "modeled_resource_signed_net_MWh": "74616.10625664074949935834662",
+    "independent_max_cell_balance_residual_MW": "1.5811E-12"
+  },
+  "native_calls": 0,
+  "KKT_repeated": false,
+  "formal_bill": null,
+  "payable": false,
+  "limitations": [
+    "Explicit synthetic participation and known-empty contracts; no actual meter/financial entitlement",
+    "Fixed-DA UC 309-cell-tail RT; R80 recommitment not integrated",
+    "AC research tests unsafe, not a security pass",
+    "Formal AGC qualification/mileage/payment and current price-limit verification remain missing"
+  ],
+  "full_review_sha256": "12ad83cb76b6c2ec3878e18ea71537cc2267d604e757867b234ff5a336ef76a4",
+  "original_result_sha256": "a6fd886a7950d3de15e72521ab8c03faa984d9727def124b37e147d1bed7b9fa",
+  "independent_receipt_physics": {
+    "file": "FRESH_DAY_INDEPENDENT_RECEIPT_PHYSICS.json",
+    "sha256": "09f3f8a7be2afc2a7e5fede24bea79e078e13d962623ddcc12d853b741c92a48",
+    "passed": true,
+    "prefix_hashes_unchanged": 41,
+    "executed_cells_checked": 288,
+    "positive_reserve_MW": 400,
+    "accident_reserve_MW": 400
+  }
+}

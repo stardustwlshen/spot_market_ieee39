@@ -1,0 +1,19 @@
+{
+  "status": "passed",
+  "native_calls": 0,
+  "AC_calls": 0,
+  "real_registration_and_complete_builder": true,
+  "execution_callsite_mocked": true,
+  "old_raw_explicit_compatibility": true,
+  "no_new_acceptance": true,
+  "extra_row": [
+    {
+      "name": "research_safety_power_caps[1]",
+      "unit": "C1",
+      "tick": 0,
+      "cap_mw": 635.0,
+      "kind": "additional_upper_bound_only"
+    }
+  ],
+  "historical_safety_retained": true
+}

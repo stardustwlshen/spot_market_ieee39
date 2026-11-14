@@ -1,0 +1,13 @@
+{
+  "schema": "gd.rt_program.pure_math_comparison.v1",
+  "template_equal": true,
+  "names_equal": true,
+  "different_template_keys": [],
+  "native_calls": 0,
+  "columns": 264048,
+  "rows": 248256,
+  "note": "Pure build before final handoff receipt hash guard; builder and mathematical dependencies unchanged. Initial pure run source is deliberately superseded and not executable.",
+  "final_template_bytes_equal": true,
+  "final_names_bytes_equal": true,
+  "final_ready_sha256": "46aef61794edf0a35d14208d3bc627fd2b3ae2b8b2fcf08b4a672fbad875bef7"
+}

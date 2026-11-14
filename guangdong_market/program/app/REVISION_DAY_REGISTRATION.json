@@ -1,0 +1,7 @@
+{
+  "bundle": "../research_results/D1_reference_revision_snapshot",
+  "index_sha256": "d458fa9e403032e98b2d07019c606f216ecce61b9b83f7011241f43ae17a07a9",
+  "scope": "separate revised-reference research branch; preserve original missing-price branch",
+  "source_case_sha256": "c10e5cbfbe0f39f028d10cb2b2d30003e803033a3d883f4c753339bc9c1cdbe9",
+  "source_DA_artifacts_sha256": "e8e5a00f68a52ccbcdcb55d9ea4dac8fd4209a5e57fcf6cd66de8808cafb66c1"
+}

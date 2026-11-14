@@ -1,0 +1,30 @@
+{
+  "source_relative_original_path": "guangdong_r67_actual_complete_tail_20261112/native_day_v1/RUN_RESULT.json",
+  "source_sha256": "4618a1e3c772841ca750503b678f8a07c0072c2ebe68742f6e3ccfa3ca60f366",
+  "extraction": "selected source fields only, no recalculation; original complete evidence external",
+  "not_independent_reproduction": true,
+  "omitted_collection_counts": {},
+  "summary": {
+    "full_market_completed": false,
+    "independent_PRICE_pending": true,
+    "native_launch_attempts": 96,
+    "report": {
+      "accepted_RT_windows": 96,
+      "branch_id": "R67-4b0ae3be9c0b430cb8d412f9229740e2",
+      "executed_RT_cells": 288,
+      "financial_settlement_complete": false,
+      "full_market_completed": false,
+      "full_template_load_count": 1,
+      "global_horizon309": true,
+      "issued_RT_cells": 288,
+      "model_builds_this_run": 0,
+      "new_accepted_RT_native_calls": 96,
+      "noquote_bid": -50,
+      "preparation_cells_executed": 3,
+      "receipt_at": "2026-11-12T00:00:00+08:00",
+      "same_controller_full96_complete": true,
+      "source_load_count": 1,
+      "tail_duals_are_not_PRICE": true
+    }
+  }
+}

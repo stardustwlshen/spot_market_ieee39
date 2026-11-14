@@ -1,0 +1,40 @@
+{
+  "scope": {
+    "start": "2026-11-12T00:00:00+08:00",
+    "end": "2026-11-12T00:15:00+08:00",
+    "evidence": "SYNTHETIC_ONLY",
+    "channel": "synthetic_fixture",
+    "market_state": "not_started",
+    "current_rule_verified": true,
+    "current_parameter_verified": true,
+    "pool_complete": true,
+    "lower_requirement_mw": "80",
+    "requirement_evidence": "SYNTHETIC_NOT_MODEL400"
+  },
+  "units": [
+    {
+      "resource": "G",
+      "technology": "gas",
+      "rated_mw": "100",
+      "declared_upper_mw": "100",
+      "actual_mw": "60",
+      "evidence": "SYNTHETIC_NOT_ACTUAL_DISPATCH",
+      "designated": true,
+      "qualified": true,
+      "own_cause_daily_failure": false,
+      "nonself_upper_reduction": false
+    },
+    {
+      "resource": "C",
+      "technology": "coal",
+      "rated_mw": "200",
+      "declared_upper_mw": "180",
+      "actual_mw": "80",
+      "evidence": "SYNTHETIC_NOT_ACTUAL_DISPATCH",
+      "designated": true,
+      "qualified": true,
+      "own_cause_daily_failure": false,
+      "nonself_upper_reduction": false
+    }
+  ]
+}

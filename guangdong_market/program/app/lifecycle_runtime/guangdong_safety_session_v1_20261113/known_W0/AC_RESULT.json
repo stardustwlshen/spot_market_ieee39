@@ -1,0 +1,885 @@
+{
+  "input_sha256": "b0fc5b592d17169586ab0e4afb8d026a9bd1d43ab90214d1de1457211729236b",
+  "backend": "pandapower Newton-Raphson",
+  "backend_version": "3.5.6",
+  "official_operational_acceptance": false,
+  "balanced_positive_sequence_snapshot_only": true,
+  "dispatch_optimization_performed": false,
+  "HiGHS_calls": 0,
+  "scope": "research_snapshot",
+  "limitations": [
+    "No AC OPF or automatic dispatch repair",
+    "No dynamic/transient/voltage stability proof",
+    "No N-1 screening unless each explicit contingency is separately submitted",
+    "Not Guangdong official AC security approval"
+  ],
+  "status": "ac_snapshot_unsafe",
+  "ac_converged": true,
+  "ac_snapshot_safe": false,
+  "max_original_network_residual_mva": 1.7685533751471316e-11,
+  "generators": [
+    {
+      "id": "C1",
+      "bus": "30",
+      "p_mw": 668.041280400564,
+      "q_mvar": 116.2706002339692,
+      "scheduled_p_mw": 636.0,
+      "p_change_mw": 32.041280400564006,
+      "slack": true
+    },
+    {
+      "id": "C2",
+      "bus": "31",
+      "p_mw": 698.3144595890412,
+      "q_mvar": 150.0,
+      "scheduled_p_mw": 698.3144595890412,
+      "p_change_mw": 0.0,
+      "slack": false
+    },
+    {
+      "id": "C3",
+      "bus": "37",
+      "p_mw": 720.603695311838,
+      "q_mvar": -30.49701168346978,
+      "scheduled_p_mw": 720.603695311838,
+      "p_change_mw": 0.0,
+      "slack": false
+    },
+    {
+      "id": "CCGT",
+      "bus": "34",
+      "p_mw": 385.4000000000002,
+      "q_mvar": 131.44866946613072,
+      "scheduled_p_mw": 385.4000000000002,
+      "p_change_mw": 0.0,
+      "slack": false
+    },
+    {
+      "id": "GT",
+      "bus": "35",
+      "p_mw": 85.0,
+      "q_mvar": 32.20381782111536,
+      "scheduled_p_mw": 85.0,
+      "p_change_mw": 0.0,
+      "slack": false
+    }
+  ],
+  "buses": [
+    {
+      "id": "0",
+      "vm_pu": 1.0737257063853738,
+      "va_degree": -12.238657495365095
+    },
+    {
+      "id": "1",
+      "vm_pu": 1.0617535969623508,
+      "va_degree": -13.056189065284928
+    },
+    {
+      "id": "2",
+      "vm_pu": 1.0472617525366767,
+      "va_degree": -15.524255180311476
+    },
+    {
+      "id": "3",
+      "vm_pu": 1.0309973234178729,
+      "va_degree": -13.605214261689866
+    },
+    {
+      "id": "4",
+      "vm_pu": 1.0346690698240242,
+      "va_degree": -10.791115391945823
+    },
+    {
+      "id": "5",
+      "vm_pu": 1.0356868779645028,
+      "va_degree": -10.03140481091098
+    },
+    {
+      "id": "6",
+      "vm_pu": 1.03294318066697,
+      "va_degree": -11.317108592788982
+    },
+    {
+      "id": "7",
+      "vm_pu": 1.0339194159121572,
+      "va_degree": -11.607978500669212
+    },
+    {
+      "id": "8",
+      "vm_pu": 1.0727532485208815,
+      "va_degree": -11.29786350099714
+    },
+    {
+      "id": "9",
+      "vm_pu": 1.0389728078988183,
+      "va_degree": -9.017408933268523
+    },
+    {
+      "id": "10",
+      "vm_pu": 1.0372679165676244,
+      "va_degree": -9.393730684930816
+    },
+    {
+      "id": "11",
+      "vm_pu": 1.0313322955492619,
+      "va_degree": -9.848270477385825
+    },
+    {
+      "id": "12",
+      "vm_pu": 1.0360087021622255,
+      "va_degree": -10.227589345699476
+    },
+    {
+      "id": "13",
+      "vm_pu": 1.0323208101704906,
+      "va_degree": -13.178455835861978
+    },
+    {
+      "id": "14",
+      "vm_pu": 1.0279987412905016,
+      "va_degree": -18.819047892320665
+    },
+    {
+      "id": "15",
+      "vm_pu": 1.036061406721459,
+      "va_degree": -20.264828920189508
+    },
+    {
+      "id": "16",
+      "vm_pu": 1.0424142557605718,
+      "va_degree": -18.4283942265816
+    },
+    {
+      "id": "17",
+      "vm_pu": 1.0436172068677652,
+      "va_degree": -17.571425028377377
+    },
+    {
+      "id": "18",
+      "vm_pu": 1.0117255816754305,
+      "va_degree": -24.680071406785427
+    },
+    {
+      "id": "19",
+      "vm_pu": 0.940082651461444,
+      "va_degree": -28.34320201842689
+    },
+    {
+      "id": "20",
+      "vm_pu": 1.0434121424920673,
+      "va_degree": -19.875281993831184
+    },
+    {
+      "id": "21",
+      "vm_pu": 1.058644400108524,
+      "va_degree": -18.258354692540937
+    },
+    {
+      "id": "22",
+      "vm_pu": 1.0551855809968236,
+      "va_degree": -19.02118252417849
+    },
+    {
+      "id": "23",
+      "vm_pu": 1.0420408999659145,
+      "va_degree": -20.584735304188413
+    },
+    {
+      "id": "24",
+      "vm_pu": 1.0615456559092085,
+      "va_degree": -13.124934664525778
+    },
+    {
+      "id": "25",
+      "vm_pu": 1.061117257898246,
+      "va_degree": -13.896562478056246
+    },
+    {
+      "id": "26",
+      "vm_pu": 1.0488035968189429,
+      "va_degree": -16.677760447782084
+    },
+    {
+      "id": "27",
+      "vm_pu": 1.0595914345133917,
+      "va_degree": -9.238237341669398
+    },
+    {
+      "id": "28",
+      "vm_pu": 1.057159000212769,
+      "va_degree": -6.737710473801468
+    },
+    {
+      "id": "29",
+      "vm_pu": 1.0345889426750035,
+      "va_degree": -10.220685595039768
+    },
+    {
+      "id": "30",
+      "vm_pu": 0.982,
+      "va_degree": 0.0
+    },
+    {
+      "id": "31",
+      "vm_pu": 0.990993325483667,
+      "va_degree": -0.6719687968652993
+    },
+    {
+      "id": "32",
+      "vm_pu": 0.9455379267994678,
+      "va_degree": -24.680071406785427
+    },
+    {
+      "id": "33",
+      "vm_pu": 0.9316973750856731,
+      "va_degree": -28.34320201842689
+    },
+    {
+      "id": "34",
+      "vm_pu": 1.0494,
+      "va_degree": -15.343677848996695
+    },
+    {
+      "id": "35",
+      "vm_pu": 1.0635999999999999,
+      "va_degree": -17.84899158757756
+    },
+    {
+      "id": "36",
+      "vm_pu": 1.0359351538820287,
+      "va_degree": -10.999515342196656
+    },
+    {
+      "id": "37",
+      "vm_pu": 1.0264999999999997,
+      "va_degree": -0.6292341838371249
+    },
+    {
+      "id": "38",
+      "vm_pu": 1.0684510484168108,
+      "va_degree": -10.940374002266257
+    }
+  ],
+  "branches": [
+    {
+      "id": "B0",
+      "from_p_mw": 41.96018755683202,
+      "from_q_mvar": -12.290204198152912,
+      "to_p_mw": -41.88295935930636,
+      "to_q_mvar": -66.46196837987883,
+      "from_mva": 43.7230655265252,
+      "to_mva": 78.55810286419423,
+      "rate_mva": 600.0,
+      "status": 1
+    },
+    {
+      "id": "B1",
+      "from_p_mw": -102.85446024333211,
+      "from_q_mvar": -15.286915194708214,
+      "to_p_mw": 102.95299582533808,
+      "to_q_mvar": -68.29249033323865,
+      "from_mva": 103.98427654274172,
+      "to_mva": 123.54425759754103,
+      "rate_mva": 1000.0,
+      "status": 1
+    },
+    {
+      "id": "B2",
+      "from_p_mw": 324.063030580402,
+      "from_q_mvar": 66.33314068874469,
+      "to_p_mw": -322.7766571507627,
+      "to_q_mvar": -79.99306006827409,
+      "from_mva": 330.7823050626913,
+      "to_mva": 332.54121558162905,
+      "rate_mva": 500.000000000003,
+      "status": 1
+    },
+    {
+      "id": "B3",
+      "from_p_mw": 10.719943950738289,
+      "from_q_mvar": -14.37830883520396,
+      "to_p_mw": -10.71046057651151,
+      "to_q_mvar": -2.0656992879424765,
+      "from_mva": 17.934686037605307,
+      "to_mva": 10.907844851720862,
+      "rate_mva": 500.000000000003,
+      "status": 1
+    },
+    {
+      "id": "B4",
+      "from_p_mw": -164.0860843147725,
+      "from_q_mvar": 80.6842740270448,
+      "to_p_mw": 164.5073537849414,
+      "to_q_mvar": -97.68995492262343,
+      "from_mva": 182.85019863545648,
+      "to_mva": 191.32693679173371,
+      "rate_mva": 500.000000000003,
+      "status": 1
+    },
+    {
+      "id": "B5",
+      "from_p_mw": 294.3449065625334,
+      "from_q_mvar": -2.1261294984260535,
+      "to_p_mw": -293.47503165864265,
+      "to_q_mvar": -10.723499542558361,
+      "from_mva": 294.35258525440304,
+      "to_mva": 293.67088321704716,
+      "rate_mva": 500.000000000003,
+      "status": 1
+    },
+    {
+      "id": "B6",
+      "from_p_mw": -408.78157074034993,
+      "from_q_mvar": -1.1082968082686309,
+      "to_p_mw": 410.03948730056015,
+      "to_q_mvar": 6.919206530856643,
+      "from_mva": 408.7830731558768,
+      "to_mva": 410.09786218014216,
+      "rate_mva": 600.0,
+      "status": 1
+    },
+    {
+      "id": "B7",
+      "from_p_mw": -61.856163861926596,
+      "from_q_mvar": -13.857728409886066,
+      "to_p_mw": 61.885279665304225,
+      "to_q_mvar": -0.38169365644836245,
+      "from_mva": 63.38944426634199,
+      "to_mva": 61.88645675186365,
+      "rate_mva": 500.000000000003,
+      "status": 1
+    },
+    {
+      "id": "B8",
+      "from_p_mw": -546.0796108417774,
+      "from_q_mvar": 2.8024382960846994,
+      "to_p_mw": 546.6367673960746,
+      "to_q_mvar": -0.21011973356526567,
+      "from_mva": 546.0868017426445,
+      "to_mva": 546.636807779656,
+      "rate_mva": 1200.0,
+      "status": 1
+    },
+    {
+      "id": "B9",
+      "from_p_mw": 136.0401235412189,
+      "from_q_mvar": -9.721644826937187,
+      "to_p_mw": -135.9017991067041,
+      "to_q_mvar": -4.1315403766151855,
+      "from_mva": 136.38704334082183,
+      "to_mva": 135.96458592708086,
+      "rate_mva": 900.0000000000031,
+      "status": 1
+    },
+    {
+      "id": "B10",
+      "from_p_mw": 262.00583432013616,
+      "from_q_mvar": 10.666842427646134,
+      "to_p_mw": -261.6202824662315,
+      "to_q_mvar": -16.84389425320304,
+      "from_mva": 262.22287990403674,
+      "to_mva": 262.1619517995009,
+      "rate_mva": 900.0000000000031,
+      "status": 1
+    },
+    {
+      "id": "B11",
+      "from_p_mw": -146.37385176281276,
+      "from_q_mvar": -14.11186419538368,
+      "to_p_mw": 146.51396103864985,
+      "to_q_mvar": 0.8313114664571433,
+      "from_mva": 147.05253887964952,
+      "to_mva": 146.51631942547994,
+      "rate_mva": 480.00000000000125,
+      "status": 1
+    },
+    {
+      "id": "B12",
+      "from_p_mw": 115.11293535856394,
+      "from_q_mvar": -35.79347596512844,
+      "to_p_mw": -115.05950717264743,
+      "to_q_mvar": 28.077652308136614,
+      "from_mva": 120.54941231101522,
+      "to_mva": 118.43582544968864,
+      "rate_mva": 900.0000000000031,
+      "status": 1
+    },
+    {
+      "id": "B13",
+      "from_p_mw": -23.44911397036144,
+      "from_q_mvar": -129.41062817642523,
+      "to_p_mw": 23.716940111188034,
+      "to_q_mvar": 91.41723865230843,
+      "from_mva": 131.51795174428466,
+      "to_mva": 94.44365924216825,
+      "rate_mva": 900.0000000000031,
+      "status": 1
+    },
+    {
+      "id": "B14",
+      "from_p_mw": -27.81916926552148,
+      "from_q_mvar": -49.3851676248311,
+      "to_p_mw": 27.829253837329226,
+      "to_q_mvar": -87.90594858448395,
+      "from_mva": 56.68157513651504,
+      "to_mva": 92.20587381333382,
+      "rate_mva": 900.0000000000031,
+      "status": 1
+    },
+    {
+      "id": "B15",
+      "from_p_mw": 167.04827538894585,
+      "from_q_mvar": 22.26042233017195,
+      "to_p_mw": -166.94232912339436,
+      "to_q_mvar": -28.977893705343316,
+      "from_mva": 168.52493202116628,
+      "to_mva": 169.43866021879984,
+      "rate_mva": 600.0,
+      "status": 1
+    },
+    {
+      "id": "B16",
+      "from_p_mw": 531.2661842000955,
+      "from_q_mvar": 23.847952375568063,
+      "to_p_mw": -530.2174581603632,
+      "to_q_mvar": -20.421025177581022,
+      "from_mva": 531.8011689598258,
+      "to_mva": 530.6105645455431,
+      "rate_mva": 600.0,
+      "status": 1
+    },
+    {
+      "id": "B17",
+      "from_p_mw": 545.4106159168964,
+      "from_q_mvar": -5.978385699036132,
+      "to_p_mw": -542.9161448549148,
+      "to_q_mvar": 15.544406819029117,
+      "from_mva": 545.4433802425461,
+      "to_mva": 543.1386277254439,
+      "rate_mva": 600.0,
+      "status": 1
+    },
+    {
+      "id": "B18",
+      "from_p_mw": 481.03086518961175,
+      "from_q_mvar": -15.162713162582502,
+      "to_p_mw": -477.12223692560593,
+      "to_q_mvar": 23.442240035450165,
+      "from_mva": 481.26977999404573,
+      "to_mva": 477.6977785030758,
+      "rate_mva": 600.0,
+      "status": 1
+    },
+    {
+      "id": "B19",
+      "from_p_mw": 275.25995898310435,
+      "from_q_mvar": -119.95764167670787,
+      "to_p_mw": -274.5099023228344,
+      "to_q_mvar": 109.57831703251036,
+      "from_mva": 300.2630193946929,
+      "to_mva": 295.57248525018264,
+      "rate_mva": 600.0,
+      "status": 1
+    },
+    {
+      "id": "B20",
+      "from_p_mw": -391.7816840903308,
+      "from_q_mvar": -44.11010804707585,
+      "to_p_mw": 392.79152372297756,
+      "to_q_mvar": 42.45555733692512,
+      "from_mva": 394.2570096023411,
+      "to_mva": 395.07930274491395,
+      "rate_mva": 600.0,
+      "status": 1
+    },
+    {
+      "id": "B21",
+      "from_p_mw": 422.89498029627816,
+      "from_q_mvar": 94.2370649581323,
+      "to_p_mw": -420.0470873865607,
+      "to_q_mvar": -91.40295086588546,
+      "from_mva": 433.2675717979742,
+      "to_mva": 429.8767905445983,
+      "rate_mva": 600.0,
+      "status": 1
+    },
+    {
+      "id": "B22",
+      "from_p_mw": -57.57279579544654,
+      "from_q_mvar": -66.49204915840993,
+      "to_p_mw": 57.618289306310075,
+      "to_q_mvar": 39.7141887212451,
+      "from_mva": 87.95350713296536,
+      "to_mva": 69.97916867448711,
+      "rate_mva": 600.0,
+      "status": 1
+    },
+    {
+      "id": "B23",
+      "from_p_mw": 96.59399809099936,
+      "from_q_mvar": -113.27804406608064,
+      "to_p_mw": -96.53433256421641,
+      "to_q_mvar": 107.10993967544442,
+      "from_mva": 148.87013043132896,
+      "to_mva": 144.1922901576089,
+      "rate_mva": 600.0,
+      "status": 1
+    },
+    {
+      "id": "B24",
+      "from_p_mw": -198.15867821957613,
+      "from_q_mvar": -4.058747144779364,
+      "to_p_mw": 198.41169559280988,
+      "to_q_mvar": -7.326500976265295,
+      "from_mva": 198.2002401161885,
+      "to_mva": 198.5469177916622,
+      "rate_mva": 600.0,
+      "status": 1
+    },
+    {
+      "id": "B25",
+      "from_p_mw": -194.6328455034017,
+      "from_q_mvar": -38.396810192160515,
+      "to_p_mw": 195.0912885119132,
+      "to_q_mvar": 9.336835927809672,
+      "from_mva": 198.3841212942302,
+      "to_mva": 195.3145856263208,
+      "rate_mva": 600.0,
+      "status": 1
+    },
+    {
+      "id": "B26",
+      "from_p_mw": -228.19480272047602,
+      "from_q_mvar": -111.30652099361717,
+      "to_p_mw": 228.6470719296616,
+      "to_q_mvar": 90.88520436098116,
+      "from_mva": 253.89369744902984,
+      "to_mva": 246.04797067593375,
+      "rate_mva": 900.0000000000031,
+      "status": 1
+    },
+    {
+      "id": "B27",
+      "from_p_mw": 156.75292807033833,
+      "from_q_mvar": 19.03219511362326,
+      "to_p_mw": -156.61676053911705,
+      "to_q_mvar": -37.474669052636315,
+      "from_mva": 157.90410035672818,
+      "to_mva": 161.03776110705138,
+      "rate_mva": 600.0,
+      "status": 1
+    },
+    {
+      "id": "B28",
+      "from_p_mw": 87.9369198875919,
+      "from_q_mvar": 15.173844350453717,
+      "to_p_mw": -87.75954439561656,
+      "to_q_mvar": -52.04871007176553,
+      "from_mva": 89.23646917986251,
+      "to_mva": 102.03335656862858,
+      "rate_mva": 600.0,
+      "status": 1
+    },
+    {
+      "id": "B29",
+      "from_p_mw": -84.96348233064239,
+      "from_q_mvar": -30.21725660808378,
+      "to_p_mw": 84.99999999999959,
+      "to_q_mvar": 32.20381782111541,
+      "from_mva": 90.17691459940379,
+      "to_mva": 90.89601686683262,
+      "rate_mva": 900.0000000000031,
+      "status": 1
+    },
+    {
+      "id": "B30",
+      "from_p_mw": 46.67738433028965,
+      "from_q_mvar": -32.81883668819528,
+      "to_p_mw": -46.61527469154865,
+      "to_q_mvar": -26.36738548310747,
+      "from_mva": 57.06009331822024,
+      "to_mva": 53.55579195365635,
+      "rate_mva": 600.0,
+      "status": 1
+    },
+    {
+      "id": "B31",
+      "from_p_mw": 373.27792492800717,
+      "from_q_mvar": 48.76408496305338,
+      "to_p_mw": -371.4972678215778,
+      "to_q_mvar": -56.7341720056678,
+      "from_mva": 376.44965828227663,
+      "to_mva": 375.80445217169233,
+      "rate_mva": 600.0,
+      "status": 1
+    },
+    {
+      "id": "B32",
+      "from_p_mw": -190.05769296952323,
+      "from_q_mvar": -15.431253828948826,
+      "to_p_mw": 191.46816772117475,
+      "to_q_mvar": -56.74265908394669,
+      "from_mva": 190.68311475227955,
+      "to_mva": 199.69924539271776,
+      "rate_mva": 600.0,
+      "status": 1
+    },
+    {
+      "id": "B33",
+      "from_p_mw": -219.95475359810314,
+      "from_q_mvar": -17.159305633944246,
+      "to_p_mw": 222.48805316501983,
+      "to_q_mvar": -70.49419090186613,
+      "from_mva": 220.62306180506465,
+      "to_mva": 233.38887024035537,
+      "rate_mva": 600.0,
+      "status": 1
+    },
+    {
+      "id": "B34",
+      "from_p_mw": -318.67115716434176,
+      "from_q_mvar": 39.69992845952005,
+      "to_p_mw": 319.97338620251605,
+      "to_q_mvar": -53.54643165903196,
+      "from_mva": 321.1345368037384,
+      "to_mva": 324.422854036703,
+      "rate_mva": 600.0,
+      "status": 1
+    },
+    {
+      "id": "B35",
+      "from_p_mw": -292.9000151718328,
+      "from_q_mvar": 14.50713652633241,
+      "to_p_mw": 292.90001517183316,
+      "to_q_mvar": 1.940915116494182e-12,
+      "from_mva": 293.2590593619463,
+      "to_mva": 292.90001517183316,
+      "rate_mva": 900.0,
+      "status": 1
+    },
+    {
+      "id": "B36",
+      "from_p_mw": -662.2687499533973,
+      "from_q_mvar": 3.6551415012892594,
+      "to_p_mw": 662.2687499533973,
+      "to_q_mvar": 113.38433501038656,
+      "from_mva": 662.2788364610709,
+      "to_mva": 671.9046841558578,
+      "rate_mva": 1800.0,
+      "status": 1
+    },
+    {
+      "id": "B37",
+      "from_p_mw": -698.3144595890413,
+      "from_q_mvar": -46.108374705728814,
+      "to_p_mw": 698.3144595890413,
+      "to_q_mvar": 150.00000000000014,
+      "from_mva": 699.835028195316,
+      "to_mva": 714.243014996391,
+      "rate_mva": 900.0,
+      "status": 1
+    },
+    {
+      "id": "B38",
+      "from_p_mw": -20.410380977954087,
+      "from_q_mvar": -27.657557773039347,
+      "to_p_mw": 20.428368084743703,
+      "to_q_mvar": 28.146582238881457,
+      "from_mva": 34.37330582929491,
+      "to_mva": 34.77856113090207,
+      "rate_mva": 500.0,
+      "status": 1
+    },
+    {
+      "id": "B39",
+      "from_p_mw": 15.206987981953676,
+      "from_q_mvar": -26.023401622975626,
+      "to_p_mw": -15.193157756532461,
+      "to_q_mvar": 26.399410876617402,
+      "from_mva": 30.140834685090823,
+      "to_mva": 30.459168361059167,
+      "rate_mva": 500.0,
+      "status": 1
+    },
+    {
+      "id": "B40",
+      "from_p_mw": 420.04708738656024,
+      "from_q_mvar": 91.40295086587619,
+      "to_p_mw": -418.62713983433235,
+      "to_q_mvar": -63.40969912196053,
+      "from_mva": 429.87679054459585,
+      "to_mva": 423.40225808161586,
+      "rate_mva": 900.0,
+      "status": 1
+    },
+    {
+      "id": "B41",
+      "from_p_mw": -2.7372961388998277e-13,
+      "from_q_mvar": -1.4564985313446345e-12,
+      "to_p_mw": 2.311145078862168e-13,
+      "to_q_mvar": 2.1119527786003554e-12,
+      "from_mva": 1.4819972582057756e-12,
+      "to_mva": 2.124560767498367e-12,
+      "rate_mva": 900.0,
+      "status": 1
+    },
+    {
+      "id": "B42",
+      "from_p_mw": -2.31732794355222e-14,
+      "from_q_mvar": -7.464523170812931e-13,
+      "to_p_mw": -3.1429093199299807e-13,
+      "to_q_mvar": -5.826487035587966e-13,
+      "from_mva": 7.468119325210519e-13,
+      "to_mva": 6.620108017938784e-13,
+      "rate_mva": 900.0,
+      "status": 1
+    },
+    {
+      "id": "B43",
+      "from_p_mw": -385.4000000000008,
+      "from_q_mvar": -109.91739947460573,
+      "to_p_mw": 385.4000000000007,
+      "to_q_mvar": 131.44866946613533,
+      "from_mva": 400.7680060923784,
+      "to_mva": 407.20008927358776,
+      "rate_mva": 900.0,
+      "status": 1
+    },
+    {
+      "id": "B44",
+      "from_p_mw": -171.34251681327825,
+      "from_q_mvar": 6.358964581451698,
+      "to_p_mw": 171.50697279383328,
+      "to_q_mvar": 2.155164442173476e-12,
+      "from_mva": 171.4604750327512,
+      "to_mva": 171.50697279383328,
+      "rate_mva": 900.0,
+      "status": 1
+    },
+    {
+      "id": "B45",
+      "from_p_mw": -716.6541943713682,
+      "from_q_mvar": 107.51228002262229,
+      "to_p_mw": 720.6036953118373,
+      "to_q_mvar": -30.497011683471232,
+      "from_mva": 724.6738056986313,
+      "to_mva": 721.2487458697568,
+      "rate_mva": 1200.0,
+      "status": 1
+    }
+  ],
+  "violations": [
+    {
+      "kind": "GENERATOR_P_LIMIT",
+      "element": "C1",
+      "value": 668.041280400564,
+      "lower": 290.0,
+      "upper": 646.0
+    },
+    {
+      "kind": "BUS_VOLTAGE_LIMIT",
+      "element": "0",
+      "value": 1.0737257063853738,
+      "lower": 0.94,
+      "upper": 1.06
+    },
+    {
+      "kind": "BUS_VOLTAGE_LIMIT",
+      "element": "1",
+      "value": 1.0617535969623508,
+      "lower": 0.94,
+      "upper": 1.06
+    },
+    {
+      "kind": "BUS_VOLTAGE_LIMIT",
+      "element": "8",
+      "value": 1.0727532485208815,
+      "lower": 0.94,
+      "upper": 1.06
+    },
+    {
+      "kind": "BUS_VOLTAGE_LIMIT",
+      "element": "24",
+      "value": 1.0615456559092085,
+      "lower": 0.94,
+      "upper": 1.06
+    },
+    {
+      "kind": "BUS_VOLTAGE_LIMIT",
+      "element": "25",
+      "value": 1.061117257898246,
+      "lower": 0.94,
+      "upper": 1.06
+    },
+    {
+      "kind": "BUS_VOLTAGE_LIMIT",
+      "element": "33",
+      "value": 0.9316973750856731,
+      "lower": 0.94,
+      "upper": 1.06
+    },
+    {
+      "kind": "BUS_VOLTAGE_LIMIT",
+      "element": "35",
+      "value": 1.0635999999999999,
+      "lower": 0.94,
+      "upper": 1.06
+    },
+    {
+      "kind": "BUS_VOLTAGE_LIMIT",
+      "element": "38",
+      "value": 1.0684510484168108,
+      "lower": 0.94,
+      "upper": 1.06
+    }
+  ],
+  "feedback": [
+    {
+      "kind": "GENERATOR_P_LIMIT",
+      "element": "C1",
+      "action": "Return explicit violation to dispatch/input owner; no automatic constraint relaxation or setpoint rewrite"
+    },
+    {
+      "kind": "BUS_VOLTAGE_LIMIT",
+      "element": "0",
+      "action": "Return explicit violation to dispatch/input owner; no automatic constraint relaxation or setpoint rewrite"
+    },
+    {
+      "kind": "BUS_VOLTAGE_LIMIT",
+      "element": "1",
+      "action": "Return explicit violation to dispatch/input owner; no automatic constraint relaxation or setpoint rewrite"
+    },
+    {
+      "kind": "BUS_VOLTAGE_LIMIT",
+      "element": "8",
+      "action": "Return explicit violation to dispatch/input owner; no automatic constraint relaxation or setpoint rewrite"
+    },
+    {
+      "kind": "BUS_VOLTAGE_LIMIT",
+      "element": "24",
+      "action": "Return explicit violation to dispatch/input owner; no automatic constraint relaxation or setpoint rewrite"
+    },
+    {
+      "kind": "BUS_VOLTAGE_LIMIT",
+      "element": "25",
+      "action": "Return explicit violation to dispatch/input owner; no automatic constraint relaxation or setpoint rewrite"
+    },
+    {
+      "kind": "BUS_VOLTAGE_LIMIT",
+      "element": "33",
+      "action": "Return explicit violation to dispatch/input owner; no automatic constraint relaxation or setpoint rewrite"
+    },
+    {
+      "kind": "BUS_VOLTAGE_LIMIT",
+      "element": "35",
+      "action": "Return explicit violation to dispatch/input owner; no automatic constraint relaxation or setpoint rewrite"
+    },
+    {
+      "kind": "BUS_VOLTAGE_LIMIT",
+      "element": "38",
+      "action": "Return explicit violation to dispatch/input owner; no automatic constraint relaxation or setpoint rewrite"
+    }
+  ],
+  "input_unchanged": true
+}

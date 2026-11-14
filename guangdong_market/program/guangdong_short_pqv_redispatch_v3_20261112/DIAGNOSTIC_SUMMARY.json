@@ -1,0 +1,18 @@
+{
+  "cell": 0,
+  "status": "no_feasible_candidate",
+  "accepted": false,
+  "review": {
+    "cell": 0,
+    "max_AC_equation_pu": 0.0003169037476037731,
+    "max_line_squared_pu": 0.0,
+    "max_inverter_normalized": 0.0,
+    "max_bound_pu": 0.005048897729633128,
+    "max_reserve_pu": 0.0,
+    "nfev": 337,
+    "elapsed_seconds": 5.4536109150067205,
+    "solver_success": true,
+    "zero_P_Q_policy_passed": false,
+    "strict_feasible_candidate": false
+  }
+}

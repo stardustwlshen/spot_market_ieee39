@@ -1,0 +1,13 @@
+{
+  "status": "loaded_and_R56_validate_passed",
+  "physical_periods": 576,
+  "market_points": 98,
+  "thermal_units": 5,
+  "weight_lengths": [
+    576,
+    576
+  ],
+  "builder_called": false,
+  "native_calls": 0,
+  "case_values_modified": false
+}

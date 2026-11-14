@@ -1,0 +1,14 @@
+{
+  "files": {
+    "SOURCE_PINS.json": "680a3a60b4a2f1fea40e8cc697de4a293e765fa6dbd323561aa77e60a29afd33",
+    "README.md": "02ebd157cba3fcaa2d4654cf9ccdfea935030c5be2ebfa6932fade0420c2faeb",
+    "TESTS_K1.log": "45abebc3866c7aaabc61d13e6cb2a483a865d3aaa6de60480622f0f782e9cac2",
+    "test_mixed.py": "ea34ea7d2871f9b2c73b0b8075df1e9effc18a13d84a0e38f06476380d35827e",
+    "TESTS.log": "e8826ddf071536d75e282d791d15a7e1d8c8d6b92c8b22ddeaf8b6d4ea1e8182",
+    "mixed.py": "e69c8c843beb0ff9f47746c7327f4f59061aad479bfbf4493c8dded65d9f6e6e",
+    "EXAMPLE_RESULT.json": "d2c0180d454011b203e3b30c46213feaa49c4aa39e2ccb61cade26d589da9b82",
+    "example.synthetic.json": "e5fb024cf80a690632a99fa1a955f5942393842b5e73e10ed412b0a3ce2e343a"
+  },
+  "pure_tests": 9,
+  "native_calls": 0
+}

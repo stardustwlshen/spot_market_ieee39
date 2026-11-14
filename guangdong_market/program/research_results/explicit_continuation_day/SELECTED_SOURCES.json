@@ -1,0 +1,482 @@
+{
+  "q0": {
+    "path": "/workspace/scratch/42c5fe32dad0/guangdong_v18_post96_actual_20261113/fresh_context/live_market_sessions/post96_normal_ui_v1/pipeline/price/q0/ACCEPTED.json",
+    "sha256": "26752c1b914ec42e0af31a7c2a9f3a26bfe04205975c73a9bd3a7c54ad0077c3"
+  },
+  "q1": {
+    "path": "/workspace/scratch/42c5fe32dad0/guangdong_v18_post96_actual_20261113/fresh_context/live_market_sessions/post96_normal_ui_v1/pipeline/price/q1/ACCEPTED.json",
+    "sha256": "cd3cd5beedb6a12d4e487bafddd85c18191809c047c22070fde44b01017b0134"
+  },
+  "q2": {
+    "path": "/workspace/scratch/42c5fe32dad0/guangdong_v18_post96_actual_20261113/fresh_context/live_market_sessions/post96_normal_ui_v1/pipeline/price/q2/ACCEPTED.json",
+    "sha256": "6eb0b4809f62db4db9a46c6d3ba1d690796fe970204a7911f08dda3074cd28ef"
+  },
+  "q3": {
+    "path": "/workspace/scratch/42c5fe32dad0/guangdong_v18_post96_actual_20261113/fresh_context/live_market_sessions/post96_normal_ui_v1/pipeline/price/q3/ACCEPTED.json",
+    "sha256": "1488274493dab2932d6a55136955be5bddf872c87803d8b124632c834ca2c8c9"
+  },
+  "q4": {
+    "path": "/workspace/scratch/42c5fe32dad0/guangdong_v18_post96_actual_20261113/fresh_context/live_market_sessions/post96_normal_ui_v1/pipeline/price/q4/ACCEPTED.json",
+    "sha256": "5756d6146b5ba47b4a731fcb9984924498dc894946cdfdc305fea3fd76a0ac7a"
+  },
+  "q5": {
+    "path": "/workspace/scratch/42c5fe32dad0/guangdong_v18_post96_actual_20261113/fresh_context/live_market_sessions/post96_normal_ui_v1/pipeline/price/q5/ACCEPTED.json",
+    "sha256": "696a9813f02e705c68891e4cf9f0e68990bae1f7cfb47f329bddbf271cd5eb8c"
+  },
+  "q6": {
+    "path": "/workspace/scratch/42c5fe32dad0/guangdong_v18_post96_actual_20261113/fresh_context/live_market_sessions/post96_normal_ui_v1/pipeline/price/q6/ACCEPTED.json",
+    "sha256": "4aaedabb3a32d508e76ffc8f370edc2f9aebca79e8fb35efef86b463af6f95ab"
+  },
+  "q7": {
+    "path": "/workspace/scratch/42c5fe32dad0/guangdong_v18_post96_actual_20261113/fresh_context/live_market_sessions/post96_normal_ui_v1/pipeline/price/q7/ACCEPTED.json",
+    "sha256": "060b84238f0e975a35f812bb93650127b755efd6619d4d5a9638830ac81e6463"
+  },
+  "q8": {
+    "path": "/workspace/scratch/42c5fe32dad0/guangdong_v18_post96_actual_20261113/fresh_context/live_market_sessions/post96_normal_ui_v1/pipeline/price/q8/ACCEPTED.json",
+    "sha256": "e777445c45f4a32206c5629828e9202ae41322432ff340df499d7f6dc6b5eb43"
+  },
+  "q9": {
+    "path": "/workspace/scratch/42c5fe32dad0/guangdong_v18_post96_actual_20261113/fresh_context/live_market_sessions/post96_normal_ui_v1/pipeline/price/q9/ACCEPTED.json",
+    "sha256": "51e4426220e43cc06026eaf9c4b0ec0844b51d50463c6c92f4a217579d101888"
+  },
+  "q10": {
+    "path": "/workspace/scratch/42c5fe32dad0/guangdong_v18_post96_actual_20261113/fresh_context/live_market_sessions/post96_normal_ui_v1/pipeline/price/q10/ACCEPTED.json",
+    "sha256": "5668af38cbffb9d046d9ce4da1e3ba3ebffe2d17824d37663d81cf21d73270ad"
+  },
+  "q11": {
+    "path": "/workspace/scratch/42c5fe32dad0/guangdong_v18_post96_actual_20261113/fresh_context/live_market_sessions/post96_normal_ui_v1/pipeline/price/q11/ACCEPTED.json",
+    "sha256": "037933c2a8b31cf8b36f1a993fe36615776951706cd977d7389e04f722c0789e"
+  },
+  "q12": {
+    "path": "/workspace/scratch/42c5fe32dad0/guangdong_v18_post96_actual_20261113/fresh_context/live_market_sessions/post96_normal_ui_v1/pipeline/price/q12/ACCEPTED.json",
+    "sha256": "90ea704a42c4099f9fe7eb692f48a97f359ca64faa6c0f10efae1135d78d300e"
+  },
+  "q13": {
+    "path": "/workspace/scratch/42c5fe32dad0/guangdong_v18_post96_actual_20261113/fresh_context/live_market_sessions/post96_normal_ui_v1/pipeline/price/q13/ACCEPTED.json",
+    "sha256": "75e719541d6c409e21f9e8ba2160a8bee0ef208052709f633ba7ed1b10e233c2"
+  },
+  "q14": {
+    "path": "/workspace/scratch/42c5fe32dad0/guangdong_v18_post96_actual_20261113/fresh_context/live_market_sessions/post96_normal_ui_v1/pipeline/price/q14/ACCEPTED.json",
+    "sha256": "32907536bd55ff7cde8724c95426b7a0873f2aa9e13bbea7d215c0c755decb92"
+  },
+  "q15": {
+    "path": "/workspace/scratch/42c5fe32dad0/guangdong_v18_post96_actual_20261113/fresh_context/live_market_sessions/post96_normal_ui_v1/pipeline/price/q15/ACCEPTED.json",
+    "sha256": "cdf791e009706c3bc794c34c3bf064c7e2e86b877492b299fb04a9cda5435d90"
+  },
+  "q16": {
+    "path": "/workspace/scratch/42c5fe32dad0/guangdong_v18_post96_actual_20261113/fresh_context/live_market_sessions/post96_normal_ui_v1/pipeline/price/q16/ACCEPTED.json",
+    "sha256": "7a026a95ab8ad24ac97596ec6180fa47e9858f4362e30bdf640b6d25942e2471"
+  },
+  "q17": {
+    "path": "/workspace/scratch/42c5fe32dad0/guangdong_v18_post96_actual_20261113/fresh_context/live_market_sessions/post96_normal_ui_v1/pipeline/price/q17/ACCEPTED.json",
+    "sha256": "ffbcfd92d0d58889f6992a89d7346ef02ed05c6f65a3a4fa8f5f6312784e44b1"
+  },
+  "q18": {
+    "path": "/workspace/scratch/42c5fe32dad0/guangdong_v18_post96_actual_20261113/fresh_context/live_market_sessions/post96_normal_ui_v1/pipeline/price/q18/ACCEPTED.json",
+    "sha256": "9e1084841747778201fae158f309a8a8b8665b9d752680b029703c25d763c084"
+  },
+  "q19": {
+    "path": "/workspace/scratch/42c5fe32dad0/guangdong_v18_post96_actual_20261113/fresh_context/live_market_sessions/post96_normal_ui_v1/pipeline/price/q19/ACCEPTED.json",
+    "sha256": "59b10e6d5f71f48461632a77f59bf92e2a9389646650d5b3892561cfbb5782aa"
+  },
+  "q20": {
+    "path": "/workspace/scratch/42c5fe32dad0/guangdong_v18_post96_actual_20261113/fresh_context/live_market_sessions/post96_normal_ui_v1/pipeline/price/q20/ACCEPTED.json",
+    "sha256": "a28a318a3798456d3f2a578e57702a1aa88be9be1ca35219b5296c47723e3edb"
+  },
+  "q21": {
+    "path": "/workspace/scratch/42c5fe32dad0/guangdong_v18_post96_actual_20261113/fresh_context/live_market_sessions/post96_normal_ui_v1/pipeline/price/q21/ACCEPTED.json",
+    "sha256": "c21d695a5970e994f075af46d610e975c869e6b8f5d57202979d3491ca529cc1"
+  },
+  "q22": {
+    "path": "/workspace/scratch/42c5fe32dad0/guangdong_v18_post96_actual_20261113/fresh_context/live_market_sessions/post96_normal_ui_v1/pipeline/price/q22/ACCEPTED.json",
+    "sha256": "a8f47c36f3ead2ff4fb12b6c81a6185f2468c7da4880e335b3999927e30983ff"
+  },
+  "q23": {
+    "path": "/workspace/scratch/42c5fe32dad0/guangdong_v18_post96_actual_20261113/fresh_context/live_market_sessions/post96_normal_ui_v1/pipeline/price/q23/ACCEPTED.json",
+    "sha256": "6aef398747f25d08057fe2e4e6b493207c46738150353451abcad9a91a7e332e"
+  },
+  "q24": {
+    "path": "/workspace/scratch/42c5fe32dad0/guangdong_v18_post96_actual_20261113/fresh_context/live_market_sessions/post96_normal_ui_v1/pipeline/price/q24/ACCEPTED.json",
+    "sha256": "ba2dfea8b2438f381733465681c8796905177b5e177f4050c78a38970e60a439"
+  },
+  "q25": {
+    "path": "/workspace/scratch/42c5fe32dad0/guangdong_v18_post96_actual_20261113/fresh_context/live_market_sessions/post96_normal_ui_v1/pipeline/price/q25/ACCEPTED.json",
+    "sha256": "bc1ce6ad5caf44c955c1e31c312a5cbd68e2f995b18ae7d81ed8d572f0b3c818"
+  },
+  "q26": {
+    "path": "/workspace/scratch/42c5fe32dad0/guangdong_v18_post96_actual_20261113/fresh_context/live_market_sessions/post96_normal_ui_v1/pipeline/price/q26/ACCEPTED.json",
+    "sha256": "929d903da3dae9cf2426671de11bfc7e609f78d5ed7aa1e0f8805161bbd6278e"
+  },
+  "q27": {
+    "path": "/workspace/scratch/42c5fe32dad0/guangdong_v18_post96_actual_20261113/fresh_context/live_market_sessions/post96_normal_ui_v1/pipeline/price/q27/ACCEPTED.json",
+    "sha256": "32439e8501b98dc634775330740b7f4f444e25a0763a35474f108ffb41f7ea4a"
+  },
+  "q28": {
+    "path": "/workspace/scratch/42c5fe32dad0/guangdong_v18_post96_actual_20261113/fresh_context/live_market_sessions/post96_normal_ui_v1/pipeline/price/q28/ACCEPTED.json",
+    "sha256": "5977a9d0afdfaf64780f130d232fab7fc1f5e44454ab7ae78e78376a8d358e19"
+  },
+  "q29": {
+    "path": "/workspace/scratch/42c5fe32dad0/guangdong_v18_post96_actual_20261113/fresh_context/live_market_sessions/post96_normal_ui_v1/pipeline/price/q29/ACCEPTED.json",
+    "sha256": "9d57152ab10de3aaaa8789aaa570399a84dd1a0760cd09bc06f2dc3d5d39dbd9"
+  },
+  "q30": {
+    "path": "/workspace/scratch/42c5fe32dad0/guangdong_v18_post96_actual_20261113/fresh_context/live_market_sessions/post96_normal_ui_v1/pipeline/price/q30/ACCEPTED.json",
+    "sha256": "ac207e380232812dc66b82f9790e6cbf3ccce976fcd8b82a80faded97434fb7b"
+  },
+  "q31": {
+    "path": "/workspace/scratch/42c5fe32dad0/guangdong_v18_post96_actual_20261113/fresh_context/live_market_sessions/post96_normal_ui_v1/pipeline/price/q31/ACCEPTED.json",
+    "sha256": "4f98d406ccfa83d1619758a5dd9410dffd5ca2aec6bb606713734a0186df33b4"
+  },
+  "q32": {
+    "path": "/workspace/scratch/42c5fe32dad0/guangdong_post96_fixed_prefix_replay_20261113/final_live_once/price/q32/ACCEPTED.json",
+    "sha256": "2020010a3058190f190ef2e2dc6ec5900190bee1cdcf7516a47559daa7032409"
+  },
+  "q33": {
+    "path": "/workspace/scratch/42c5fe32dad0/guangdong_post96_fixed_prefix_replay_20261113/final_live_once/price/q33/ACCEPTED.json",
+    "sha256": "3e3e32f9533075589f2998828989becf38de3eff798c8e0884a23fd2ae11ef68"
+  },
+  "q34": {
+    "path": "/workspace/scratch/42c5fe32dad0/guangdong_post96_fixed_prefix_replay_20261113/final_live_once/price/q34/ACCEPTED.json",
+    "sha256": "75dfac2ec7169502bcc7edf6cd4fb9927435bbc407fabb967196b328ef9cfad8"
+  },
+  "q35": {
+    "path": "/workspace/scratch/42c5fe32dad0/guangdong_post96_fixed_prefix_replay_20261113/final_live_once/price/q35/ACCEPTED.json",
+    "sha256": "1a8fc92020de7252c3f9218f1bc09d0f9b244fb2aae0634d7e2764fe9eba3fc3"
+  },
+  "q36": {
+    "path": "/workspace/scratch/42c5fe32dad0/guangdong_post96_fixed_prefix_replay_20261113/final_live_once/price/q36/ACCEPTED.json",
+    "sha256": "9aedfa1741b39c35fcf15100f29bfb8c308e252c2f68c5d8cfd10250451b3746"
+  },
+  "q37": {
+    "path": "/workspace/scratch/42c5fe32dad0/guangdong_post96_fixed_prefix_replay_20261113/final_live_once/price/q37/ACCEPTED.json",
+    "sha256": "993a995b1d288d6572c84ad350d826dc823c97de348212464d3e72f937374048"
+  },
+  "q38": {
+    "path": "/workspace/scratch/42c5fe32dad0/guangdong_post96_fixed_prefix_replay_20261113/final_live_once/price/q38/ACCEPTED.json",
+    "sha256": "796f9fd8f956a70d69e63157933a4b94768669a52397daf5412cfcdd5282f5a8"
+  },
+  "q39": {
+    "path": "/workspace/scratch/42c5fe32dad0/guangdong_post96_fixed_prefix_replay_20261113/final_live_once/price/q39/ACCEPTED.json",
+    "sha256": "c79c85c298e6ae7f99ee0cdff3bc00914361ea9dddf690f3e740548cff44a6ec"
+  },
+  "q40": {
+    "path": "/workspace/scratch/42c5fe32dad0/guangdong_post96_fixed_prefix_replay_20261113/final_live_once/price/q40/ACCEPTED.json",
+    "sha256": "6473c7f10e6b6ab912826a9985f83fdbd9cc66d89343ffa8f1900ab43874418f"
+  },
+  "q41": {
+    "path": "/workspace/scratch/42c5fe32dad0/guangdong_post96_fixed_prefix_replay_20261113/final_live_once/price/q41/ACCEPTED.json",
+    "sha256": "f12174d1eace00f437b013511b3ea5a033817af24bef17634f4dcbe7e6e4265f"
+  },
+  "q42": {
+    "path": "/workspace/scratch/42c5fe32dad0/guangdong_post96_fixed_prefix_replay_20261113/final_live_once/price/q42/ACCEPTED.json",
+    "sha256": "7848b9460ee95b650a39a103e0b3d4357df1c492e516ff8c0df028717423232c"
+  },
+  "q43": {
+    "path": "/workspace/scratch/42c5fe32dad0/guangdong_post96_fixed_prefix_replay_20261113/final_live_once/price/q43/ACCEPTED.json",
+    "sha256": "db9977e893c3628070ce82d70ab26950314295410a72b6850931483f802d7ef2"
+  },
+  "q44": {
+    "path": "/workspace/scratch/42c5fe32dad0/guangdong_post96_fixed_prefix_replay_20261113/final_live_once/price/q44/ACCEPTED.json",
+    "sha256": "5fdcdb811e6ea675c2a306658b8d658b19ff2f2a798f89abc8a8b8ea026e3994"
+  },
+  "q45": {
+    "path": "/workspace/scratch/42c5fe32dad0/guangdong_post96_fixed_prefix_replay_20261113/final_live_once/price/q45/ACCEPTED.json",
+    "sha256": "641b8b40289e3e0df402f62185bfcb4da6f801f74a9701b3b957805305805d42"
+  },
+  "q46": {
+    "path": "/workspace/scratch/42c5fe32dad0/guangdong_post96_fixed_prefix_replay_20261113/final_live_once/price/q46/ACCEPTED.json",
+    "sha256": "dc8e26334ab0be02a90b530dfef79d56f512e97c0edb9a240f5595a2cdc105ea"
+  },
+  "q47": {
+    "path": "/workspace/scratch/42c5fe32dad0/guangdong_post96_fixed_prefix_replay_20261113/final_live_once/price/q47/ACCEPTED.json",
+    "sha256": "c13b8af0e0d8ee0b5291c0921a75e66fd8afad93291f0222fe7be3dfde7dd94a"
+  },
+  "q48": {
+    "path": "/workspace/scratch/42c5fe32dad0/guangdong_post96_fixed_prefix_replay_20261113/final_live_once/price/q48/ACCEPTED.json",
+    "sha256": "41e2676c7bf5acda368eb6cfcbca924f2cae32ef2639ab52e8fcda86bbe9e341"
+  },
+  "q49": {
+    "path": "/workspace/scratch/42c5fe32dad0/guangdong_post96_fixed_prefix_replay_20261113/final_live_once/price/q49/ACCEPTED.json",
+    "sha256": "41608491827c78eb8f079adb70126cfb47762a2837aa50fc1eb62fdcb08793e2"
+  },
+  "q50": {
+    "path": "/workspace/scratch/42c5fe32dad0/guangdong_post96_fixed_prefix_replay_20261113/final_live_once/price/q50/ACCEPTED.json",
+    "sha256": "ada9b78175a9a7d8d4d240d458c129893fff1b2918ba1965ef0e2d86d4371ae5"
+  },
+  "q51": {
+    "path": "/workspace/scratch/42c5fe32dad0/guangdong_post96_fixed_prefix_replay_20261113/final_live_once/price/q51/ACCEPTED.json",
+    "sha256": "16180d9db1ca0ee19d95659a9a11198974a56d62584eb6dc3daf5076ed9a337e"
+  },
+  "q52": {
+    "path": "/workspace/scratch/42c5fe32dad0/guangdong_post96_fixed_prefix_replay_20261113/final_live_once/price/q52/ACCEPTED.json",
+    "sha256": "654a569e60945510cc9030e6970438876451958a0ab9e87c4b904e0ed3e15527"
+  },
+  "q53": {
+    "path": "/workspace/scratch/42c5fe32dad0/guangdong_post96_fixed_prefix_replay_20261113/final_live_once/price/q53/ACCEPTED.json",
+    "sha256": "39edf44774aee8bcb0e2801361187cbab82a3d7cbf1cfd2e550ccb9518618742"
+  },
+  "q54": {
+    "path": "/workspace/scratch/42c5fe32dad0/guangdong_post96_resume53_v1_20261113/live_once/price/q54/ACCEPTED.json",
+    "sha256": "cd46acfd8fd5678d7840cd8925c68db49e8e72edd563aebf322c30d48f7eeec8"
+  },
+  "q55": {
+    "path": "/workspace/scratch/42c5fe32dad0/guangdong_post96_resume54_v1_20261113/live_once_v2/price/q55/ACCEPTED.json",
+    "sha256": "14213a92adacad119e0d0eb83b78d41dc0efc29124da763f35a3b7cc26f6d9f2"
+  },
+  "q56": {
+    "path": "/workspace/scratch/42c5fe32dad0/guangdong_post96_resume54_v1_20261113/live_once_v2/price/q56/ACCEPTED.json",
+    "sha256": "5ba2342e0cd9b2bf33433abf1c9265bbf5cc9e8c37586b5c28be843d836e7f29"
+  },
+  "q57": {
+    "path": "/workspace/scratch/42c5fe32dad0/guangdong_post96_resume54_v1_20261113/live_once_v2/price/q57/ACCEPTED.json",
+    "sha256": "cb9194070d93d03b63d2f208febae8df386347907a8267a266a6e27a69434455"
+  },
+  "q58": {
+    "path": "/workspace/scratch/42c5fe32dad0/guangdong_post96_resume54_v1_20261113/live_once_v2/price/q58/ACCEPTED.json",
+    "sha256": "a08af87e04a44fa07941584eac7665af28a8f7a92d0fcd41024c4b28e33a6060"
+  },
+  "q59": {
+    "path": "/workspace/scratch/42c5fe32dad0/guangdong_post96_resume54_v1_20261113/live_once_v2/price/q59/ACCEPTED.json",
+    "sha256": "03669da3c296446417f7d9a023f7cbb9762ba5321bcdbd2bd3f0e4ebf434730d"
+  },
+  "q60": {
+    "path": "/workspace/scratch/42c5fe32dad0/guangdong_post96_resume54_v1_20261113/live_once_v2/price/q60/ACCEPTED.json",
+    "sha256": "eb8937cccfb0a4c70782dd236bea209b154d5fde2b5d1de6ce76279886f9d9e6"
+  },
+  "q61": {
+    "path": "/workspace/scratch/42c5fe32dad0/guangdong_post96_resume54_v1_20261113/live_once_v2/price/q61/ACCEPTED.json",
+    "sha256": "fbce0907f838f78acd86edf0e4d1ce594c9ed94398d8160ebeb9d0db5539c666"
+  },
+  "q62": {
+    "path": "/workspace/scratch/42c5fe32dad0/guangdong_post96_resume54_v1_20261113/live_once_v2/price/q62/ACCEPTED.json",
+    "sha256": "e71c0b75d214e86005480c6d156ad48c89c771a31e1330f823686bc124d19653"
+  },
+  "q63": {
+    "path": "/workspace/scratch/42c5fe32dad0/guangdong_post96_resume54_v1_20261113/live_once_v2/price/q63/ACCEPTED.json",
+    "sha256": "4c092f39d26ca99184135ba98ca2e75ed54b8ad4e0f4b297c2403b7798f95840"
+  },
+  "q64": {
+    "path": "/workspace/scratch/42c5fe32dad0/guangdong_post96_resume54_v1_20261113/live_once_v2/price/q64/ACCEPTED.json",
+    "sha256": "bb31f030aa312d9dfae5da9f71da8f1fdf782091d243004ef425e65e06e710b3"
+  },
+  "q65": {
+    "path": "/workspace/scratch/42c5fe32dad0/guangdong_post96_resume54_v1_20261113/live_once_v2/price/q65/ACCEPTED.json",
+    "sha256": "b7d11591d6613af4e1ffddf7b7ddaf1529f9aeaa71a3c99d1df155a8f61eb9ba"
+  },
+  "q66": {
+    "path": "/workspace/scratch/42c5fe32dad0/guangdong_post96_resume54_v1_20261113/live_once_v2/price/q66/ACCEPTED.json",
+    "sha256": "53aae2d76e98d8c9cba6c785b0c0a992ee182bf5b8b688089f7e22df87fd9581"
+  },
+  "q67": {
+    "path": "/workspace/scratch/42c5fe32dad0/guangdong_post96_resume54_v1_20261113/live_once_v2/price/q67/ACCEPTED.json",
+    "sha256": "7abe286ecb54161bfb11c9cec96d64bdaf76fe8abb1724f7b95e88be71ef07d6"
+  },
+  "q68": {
+    "path": "/workspace/scratch/42c5fe32dad0/guangdong_post96_resume54_v1_20261113/live_once_v2/price/q68/ACCEPTED.json",
+    "sha256": "bd08eabc51ece70e51b20618ecbb2b207094be81cfa791390c185d9a35b1b30f"
+  },
+  "q69": {
+    "path": "/workspace/scratch/42c5fe32dad0/guangdong_post96_resume54_v1_20261113/live_once_v2/price/q69/ACCEPTED.json",
+    "sha256": "8f406b5db89e9d3fbdf2eea01dc93957b59b90ebea01bb54f1e218ff09637fd8"
+  },
+  "q70": {
+    "path": "/workspace/scratch/42c5fe32dad0/guangdong_post96_resume54_v1_20261113/live_once_v2/price/q70/ACCEPTED.json",
+    "sha256": "9a020c8d1d334c7041e3a19a174b5b1422808fd70d379ed06efba52baa709a56"
+  },
+  "q71": {
+    "path": "/workspace/scratch/42c5fe32dad0/guangdong_post96_resume54_v1_20261113/live_once_v2/price/q71/ACCEPTED.json",
+    "sha256": "69747af51acabbd3ad3aa33b1580706399b964d457a16c13c518cb1e5e64dc4b"
+  },
+  "q72": {
+    "path": "/workspace/scratch/42c5fe32dad0/guangdong_post96_resume54_v1_20261113/live_once_v2/price/q72/ACCEPTED.json",
+    "sha256": "2c09b9997c2fe5f7f66b63de2f8b2e7c8c06edb51e33d6cce6bc0257603df00a"
+  },
+  "q73": {
+    "path": "/workspace/scratch/42c5fe32dad0/guangdong_post96_resume54_v1_20261113/live_once_v2/price/q73/ACCEPTED.json",
+    "sha256": "a5b873559036cbf82ed9efbaf83e74f66ea6f56e47371a48c4d0c478fcd26eee"
+  },
+  "q74": {
+    "path": "/workspace/scratch/42c5fe32dad0/guangdong_post96_resume54_v1_20261113/live_once_v2/price/q74/ACCEPTED.json",
+    "sha256": "73aad7dd5c41d17c3c47e15f9b3052b1b190106c8adc7883cf9c9e0680bd311e"
+  },
+  "q75": {
+    "path": "/workspace/scratch/42c5fe32dad0/guangdong_post96_resume54_v1_20261113/live_once_v2/price/q75/ACCEPTED.json",
+    "sha256": "e0c3e51359b94899175d7b3a9d699ae9048f8d009dc7552cd777248161b3ecc8"
+  },
+  "q76": {
+    "path": "/workspace/scratch/42c5fe32dad0/guangdong_post96_resume54_v1_20261113/live_once_v2/price/q76/ACCEPTED.json",
+    "sha256": "3b0fabbcfe43a88dce74f99c4c742e98778d215da1d748d237e23a07947164c9"
+  },
+  "q77": {
+    "path": "/workspace/scratch/42c5fe32dad0/guangdong_post96_resume54_v1_20261113/live_once_v2/price/q77/ACCEPTED.json",
+    "sha256": "9b0daa3438fdd6d2575669f32732647268eb3e858e7dafe0c1cc84a43f3e5d3c"
+  },
+  "q78": {
+    "path": "/workspace/scratch/42c5fe32dad0/guangdong_post96_resume54_v1_20261113/live_once_v2/price/q78/ACCEPTED.json",
+    "sha256": "d3cc3eb4b70eb4d7e99e4a7d8e8874ef623cacccb4e587b5d700d7f139942bde"
+  },
+  "q79": {
+    "path": "/workspace/scratch/42c5fe32dad0/guangdong_post96_resume54_v1_20261113/live_once_v2/price/q79/ACCEPTED.json",
+    "sha256": "4c028af9a551a2c3c862eb87c45cdf53a9ed1d2b316ded630ca2861a67bc4dfa"
+  },
+  "q80": {
+    "path": "/workspace/scratch/42c5fe32dad0/guangdong_post96_resume54_v1_20261113/live_once_v2/price/q80/ACCEPTED.json",
+    "sha256": "d75b847f38c2b8fd75d9ffd9aa150f049a929c871dc1da71f99fcbb33b77294c"
+  },
+  "q81": {
+    "path": "/workspace/scratch/42c5fe32dad0/guangdong_post96_resume54_v1_20261113/live_once_v2/price/q81/ACCEPTED.json",
+    "sha256": "8deff77e1e1cbe6d50470e8e643f5aa0e179530be265b2f83c3c7cfdb66e15f4"
+  },
+  "q82": {
+    "path": "/workspace/scratch/42c5fe32dad0/guangdong_post96_resume54_v1_20261113/live_once_v2/price/q82/ACCEPTED.json",
+    "sha256": "34495096b366e6ad55785f83cd90226e04b1bcfba45afffdb6466bf067ff8cea"
+  },
+  "q83": {
+    "path": "/workspace/scratch/42c5fe32dad0/guangdong_post96_resume54_v1_20261113/live_once_v2/price/q83/ACCEPTED.json",
+    "sha256": "158a06e913936b41d73a5faddaf5ecdf42f44e539b5a6915565aca0b8907668a"
+  },
+  "q84": {
+    "path": "/workspace/scratch/42c5fe32dad0/guangdong_post96_resume54_v1_20261113/live_once_v2/price/q84/ACCEPTED.json",
+    "sha256": "0a8236b1b02ae60457c1667ed40f24d6767f1ffd0e2a400e425c1785760f4d8a"
+  },
+  "q85": {
+    "path": "/workspace/scratch/42c5fe32dad0/guangdong_post96_resume54_v1_20261113/live_once_v2/price/q85/ACCEPTED.json",
+    "sha256": "7890e1232f7c155041e0fc8f5a7313c495dc220ec308b79c02b47b9a2a0890f5"
+  },
+  "q86": {
+    "path": "/workspace/scratch/42c5fe32dad0/guangdong_post96_resume54_v1_20261113/live_once_v2/price/q86/ACCEPTED.json",
+    "sha256": "98b7781ce14c5813671da86de8699269973d8c056e18a44a806b8886b3dba489"
+  },
+  "q87": {
+    "path": "/tmp/guangdong_post96_tail_20261113/price/q87/ACCEPTED.json",
+    "sha256": "007eb31a9cd84158f0ae0305499c9f09cddffe66abe4ce1b53795e7f6763c936"
+  },
+  "q88": {
+    "path": "/tmp/guangdong_post96_tail_20261113/price/q88/ACCEPTED.json",
+    "sha256": "2acc4af55b45c352df267f022293660963540f7bb14b9db3b6c8862814202abe"
+  },
+  "q89": {
+    "path": "/tmp/guangdong_post96_tail_20261113/price/q89/ACCEPTED.json",
+    "sha256": "b3dbb2ad362884deb515027635495eeb90558cdd72be5a0a69efd8b28aa76d11"
+  },
+  "q90": {
+    "path": "/tmp/guangdong_post96_tail_20261113/price/q90/ACCEPTED.json",
+    "sha256": "b4d2bf1c5de5b1d345719e35a713c40dea3c21bd43a3dfca09f89468fed70b99"
+  },
+  "q91": {
+    "path": "/tmp/guangdong_post96_tail_20261113/price/q91/ACCEPTED.json",
+    "sha256": "1ccf6b21fd90d3b0d927226d8f84b3f24de56d855de9715ef97a6e029c7a7959"
+  },
+  "q92": {
+    "path": "/tmp/guangdong_post96_tail_20261113/price/q92/ACCEPTED.json",
+    "sha256": "c84bd99d23ac71930423dfc7d89c0c395ecc6c680c2cd1660f52b8544e7dff75"
+  },
+  "q93": {
+    "path": "/tmp/guangdong_post96_tail_20261113/price/q93/ACCEPTED.json",
+    "sha256": "a211773254dcee48cf26a8ab4614c551bc18c602d04d7577ec2dbb94ec7270f5"
+  },
+  "q94": {
+    "path": "/tmp/guangdong_post96_tail_20261113/price/q94/ACCEPTED.json",
+    "sha256": "01f706a1bd66298fb88f4de38b5714a40c431d5bb79f91829580efb2689ab8e7"
+  },
+  "q95": {
+    "path": "/tmp/guangdong_post96_tail_20261113/price/q95/ACCEPTED.json",
+    "sha256": "3a51ff5a587c226b04e80918000daa9c6291286b5eab717db7046feb86e51a96"
+  },
+  "H0": {
+    "path": "/workspace/scratch/42c5fe32dad0/guangdong_v18_post96_actual_20261113/fresh_context/live_market_sessions/post96_normal_ui_v1/pipeline/price/HOUR0.json",
+    "sha256": "639b0d58532fbe4903af0e3c76809841613d310106bdebf852eda1d54f575486"
+  },
+  "H1": {
+    "path": "/workspace/scratch/42c5fe32dad0/guangdong_v18_post96_actual_20261113/fresh_context/live_market_sessions/post96_normal_ui_v1/pipeline/price/HOUR1.json",
+    "sha256": "5e8897a0111d98a5acdf8847f9055246f243034ff66e765a34e6222d53401f2c"
+  },
+  "H2": {
+    "path": "/workspace/scratch/42c5fe32dad0/guangdong_v18_post96_actual_20261113/fresh_context/live_market_sessions/post96_normal_ui_v1/pipeline/price/HOUR2.json",
+    "sha256": "6f9776cdf831075a060bbf2d5948aac6940d2c232e4dc84a34e039c049a8f51f"
+  },
+  "H3": {
+    "path": "/workspace/scratch/42c5fe32dad0/guangdong_v18_post96_actual_20261113/fresh_context/live_market_sessions/post96_normal_ui_v1/pipeline/price/HOUR3.json",
+    "sha256": "663b4bc7f0eadf8a06e14e9e73242eabcf6c1e719e50c113238673a0c5464746"
+  },
+  "H4": {
+    "path": "/workspace/scratch/42c5fe32dad0/guangdong_v18_post96_actual_20261113/fresh_context/live_market_sessions/post96_normal_ui_v1/pipeline/price/HOUR4.json",
+    "sha256": "ce4b82c47e47a4b60acba080fef3cc9576fffb2bb835144a1d4f449e277fa73e"
+  },
+  "H5": {
+    "path": "/workspace/scratch/42c5fe32dad0/guangdong_v18_post96_actual_20261113/fresh_context/live_market_sessions/post96_normal_ui_v1/pipeline/price/HOUR5.json",
+    "sha256": "10f62a3bf914409814a3aa1345a23beec97af8eb1db878f58700b4adf6ad7a3c"
+  },
+  "H6": {
+    "path": "/workspace/scratch/42c5fe32dad0/guangdong_v18_post96_actual_20261113/fresh_context/live_market_sessions/post96_normal_ui_v1/pipeline/price/HOUR6.json",
+    "sha256": "17f5c88d4629f5fb139c8c39a436f943c0aed5883d6bacf76986c65c5468413e"
+  },
+  "H7": {
+    "path": "/workspace/scratch/42c5fe32dad0/guangdong_post96_H7_readonly_20261113/HOUR7_READONLY.json",
+    "sha256": "6353a9dbe2d9d6a2337c201874daf837c44f62d1e45d8edb95f7f709775dbeb2"
+  },
+  "H8": {
+    "path": "/workspace/scratch/42c5fe32dad0/guangdong_post96_fixed_prefix_replay_20261113/final_live_once/price/HOUR8.json",
+    "sha256": "7706b90e5d997d93d479b47e2787cb88532ab7f52b31edbb72a457a276cdb88b"
+  },
+  "H9": {
+    "path": "/workspace/scratch/42c5fe32dad0/guangdong_post96_fixed_prefix_replay_20261113/final_live_once/price/HOUR9.json",
+    "sha256": "eaf7c0754a66b7fef82a26f2d6f1c8ee42b46fe363dce8d9f6dde4f803bc000d"
+  },
+  "H10": {
+    "path": "/workspace/scratch/42c5fe32dad0/guangdong_post96_fixed_prefix_replay_20261113/final_live_once/price/HOUR10.json",
+    "sha256": "bc2c712c034c789a5ca1da6b7174beb4f5f152561421aba401f1a38d8cc459c5"
+  },
+  "H11": {
+    "path": "/workspace/scratch/42c5fe32dad0/guangdong_post96_fixed_prefix_replay_20261113/final_live_once/price/HOUR11.json",
+    "sha256": "09383592b67383c2d563259b0839e348f89f0b9815578348c516f4ad53264733"
+  },
+  "H12": {
+    "path": "/workspace/scratch/42c5fe32dad0/guangdong_post96_fixed_prefix_replay_20261113/final_live_once/price/HOUR12.json",
+    "sha256": "71670d75282702a431e957e612079d50b86d2a852563aa256f9d47ef1791c69b"
+  },
+  "H13": {
+    "path": "/workspace/scratch/42c5fe32dad0/guangdong_post96_resume54_v1_20261113/live_once_v2/price/HOUR13.json",
+    "sha256": "c3939776fd102bac732c416585670fa9662cd69655e79ba74667420bd7091a45"
+  },
+  "H14": {
+    "path": "/workspace/scratch/42c5fe32dad0/guangdong_post96_resume54_v1_20261113/live_once_v2/price/HOUR14.json",
+    "sha256": "6443f8b9bfcfcf6e602a80def283f91c88814348a9eddfd73bd19782b0e9149d"
+  },
+  "H15": {
+    "path": "/workspace/scratch/42c5fe32dad0/guangdong_post96_resume54_v1_20261113/live_once_v2/price/HOUR15.json",
+    "sha256": "1557bf7cb4f638d53b8110c9e941c020586da30376fe40c52b69aa34345d28f8"
+  },
+  "H16": {
+    "path": "/workspace/scratch/42c5fe32dad0/guangdong_post96_resume54_v1_20261113/live_once_v2/price/HOUR16.json",
+    "sha256": "199aa948b0c3c419d69ae571672b65a2a0f580dec247e6fafa8fc6748ee478a8"
+  },
+  "H17": {
+    "path": "/workspace/scratch/42c5fe32dad0/guangdong_post96_resume54_v1_20261113/live_once_v2/price/HOUR17.json",
+    "sha256": "32972ce14268bc8112c62b926df939ec285a790032f6b94041dd46b83d4c523b"
+  },
+  "H18": {
+    "path": "/workspace/scratch/42c5fe32dad0/guangdong_post96_resume54_v1_20261113/live_once_v2/price/HOUR18.json",
+    "sha256": "4ea76b4eb705304b96c4adf9e99040fa61a7d1caa241ef434d56833b80c3ee50"
+  },
+  "H19": {
+    "path": "/workspace/scratch/42c5fe32dad0/guangdong_post96_resume54_v1_20261113/live_once_v2/price/HOUR19.json",
+    "sha256": "633e00bc415ea8be767bfd0c9ba18f2982a085bdb98e078d3ee299a5dc1567ad"
+  },
+  "H20": {
+    "path": "/workspace/scratch/42c5fe32dad0/guangdong_post96_resume54_v1_20261113/live_once_v2/price/HOUR20.json",
+    "sha256": "38cfc5b6e2932221a7e2dc8dca4ec505538fff0dd3b73506f5659f273269c66f"
+  },
+  "H21": {
+    "path": "/tmp/guangdong_post96_tail_20261113/price/HOUR21.json",
+    "sha256": "54a49fada4ebfa76f0077fd2edd05e2846cda5d7ed46a7173d6fe38e23721224"
+  },
+  "H22": {
+    "path": "/tmp/guangdong_post96_tail_20261113/price/HOUR22.json",
+    "sha256": "77b5e37e04731241a0748d6d10dfc94c26ea86735e2cd47dbdd2d10e27e9330c"
+  },
+  "H23": {
+    "path": "/tmp/guangdong_post96_tail_20261113/price/HOUR23.json",
+    "sha256": "04bcdfd4b27c2f6ddc8dc20cc6f858e615a66ff2eded6fb534c4049f6f4e34aa"
+  }
+}

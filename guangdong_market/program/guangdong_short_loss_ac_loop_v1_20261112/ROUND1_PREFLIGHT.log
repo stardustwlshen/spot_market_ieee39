@@ -1,0 +1,8 @@
+Traceback (most recent call last):
+  File "/workspace/scratch/42c5fe32dad0/guangdong_short_loss_ac_loop_v1_20261112/run_round.py", line 52, in <module>
+    if __name__=='__main__':main()
+                            ^^^^^^
+  File "/workspace/scratch/42c5fe32dad0/guangdong_short_loss_ac_loop_v1_20261112/run_round.py", line 18, in main
+    assert dict(row['terms'])[vi[f'renewable_power[{node},0]']]==-1.
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError

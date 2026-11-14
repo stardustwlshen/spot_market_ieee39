@@ -1,0 +1,559 @@
+{
+  "validation_scope": "original clean UI native12 run; not revalidated here",
+  "verified_result": {
+    "status": "clean_official_UI_pipeline_regression_passed",
+    "branch_id": "unified-first-hour-0826265ba54046ed91e47310cb7eb67c",
+    "new_native_calls": 12,
+    "old_failed_branch_native_calls_separate": 9,
+    "no_recovery_module_loaded": true,
+    "stages": [
+      {
+        "window": 0,
+        "stage": "SCUC",
+        "response_sha256": "95b9ba8612171b0c195c86f1df4336026165d87a9870c2f5f13ecf73212c1b1c",
+        "optimize_calls": 1
+      },
+      {
+        "window": 0,
+        "stage": "SCED",
+        "response_sha256": "ca2206c37ba5f9b6ea956ac9d38ae74d9fb38e57ec78dd9a448cf30c7021ff8d",
+        "optimize_calls": 1
+      },
+      {
+        "quarter": 0,
+        "stage": "PRICE",
+        "response_sha256": "941d85584fd7269af6db65fd55809d66b29282427c5cb36e5a3130466573985f",
+        "optimize_calls": 1
+      },
+      {
+        "window": 1,
+        "stage": "SCUC",
+        "response_sha256": "34c0ec8d8a6baad63e8e70a6aab9432ceac15ecd436fc2937ee2bc1d9ab2807c",
+        "optimize_calls": 1
+      },
+      {
+        "window": 1,
+        "stage": "SCED",
+        "response_sha256": "f7da780f56920136b070ba10e2db7089c0de42f1b8de9f3ede58fb12606c18e1",
+        "optimize_calls": 1
+      },
+      {
+        "quarter": 1,
+        "stage": "PRICE",
+        "response_sha256": "6f29e46f2cfb2edf8f9e7d0d1c977b1050539abefd525b96739aa228ab089653",
+        "optimize_calls": 1
+      },
+      {
+        "window": 2,
+        "stage": "SCUC",
+        "response_sha256": "e0f3756e49be4fc9f72a9df7d43babfdf27e6786338107d3d96990a4563fa66a",
+        "optimize_calls": 1
+      },
+      {
+        "window": 2,
+        "stage": "SCED",
+        "response_sha256": "9f8042f1b99e8495819ec10a8fc277afc1625b6b239dffff657eab9120b8b2c8",
+        "optimize_calls": 1
+      },
+      {
+        "quarter": 2,
+        "stage": "PRICE",
+        "response_sha256": "35cf572fbae4d4a2c8ef0896b819e654cb3ffc9f42acb1882f495aa693878f38",
+        "optimize_calls": 1
+      },
+      {
+        "window": 3,
+        "stage": "SCUC",
+        "response_sha256": "81eaaa3739759f7f551a8bb667edb2e6d8dd2577190dac3b2d738d864c9b08e8",
+        "optimize_calls": 1
+      },
+      {
+        "window": 3,
+        "stage": "SCED",
+        "response_sha256": "b5bffe250c76a07bb92e9ff87b5be1fd592abf6178b295846770322472f93a0c",
+        "optimize_calls": 1
+      },
+      {
+        "quarter": 3,
+        "stage": "PRICE",
+        "response_sha256": "f17a6ac59594a308b8e96c8d51c8cc644308b76a34b209532a3bbc817e437a2d",
+        "optimize_calls": 1
+      }
+    ],
+    "windows": [
+      {
+        "window": 0,
+        "SCUC_gap": 0.00010740735361414763,
+        "SCED_KKT": {
+          "absolute_gap": 6.984919309616089e-10,
+          "allowed_angle_column_names": [
+            "angle['6',206]",
+            "angle['6',253]",
+            "angle['6',254]",
+            "angle['6',255]",
+            "angle['6',259]"
+          ],
+          "angle_stationarity_tolerance": 1e-08,
+          "checks": "all rows and columns with fsum accumulation",
+          "dual_objective": 1536547.0905238898,
+          "max_complementarity": 2.9884243228176877e-10,
+          "max_dual_sign_violation": 6.123306989663364e-09,
+          "max_free_angle_stationarity": 0.0,
+          "max_non_angle_dual_sign_violation": 6.123306989663364e-09,
+          "max_primal_violation": 1.0246026249660645e-11,
+          "objective_complementarity_tolerance": 0.0015465470905238906,
+          "passed": true,
+          "primal_objective": 1536547.0905238905,
+          "raw_witness_unchanged": true,
+          "rows": 20778,
+          "scoped_angle_columns": [],
+          "strict_legacy_1e_8_pass": true,
+          "variables": 21769,
+          "worst_free_angle": null
+        },
+        "SCED_response_kind": "native_strict_certificate"
+      },
+      {
+        "window": 1,
+        "SCUC_gap": 4.391730873450755e-05,
+        "SCED_KKT": {
+          "absolute_gap": 2.3283064365386963e-10,
+          "allowed_angle_column_names": [
+            "angle['6',206]",
+            "angle['6',253]",
+            "angle['6',254]",
+            "angle['6',255]",
+            "angle['6',259]"
+          ],
+          "angle_stationarity_tolerance": 1e-08,
+          "checks": "all rows and columns with fsum accumulation",
+          "dual_objective": 1504540.4916987862,
+          "max_complementarity": 1.04035298894208e-10,
+          "max_dual_sign_violation": 1.5030711718002119e-09,
+          "max_free_angle_stationarity": 0.0,
+          "max_non_angle_dual_sign_violation": 1.5030711718002119e-09,
+          "max_primal_violation": 6.707523425575346e-12,
+          "objective_complementarity_tolerance": 0.001514540491698786,
+          "passed": true,
+          "primal_objective": 1504540.491698786,
+          "raw_witness_unchanged": true,
+          "rows": 20778,
+          "scoped_angle_columns": [],
+          "strict_legacy_1e_8_pass": true,
+          "variables": 21769,
+          "worst_free_angle": null
+        },
+        "SCED_response_kind": "native_strict_certificate"
+      },
+      {
+        "window": 2,
+        "SCUC_gap": 7.070241456640627e-05,
+        "SCED_KKT": {
+          "absolute_gap": 6.984919309616089e-10,
+          "allowed_angle_column_names": [
+            "angle['6',206]",
+            "angle['6',253]",
+            "angle['6',254]",
+            "angle['6',255]",
+            "angle['6',259]"
+          ],
+          "angle_stationarity_tolerance": 1e-08,
+          "checks": "all rows and columns with fsum accumulation",
+          "dual_objective": 1475151.8260102754,
+          "max_complementarity": 5.275069270282984e-10,
+          "max_dual_sign_violation": 4.061756762616845e-09,
+          "max_free_angle_stationarity": 0.0,
+          "max_non_angle_dual_sign_violation": 4.061756762616845e-09,
+          "max_primal_violation": 1.0544454198679887e-11,
+          "objective_complementarity_tolerance": 0.0014851518260102761,
+          "passed": true,
+          "primal_objective": 1475151.826010276,
+          "raw_witness_unchanged": true,
+          "rows": 20778,
+          "scoped_angle_columns": [],
+          "strict_legacy_1e_8_pass": true,
+          "variables": 21769,
+          "worst_free_angle": null
+        },
+        "SCED_response_kind": "native_strict_certificate"
+      },
+      {
+        "window": 3,
+        "SCUC_gap": 5.7785510639273924e-05,
+        "SCED_KKT": {
+          "absolute_gap": 4.656612873077393e-10,
+          "allowed_angle_column_names": [
+            "angle['6',206]",
+            "angle['6',253]",
+            "angle['6',254]",
+            "angle['6',255]",
+            "angle['6',259]"
+          ],
+          "angle_stationarity_tolerance": 1e-08,
+          "checks": "all rows and columns with fsum accumulation",
+          "dual_objective": 1447644.66344307,
+          "max_complementarity": 2.9987864043808565e-10,
+          "max_dual_sign_violation": 2.7723786061745367e-09,
+          "max_free_angle_stationarity": 0.0,
+          "max_non_angle_dual_sign_violation": 2.7723786061745367e-09,
+          "max_primal_violation": 1.028155338644865e-11,
+          "objective_complementarity_tolerance": 0.0014576446634430695,
+          "passed": true,
+          "primal_objective": 1447644.6634430694,
+          "raw_witness_unchanged": true,
+          "rows": 20778,
+          "scoped_angle_columns": [],
+          "strict_legacy_1e_8_pass": true,
+          "variables": 21764,
+          "worst_free_angle": null
+        },
+        "SCED_response_kind": "native_strict_certificate"
+      }
+    ],
+    "accepted_prices": 4,
+    "executed_cells": 12,
+    "issued_end": 15,
+    "excluded_future_issued_ticks": [
+      12,
+      13,
+      14
+    ],
+    "hour_account_direction_rows": 54,
+    "total_energy_component_CNY": "984919.7573504869877597878065",
+    "H1": {
+      "schema": "gd.agc.post_scuc.research.v1",
+      "source_kind": "native_internal_stage",
+      "SCUC_source": "e0f3756e49be4fc9f72a9df7d43babfdf27e6786338107d3d96990a4563fa66a",
+      "SCUC_binding": "15182bf7f6df02533f739fb69a979ed769d22e2363b0882b21e8a2add263c9c8",
+      "branch_id": "unified-first-hour-0826265ba54046ed91e47310cb7eb67c",
+      "internal_completed_at": "2026-11-11T00:30:00+08:00",
+      "published_at": "2026-11-11T00:30:00+08:00",
+      "hour_start": "2026-11-11T01:00:00+08:00",
+      "hour_end": "2026-11-11T02:00:00+08:00",
+      "allocator": {
+        "awards_mw": {
+          "C1": 10.0,
+          "C2": 10.0,
+          "C3": 10.0,
+          "CCGT": 10.0,
+          "GT": 10.0
+        },
+        "ranked_ids": [
+          "C1",
+          "C2",
+          "C3",
+          "CCGT",
+          "GT"
+        ],
+        "reserved_non_price_setters": [],
+        "raw_marginal": 6.0,
+        "price": 6.0,
+        "price_source": "current",
+        "unmet_mw": 0,
+        "trace": [
+          {
+            "added": "C1",
+            "awards_mw": {
+              "C1": 10.0
+            },
+            "total_mw": 10.0
+          },
+          {
+            "added": "C2",
+            "awards_mw": {
+              "C1": 10.0,
+              "C2": 10.0
+            },
+            "total_mw": 20.0
+          },
+          {
+            "added": "C3",
+            "awards_mw": {
+              "C1": 10.0,
+              "C2": 10.0,
+              "C3": 10.0
+            },
+            "total_mw": 30.0
+          },
+          {
+            "added": "CCGT",
+            "awards_mw": {
+              "C1": 10.0,
+              "C2": 10.0,
+              "C3": 10.0,
+              "CCGT": 10.0
+            },
+            "total_mw": 40.0
+          },
+          {
+            "added": "GT",
+            "awards_mw": {
+              "C1": 10.0,
+              "C2": 10.0,
+              "C3": 10.0,
+              "CCGT": 10.0,
+              "GT": 10.0
+            },
+            "total_mw": 50.0
+          }
+        ],
+        "safety_excluded": [],
+        "hour_start": "2026-11-11T01:00:00+08:00",
+        "binding_end": "2026-11-11T02:00:00+08:00",
+        "research_only": true,
+        "formal_publication_allowed": false,
+        "dispatch_authorized": false,
+        "scope": "guangdong_local_research_projection",
+        "assumptions": [
+          "exclude_crossing_unit",
+          "resource_id_research",
+          "synthetic/local demand, external full-area kmax",
+          "security exclusions are supplied, NOT independently certified"
+        ],
+        "schema": "gd.agc.r73.result.v1",
+        "parameters": {
+          "bid_floor": {
+            "value": 1.0,
+            "unit": "yuan/MW_mileage",
+            "version": "synthetic_v1",
+            "source": "Explicit independent research assumption copied from R73 synthetic fixture except Qzone/target fixed50; not current official parameters",
+            "source_grade": "research_assumption",
+            "available_at": "2026-11-10T00:00:00+08:00",
+            "effective_from": "2026-11-11T00:00:00+08:00",
+            "effective_to": "2026-11-12T00:00:00+08:00"
+          },
+          "distribution_zone_demand_mw": {
+            "value": 50.0,
+            "unit": "MW",
+            "version": "synthetic_v1",
+            "source": "Explicit independent research assumption copied from R73 synthetic fixture except Qzone/target fixed50; not current official parameters",
+            "source_grade": "research_assumption",
+            "available_at": "2026-11-10T00:00:00+08:00",
+            "effective_from": "2026-11-11T00:00:00+08:00",
+            "effective_to": "2026-11-12T00:00:00+08:00"
+          },
+          "provincial_procurement_target_mw": {
+            "value": 50.0,
+            "unit": "MW",
+            "version": "synthetic_v1",
+            "source": "Explicit independent research assumption copied from R73 synthetic fixture except Qzone/target fixed50; not current official parameters",
+            "source_grade": "research_assumption",
+            "available_at": "2026-11-10T00:00:00+08:00",
+            "effective_from": "2026-11-11T00:00:00+08:00",
+            "effective_to": "2026-11-12T00:00:00+08:00"
+          },
+          "local_reserved_floor_mw": {
+            "value": 0.0,
+            "unit": "MW",
+            "version": "synthetic_v1",
+            "source": "Explicit independent research assumption copied from R73 synthetic fixture except Qzone/target fixed50; not current official parameters",
+            "source_grade": "research_assumption",
+            "available_at": "2026-11-10T00:00:00+08:00",
+            "effective_from": "2026-11-11T00:00:00+08:00",
+            "effective_to": "2026-11-12T00:00:00+08:00"
+          },
+          "full_control_area_kmax": {
+            "value": 2.0,
+            "unit": "dimensionless",
+            "version": "synthetic_v1",
+            "source": "Explicit independent research assumption copied from R73 synthetic fixture except Qzone/target fixed50; not current official parameters",
+            "source_grade": "research_assumption",
+            "available_at": "2026-11-10T00:00:00+08:00",
+            "effective_from": "2026-11-11T00:00:00+08:00",
+            "effective_to": "2026-11-12T00:00:00+08:00"
+          }
+        },
+        "nonparticipants": [],
+        "unmet_requirement_mw": 0,
+        "cross_zone_exchange_assumption": 0,
+        "formal_supported": false,
+        "source_authentication_performed": false,
+        "security_certified": false,
+        "native_calls": 0
+      },
+      "SCED_not_yet_solved": true,
+      "formal": false
+    },
+    "H1_before_SCUC_was_planning_only": true,
+    "H1_after_SCUC_actual_allocator": true,
+    "W3_consumed_exact_H1_digest": true,
+    "AGC50_preserved": true,
+    "positive_reserve_MW": 400,
+    "accident_reserve_MW": 400,
+    "AC_calls": 0,
+    "formal_bill": null,
+    "safety_release": false,
+    "publication_allowed": false,
+    "source_pins": {
+      "/workspace/scratch/42c5fe32dad0/guangdong_v18_clean_planning_regression_20261113/OFFICIAL_UI_STATUS.json": "24b1af57f8b07c121cfc644569ae96ced74c117ec75966e607c16916497f4aed",
+      "/workspace/scratch/42c5fe32dad0/guangdong_v18_clean_planning_regression_20261113/fresh_context/live_market_sessions/clean_planning_regression_v1/PLAN.json": "65118dd919f900781b0674712187fd9121a2000d7351bd3fffdad13e5a328b34",
+      "/workspace/scratch/42c5fe32dad0/guangdong_v18_clean_planning_regression_20261113/fresh_context/live_market_sessions/clean_planning_regression_v1/pipeline/COMPLETE.json": "a2a601fb816eb3822afd0ee039465a41784757199b2efa006dc5cabf9b2ea6cb",
+      "/workspace/scratch/42c5fe32dad0/guangdong_v18_clean_planning_regression_20261113/fresh_context/live_market_sessions/clean_planning_regression_v1/pipeline/price/HOUR0.json": "a6589ba8dd1e2a141abc7a1a4c0c236003b0423e2137ee67b0e1f28eaf2ecee9",
+      "/workspace/scratch/42c5fe32dad0/guangdong_market_user_app_v18_candidate_20261113/app/LIVE_MARKET_MANIFEST.json": "e6a84bcdbcafc0f212da492398ea8f7594e901c73f0292ea0afdfe1430e65506",
+      "/workspace/scratch/42c5fe32dad0/guangdong_v18_clean_planning_regression_20261113/H1_RECEIPT_HASH_VERIFIED_REEXPORT.json": "624975d84d9804fb535a185acde5eab9670fc0dd08d8affce3ba83c25cf39e68"
+    }
+  },
+  "H1_research_receipt": {
+    "receipt": {
+      "schema": "gd.agc.post_scuc.research.v1",
+      "source_kind": "native_internal_stage",
+      "SCUC_source": "e0f3756e49be4fc9f72a9df7d43babfdf27e6786338107d3d96990a4563fa66a",
+      "SCUC_binding": "15182bf7f6df02533f739fb69a979ed769d22e2363b0882b21e8a2add263c9c8",
+      "branch_id": "unified-first-hour-0826265ba54046ed91e47310cb7eb67c",
+      "internal_completed_at": "2026-11-11T00:30:00+08:00",
+      "published_at": "2026-11-11T00:30:00+08:00",
+      "hour_start": "2026-11-11T01:00:00+08:00",
+      "hour_end": "2026-11-11T02:00:00+08:00",
+      "allocator": {
+        "awards_mw": {
+          "C1": 10.0,
+          "C2": 10.0,
+          "C3": 10.0,
+          "CCGT": 10.0,
+          "GT": 10.0
+        },
+        "ranked_ids": [
+          "C1",
+          "C2",
+          "C3",
+          "CCGT",
+          "GT"
+        ],
+        "reserved_non_price_setters": [],
+        "raw_marginal": 6.0,
+        "price": 6.0,
+        "price_source": "current",
+        "unmet_mw": 0,
+        "trace": [
+          {
+            "added": "C1",
+            "awards_mw": {
+              "C1": 10.0
+            },
+            "total_mw": 10.0
+          },
+          {
+            "added": "C2",
+            "awards_mw": {
+              "C1": 10.0,
+              "C2": 10.0
+            },
+            "total_mw": 20.0
+          },
+          {
+            "added": "C3",
+            "awards_mw": {
+              "C1": 10.0,
+              "C2": 10.0,
+              "C3": 10.0
+            },
+            "total_mw": 30.0
+          },
+          {
+            "added": "CCGT",
+            "awards_mw": {
+              "C1": 10.0,
+              "C2": 10.0,
+              "C3": 10.0,
+              "CCGT": 10.0
+            },
+            "total_mw": 40.0
+          },
+          {
+            "added": "GT",
+            "awards_mw": {
+              "C1": 10.0,
+              "C2": 10.0,
+              "C3": 10.0,
+              "CCGT": 10.0,
+              "GT": 10.0
+            },
+            "total_mw": 50.0
+          }
+        ],
+        "safety_excluded": [],
+        "hour_start": "2026-11-11T01:00:00+08:00",
+        "binding_end": "2026-11-11T02:00:00+08:00",
+        "research_only": true,
+        "formal_publication_allowed": false,
+        "dispatch_authorized": false,
+        "scope": "guangdong_local_research_projection",
+        "assumptions": [
+          "exclude_crossing_unit",
+          "resource_id_research",
+          "synthetic/local demand, external full-area kmax",
+          "security exclusions are supplied, NOT independently certified"
+        ],
+        "schema": "gd.agc.r73.result.v1",
+        "parameters": {
+          "bid_floor": {
+            "value": 1.0,
+            "unit": "yuan/MW_mileage",
+            "version": "synthetic_v1",
+            "source": "Explicit independent research assumption copied from R73 synthetic fixture except Qzone/target fixed50; not current official parameters",
+            "source_grade": "research_assumption",
+            "available_at": "2026-11-10T00:00:00+08:00",
+            "effective_from": "2026-11-11T00:00:00+08:00",
+            "effective_to": "2026-11-12T00:00:00+08:00"
+          },
+          "distribution_zone_demand_mw": {
+            "value": 50.0,
+            "unit": "MW",
+            "version": "synthetic_v1",
+            "source": "Explicit independent research assumption copied from R73 synthetic fixture except Qzone/target fixed50; not current official parameters",
+            "source_grade": "research_assumption",
+            "available_at": "2026-11-10T00:00:00+08:00",
+            "effective_from": "2026-11-11T00:00:00+08:00",
+            "effective_to": "2026-11-12T00:00:00+08:00"
+          },
+          "provincial_procurement_target_mw": {
+            "value": 50.0,
+            "unit": "MW",
+            "version": "synthetic_v1",
+            "source": "Explicit independent research assumption copied from R73 synthetic fixture except Qzone/target fixed50; not current official parameters",
+            "source_grade": "research_assumption",
+            "available_at": "2026-11-10T00:00:00+08:00",
+            "effective_from": "2026-11-11T00:00:00+08:00",
+            "effective_to": "2026-11-12T00:00:00+08:00"
+          },
+          "local_reserved_floor_mw": {
+            "value": 0.0,
+            "unit": "MW",
+            "version": "synthetic_v1",
+            "source": "Explicit independent research assumption copied from R73 synthetic fixture except Qzone/target fixed50; not current official parameters",
+            "source_grade": "research_assumption",
+            "available_at": "2026-11-10T00:00:00+08:00",
+            "effective_from": "2026-11-11T00:00:00+08:00",
+            "effective_to": "2026-11-12T00:00:00+08:00"
+          },
+          "full_control_area_kmax": {
+            "value": 2.0,
+            "unit": "dimensionless",
+            "version": "synthetic_v1",
+            "source": "Explicit independent research assumption copied from R73 synthetic fixture except Qzone/target fixed50; not current official parameters",
+            "source_grade": "research_assumption",
+            "available_at": "2026-11-10T00:00:00+08:00",
+            "effective_from": "2026-11-11T00:00:00+08:00",
+            "effective_to": "2026-11-12T00:00:00+08:00"
+          }
+        },
+        "nonparticipants": [],
+        "unmet_requirement_mw": 0,
+        "cross_zone_exchange_assumption": 0,
+        "formal_supported": false,
+        "source_authentication_performed": false,
+        "security_certified": false,
+        "native_calls": 0
+      },
+      "SCED_not_yet_solved": true,
+      "formal": false
+    },
+    "receipt_digest": "a10dec9f6f048a45ce94e9cf508036e01caad73c3d95c91571861df0a654624d",
+    "matched_actual_W2_phase": true,
+    "matched_actual_W3_consumption": true,
+    "source_kind": "deterministic_reexport_matching_original_accepted_hash_not_new_publication",
+    "new_native_calls": 0
+  },
+  "H1_export_origin": "later hash-verified re-export, not an original separately persisted receipt",
+  "live_restore_allowed": false
+}

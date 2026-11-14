@@ -1,0 +1,469 @@
+{
+  "blocking_unknown_attempt": true,
+  "unknown_attempts": [
+    "/workspace/scratch/42c5fe32dad0/guangdong_pipeline_20261112/pure_fresh_run_v1/da_scuc/native"
+  ],
+  "schema": "gd.delivery.user_status.v1",
+  "run_id": "gd-760dddd43b9a4f24af0b58f1af0c4e8a",
+  "energy": {
+    "status": "research_energy_chain_complete",
+    "rt_executed_cells": 288,
+    "price_windows": 96,
+    "settlement_rows": 480
+  },
+  "ac": {
+    "status": "research_snapshot_unsafe",
+    "checked_cells": [
+      {
+        "index": 0,
+        "start": "2026-11-11T00:00:00+08:00",
+        "status": "ac_snapshot_unsafe",
+        "safe": false,
+        "prepared_sha256": "5042443eafe6290661aabb1556c19ee50a24841372ce0d7ddd6111a2750f9b17"
+      },
+      {
+        "index": 124,
+        "start": "2026-11-11T10:20:00+08:00",
+        "status": "ac_snapshot_unsafe",
+        "safe": false,
+        "prepared_sha256": "d24a842b4ab399499a15dca732fcf780320642904c10e5769e97bc75d94ae96a"
+      },
+      {
+        "index": 212,
+        "start": "2026-11-11T17:40:00+08:00",
+        "status": "ac_snapshot_unsafe",
+        "safe": false,
+        "prepared_sha256": "a5840b30fbb1508c5a06ad885942f778cd16bc92056355e63101452d5c1e7dce"
+      }
+    ],
+    "formal_security_acceptance": false
+  },
+  "formal_bill": null,
+  "evidence": [
+    {
+      "path": "/workspace/scratch/42c5fe32dad0/guangdong_pipeline_20261112/pure_fresh_run_v1/ARTIFACTS.json",
+      "sha256": "e8e5a00f68a52ccbcdcb55d9ea4dac8fd4209a5e57fcf6cd66de8808cafb66c1"
+    },
+    {
+      "path": "/workspace/scratch/42c5fe32dad0/guangdong_pipeline_20261112/pure_fresh_run_v1/rt/RUN_RESULT.json",
+      "sha256": "893158af65f7b5fc0558d231ddee3b4c891b78cd263a8b7355723b8cd34e8b0a"
+    },
+    {
+      "path": "/workspace/scratch/42c5fe32dad0/guangdong_pipeline_20261112/pure_fresh_run_v1/rt_price/PRICE_MANIFEST.json",
+      "sha256": "590d087fd9eb10ffa10f4b775430a249e911fd8e3f42b27b3285dfd45ede1d25"
+    },
+    {
+      "path": "/workspace/scratch/42c5fe32dad0/guangdong_pipeline_20261112/pure_fresh_run_v1/rt_price/W0/PRICE_RECEIPT.json",
+      "sha256": "7716f17d501bc689c73ea4c99e63534bda2eb5c1f70153c54df2bb1d5bb22755"
+    },
+    {
+      "path": "/workspace/scratch/42c5fe32dad0/guangdong_pipeline_20261112/pure_fresh_run_v1/rt_price/W1/PRICE_RECEIPT.json",
+      "sha256": "514d93620e6fa2fda24caa9fd177869003c8023b32b511f436392c9a60f537fd"
+    },
+    {
+      "path": "/workspace/scratch/42c5fe32dad0/guangdong_pipeline_20261112/pure_fresh_run_v1/rt_price/W2/PRICE_RECEIPT.json",
+      "sha256": "c656889ffb8fe1075911dce938a403eff9d03cedf1c7f766fb20bffafaa6bc5e"
+    },
+    {
+      "path": "/workspace/scratch/42c5fe32dad0/guangdong_pipeline_20261112/pure_fresh_run_v1/rt_price/W3/PRICE_RECEIPT.json",
+      "sha256": "1f3e11f503e0e1a4f16b7658a464e892b88f4590c656cc3e9a5e3e428132f2e3"
+    },
+    {
+      "path": "/workspace/scratch/42c5fe32dad0/guangdong_pipeline_20261112/pure_fresh_run_v1/rt_price/W4/PRICE_RECEIPT.json",
+      "sha256": "88dc393222373bfcdb35abea22bdda367fdef84c41f25c6e01dca52f8a029793"
+    },
+    {
+      "path": "/workspace/scratch/42c5fe32dad0/guangdong_pipeline_20261112/pure_fresh_run_v1/rt_price/W5/PRICE_RECEIPT.json",
+      "sha256": "02577218176aa2511ee5de34387fe4e2357207a23c40fa440f6ec8eee9d0e642"
+    },
+    {
+      "path": "/workspace/scratch/42c5fe32dad0/guangdong_pipeline_20261112/pure_fresh_run_v1/rt_price/W6/PRICE_RECEIPT.json",
+      "sha256": "1823ec6d72e35e48deb95868cddb1aa7d3a18a56840cb3e3950971254369e4dd"
+    },
+    {
+      "path": "/workspace/scratch/42c5fe32dad0/guangdong_pipeline_20261112/pure_fresh_run_v1/rt_price/W7/PRICE_RECEIPT.json",
+      "sha256": "e9d3fd0c6ea48c460251a9816092a476a237e0c41f1b3d4a1af5288640d6a7a7"
+    },
+    {
+      "path": "/workspace/scratch/42c5fe32dad0/guangdong_pipeline_20261112/pure_fresh_run_v1/rt_price/W8/PRICE_RECEIPT.json",
+      "sha256": "f2ceb84ca4ecce293a5134fbf8393414bd3d24cad3863769d927747bc0bb6a46"
+    },
+    {
+      "path": "/workspace/scratch/42c5fe32dad0/guangdong_pipeline_20261112/pure_fresh_run_v1/rt_price/W9/PRICE_RECEIPT.json",
+      "sha256": "895da2992cce61e4501da043308b6770e0f593d8d0b13a3c35d9ec2ae388a259"
+    },
+    {
+      "path": "/workspace/scratch/42c5fe32dad0/guangdong_pipeline_20261112/pure_fresh_run_v1/rt_price/W10/PRICE_RECEIPT.json",
+      "sha256": "08c55a1b60874370f328329a5792d17db559c5239c7c262e7cab223d04f87932"
+    },
+    {
+      "path": "/workspace/scratch/42c5fe32dad0/guangdong_pipeline_20261112/pure_fresh_run_v1/rt_price/W11/PRICE_RECEIPT.json",
+      "sha256": "d887c57dfb89d4901214f65f4c96fde1c0c70395196b3daeed140e396855cdb9"
+    },
+    {
+      "path": "/workspace/scratch/42c5fe32dad0/guangdong_pipeline_20261112/pure_fresh_run_v1/rt_price/W12/PRICE_RECEIPT.json",
+      "sha256": "4c6880622c5d8bcc7f1c936bd67a78c3b43a08e04271c478e77dc0925c7a60aa"
+    },
+    {
+      "path": "/workspace/scratch/42c5fe32dad0/guangdong_pipeline_20261112/pure_fresh_run_v1/rt_price/W13/PRICE_RECEIPT.json",
+      "sha256": "549916ec619c93371309ed4c1ea0de52d12aad7ab15c9d8f4a4e3658be5d0d99"
+    },
+    {
+      "path": "/workspace/scratch/42c5fe32dad0/guangdong_pipeline_20261112/pure_fresh_run_v1/rt_price/W14/PRICE_RECEIPT.json",
+      "sha256": "e59485b01cd59a93d3e9d3c9eb9fd36317d42acfdfaafe9e3daada0af451784a"
+    },
+    {
+      "path": "/workspace/scratch/42c5fe32dad0/guangdong_pipeline_20261112/pure_fresh_run_v1/rt_price/W15/PRICE_RECEIPT.json",
+      "sha256": "4830d6335a77b9e78af0eacf4b42afca58cd64de9013f02c33fef45261057c3e"
+    },
+    {
+      "path": "/workspace/scratch/42c5fe32dad0/guangdong_pipeline_20261112/pure_fresh_run_v1/rt_price/W16/PRICE_RECEIPT.json",
+      "sha256": "2d2ec9b0f48d0de7b6a3c47c4ecae861dfc251dfc5a7da5a6c870db6a406c2a6"
+    },
+    {
+      "path": "/workspace/scratch/42c5fe32dad0/guangdong_pipeline_20261112/pure_fresh_run_v1/rt_price/W17/PRICE_RECEIPT.json",
+      "sha256": "94ea055dd99ea3ab2cad6d2869e7fcc0211753f9089eb830143279b4d78198e6"
+    },
+    {
+      "path": "/workspace/scratch/42c5fe32dad0/guangdong_pipeline_20261112/pure_fresh_run_v1/rt_price/W18/PRICE_RECEIPT.json",
+      "sha256": "b66be5b4fb87beed41c3507da8019c7baede3cc44da69cd06e1840b14f119d84"
+    },
+    {
+      "path": "/workspace/scratch/42c5fe32dad0/guangdong_pipeline_20261112/pure_fresh_run_v1/rt_price/W19/PRICE_RECEIPT.json",
+      "sha256": "682beb109040df81684caf8c4651fdf21ba88bd5c8e324dee346a717afa00640"
+    },
+    {
+      "path": "/workspace/scratch/42c5fe32dad0/guangdong_pipeline_20261112/pure_fresh_run_v1/rt_price/W20/PRICE_RECEIPT.json",
+      "sha256": "3d9388c50e10f4347175fc20462664831efea256a5157ddd647371bb6d506596"
+    },
+    {
+      "path": "/workspace/scratch/42c5fe32dad0/guangdong_pipeline_20261112/pure_fresh_run_v1/rt_price/W21/PRICE_RECEIPT.json",
+      "sha256": "027a124044fdac51d7a70df0d889675b7aa38c507a91052d56c39baf467c9af8"
+    },
+    {
+      "path": "/workspace/scratch/42c5fe32dad0/guangdong_pipeline_20261112/pure_fresh_run_v1/rt_price/W22/PRICE_RECEIPT.json",
+      "sha256": "566bb2952cd8b07468505adfe6cded8ba0010652d29476a490771bf4e19060cf"
+    },
+    {
+      "path": "/workspace/scratch/42c5fe32dad0/guangdong_pipeline_20261112/pure_fresh_run_v1/rt_price/W23/PRICE_RECEIPT.json",
+      "sha256": "4fa29baaa98bc9e180588959fe11c126ba5b4c39c9b5eeed88a5a5eb5a0c7f90"
+    },
+    {
+      "path": "/workspace/scratch/42c5fe32dad0/guangdong_pipeline_20261112/pure_fresh_run_v1/rt_price/W24/PRICE_RECEIPT.json",
+      "sha256": "f1c1054e648ff8bfd986059fbac9ad2cc6df8bd646ead86a1ebee6292161c01c"
+    },
+    {
+      "path": "/workspace/scratch/42c5fe32dad0/guangdong_pipeline_20261112/pure_fresh_run_v1/rt_price/W25/PRICE_RECEIPT.json",
+      "sha256": "c21775f13f734d9c7c42376f35d711848d307af9cf7cb2515bf53b765a2a8131"
+    },
+    {
+      "path": "/workspace/scratch/42c5fe32dad0/guangdong_pipeline_20261112/pure_fresh_run_v1/rt_price/W26/PRICE_RECEIPT.json",
+      "sha256": "dfc163d885fa6d7a1a419cecb0cbf3a4c3596ab0a86405a2922b3c6576d6930c"
+    },
+    {
+      "path": "/workspace/scratch/42c5fe32dad0/guangdong_pipeline_20261112/pure_fresh_run_v1/rt_price/W27/PRICE_RECEIPT.json",
+      "sha256": "e136c348319e377edd6dff5ccd77f959b8a94e397d35e5f6ae9d05d4e68374c6"
+    },
+    {
+      "path": "/workspace/scratch/42c5fe32dad0/guangdong_pipeline_20261112/pure_fresh_run_v1/rt_price/W28/PRICE_RECEIPT.json",
+      "sha256": "224ed44e0477c2063d217b5a5386880986fbbc1a5d529ddeb7051227ea60e5da"
+    },
+    {
+      "path": "/workspace/scratch/42c5fe32dad0/guangdong_pipeline_20261112/pure_fresh_run_v1/rt_price/W29/PRICE_RECEIPT.json",
+      "sha256": "5e2c2ed52b5f0c56258976121773043170415609b3e64f2a6f7ffa5143e9faca"
+    },
+    {
+      "path": "/workspace/scratch/42c5fe32dad0/guangdong_pipeline_20261112/pure_fresh_run_v1/rt_price/W30/PRICE_RECEIPT.json",
+      "sha256": "9db5de4b85afbcd1d76412176134a7d3641b60a02a1cc0e532793d4df429744c"
+    },
+    {
+      "path": "/workspace/scratch/42c5fe32dad0/guangdong_pipeline_20261112/pure_fresh_run_v1/rt_price/W31/PRICE_RECEIPT.json",
+      "sha256": "a0f84ea3903baa64580dff90a99952e9626a9fa5114bd799d1b9ee5ab58a02c2"
+    },
+    {
+      "path": "/workspace/scratch/42c5fe32dad0/guangdong_pipeline_20261112/pure_fresh_run_v1/rt_price/W32/PRICE_RECEIPT.json",
+      "sha256": "675b4adfee92cc15da617508c8bc8ecde6deca0eae4c28e0dd402a9ee9b6cb60"
+    },
+    {
+      "path": "/workspace/scratch/42c5fe32dad0/guangdong_pipeline_20261112/pure_fresh_run_v1/rt_price/W33/PRICE_RECEIPT.json",
+      "sha256": "16f58baa8b8ac331a93eb6df3203a00b03ce18fe8305ee651dee4a380b36b19e"
+    },
+    {
+      "path": "/workspace/scratch/42c5fe32dad0/guangdong_pipeline_20261112/pure_fresh_run_v1/rt_price/W34/PRICE_RECEIPT.json",
+      "sha256": "c2f16bdaf3fc935b8feeac23989786dc18fe3039f1bf867970ac34ad14338cc2"
+    },
+    {
+      "path": "/workspace/scratch/42c5fe32dad0/guangdong_pipeline_20261112/pure_fresh_run_v1/rt_price/W35/PRICE_RECEIPT.json",
+      "sha256": "33dfd2ccecb25f1c2d48333fbe5aed1aecb916420b2a886be17bef809e348e0e"
+    },
+    {
+      "path": "/workspace/scratch/42c5fe32dad0/guangdong_pipeline_20261112/pure_fresh_run_v1/rt_price/W36/PRICE_RECEIPT.json",
+      "sha256": "a524a7524c762156126583b07369134422684e6f17d03ade511d8b962903371f"
+    },
+    {
+      "path": "/workspace/scratch/42c5fe32dad0/guangdong_pipeline_20261112/pure_fresh_run_v1/rt_price/W37/PRICE_RECEIPT.json",
+      "sha256": "508d19b3e28debbd4798bfc2361b5272bce76cd2435d75db471b8d227c0c6414"
+    },
+    {
+      "path": "/workspace/scratch/42c5fe32dad0/guangdong_pipeline_20261112/pure_fresh_run_v1/rt_price/W38/PRICE_RECEIPT.json",
+      "sha256": "8fbe49a37f5098e50876b4b3a8e8ee014c0cbeb8547fb530bf6e1de5078a436b"
+    },
+    {
+      "path": "/workspace/scratch/42c5fe32dad0/guangdong_pipeline_20261112/pure_fresh_run_v1/rt_price/W39/PRICE_RECEIPT.json",
+      "sha256": "98214e7f0e1a6c0498a6bd085f062b84ac25c33f1f32529545f33ba9709c1f23"
+    },
+    {
+      "path": "/workspace/scratch/42c5fe32dad0/guangdong_pipeline_20261112/pure_fresh_run_v1/rt_price/W40/PRICE_RECEIPT.json",
+      "sha256": "0ae1d1fdba4764a860a806de5f84c2bea94160bd362572404146974f67bebdf0"
+    },
+    {
+      "path": "/workspace/scratch/42c5fe32dad0/guangdong_pipeline_20261112/pure_fresh_run_v1/rt_price/W41/PRICE_RECEIPT.json",
+      "sha256": "1eab77b343c8cf89be3d22feccc3b0d374b96a56bbd4b1cc5fcce77b41dfe248"
+    },
+    {
+      "path": "/workspace/scratch/42c5fe32dad0/guangdong_pipeline_20261112/pure_fresh_run_v1/rt_price/W42/PRICE_RECEIPT.json",
+      "sha256": "eb6d04752ef511f47ed90c4af7108d13bcd36e5e2a77256817ca37b241b5728e"
+    },
+    {
+      "path": "/workspace/scratch/42c5fe32dad0/guangdong_pipeline_20261112/pure_fresh_run_v1/rt_price/W43/PRICE_RECEIPT.json",
+      "sha256": "e8b5ca3fc5768d03705b80b8f265d4099e32d9ea24f240a37f200d40a1d3ec3d"
+    },
+    {
+      "path": "/workspace/scratch/42c5fe32dad0/guangdong_pipeline_20261112/pure_fresh_run_v1/rt_price/W44/PRICE_RECEIPT.json",
+      "sha256": "e5c76fbe8fee2cf0e4e07811599054851f1a601fc154bce6954fbdef205d888f"
+    },
+    {
+      "path": "/workspace/scratch/42c5fe32dad0/guangdong_pipeline_20261112/pure_fresh_run_v1/rt_price/W45/PRICE_RECEIPT.json",
+      "sha256": "eb2ef38041f97fc983b96177ef760337ae58eca3c38969c85fd6f17c8637faf1"
+    },
+    {
+      "path": "/workspace/scratch/42c5fe32dad0/guangdong_pipeline_20261112/pure_fresh_run_v1/rt_price/W46/PRICE_RECEIPT.json",
+      "sha256": "922016e10e4a9e6d645aad9571842817d87f6ab6a9fd3f90f6ea16063a9255d0"
+    },
+    {
+      "path": "/workspace/scratch/42c5fe32dad0/guangdong_pipeline_20261112/pure_fresh_run_v1/rt_price/W47/PRICE_RECEIPT.json",
+      "sha256": "564a1e4817cfc75d19dd829811716b2dc6ed03f888fd1267cb50eff769830447"
+    },
+    {
+      "path": "/workspace/scratch/42c5fe32dad0/guangdong_pipeline_20261112/pure_fresh_run_v1/rt_price/W48/PRICE_RECEIPT.json",
+      "sha256": "8157b8a8d82527e0c3a64a4e20a88a4abb18240ae864e7cdfd68034cd5c3a6c3"
+    },
+    {
+      "path": "/workspace/scratch/42c5fe32dad0/guangdong_pipeline_20261112/pure_fresh_run_v1/rt_price/W49/PRICE_RECEIPT.json",
+      "sha256": "de1c021dd0962c5d7597f820df8710450714185c751b77b198326344fae4e5b3"
+    },
+    {
+      "path": "/workspace/scratch/42c5fe32dad0/guangdong_pipeline_20261112/pure_fresh_run_v1/rt_price/W50/PRICE_RECEIPT.json",
+      "sha256": "da0759bb771de90f83234ec26d8a14f4f5c951bd2b48bcceb1cab10914561c93"
+    },
+    {
+      "path": "/workspace/scratch/42c5fe32dad0/guangdong_pipeline_20261112/pure_fresh_run_v1/rt_price/W51/PRICE_RECEIPT.json",
+      "sha256": "070d4a2beb8be5a1248523114a79801837894d9b2f7898d2b9953cfa06e55ed2"
+    },
+    {
+      "path": "/workspace/scratch/42c5fe32dad0/guangdong_pipeline_20261112/pure_fresh_run_v1/rt_price/W52/PRICE_RECEIPT.json",
+      "sha256": "62b84f1cbd95ab67eb69793cf90113f762ce3deeb0cd2e40f9982fb1539e0874"
+    },
+    {
+      "path": "/workspace/scratch/42c5fe32dad0/guangdong_pipeline_20261112/pure_fresh_run_v1/rt_price/W53/PRICE_RECEIPT.json",
+      "sha256": "0477c9650c92ff794c333734ad5d2c04a0559196b5cecca8184841edcbc6623e"
+    },
+    {
+      "path": "/workspace/scratch/42c5fe32dad0/guangdong_pipeline_20261112/pure_fresh_run_v1/rt_price/W54/PRICE_RECEIPT.json",
+      "sha256": "4763735535b31f3cb7e22308f2a33276fb65f22c4e39f00ea20f0d001b01a2aa"
+    },
+    {
+      "path": "/workspace/scratch/42c5fe32dad0/guangdong_pipeline_20261112/pure_fresh_run_v1/rt_price/W55/PRICE_RECEIPT.json",
+      "sha256": "1ddd58bea3498f666f5bc8b11097a5ff45ce462cece78e05236cb2769a68afb6"
+    },
+    {
+      "path": "/workspace/scratch/42c5fe32dad0/guangdong_pipeline_20261112/pure_fresh_run_v1/rt_price/W56/PRICE_RECEIPT.json",
+      "sha256": "a19b19d5a01cefc866f23f7af4390a4344f35e6049c115f08f27c961ccee4c18"
+    },
+    {
+      "path": "/workspace/scratch/42c5fe32dad0/guangdong_pipeline_20261112/pure_fresh_run_v1/rt_price/W57/PRICE_RECEIPT.json",
+      "sha256": "c7c621d5362035d1b3d8c8fcdd42af6282b5bd2b13f2efdb255c1f83fa62285a"
+    },
+    {
+      "path": "/workspace/scratch/42c5fe32dad0/guangdong_pipeline_20261112/pure_fresh_run_v1/rt_price/W58/PRICE_RECEIPT.json",
+      "sha256": "55251ee8413133ed7bcf10113312aa5412a3ab82bae5417dfc1c79e5f6b33108"
+    },
+    {
+      "path": "/workspace/scratch/42c5fe32dad0/guangdong_pipeline_20261112/pure_fresh_run_v1/rt_price/W59/PRICE_RECEIPT.json",
+      "sha256": "c0c1238f90fd2e450cbdffa81c6fda682858ab5692429c2d3cdd79459bab32e9"
+    },
+    {
+      "path": "/workspace/scratch/42c5fe32dad0/guangdong_pipeline_20261112/pure_fresh_run_v1/rt_price/W60/PRICE_RECEIPT.json",
+      "sha256": "b82627d0e03f4e96c57ca8a7ba606911e6c7f9e671639aea07b16ecc58428fa7"
+    },
+    {
+      "path": "/workspace/scratch/42c5fe32dad0/guangdong_pipeline_20261112/pure_fresh_run_v1/rt_price/W61/PRICE_RECEIPT.json",
+      "sha256": "9132f129046a543ac169dd390db5d9ede9221098feab974fdada583391d1aba7"
+    },
+    {
+      "path": "/workspace/scratch/42c5fe32dad0/guangdong_pipeline_20261112/pure_fresh_run_v1/rt_price/W62/PRICE_RECEIPT.json",
+      "sha256": "8f667adb9ee18915523709b19a86feacc316cb12e0d3e317ca34010762b224c3"
+    },
+    {
+      "path": "/workspace/scratch/42c5fe32dad0/guangdong_pipeline_20261112/pure_fresh_run_v1/rt_price/W63/PRICE_RECEIPT.json",
+      "sha256": "107e8b73b27a8bfc885d07adc8be9d9fb45c5eab0412d2fd4f1c020197daf19a"
+    },
+    {
+      "path": "/workspace/scratch/42c5fe32dad0/guangdong_pipeline_20261112/pure_fresh_run_v1/rt_price/W64/PRICE_RECEIPT.json",
+      "sha256": "6aa9bb7ead04e1d726582620b7dbe2e0f8779655bb563a1c53ba4c305ae77c6a"
+    },
+    {
+      "path": "/workspace/scratch/42c5fe32dad0/guangdong_pipeline_20261112/pure_fresh_run_v1/rt_price/W65/PRICE_RECEIPT.json",
+      "sha256": "04825d3b13b5421cef8d3aff0b1e575195953c406d224fc3a393fc0c7a0322f6"
+    },
+    {
+      "path": "/workspace/scratch/42c5fe32dad0/guangdong_pipeline_20261112/pure_fresh_run_v1/rt_price/W66/PRICE_RECEIPT.json",
+      "sha256": "b1b146d3a7013c2200bc4ea1276a671d09ef43bf4d4557f34c8ad943249dd0a6"
+    },
+    {
+      "path": "/workspace/scratch/42c5fe32dad0/guangdong_pipeline_20261112/pure_fresh_run_v1/rt_price/W67/PRICE_RECEIPT.json",
+      "sha256": "ccac7615ef642b331d71247916b24f86fc4a4ede82cc01c1539150ff8e4fb52d"
+    },
+    {
+      "path": "/workspace/scratch/42c5fe32dad0/guangdong_pipeline_20261112/pure_fresh_run_v1/rt_price/W68/PRICE_RECEIPT.json",
+      "sha256": "700139250561e0b22acd391a1ed8dacd94d9b387360245bb8cc6f313b16e56a8"
+    },
+    {
+      "path": "/workspace/scratch/42c5fe32dad0/guangdong_pipeline_20261112/pure_fresh_run_v1/rt_price/W69/PRICE_RECEIPT.json",
+      "sha256": "8dfd3a13a9037631f86ffcc0612717ef43143c57f646606dc6ce887f97309753"
+    },
+    {
+      "path": "/workspace/scratch/42c5fe32dad0/guangdong_pipeline_20261112/pure_fresh_run_v1/rt_price/W70/PRICE_RECEIPT.json",
+      "sha256": "856645bf40b68c09f647564b42a90e7c7138ac79969c61fa0f012b9907a43d82"
+    },
+    {
+      "path": "/workspace/scratch/42c5fe32dad0/guangdong_pipeline_20261112/pure_fresh_run_v1/rt_price/W71/PRICE_RECEIPT.json",
+      "sha256": "d8b5071c428540bf4cee7370c8a44c491c4e8b75ab1b497262eb0e8d20a028c1"
+    },
+    {
+      "path": "/workspace/scratch/42c5fe32dad0/guangdong_pipeline_20261112/pure_fresh_run_v1/rt_price/W72/PRICE_RECEIPT.json",
+      "sha256": "a760fd69c4a8281b73c8f9b149b6e3f7637bc3dda17de53b8881b35c2cd63a92"
+    },
+    {
+      "path": "/workspace/scratch/42c5fe32dad0/guangdong_pipeline_20261112/pure_fresh_run_v1/rt_price/W73/PRICE_RECEIPT.json",
+      "sha256": "a16bf56378ee9235512a6ed0eabd566ac4a28ed65c535a3604787ebd91d308d8"
+    },
+    {
+      "path": "/workspace/scratch/42c5fe32dad0/guangdong_pipeline_20261112/pure_fresh_run_v1/rt_price/W74/PRICE_RECEIPT.json",
+      "sha256": "f394e77131fdec5142d64a3f1752b3fa6b079c3d27c17fbe6340a03c33f09963"
+    },
+    {
+      "path": "/workspace/scratch/42c5fe32dad0/guangdong_pipeline_20261112/pure_fresh_run_v1/rt_price/W75/PRICE_RECEIPT.json",
+      "sha256": "d8908fb32d5e7f8b2f9af0d8077b7523905530740becf368c8481d1c18a8defa"
+    },
+    {
+      "path": "/workspace/scratch/42c5fe32dad0/guangdong_pipeline_20261112/pure_fresh_run_v1/rt_price/W76/PRICE_RECEIPT.json",
+      "sha256": "4983b3fa47e048416d8ef15ab6016aad8e4a543af81e0be37db50a0d80942f13"
+    },
+    {
+      "path": "/workspace/scratch/42c5fe32dad0/guangdong_pipeline_20261112/pure_fresh_run_v1/rt_price/W77/PRICE_RECEIPT.json",
+      "sha256": "5611c8c9a78fbc1bf20e70868b5c31de9fca712f82fcc9c106aa2af080c80501"
+    },
+    {
+      "path": "/workspace/scratch/42c5fe32dad0/guangdong_pipeline_20261112/pure_fresh_run_v1/rt_price/W78/PRICE_RECEIPT.json",
+      "sha256": "07b63e05f3b843f416ce80e7f0d26374b564944719162ff501ceee127da8e062"
+    },
+    {
+      "path": "/workspace/scratch/42c5fe32dad0/guangdong_pipeline_20261112/pure_fresh_run_v1/rt_price/W79/PRICE_RECEIPT.json",
+      "sha256": "0573809094237d579859816299503453f1c4523c07b5869d2b5f90cda92dc8e5"
+    },
+    {
+      "path": "/workspace/scratch/42c5fe32dad0/guangdong_pipeline_20261112/pure_fresh_run_v1/rt_price/W80/PRICE_RECEIPT.json",
+      "sha256": "54b1e9433b3ee6a9c1ee8d057290f636bc495ae9b134ab3c4c1670ce0c4d49f3"
+    },
+    {
+      "path": "/workspace/scratch/42c5fe32dad0/guangdong_pipeline_20261112/pure_fresh_run_v1/rt_price/W81/PRICE_RECEIPT.json",
+      "sha256": "852521775c78b7ddfb80ebe39dfb6b8c9a3873958391eed4b53a6eea210ef144"
+    },
+    {
+      "path": "/workspace/scratch/42c5fe32dad0/guangdong_pipeline_20261112/pure_fresh_run_v1/rt_price/W82/PRICE_RECEIPT.json",
+      "sha256": "99fb2986006fbbfc6bfa845ef8ba1e1e2a2f7ba1ebfeee5c75b1c6f481e63649"
+    },
+    {
+      "path": "/workspace/scratch/42c5fe32dad0/guangdong_pipeline_20261112/pure_fresh_run_v1/rt_price/W83/PRICE_RECEIPT.json",
+      "sha256": "f49f744c4b9fe3b8e8cf9b0016cd48b5973ae997fb740bf7a56c0354698e3864"
+    },
+    {
+      "path": "/workspace/scratch/42c5fe32dad0/guangdong_pipeline_20261112/pure_fresh_run_v1/rt_price/W84/PRICE_RECEIPT.json",
+      "sha256": "57d62db136b6c69816b95d4445086a2113b022fc5ea840f9c830b69c4728147b"
+    },
+    {
+      "path": "/workspace/scratch/42c5fe32dad0/guangdong_pipeline_20261112/pure_fresh_run_v1/rt_price/W85/PRICE_RECEIPT.json",
+      "sha256": "6651081222abebf0cf92737681aa6ecdde22b707fb9a425a5d346e2fd489e4a7"
+    },
+    {
+      "path": "/workspace/scratch/42c5fe32dad0/guangdong_pipeline_20261112/pure_fresh_run_v1/rt_price/W86/PRICE_RECEIPT.json",
+      "sha256": "1d7766e4283942de88c71cd5bac0cc1831a49e8b87fe890a68d85b58a16188fd"
+    },
+    {
+      "path": "/workspace/scratch/42c5fe32dad0/guangdong_pipeline_20261112/pure_fresh_run_v1/rt_price/W87/PRICE_RECEIPT.json",
+      "sha256": "92d2fcda163c89dfa385578901e36884a124a9c06bf5c4291fb3a770ad727235"
+    },
+    {
+      "path": "/workspace/scratch/42c5fe32dad0/guangdong_pipeline_20261112/pure_fresh_run_v1/rt_price/W88/PRICE_RECEIPT.json",
+      "sha256": "73f9cccfbedf68cf75faccb3cc69fca7ead7c0c8c6938409951c1efebd16eb3f"
+    },
+    {
+      "path": "/workspace/scratch/42c5fe32dad0/guangdong_pipeline_20261112/pure_fresh_run_v1/rt_price/W89/PRICE_RECEIPT.json",
+      "sha256": "929318c6f99f115d1fd867db32ff3108229ef31feed82a25a24fbaef4e4ca347"
+    },
+    {
+      "path": "/workspace/scratch/42c5fe32dad0/guangdong_pipeline_20261112/pure_fresh_run_v1/rt_price/W90/PRICE_RECEIPT.json",
+      "sha256": "10c7c1b2a963eff854b682ea545e8549cbfe77af126a27c456866e5ac900808c"
+    },
+    {
+      "path": "/workspace/scratch/42c5fe32dad0/guangdong_pipeline_20261112/pure_fresh_run_v1/rt_price/W91/PRICE_RECEIPT.json",
+      "sha256": "7ccac1dbd3a1e0361798a0efac623fb3702fc6d0464e9c17524923a713b16b66"
+    },
+    {
+      "path": "/workspace/scratch/42c5fe32dad0/guangdong_pipeline_20261112/pure_fresh_run_v1/rt_price/W92/PRICE_RECEIPT.json",
+      "sha256": "124d70086ab297549a0f7c1d21adc3de585c9e198095a86d447c12364fc1400b"
+    },
+    {
+      "path": "/workspace/scratch/42c5fe32dad0/guangdong_pipeline_20261112/pure_fresh_run_v1/rt_price/W93/PRICE_RECEIPT.json",
+      "sha256": "e4d837fcece5621d8e55b3acc7ae8e80adf7f1171ade138460cfea94e98564ff"
+    },
+    {
+      "path": "/workspace/scratch/42c5fe32dad0/guangdong_pipeline_20261112/pure_fresh_run_v1/rt_price/W94/PRICE_RECEIPT.json",
+      "sha256": "455135a2a2648992fb416b907472d1cea3d6a11be6d5d5937c891b1785b7b33c"
+    },
+    {
+      "path": "/workspace/scratch/42c5fe32dad0/guangdong_pipeline_20261112/pure_fresh_run_v1/rt_price/W95/PRICE_RECEIPT.json",
+      "sha256": "fefcdf4769fcaa15db538e809cb23de5c9fe0a9950970b1701ee74f6ba47a17c"
+    },
+    {
+      "path": "/workspace/scratch/42c5fe32dad0/guangdong_pipeline_20261112/pure_fresh_run_v1/settlement/RESULT.json",
+      "sha256": "a6fd886a7950d3de15e72521ab8c03faa984d9727def124b37e147d1bed7b9fa"
+    },
+    {
+      "path": "guangdong_fresh_run_ac_bridge_20261112/prepared_v1/PLAN.json",
+      "sha256": "39c2d0c7c8a9a72be9524bc81fa41acfa100bdaf5e7946d5f6f4c810ce5f4e57"
+    },
+    {
+      "path": "guangdong_fresh_run_ac_bridge_20261112/actual_v1/RESULT.json",
+      "sha256": "b18d7c8e95b032eb18ba43f54b9ba85ed9827061841e516e939523ba8e638a6d"
+    },
+    {
+      "path": "/workspace/scratch/42c5fe32dad0/guangdong_fresh_run_ac_bridge_20261112/prepared_v1/cell0.json",
+      "sha256": "5042443eafe6290661aabb1556c19ee50a24841372ce0d7ddd6111a2750f9b17"
+    },
+    {
+      "path": "/workspace/scratch/42c5fe32dad0/guangdong_fresh_run_ac_bridge_20261112/prepared_v1/cell124.json",
+      "sha256": "d24a842b4ab399499a15dca732fcf780320642904c10e5769e97bc75d94ae96a"
+    },
+    {
+      "path": "/workspace/scratch/42c5fe32dad0/guangdong_fresh_run_ac_bridge_20261112/prepared_v1/cell212.json",
+      "sha256": "a5840b30fbb1508c5a06ad885942f778cd16bc92056355e63101452d5c1e7dce"
+    }
+  ],
+  "warnings": [
+    "研究能源链完成不等于交流安全通过或正式账单",
+    "AC 仅显式所列时格研究快照，不是全日/N-1/动态安全认证",
+    "历史 accepted 结果只读展示，不以新 worker 替换其 pins"
+  ]
+}

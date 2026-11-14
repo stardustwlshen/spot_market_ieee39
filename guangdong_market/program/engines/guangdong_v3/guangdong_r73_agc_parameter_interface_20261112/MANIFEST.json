@@ -1,0 +1,15 @@
+{
+  "files": {
+    "adapter.py": "8cad9f2ebeec94e3cc01cbb209be6dbe078bbf1908c4b283a6b1c105e7cb982c",
+    "test_adapter.py": "2d703670cee4a40213195f270c322fb66a66c1218e1cd2469040a47a1bab3515",
+    "README.md": "3b3254e0d1a8831ca091c9d986d376c41401f64de0700af20f48364665f874a7",
+    "TESTS.log": "3a62e05c7c3caf9770ade396f5ab56743ae5baebd8caf17f0d1f62bb7eaab348",
+    "EXAMPLE_RESULT.json": "64f2f1e8660c981abd0ebb0ceb9eb7fae8997ed77c2d1f270fc7f6c6df28e8e9",
+    "projection.py": "a30a66793ea4e2c6763532ba0877273cf3801621c3dcf7ee2cdd3b25892af0cc",
+    "DERIVATION.json": "566552bd6d9e8d061d333f7845b6f4789a428dff8d2a68f353d9c83608b39acc",
+    "example.synthetic.json": "14bab01e6b3119fa07943b77eb1e72a06d8e1f190dc12281a881caf7abfda2a1"
+  },
+  "pure_tests": 9,
+  "native_calls": 0,
+  "frozen_upstream_modified": false
+}

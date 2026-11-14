@@ -1,0 +1,59 @@
+{
+  "files": [
+    {
+      "path": "guangdong_r63_settlement_adapter_20261112/COAL_CLI_FINAL_RESULT.json",
+      "bytes": 11285,
+      "sha256": "74da79c17ccae4770d259430e6510786fb9d2e7e05a7cfc3ecb21b9c93336f02"
+    },
+    {
+      "path": "guangdong_r63_settlement_adapter_20261112/COAL_CLI_RESULT.json",
+      "bytes": 11285,
+      "sha256": "74da79c17ccae4770d259430e6510786fb9d2e7e05a7cfc3ecb21b9c93336f02"
+    },
+    {
+      "path": "guangdong_r63_settlement_adapter_20261112/PINS.json",
+      "bytes": 289,
+      "sha256": "1c104dce5f65c936a6e513da404e1fec76d8bf2db29000ae61f2e4e11ae203f0"
+    },
+    {
+      "path": "guangdong_r63_settlement_adapter_20261112/README.md",
+      "bytes": 4145,
+      "sha256": "8d11af8a8b03390ed62fb8a9b9221719714eaea6bd0ecf48976c4ab5051aaef7"
+    },
+    {
+      "path": "guangdong_r63_settlement_adapter_20261112/READY.json",
+      "bytes": 246,
+      "sha256": "d3542afd6fbc1a5e30dcf6710682ee8140768b98619dab6bf44cffd783956c3f"
+    },
+    {
+      "path": "guangdong_r63_settlement_adapter_20261112/SOURCE_SCOPE.md",
+      "bytes": 2051,
+      "sha256": "8877bb3a82e4057c17f086533b10decf34e0a562ab0c050c48ee7db3e9535ffc"
+    },
+    {
+      "path": "guangdong_r63_settlement_adapter_20261112/TESTS.log",
+      "bytes": 107,
+      "sha256": "75fba743710fa8701bf5b43b3a05777218c0adb981f5677e7360b6f3b6247ae8"
+    },
+    {
+      "path": "guangdong_r63_settlement_adapter_20261112/adapter.py",
+      "bytes": 7978,
+      "sha256": "dc29b48266463d79633eab2affae9b7a294c6c28bb93f8aa71a437c9cbb4ae01"
+    },
+    {
+      "path": "guangdong_r63_settlement_adapter_20261112/synthetic_coal_hour.json",
+      "bytes": 9100,
+      "sha256": "907804e33ec6cc07650016122038cb5d5a486f9687eed77df2f266a7b893d781"
+    },
+    {
+      "path": "guangdong_r63_settlement_adapter_20261112/synthetic_storage_pair.json",
+      "bytes": 14011,
+      "sha256": "4255c545af58ea9c30c2e3ec6ee48136cca64d1ec30ed2117b4c6ac825e4bf99"
+    },
+    {
+      "path": "guangdong_r63_settlement_adapter_20261112/test_adapter.py",
+      "bytes": 4246,
+      "sha256": "feb80c29aa8d2df5f2278a3ed7d3af009720a8e1c19412e1df28ccfd4ec8610e"
+    }
+  ]
+}

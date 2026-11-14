@@ -1,0 +1,23 @@
+{
+  "status": "v6_lightweight_batch_and_readonly_AGC_workflow_installed",
+  "math_engine_version_unchanged": "v6",
+  "backend_supervisor_unchanged": {
+    "gd_unified_backend.py": "a3ee5c944b5f0abeb7c14f8c1523fdbe91751a2ab5d5c40096921c002d68c3c1",
+    "gd_unified_supervisor.py": "997871be0216f33bd1ed648e49d4695b5bf689effa2794cbe012240d6c268315"
+  },
+  "batch_engine_sha256": "4df903de83c1728cd7b33db33f0298493126e39140518ac3955dd275490edee0",
+  "manifest_sha256": "f525cbe8795803f787808dc140d9fc79955867796fa750c8674f29c9f154b3c6",
+  "new_native_calls_by_this_integration": 0,
+  "actual_batch_native_test_owned_by_separate_batch_worker": true,
+  "tests": {
+    "UI_TEST_RESULT.json": "808f1e4e992bd3dade8dcce105c3e3680cd1392cef25ad0cc817804074674568",
+    "CONTROL_TEST_RESULT.json": "3d32577b938c39e91563969118c22af75bbd24b3ecd95438d5d87fe627a0ae78",
+    "PAUSED_WORKER_RESULT.json": "cabdfb8f23f3747ed108df5d11c365fb4f36236e9720903c632a547604acf8bd",
+    "STATUS_INTEGRITY_RESULT.json": "8f328a67e9da7bc519d1f59d8f9e4fd11955df3188e06ff28ece9f690428f55c"
+  },
+  "history_bytes_unchanged": true,
+  "history_sha256": "5eef0beafce38bb71de1dc7e6a0965403e7fba90d41cb6e201c7e5a63d89bff3",
+  "push": false,
+  "backup_created": false,
+  "status_integrity_repair": "exact expected sequence, verified DONE, nonempty witness pins, no extras/gaps, source checks, errors block"
+}

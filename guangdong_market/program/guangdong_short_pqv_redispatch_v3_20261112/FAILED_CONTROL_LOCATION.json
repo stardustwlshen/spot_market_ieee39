@@ -1,0 +1,245 @@
+{
+  "pure_reconstruction_no_solver_calls": true,
+  "not_physical_infeasibility_proof": true,
+  "unaccepted_iterate_never_applied": true,
+  "largest_residuals": [
+    {
+      "AC_bus": "33",
+      "external_bus": 34,
+      "P_residual_MW": 0.005901140923236977,
+      "Q_residual_Mvar": 0.03169037476037731,
+      "Vpu": 0.9349511022703668
+    },
+    {
+      "AC_bus": "19",
+      "external_bus": 20,
+      "P_residual_MW": 0.005415191241464612,
+      "Q_residual_Mvar": 0.021970417161010225,
+      "Vpu": 0.9433594488243873
+    },
+    {
+      "AC_bus": "18",
+      "external_bus": 19,
+      "P_residual_MW": 0.0026958545607341355,
+      "Q_residual_Mvar": 0.014140965688838115,
+      "Vpu": 1.0151235083540273
+    },
+    {
+      "AC_bus": "32",
+      "external_bus": 33,
+      "P_residual_MW": 0.002695842418957112,
+      "Q_residual_Mvar": 0.014140902004027367,
+      "Vpu": 0.9487156956544053
+    },
+    {
+      "AC_bus": "8",
+      "external_bus": 9,
+      "P_residual_MW": -0.000628970630279363,
+      "Q_residual_Mvar": -0.004646239098471394,
+      "Vpu": 1.061475701912506
+    },
+    {
+      "AC_bus": "15",
+      "external_bus": 16,
+      "P_residual_MW": 0.0004537500553958296,
+      "Q_residual_Mvar": 0.004275658466693089,
+      "Vpu": 1.0392841105024766
+    },
+    {
+      "AC_bus": "38",
+      "external_bus": 39,
+      "P_residual_MW": -0.0004924915486093084,
+      "Q_residual_Mvar": -0.003871209962058586,
+      "Vpu": 1.0557362574320959
+    },
+    {
+      "AC_bus": "23",
+      "external_bus": 24,
+      "P_residual_MW": 0.00044213526706471384,
+      "Q_residual_Mvar": 0.0037257684798674973,
+      "Vpu": 1.0449284041386462
+    },
+    {
+      "AC_bus": "14",
+      "external_bus": 15,
+      "P_residual_MW": 0.0002565177766200577,
+      "Q_residual_Mvar": 0.0034524559162973922,
+      "Vpu": 1.033068889666674
+    },
+    {
+      "AC_bus": "0",
+      "external_bus": 1,
+      "P_residual_MW": -0.0005645345899751852,
+      "Q_residual_Mvar": -0.0028217914441686087,
+      "Vpu": 1.0602620136049519
+    }
+  ],
+  "thermal": [
+    {
+      "id": "C1",
+      "failed_iterate_P_MW": 587.5000000000001,
+      "failed_iterate_Q_Mvar": -12.734985237702187,
+      "Qmin": -100.0,
+      "Qmax": 300.0
+    },
+    {
+      "id": "C2",
+      "failed_iterate_P_MW": 660.5000000000001,
+      "failed_iterate_Q_Mvar": 299.99999999999994,
+      "Qmin": 150.0,
+      "Qmax": 300.0
+    },
+    {
+      "id": "C3",
+      "failed_iterate_P_MW": 720.6036953118341,
+      "failed_iterate_Q_Mvar": -30.14631110749198,
+      "Qmin": -150.0,
+      "Qmax": 300.0
+    },
+    {
+      "id": "CCGT",
+      "failed_iterate_P_MW": 422.1511357974431,
+      "failed_iterate_Q_Mvar": 159.04664906839952,
+      "Qmin": -100.0,
+      "Qmax": 300.0
+    },
+    {
+      "id": "GT",
+      "failed_iterate_P_MW": 201.88609906789995,
+      "failed_iterate_Q_Mvar": 13.234657112741024,
+      "Qmin": 0.0,
+      "Qmax": 240.0
+    }
+  ],
+  "active_inverters": [
+    {
+      "id": "W1",
+      "original_P_MW": 292.90001517183333,
+      "failed_iterate_P_MW": 292.90001517183333,
+      "failed_iterate_Q_Mvar": -185.2056294620411,
+      "Qcap_Mvar": 341.8314693860177,
+      "S_MVA": 1094.7368421052631,
+      "Vpu": 0.9867818078730481
+    },
+    {
+      "id": "W2",
+      "original_P_MW": 171.5069727938333,
+      "failed_iterate_P_MW": 171.5069727938333,
+      "failed_iterate_Q_Mvar": 120.83528416724522,
+      "Qcap_Mvar": 185.37783532087886,
+      "S_MVA": 593.6842105263158,
+      "Vpu": 1.0600004697650616
+    },
+    {
+      "id": "ES4",
+      "original_P_MW": 50.0,
+      "failed_iterate_P_MW": 7.105427357601002e-15,
+      "failed_iterate_Q_Mvar": 72.64831572567786,
+      "Qcap_Mvar": 72.64831572567788,
+      "S_MVA": 166.66666666666666,
+      "Vpu": 1.035131069914645
+    },
+    {
+      "id": "ES5",
+      "original_P_MW": 19.160527609735574,
+      "failed_iterate_P_MW": 0.0,
+      "failed_iterate_Q_Mvar": -72.64831572567786,
+      "Qcap_Mvar": 72.64831572567788,
+      "S_MVA": 166.66666666666666,
+      "Vpu": 1.0248658644735515
+    }
+  ],
+  "disabled_inverters": [
+    {
+      "id": "PV1",
+      "technology": "pv",
+      "internal_bus": 32,
+      "external_bus": 33,
+      "P_nameplate_MW": 652,
+      "S_continuous_MVA": 686.3157894736843,
+      "Qcap_Mvar": 214.3020365766188,
+      "research_design_pf": 0.95,
+      "assumption": "new synthetic direct-connection aggregate, lossless converter/collection; standard-motivated not specified manufacturer capability",
+      "fixed_P_MW": -0.0,
+      "enabled_Q": false,
+      "Q_min_Mvar": 0.0,
+      "Q_max_Mvar": 0.0
+    },
+    {
+      "id": "PV2",
+      "technology": "pv",
+      "internal_bus": 3,
+      "external_bus": 4,
+      "P_nameplate_MW": 750,
+      "S_continuous_MVA": 789.4736842105264,
+      "Qcap_Mvar": 246.5130788841474,
+      "research_design_pf": 0.95,
+      "assumption": "new synthetic direct-connection aggregate, lossless converter/collection; standard-motivated not specified manufacturer capability",
+      "fixed_P_MW": -0.0,
+      "enabled_Q": false,
+      "Q_min_Mvar": 0.0,
+      "Q_max_Mvar": 0.0
+    },
+    {
+      "id": "PV3",
+      "technology": "pv",
+      "internal_bus": 7,
+      "external_bus": 8,
+      "P_nameplate_MW": 750,
+      "S_continuous_MVA": 789.4736842105264,
+      "Qcap_Mvar": 246.5130788841474,
+      "research_design_pf": 0.95,
+      "assumption": "new synthetic direct-connection aggregate, lossless converter/collection; standard-motivated not specified manufacturer capability",
+      "fixed_P_MW": -0.0,
+      "enabled_Q": false,
+      "Q_min_Mvar": 0.0,
+      "Q_max_Mvar": 0.0
+    },
+    {
+      "id": "ES1",
+      "technology": "battery",
+      "internal_bus": 18,
+      "external_bus": 19,
+      "P_nameplate_MW": 100,
+      "S_continuous_MVA": 111.11111111111111,
+      "Qcap_Mvar": 48.432210483785255,
+      "research_design_pf": 0.9,
+      "assumption": "new synthetic direct-connection aggregate, lossless converter/collection; standard-motivated not specified manufacturer capability",
+      "fixed_P_MW": -0.0,
+      "enabled_Q": false,
+      "Q_min_Mvar": 0.0,
+      "Q_max_Mvar": 0.0
+    },
+    {
+      "id": "ES2",
+      "technology": "battery",
+      "internal_bus": 15,
+      "external_bus": 16,
+      "P_nameplate_MW": 200,
+      "S_continuous_MVA": 222.22222222222223,
+      "Qcap_Mvar": 96.86442096757051,
+      "research_design_pf": 0.9,
+      "assumption": "new synthetic direct-connection aggregate, lossless converter/collection; standard-motivated not specified manufacturer capability",
+      "fixed_P_MW": -0.0,
+      "enabled_Q": false,
+      "Q_min_Mvar": 0.0,
+      "Q_max_Mvar": 0.0
+    },
+    {
+      "id": "ES3",
+      "technology": "battery",
+      "internal_bus": 24,
+      "external_bus": 25,
+      "P_nameplate_MW": 100,
+      "S_continuous_MVA": 111.11111111111111,
+      "Qcap_Mvar": 48.432210483785255,
+      "research_design_pf": 0.9,
+      "assumption": "new synthetic direct-connection aggregate, lossless converter/collection; standard-motivated not specified manufacturer capability",
+      "fixed_P_MW": -0.0,
+      "enabled_Q": false,
+      "Q_min_Mvar": 0.0,
+      "Q_max_Mvar": 0.0
+    }
+  ],
+  "stopping_reason": "one authorized P/Q/V redispatch diagnostic terminated at337 evaluations; original voltage/equality/zeroP-Q final policy failed. No repeat or capacity sweep."
+}

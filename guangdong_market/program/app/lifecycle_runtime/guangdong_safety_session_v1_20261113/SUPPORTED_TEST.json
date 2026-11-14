@@ -1,0 +1,7 @@
+{
+  "package_gate": "passed",
+  "full_payload_and_AC_input_identity": "passed",
+  "capability_edit_signature_rejection": "passed",
+  "new_AC_calls": 0,
+  "new_optimization_calls": 0
+}

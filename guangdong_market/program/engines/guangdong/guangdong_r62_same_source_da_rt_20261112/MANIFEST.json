@@ -1,0 +1,14 @@
+{
+  "source_files": {
+    "guangdong_r62_same_source_da_rt_20261112/r62_entry.py": "607e5b12eac145cb5f5bc84493ec004c2123ea5770f90204ee2c46dfb583a4f4",
+    "guangdong_r62_same_source_da_rt_20261112/guard.py": "7655cc744a3068ef5ba7ee0d70be50be9881ca41bd5b2c08691ab18b7dec7492",
+    "guangdong_r62_same_source_da_rt_20261112/runtime.py": "7e50279d949df41007b92f8a11643704a2c459506bb9c2ad2581b76d1ede69a1",
+    "guangdong_r62_same_source_da_rt_20261112/pure_runtime_check.py": "1a028802a5646ecf2a744c552208375ae0147e93f0688d02afd38dac36b6e245",
+    "guangdong_r62_same_source_da_rt_20261112/prepare.py": "c094d4b302eeda84038b2976561fd866629d1701880c6e8bfc4cb052c1c08fa2",
+    "guangdong_r62_same_source_da_rt_20261112/r62smm/gd_r46_day_session.py": "0932b35a0af8118c1ebe0546b3776aab48100ee7309e7338debc4b250b35026c",
+    "guangdong_r62_same_source_da_rt_20261112/r62smm/__init__.py": "ac000a114ef539581f8a29e9795967974366e4820c40b1a490fcc1e577a8b5c0",
+    "guangdong_r62_same_source_da_rt_20261112/r62smm/gd_r46_source_contract.py": "429e3c7bbe3835a9d87aed5b4c7e8f8dab9ad10d17b96e22a0d434273991b6f2"
+  },
+  "pure_result_sha256": "c88524529d7176db7793de1bcedc15f92de2251c610df31e709173ee8e3af80d",
+  "native_calls": 0
+}

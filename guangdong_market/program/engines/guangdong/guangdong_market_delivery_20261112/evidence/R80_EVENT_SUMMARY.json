@@ -1,0 +1,66 @@
+{
+  "source": "guangdong_r80_rolling_rt_scuc_20261112/actual_two_windows_v1/INDEPENDENT_EVENT_REVIEW.json",
+  "source_sha256": "2a35e02a88baad94e9421182071ef8082e21bd66260ad6045998b148f714143b",
+  "review": {
+    "status": "independent_event_prefix_storage_reserve_check_passed",
+    "windows": [
+      {
+        "window": 0,
+        "fixed_new_integer_count": 613,
+        "starts": [
+          3
+        ],
+        "stops": [],
+        "start_class": "hot",
+        "notice_tick": 0,
+        "connection_tick": 3,
+        "curve_last_tick": 8,
+        "first_stable_tick": 9,
+        "min_reserves_MW": {
+          "Rpos": 400.0,
+          "Racc": 400.0
+        },
+        "D96_MWh": 50.0,
+        "D_internal_throughput_MWh": 78.94736842105262,
+        "next_day_internal_throughput_MWh": 8.771929824561397,
+        "MIP_gap": 0.0001754103348903392,
+        "SCED_response_sha256": "bdd91f263ea760b47c9d82e880eb8fa6879e32be76e3bec6997c121c497a7017"
+      },
+      {
+        "window": 1,
+        "fixed_new_integer_count": 552,
+        "starts": [
+          3
+        ],
+        "stops": [],
+        "start_class": "hot",
+        "notice_tick": 0,
+        "connection_tick": 3,
+        "curve_last_tick": 8,
+        "first_stable_tick": 9,
+        "min_reserves_MW": {
+          "Rpos": 400.0,
+          "Racc": 400.0
+        },
+        "D96_MWh": 50.0,
+        "D_internal_throughput_MWh": 80.0,
+        "next_day_internal_throughput_MWh": 8.771929824561397,
+        "MIP_gap": 0.0,
+        "SCED_response_sha256": "07ed3c7e764658638d0819ea428e0219adc437650f2de6c966ad8bd8fd094665"
+      }
+    ],
+    "fixed_prefix_variable_count": 145,
+    "fixed_prefix_max_drift": 0.0,
+    "native_calls": 0,
+    "issued_RT_cells": 6,
+    "executed_RT_cells": 0,
+    "not_formal_AGC_or_AC": true,
+    "source_pins": {
+      "model.py": "53bba1e4f8b29242819cef525e4e24e95c898e3741ca330f33f82c9591ba74fc",
+      "protocol.py": "68e9b1faf2b24073ca9c2edb4b6a9c78c845bdaa47127d0b7a850803d35e052b",
+      "runner.py": "c40c956823552512fc12267aedb7099c629ea9587ab46692df58c0e3b9904d1b"
+    }
+  },
+  "actual_native_calls_in_original_experiment": 4,
+  "relocated_R80_native_repeated": false
+}

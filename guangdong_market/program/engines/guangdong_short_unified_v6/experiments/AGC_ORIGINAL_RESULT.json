@@ -1,0 +1,28 @@
+{
+  "status": "consumer_scoped_duplicate_gate_corrected_and_tested",
+  "tests": 19,
+  "new_native_calls": 0,
+  "live_sources_modified": false,
+  "v1_manifest_sha256": "1b1b92d3859533a37096905fca1cae1a7d771e214ea8e5a74907371ac93a2450",
+  "v1_unchanged": true,
+  "continuous_windows": {
+    "hour": "01:00-02:00",
+    "starts": [
+      "01:15",
+      "01:30",
+      "01:45"
+    ],
+    "target_ticks_counts": [
+      9,
+      6,
+      3
+    ],
+    "baseline_award_mw": 7,
+    "replaced_award_mw": 10,
+    "additive_17_rejected_by_exact_test": true,
+    "repeat_same_consumer_rejected": true
+  },
+  "not_UI_installed": true,
+  "formal": false,
+  "safety_release": false
+}

@@ -1,0 +1,43 @@
+{
+  "schema": "gd.agc.frozen.display.v1",
+  "original_output": "/workspace/scratch/42c5fe32dad0/guangdong_final_normal12_driver_20261113/fresh_context/live_market_sessions/final_finite_precision_memo12",
+  "branch_id": "unified-first-hour-73434b9071634190837cfaca59ca074a",
+  "files": {
+    "H1_RESEARCH_AGC_RECEIPT.json": "980b140c983f6294a8fcafa9490f420c1fb2aab3823f09ac68330341fd26ea28",
+    "RESULT.json": "be1ad147d6b891be95670d2c13922346c918f43f9134b67bcf2dd35e82efa3e6",
+    "RUN_CONTEXT.json": "538d21feed0d1048ea2d233caf35e20310d75262bcb1dc79bc9c262c485d62d5",
+    "STATUS.json": "7d8fddf4ae0f9d790d050754cd96c009aa5f3db403dcf1f2a2d093f9f6e48cb3",
+    "WAIT_RESULT.json": "b8fb7c61e4c96225d0bb52e82644c346d80e37ec64c1c088cf88fd280670b853"
+  },
+  "publication_allowed": false,
+  "live_restore_allowed": false,
+  "formal_bill": null,
+  "safety_release": false,
+  "source_version": "6720fae935092ffc71378bddc08d9c9a49a37ef570563e8665e101458ed8f05a",
+  "selected_DA": "/workspace/scratch/42c5fe32dad0/guangdong_pipeline_20261112/pure_fresh_run_v1",
+  "source_case": "original c10e (not edited a41a)",
+  "completed_windows": 4,
+  "accepted_price_quarters": 4,
+  "hours": 1,
+  "account_rows": 54,
+  "executed_cells": 12,
+  "issued_cells": 15,
+  "native_calls": 12,
+  "AC_calls": 0,
+  "safety_status": "NOT_VERIFIED_MISSING_AC; explicit counterfactual only",
+  "label": "最终正常入口首小时固定示例（6720，12次真实调用）",
+  "warning": "固定示例快照，不随当前场景/报价编辑自动重算；不是live恢复、实际调度或正式账单。",
+  "performance_note": "与主全天并行运行。约370秒含准备/worker/状态读取；不是独占性能基准。2秒采样RSS可能漏峰或重复计共享页。",
+  "source_pins": {
+    "/workspace/scratch/42c5fe32dad0/guangdong_final_normal12_driver_20261113/OFFICIAL_UI_STATUS.json": "7d8fddf4ae0f9d790d050754cd96c009aa5f3db403dcf1f2a2d093f9f6e48cb3",
+    "/workspace/scratch/42c5fe32dad0/guangdong_final_normal12_driver_20261113/fresh_context/live_market_sessions/final_finite_precision_memo12/pipeline/dispatch/W2/H1_RESEARCH_AGC_RECEIPT.json": "980b140c983f6294a8fcafa9490f420c1fb2aab3823f09ac68330341fd26ea28",
+    "/workspace/scratch/42c5fe32dad0/guangdong_final_normal12_driver_20261113/RUN_CONTEXT.json": "538d21feed0d1048ea2d233caf35e20310d75262bcb1dc79bc9c262c485d62d5",
+    "/workspace/scratch/42c5fe32dad0/guangdong_final_normal12_driver_20261113/WAIT_RESULT.json": "b8fb7c61e4c96225d0bb52e82644c346d80e37ec64c1c088cf88fd280670b853",
+    "/workspace/scratch/42c5fe32dad0/guangdong_final_normal12_driver_20261113/RESULT.json": "be1ad147d6b891be95670d2c13922346c918f43f9134b67bcf2dd35e82efa3e6",
+    "/workspace/scratch/42c5fe32dad0/guangdong_final_normal12_driver_20261113/fresh_context/live_market_sessions/final_finite_precision_memo12/PLAN.json": "780645704e96b04e3aeb800e7afa37b1ff60c1edf0d0751a8b2f3bcf8c06e334",
+    "/workspace/scratch/42c5fe32dad0/guangdong_final_normal12_driver_20261113/PREPARE.json": "ff545c40a4fe035f535258133d758105ec1708b9d5b5c872e59e3fa57554ca71"
+  },
+  "verification_scope": "original normal ctl.status saved under 6720 source gate; current operation copies data only, no new mathematical or safety certification",
+  "source_case_sha256": "c10e5cbfbe0f39f028d10cb2b2d30003e803033a3d883f4c753339bc9c1cdbe9",
+  "selected_DA_artifacts_sha256": "e8e5a00f68a52ccbcdcb55d9ea4dac8fd4209a5e57fcf6cd66de8808cafb66c1"
+}

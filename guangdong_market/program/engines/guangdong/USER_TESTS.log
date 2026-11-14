@@ -1,0 +1,47 @@
+..F...                                                                   [100%]
+=================================== FAILURES ===================================
+___________________ test_actual_price_launch_mock_infeasible ___________________
+
+tmp_path = PosixPath('/tmp/pytest-of-agent/pytest-29/test_actual_price_launch_mock_0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7f42491ac9e0>
+
+    def test_actual_price_launch_mock_infeasible(tmp_path,monkeypatch):
+     sys.path.insert(0,str(B/'guangdong_pipeline_20261112'));import pipeline_rt_price_native as m
+     p=tmp_path/'W0/prepared';p.mkdir(parents=True)
+     q=dict(dual=True,warmstart=False,variables=[dict(kind='C')],options=dict(threads=1,time_limit=60,mip_rel_gap=.001,mip_abs_gap=0))
+     (p/'template.json').write_text(json.dumps(q));(p/'PREPARATION.json').write_text('{}')
+     monkeypatch.setattr(m,'verify_prepared',lambda p:dict(window=0,receipt=dict(run_id='test-newrun')))
+     class Process:
+      pid=987;returncode=0
+      def __init__(self,args,**kw):
+       assert Path(args[2])==m.WORKER
+       w=mod('test_standard',m.WORKER);w.write_complete(args[4],dict(native_status='Infeasible',status='infeasible',has_primal=False,dual_valid=False,diagnostic=float('inf')))
+      def poll(self):return 0
+     monkeypatch.setattr(m.subprocess,'Popen',Process)
+     def review(p,n):
+      assert json.loads((n/'TRANSPORT_RECEIPT.json').read_text())['mathematical_acceptance']is False
+      raise ValueError('nonOptimal PRICE pending')
+     monkeypatch.setattr(m,'review_window',review)
+>    with pytest.raises(ValueError,match='pending'):m.execute_window(p,execute_native=True)
+                                                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+guangdong_market_delivery_user_v2_20261112/test_user_delivery.py:35: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+guangdong_market_delivery_user_v2_20261112/guangdong_pipeline_20261112/pipeline_rt_price_native.py:70: in execute_window
+    sys.path.insert(0,str(R/'guangdong_after_reset_r23_compressed_20261112/repo/src'));from smm import highs_solver as hs
+                                                                                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+guangdong_market_delivery_user_v2_20261112/guangdong_after_reset_r23_compressed_20261112/repo/src/smm/highs_solver.py:328: in <module>
+    _ORIGINAL_CALLABLES = tuple(getattr(owner,name) for owner,name,_ in _NATIVE_CALLABLES)
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+.0 = <tuple_iterator object at 0x7f42491b0340>
+
+>   _ORIGINAL_CALLABLES = tuple(getattr(owner,name) for owner,name,_ in _NATIVE_CALLABLES)
+                                ^^^^^^^^^^^^^^^^^^^
+E   AttributeError: type object 'Process' has no attribute 'wait'
+
+guangdong_market_delivery_user_v2_20261112/guangdong_after_reset_r23_compressed_20261112/repo/src/smm/highs_solver.py:328: AttributeError
+=========================== short test summary info ============================
+FAILED guangdong_market_delivery_user_v2_20261112/test_user_delivery.py::test_actual_price_launch_mock_infeasible
+1 failed, 5 passed in 0.98s

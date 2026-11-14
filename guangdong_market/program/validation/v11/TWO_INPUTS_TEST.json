@@ -1,0 +1,98 @@
+{
+  "status": "passed",
+  "native_calls": 0,
+  "inputs": [
+    {
+      "plan": {
+        "default_native_calls": 0,
+        "maximum_native_calls": 12,
+        "sequence": [
+          "seed PRICE",
+          "W0 pair / q1 PRICE",
+          "W1 pair / q2 PRICE",
+          "W2 pair / q3 PRICE",
+          "W3 pair / H0 arithmetic"
+        ],
+        "SCUC_calls": 4,
+        "SCED_calls": 4,
+        "PRICE_calls": 4,
+        "SCUC_seconds": 300,
+        "SCED_seconds": 120,
+        "PRICE_seconds": 60,
+        "SCED_solver": "simplex",
+        "threads": 1,
+        "mip_gap": 0.001,
+        "profile": "thermal_DA_DA_previous_quarter_anchor_research",
+        "automatic_fallback": false,
+        "durable_restart_supported": false,
+        "formal": false,
+        "publication_allowed": false
+      },
+      "run": "/workspace/scratch/42c5fe32dad0/guangdong_live_market_v3_20261113/new_inputs/identity_0/rt",
+      "branch": "unified-first-hour-91c1ba72c5fd4f189b60e061df169eed",
+      "selected_DA": "/workspace/scratch/42c5fe32dad0/ieee39-cloud/repo/runs_guangdong/ui_v3_solar90_c1bid1_v2",
+      "seed": {
+        "status": "prepared",
+        "prepared": "/workspace/scratch/42c5fe32dad0/guangdong_live_market_v3_20261113/new_pipeline_0/price/q0/prepared",
+        "window": -1,
+        "day_quarter": 0,
+        "policy": "thermal_DA_DA_previous_quarter_anchor_research",
+        "branch_id": "unified-first-hour-91c1ba72c5fd4f189b60e061df169eed",
+        "columns": 2631,
+        "rows": 1797,
+        "native_calls": 0,
+        "proposed_PRICE_calls": 1,
+        "seconds": 60,
+        "source_SCED_sha256": "d0eab174e28325c782e1be8f3bc932a75628f3e40b79297100a286eef2ae8cce",
+        "formal": false
+      },
+      "native_calls": 0
+    },
+    {
+      "plan": {
+        "default_native_calls": 0,
+        "maximum_native_calls": 12,
+        "sequence": [
+          "seed PRICE",
+          "W0 pair / q1 PRICE",
+          "W1 pair / q2 PRICE",
+          "W2 pair / q3 PRICE",
+          "W3 pair / H0 arithmetic"
+        ],
+        "SCUC_calls": 4,
+        "SCED_calls": 4,
+        "PRICE_calls": 4,
+        "SCUC_seconds": 300,
+        "SCED_seconds": 120,
+        "PRICE_seconds": 60,
+        "SCED_solver": "simplex",
+        "threads": 1,
+        "mip_gap": 0.001,
+        "profile": "thermal_DA_DA_previous_quarter_anchor_research",
+        "automatic_fallback": false,
+        "durable_restart_supported": false,
+        "formal": false,
+        "publication_allowed": false
+      },
+      "run": "/workspace/scratch/42c5fe32dad0/guangdong_live_market_v3_20261113/new_inputs/identity_1/rt",
+      "branch": "unified-first-hour-401e08b84e404b6aa9dae24f4eb4e632",
+      "selected_DA": "/workspace/scratch/42c5fe32dad0/ieee39-cloud/repo/runs_guangdong/ui_cold_install_4w_persistent",
+      "seed": {
+        "status": "prepared",
+        "prepared": "/workspace/scratch/42c5fe32dad0/guangdong_live_market_v3_20261113/new_pipeline_1/price/q0/prepared",
+        "window": -1,
+        "day_quarter": 0,
+        "policy": "thermal_DA_DA_previous_quarter_anchor_research",
+        "branch_id": "unified-first-hour-401e08b84e404b6aa9dae24f4eb4e632",
+        "columns": 2631,
+        "rows": 1797,
+        "native_calls": 0,
+        "proposed_PRICE_calls": 1,
+        "seconds": 60,
+        "source_SCED_sha256": "6ba45181f685ad40a005cb4a0d695d63ee0d2dd2ad11f7e0fd64f59b645bd052",
+        "formal": false
+      },
+      "native_calls": 0
+    }
+  ]
+}

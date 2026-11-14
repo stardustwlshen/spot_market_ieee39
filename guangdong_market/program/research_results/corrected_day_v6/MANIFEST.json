@@ -1,0 +1,21 @@
+{
+  "schema": "gd.corrected_day.readonly_bundle.v1",
+  "files": {
+    "HOURS.csv": "2dd2c84e0308ae46d0627a6f11b4e854e14c45715ecbf0b35f67b6815ac083e0",
+    "QUARTER_PRICES.csv": "e8cebc245d86c2d94b75fced9d02b36a2d7f8920a13c588e86ef6290cbfae528",
+    "LEDGER.csv": "4367162029389fc2b28a3a8862d0ccbc90afee1f96f233df217f0a53eb9b3948",
+    "EXECUTED_CELLS.csv": "2d52e8c5aa31676dea7ab89d7747b40f0416d8a8496ef46cf401d159efecb229",
+    "PRICE_RELAXATION_DIAGNOSTICS.json": "7004c7bb5f6aad915e38d05f1fa4ad33d8f907ed93fe7d7387d04d3cad519f91",
+    "DAY.json": "ec47e05e03e8e22f150420a93f958661ff38ef211d11c629f288280a565bcc25",
+    "SOURCE_INDEX.json": "1f5dd633ce8e76d8a424bcd87a3ccab7fea61f109c1122e0fbffaad3da087381"
+  },
+  "DA_identity": {
+    "run_id": "gd-760dddd43b9a4f24af0b58f1af0c4e8a",
+    "case_sha256": "c10e5cbfbe0f39f028d10cb2b2d30003e803033a3d883f4c753339bc9c1cdbe9",
+    "SCED_response_sha256": "615e7dafe88fc3d9efdc444f394014ab7d6112a88418122976eb0d6b9afb620a"
+  },
+  "run_id": "independent-rt-recommit-de9b8d3978e41e65-cycle-tail-v1",
+  "branch_id": "short_cycle_tail_v1",
+  "formal": false,
+  "source_scope": "selected materialized view plus original raw source index, not raw evidence archive"
+}

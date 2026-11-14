@@ -1,0 +1,12 @@
+{
+  "time_epoch": 1794582754.2808492,
+  "MemAvailable_bytes": 8293933056,
+  "disk_free_bytes": 1177427968,
+  "minimum_mem_bytes": 4294967296,
+  "minimum_disk_bytes": 1073741824,
+  "parallel_main_session": 16347,
+  "explicit_authorized_parallel_exception": true,
+  "not_exclusive_performance_benchmark": true,
+  "LIVE_sha256": "6720fae935092ffc71378bddc08d9c9a49a37ef570563e8665e101458ed8f05a",
+  "driver_sha256": "fc3146d0d18e068d528c46a0d0c1c75be4ca8652d1034d7145acfa1eaa1b91bb"
+}

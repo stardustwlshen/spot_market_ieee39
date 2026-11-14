@@ -1,0 +1,29 @@
+{
+  "status": "source_verified_simulated_startup_notice_and_short_boundary_connector_candidate_complete",
+  "new_native_calls_total": 2,
+  "old_SCUC_native_reused": 1,
+  "tests_passed": 14,
+  "actual_next_core_SCUC_gap": 0.0,
+  "next_core_cells": 24,
+  "linked_prefix_cells": 3,
+  "next_core_no_new_start": true,
+  "published_receipts_immutable": true,
+  "pending_predictions_replaceable": true,
+  "formal": false,
+  "live_CLI_or_UI_modified": false,
+  "proofs": {
+    "ACCEPTED_PAIR.json": "974cdf6b74f486bbae1f4f82c2594884b31c3f2ce5a2f628c2cff2927e946c6f",
+    "TWO_WINDOW_RESULT.json": "74254130d949212e5da38174f4eddb3524bc76654d37f37399b0cc9d0bf90f31",
+    "CONNECTED_NATIVE_RESULT.json": "a4abda44b7180ee5eda669291a4c83166c2d72c451ae47cfe8e77f73499a8632",
+    "FINAL_COMPATIBILITY.json": "ebfc9353eab3c6b6161f8fc010d69d8a490aeae44d743d870a14e166de286024",
+    "TESTS_FINAL.log": "dfacd6a13ad275934828e9737c0be68c3a7726cc1d0fb0ac9cfdc816ccc8c897",
+    "README.md": "065215126b18071cb493cd51f91c7a004d0a9dc820d1a4a798ce25b3e949548b"
+  },
+  "limitations": [
+    "named source adapter currently R68 toy zero-minimum-duration schema",
+    "strict exact-tick research publication policy; no late backfill",
+    "startup notices only; shutdown permission-aware importer remains",
+    "caller still binds executed/issued cell evidence and physics",
+    "no next-window SCED, general market, AC/AGC safety or formal compliance"
+  ]
+}

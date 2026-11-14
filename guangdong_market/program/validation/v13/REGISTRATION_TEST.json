@@ -1,0 +1,61 @@
+{
+  "status": "passed",
+  "fixture_only_not_user_authorization": true,
+  "registered": {
+    "declaration_path": "/workspace/scratch/42c5fe32dad0/guangdong_safety_tightening_adapter_v1_20261113/registration_fixture/safety_declarations/17b99567d461382faaa3f0ee26dde9153dbf091509ea0c83139af4fe04002d07.json",
+    "sha256": "1831cd093145f45a931ff5c126a9013b182b6a30e7a5d6ff122ba359ea0b7bb9",
+    "plan": {
+      "branch_id": "unified-first-hour-d6f9b28a7f9a40f39db9ba1e55252457",
+      "window": 1,
+      "carry_sha256": "0bb8299ee0bf45a034a5a27013f0312af7b0dc56877736ee04346a7467245a72",
+      "declaration": {
+        "schema": "gd.research.thermal_power_cap.v1",
+        "constraint_semantics": "redispatch_basepoint_only",
+        "branch_id": "unified-first-hour-d6f9b28a7f9a40f39db9ba1e55252457",
+        "seed_case_sha256": "a41a402906d1d1867babb790e30010d7f4dcd9e9963be6005c12d63900d8c180",
+        "mode": "explicit_research_tightening",
+        "reason": "PURE TEST FIXTURE: demonstrate declared basepoint-bound connection only; no AC repair claim",
+        "source_statement": "illustrative 635MW cap, not actual operating constraint or inference from AC",
+        "base_source_window": 0,
+        "base_SCED_sha256": "46de09090e61232938863191ca6962085637f6255b86c8b3b9211dd887d0db37",
+        "declared_at": "2026-11-11T00:15:00+08:00",
+        "constraints": [
+          {
+            "unit": "C1",
+            "start": "2026-11-11T00:30:00+08:00",
+            "end": "2026-11-11T00:35:00+08:00",
+            "maximum_power_mw": 635.0
+          }
+        ],
+        "preserve_AGC_mw": 50,
+        "preserve_positive_reserve_mw": 400,
+        "preserve_accident_reserve_mw": 400
+      },
+      "domain_start": "2026-11-11T00:30:00+08:00",
+      "effect": "append future thermal basepoint upper-bound rows only; not technical derating/AC repair",
+      "automatic_execution": false,
+      "requested_native_calls_after_separate_approval": {
+        "SCUC": 1,
+        "SCED": 1,
+        "PRICE": 0
+      },
+      "native_calls_now": 0,
+      "confirmation_digest": "17b99567d461382faaa3f0ee26dde9153dbf091509ea0c83139af4fe04002d07"
+    },
+    "registered": true,
+    "prepared": false,
+    "native_calls": 0
+  },
+  "checks": [
+    "confirmation required",
+    "stale or changed plan refused",
+    "technical derating refused",
+    "AGC0 refused",
+    "reserve relaxation refused",
+    "wrong branch refused",
+    "issued prefix refused",
+    "out of range cap refused",
+    "confirmed plan host registration succeeds"
+  ],
+  "native_calls": 0
+}

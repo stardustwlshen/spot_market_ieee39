@@ -1,0 +1,16 @@
+{
+  "files": {
+    "SUPPORTED_ENGINE.json": "b9426783383d9daaae98db63a3575588800fc2ce1818e94b40c783e6d85e671b",
+    "README.md": "415ff768dc50edc66a8261399ce230fc8932a42784d5334c5f5ac37232ac5a36",
+    "TESTS.log": "3247c50c34e782db19f552455bce1f096e033aae5010deec64401bb0f5ec19c7",
+    "test_controller.py": "1ae099ce4c7f4b18221fd0a5a7c04c1208fa42308d22dbb37acb55f61e90b7c9",
+    "controller.py": "588137e01406980611a109ac2733af28e589c7ab64524323d1d9a1bf45c14d1e",
+    "runtime/frozen_ipm_worker.py": "067dd3b8423fe45a5e825cce7f7af8d8ec78473b059087ee62317bc67dd248ef",
+    "runtime/derived_da_pipeline.py": "9c2a1e437f33391bdadbeb474f061ce052be8bbc82feefdaeeaaedef85f60f2c",
+    "runtime/context_guard.py": "5265790fcaf27c2f741a4eb108ba71a95c79b38bdd35f413ee5dc5e4bc87b4b9",
+    "runtime/recovery_contract.py": "bce6fc40c69638001725a3a4fcfea295476ac90b7c2dd95a1660d2d910a97818",
+    "runtime/entry.py": "65c10f672c812760c4d8b8388c8e2ff6e305645a4cb350b7bff692c35276cf68"
+  },
+  "native_calls": 0,
+  "prototype": true
+}

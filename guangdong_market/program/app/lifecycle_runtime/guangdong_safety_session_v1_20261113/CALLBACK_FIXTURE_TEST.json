@@ -1,0 +1,56 @@
+{
+  "scope": "pure fixture failure/declaration/plan sequence; no real declaration, dispatch or actual reclear",
+  "status": "passed",
+  "same_host_order_budget": {
+    "request": {
+      "branch_id": "FIXTURE_ONLY",
+      "candidate_id": "1299cdf2c5cbd2f52b82d98b166f2ab96092c679d2303d85b78a3c8065bb1fd4",
+      "proposal": {
+        "kind": "same_awards_system_redispatch",
+        "branch_id": "FIXTURE_ONLY",
+        "hour_start": "2026-11-11T00:00:00+08:00",
+        "case_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "target_mw": 50,
+        "awards_mw": {
+          "C1": 10,
+          "C2": 10,
+          "C3": 10,
+          "CCGT": 10,
+          "GT": 10
+        },
+        "reserve_requirements": {
+          "positive_mw": 400,
+          "accident_mw": 400
+        },
+        "material_plan_change_sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+      },
+      "status": "READY_FOR_EXPLICIT_RESEARCH_RUNNER",
+      "automatic_execution": false,
+      "safety_release": false,
+      "required": [
+        "new accepted raw pair registered by same host",
+        "fresh safety evidence; do not reuse failed result as pass"
+      ]
+    },
+    "runner_plan": {
+      "branch_id": "FIXTURE_ONLY",
+      "candidate_id": "1299cdf2c5cbd2f52b82d98b166f2ab96092c679d2303d85b78a3c8065bb1fd4",
+      "status": "pending_authorization",
+      "actual_native_calls": 0,
+      "actual_AC_calls": 0,
+      "requested_budget": {
+        "SCUC": 1,
+        "SCED": 1,
+        "PRICE": 0,
+        "AC": 0
+      },
+      "fixture_not_actual": true
+    },
+    "status": "PENDING_AUTHORIZATION",
+    "recleared": false,
+    "safety_release": false
+  },
+  "wrong_host_rejected": true,
+  "new_native_calls": 0,
+  "new_AC_calls": 0
+}

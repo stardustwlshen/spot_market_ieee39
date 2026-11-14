@@ -1,0 +1,9 @@
+{
+  "files": {
+    "SAFETY_RESULT.json": "e456aae0a4c71478d28ddb37a68216815f513eebf5190904350eaa0d5784d072",
+    "VERIFIED_EXPORT.json": "6b6757abeb6e699bcb3921c9ada5785ed29252cb892ba32d8ba4bae52f62f129",
+    "R77_GATE.json": "5dd7645214dde59d546a5d85eeb999ae921a0c462f4fda21704ce35045384768",
+    "COMPARISON.json": "b5dbb674f384a5d453aa471a19ad5445b170b396cb15268a68dd637689af8972"
+  },
+  "research_only": true
+}

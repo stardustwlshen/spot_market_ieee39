@@ -1,0 +1,9 @@
+{
+  "schema": "gd.final_display_install.v1",
+  "mathematical_source_live": "6720fae935092ffc71378bddc08d9c9a49a37ef570563e8665e101458ed8f05a",
+  "display_live_sha256": "4fd20418806d40c22809fa52a2b72ee7daff9fdbc14e3b43268d5eaf3608887f",
+  "scope": "display/doc/registration only, not new mathematics/native acceptance",
+  "native_calls": 0,
+  "KKT_calls": 0,
+  "original_01ab_untouched": true
+}

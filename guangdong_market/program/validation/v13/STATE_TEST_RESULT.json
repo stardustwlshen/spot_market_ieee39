@@ -1,0 +1,37 @@
+{
+  "eligibility": {
+    "G": [
+      "off",
+      "off",
+      "fixed_nonpricing",
+      "fixed_nonpricing",
+      "pricing_stable",
+      "pricing_stable",
+      "fixed_nonpricing",
+      "fixed_nonpricing"
+    ]
+  },
+  "source_pair": "/workspace/scratch/42c5fe32dad0/guangdong_thermal_notice_bridge_v2_20261113/ACCEPTED_PAIR.json",
+  "source_pair_sha256": "974cdf6b74f486bbae1f4f82c2594884b31c3f2ce5a2f628c2cff2927e946c6f",
+  "component_max_violation": 0,
+  "mixed_quarter_policy_fixture": {
+    "G": [
+      "fixed_nonpricing",
+      "fixed_nonpricing",
+      "fixed_nonpricing",
+      "pricing_stable",
+      "fixed_nonpricing",
+      "fixed_nonpricing",
+      "fixed_nonpricing",
+      "fixed_nonpricing"
+    ]
+  },
+  "negative": [
+    "power_curve_drift",
+    "missing_curve"
+  ],
+  "native_calls": 0,
+  "full_PRICE_network_available": false,
+  "reason": "R68 is single-unit fixed-power event toy with external_supply, not the registered IEEE39 PRICE case/network/reserve input",
+  "formal": false
+}

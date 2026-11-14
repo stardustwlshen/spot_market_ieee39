@@ -1,0 +1,22 @@
+{
+ "entry":"guangdong_short_price_user_cli_v1_20261112/program.py",
+ "interpreter":"current Python with pyomo, highspy 1.15.1, numpy",
+ "parameters":"parameters --da DA --run SHORT_RUN --window W --output NEW_JSON --name NAME --domain current_sced_research",
+ "domains":["current_sced_research","DA_reference_R61_compatible_research"],
+ "prepare":"prepare --da DA --run SHORT_RUN --window W --parameters JSON --output NEW_DIR",
+ "native_default":"native --prepared DIR",
+ "native_explicit":"native --prepared DIR --execute-native",
+ "accept":"accept --prepared DIR --output NEW_JSON",
+ "read":"read --accepted JSON",
+ "execution_view":"execution-view --da DA --run SHORT_RUN --hour H --output NEW_JSON",
+ "hour":"hour --da DA --execution JSON --quarters Q0 Q1 Q2 Q3 --output NEW_JSON",
+ "status_values":["prepared","ready","completed","accepted","blocked"],
+ "common_fields":["status","native_calls","formal","safety_release","payable"],
+ "blocked":"nonzero exit; error field; never repeat unknown native occurrence",
+ "read_scope":"existing accepted PRICE or v26 hour is byte-verified read-only, no re-signing",
+ "hour_seed":"hour0 requires explicit accepted same-DA initial seed PRICE; never filled from unrelated case or current-SCED dual",
+ "prepare_gate":"only an actually accepted selected short pair; no optimizer during parameters/prepare/read/install",
+ "window_scope":"0..94, exact4h coverage. Last day/hour extension not yet supported",
+ "research_notice":"all results DC research, NOT AC safety certificate or formal bill",
+ "install":"copy INSTALL_MANIFEST relative paths under common engine root; current interpreter, no hardcoded cloud path"
+}

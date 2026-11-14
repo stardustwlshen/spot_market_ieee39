@@ -1,0 +1,144 @@
+{
+  "schema": "gd.research.r80.explicit_fixture.v1",
+  "origin": "2026-11-11T19:45:00+08:00",
+  "asof": "2026-11-11T19:45:00+08:00",
+  "available_at": "2026-11-11T19:45:00+08:00",
+  "forecast_source": "synthetic frozen demand declared at19:45; no future actuals",
+  "load": [
+    1000,
+    1000,
+    1000,
+    1000,
+    1000,
+    1000,
+    1000,
+    1000,
+    1000,
+    1650,
+    1650,
+    1650,
+    1700,
+    1700,
+    1700,
+    1650,
+    1650,
+    1650,
+    1650,
+    1650,
+    1650,
+    1650,
+    1650,
+    1650,
+    1650,
+    1650,
+    1650,
+    1650,
+    1650,
+    1650,
+    1650,
+    1650,
+    1650,
+    1650,
+    1650,
+    1650,
+    1650,
+    1650,
+    1650,
+    1650,
+    1650,
+    1650,
+    1650,
+    1650,
+    1650,
+    1650,
+    1650,
+    1650,
+    1650,
+    1650,
+    1650,
+    1650,
+    1650,
+    1650
+  ],
+  "near": {
+    "cells": 24,
+    "resolution_minutes": 5
+  },
+  "far": {
+    "cells": 24,
+    "resolution_minutes": 5,
+    "basis": "explicit research extension, not asserted unique official far-domain definition"
+  },
+  "terminal_tail": {
+    "cells": 3,
+    "basis": "nextday boundary feasibility only"
+  },
+  "reserve_positive_MW": 400,
+  "reserve_accident_MW": 400,
+  "reserve_overlap_basis": "same physical headroom, separate non-simultaneous activation research requirements; never claim800 simultaneously deliverable",
+  "base_unit_physical_min_MW": 100,
+  "base_unit_physical_max_MW": 1000,
+  "AGC_down_MW": 10,
+  "AGC": {
+    "G1": 10,
+    "G2": 10,
+    "FAST": 0,
+    "ES": 0
+  },
+  "AGC_basis": "explicit predeclared research awards; formal AGC auction remains separate, not implemented here",
+  "DA_on": [
+    "G1",
+    "G2"
+  ],
+  "DA_off": [
+    "FAST"
+  ],
+  "DA_storage_mode": "charge",
+  "storage": {
+    "capacity_MWh": 100,
+    "initial_MWh": 50,
+    "D96_MWh": 50,
+    "power_MW": 50,
+    "eta": 0.95,
+    "dated_internal_budget": {
+      "2026-11-11": 200,
+      "2026-11-12": 200
+    },
+    "same_hour_direction": true
+  },
+  "qualification": {
+    "G1": [
+      "energy",
+      "positive",
+      "accident",
+      "AGC"
+    ],
+    "G2": [
+      "energy",
+      "positive",
+      "accident",
+      "AGC"
+    ],
+    "FAST": [
+      "energy"
+    ],
+    "ES": [
+      "energy"
+    ]
+  },
+  "notification_policy": "hot15/warm30/cold45 minutes synthetic, not DA17:30",
+  "min_up_cells": 12,
+  "min_down_cells": 6,
+  "max_starts": 2,
+  "max_stops": 2,
+  "initial_remaining_min_down_cells": 0,
+  "disconnection": "at shutdown curve end",
+  "ignition": "synthetic at notice; no preconnection energy injection",
+  "network": "two buses, lossless DC line1000MW; no AC acceptance",
+  "formal_ready": false,
+  "formal_missing": [
+    "actual three-class resource declarations",
+    "formal AGC clearing",
+    "AC security validation"
+  ]
+}

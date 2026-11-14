@@ -1,0 +1,88 @@
+{
+  "files": [
+    {
+      "path": "CAPABILITY_CONTRACT.json",
+      "sha256": "0bc478354e0cb6594f0d05b140ec7b4626b494afa4c487304e1a395708a4c686"
+    },
+    {
+      "path": "DIAGNOSTIC.log",
+      "sha256": "2dbcc01f5fa8b879da70561cda9ed8d87911d4767aa7e4245a2e8fe2374cafb8"
+    },
+    {
+      "path": "DIAGNOSTIC_SUMMARY.json",
+      "sha256": "95b76116a799e57015f9f214ae831de39a8e5a9ba1506e87222d0ec1f98c4c52"
+    },
+    {
+      "path": "DOMAIN.log",
+      "sha256": "6804f8376d0c6d4e8f2650f49537f34edb979dc117a4ef263711d327f148f97d"
+    },
+    {
+      "path": "DOMAIN_PRECHECK.log",
+      "sha256": "c4c839c80bd31721cd35bc8b919bdc89fbf8902d53f22d0fac789ce555002e89"
+    },
+    {
+      "path": "FAILED_CONTROL_LOCATION.json",
+      "sha256": "be9a2fb8b9961e44499dc6e18d38c760d23556d2a1c589b7aa5d94f171a2edec"
+    },
+    {
+      "path": "FAILED_LOCATION.log",
+      "sha256": "be9a2fb8b9961e44499dc6e18d38c760d23556d2a1c589b7aa5d94f171a2edec"
+    },
+    {
+      "path": "FINAL_STATUS.json",
+      "sha256": "4667e18da74287e0c802f433e17ba89b3d554a4f9ceaceae5a18c0f359979d65"
+    },
+    {
+      "path": "LOCAL_P_DOMAIN.json",
+      "sha256": "e776f23f36c6526a94f5b1209da8d0d1437e573ceed994c5851b21c94a17165f"
+    },
+    {
+      "path": "README.md",
+      "sha256": "e0ebfb181144bba34c500c7ceed362984d19f432bf96c5305983bb42e52ece78"
+    },
+    {
+      "path": "analyze_failed_controls.py",
+      "sha256": "68142a3e701351c3baff8cca54f8f9c59894159967746f5ffb336fbabe71a202"
+    },
+    {
+      "path": "derive_domain.py",
+      "sha256": "7eaa45a645af44650f9966d6558f3ac85682978efe06a3a0fd448ce894c774af"
+    },
+    {
+      "path": "diagnose_pqv_once.py",
+      "sha256": "a2dbc02e868b2ef4d20fe1db3f6769c73f67c24b976680431ec8dfecb0b85899"
+    },
+    {
+      "path": "diagnostic_once/COMPLETED.json",
+      "sha256": "93a82659d93635a3153fb31454926bb2263f7197343e3ac15bc65ed82ae50db0"
+    },
+    {
+      "path": "diagnostic_once/INITIAL_STATE_REVIEW.json",
+      "sha256": "fe16b06821e7fe1f55335cca54cdb1faf28a7c15d90dde6e80793f4a7898c591"
+    },
+    {
+      "path": "diagnostic_once/JACOBIAN_CHECK.json",
+      "sha256": "0bbf81d77a37f7ee363b90025127128918cebc02ff25c1f4b20ea67141e64b0a"
+    },
+    {
+      "path": "diagnostic_once/MODEL_PLAN.json",
+      "sha256": "babb353c9bcc9d7d7f02287690c57d7a24985ff3c45c12a5709969fe4aaa167b"
+    },
+    {
+      "path": "diagnostic_once/RESULT.json",
+      "sha256": "1d06a3e2428885b50737d96ff8b1a0b1972b307548a66bf4435d1bc5730aff5b"
+    },
+    {
+      "path": "diagnostic_once/STARTED.json",
+      "sha256": "5b5ebf0e2fbbb53331711af28252d40f0a7e85def42c504f6e9e3cbd8826b5cc"
+    },
+    {
+      "path": "final_review.py",
+      "sha256": "78dc5226c2059b595664e4624714963530fdde29c028b874574260b77c838bdd"
+    }
+  ],
+  "status": "rejected",
+  "newLP": 0,
+  "newAC": 0,
+  "newDiagnostic": 1
+}

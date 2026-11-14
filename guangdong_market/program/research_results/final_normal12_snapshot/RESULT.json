@@ -1,0 +1,40 @@
+{
+  "status": {
+    "status": "complete_research",
+    "hour": {
+      "status": "accepted",
+      "native_calls": 0,
+      "rows": 54,
+      "executed_cells": 12,
+      "total": "984919.7573504870304171026817",
+      "formal_bill": null
+    },
+    "publication_allowed": false,
+    "safety_release": false
+  },
+  "completed_windows": 4,
+  "hours": 1,
+  "quarters": 4,
+  "RT_JOB_count": 8,
+  "PRICE_LAUNCH_count": 4,
+  "job_paths": [
+    "/workspace/scratch/42c5fe32dad0/guangdong_final_normal12_driver_20261113/fresh_context/live_market_sessions/final_finite_precision_memo12/pipeline/dispatch/W3/actual/SCUC/JOB.json",
+    "/workspace/scratch/42c5fe32dad0/guangdong_final_normal12_driver_20261113/fresh_context/live_market_sessions/final_finite_precision_memo12/pipeline/dispatch/W3/actual/SCED/JOB.json",
+    "/workspace/scratch/42c5fe32dad0/guangdong_final_normal12_driver_20261113/fresh_context/live_market_sessions/final_finite_precision_memo12/pipeline/dispatch/W2/actual/SCUC/JOB.json",
+    "/workspace/scratch/42c5fe32dad0/guangdong_final_normal12_driver_20261113/fresh_context/live_market_sessions/final_finite_precision_memo12/pipeline/dispatch/W2/actual/SCED/JOB.json",
+    "/workspace/scratch/42c5fe32dad0/guangdong_final_normal12_driver_20261113/fresh_context/live_market_sessions/final_finite_precision_memo12/pipeline/dispatch/W0/actual/SCUC/JOB.json",
+    "/workspace/scratch/42c5fe32dad0/guangdong_final_normal12_driver_20261113/fresh_context/live_market_sessions/final_finite_precision_memo12/pipeline/dispatch/W0/actual/SCED/JOB.json",
+    "/workspace/scratch/42c5fe32dad0/guangdong_final_normal12_driver_20261113/fresh_context/live_market_sessions/final_finite_precision_memo12/pipeline/dispatch/W1/actual/SCUC/JOB.json",
+    "/workspace/scratch/42c5fe32dad0/guangdong_final_normal12_driver_20261113/fresh_context/live_market_sessions/final_finite_precision_memo12/pipeline/dispatch/W1/actual/SCED/JOB.json"
+  ],
+  "price_launch_paths": [
+    "/workspace/scratch/42c5fe32dad0/guangdong_final_normal12_driver_20261113/fresh_context/live_market_sessions/final_finite_precision_memo12/pipeline/price/q3/prepared/native_once/LAUNCH.json",
+    "/workspace/scratch/42c5fe32dad0/guangdong_final_normal12_driver_20261113/fresh_context/live_market_sessions/final_finite_precision_memo12/pipeline/price/q2/prepared/native_once/LAUNCH.json",
+    "/workspace/scratch/42c5fe32dad0/guangdong_final_normal12_driver_20261113/fresh_context/live_market_sessions/final_finite_precision_memo12/pipeline/price/q1/prepared/native_once/LAUNCH.json",
+    "/workspace/scratch/42c5fe32dad0/guangdong_final_normal12_driver_20261113/fresh_context/live_market_sessions/final_finite_precision_memo12/pipeline/price/q0/prepared/native_once/LAUNCH.json"
+  ],
+  "total_wall_seconds": 369.64991686100257,
+  "no_additional_KKT": true,
+  "safety_release": false,
+  "formal_bill": null
+}

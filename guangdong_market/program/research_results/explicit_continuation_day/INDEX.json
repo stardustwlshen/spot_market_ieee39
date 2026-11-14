@@ -1,0 +1,52 @@
+{
+  "schema": "gd.explicit_continuation.readonly.v1",
+  "source_kind": "same_logical_branch_explicit_continuation",
+  "original_ui_worker_succeeded": false,
+  "logical_branch": "/workspace/scratch/42c5fe32dad0/guangdong_v18_post96_actual_20261113/fresh_context/live_market_sessions/post96_normal_ui_v1/pipeline/dispatch",
+  "physical_result_location": "/tmp/guangdong_post96_tail_20261113",
+  "selected_DA": "/workspace/scratch/42c5fe32dad0/guangdong_pipeline_20261112/pure_fresh_run_v1",
+  "source_case_sha256": "c10e5cbfbe0f39f028d10cb2b2d30003e803033a3d883f4c753339bc9c1cdbe9",
+  "source_DA_artifacts_sha256": "e8e5a00f68a52ccbcdcb55d9ea4dac8fd4209a5e57fcf6cd66de8808cafb66c1",
+  "safety_release": false,
+  "formal_bill": null,
+  "live_restore_allowed": false,
+  "publication_allowed": false,
+  "files": {
+    "SELECTED_SOURCES.json": "55c76eee761de9c60ef0fb27a1fd23db14b95d7e4d83d4e86185114c3ddb58db",
+    "PHYSICAL_CELLS.json": "2d684017f713acb9ef94f32516d439434b5813100d6b2fccad9f0c8f88ce1c7c",
+    "COMPLETE.json": "692a36f1ef7db3541b2ff41a460fed907dfb45cf47617cfb9c0d87256deee5f7",
+    "HOURS.json": "e6c71a4fa54ce45f23ebed263412bf64f51b82ddd11dd5980932f2b047dbb7ea",
+    "FINAL_REVIEW.json": "d686f7b23d90728fc7e440d01244ef4dcda2d45bcc8e57fa7cbbbd438427a969",
+    "QUARTER_PRICES.json": "290dc314b4ac53548bd1e2f82450e2111145afe3a3c605d5eaae68f7ca188af2",
+    "ACCOUNT_ROWS.json": "5fbd31d52d2ae454d9532e4cd1213b0db6c02eb12bfe46eefe7f0d8ab62777a1"
+  },
+  "final_report_binding": {
+    "review_sha256": "d686f7b23d90728fc7e440d01244ef4dcda2d45bcc8e57fa7cbbbd438427a969",
+    "complete_sha256": "692a36f1ef7db3541b2ff41a460fed907dfb45cf47617cfb9c0d87256deee5f7"
+  },
+  "final_review_summary": {
+    "counts": {
+      "selected_chain_worker_responses": 289,
+      "observed_successful_worker_responses_including_superseded": 290,
+      "observed_timeout_optimizations": 1,
+      "observed_total_optimizations": 291,
+      "completed_optimal_single_call_responses": 290,
+      "accepted_pairs": 96,
+      "accepted_prices": 96,
+      "verified_receipts": 24,
+      "verified_hours": 24,
+      "verified_account_direction_rows": 1296,
+      "preserved_failed_loader_worker_occurrences": true,
+      "observed_total_worker_occurrences": 292
+    },
+    "actual_final_exec_issued": [
+      288,
+      291
+    ],
+    "total_verified_energy_component_CNY": "17794667.65868503883447413218",
+    "checks_passed": 599,
+    "errors": [],
+    "label": "模型列示账户电能量分项净合计（研究），非市场总额/利润/正式账单",
+    "scope": "explicit continuation; not original UI worker success; final display performs no KKT or native"
+  }
+}

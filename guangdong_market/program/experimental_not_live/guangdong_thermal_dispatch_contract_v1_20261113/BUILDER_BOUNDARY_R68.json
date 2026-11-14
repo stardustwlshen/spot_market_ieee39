@@ -1,0 +1,143 @@
+{
+  "thermal": {
+    "G": {
+      "phase": "startup",
+      "end_power_mw": 50.0,
+      "residual_up_ticks": 0,
+      "residual_down_ticks": 0,
+      "event_id": "G:startup:6",
+      "event_elapsed_ticks": 3,
+      "remaining_curve": [
+        {
+          "begin": 50.0,
+          "mean": 58.333333333333336,
+          "end": 66.66666666666667
+        },
+        {
+          "begin": 66.66666666666667,
+          "mean": 75.0,
+          "end": 83.33333333333334
+        },
+        {
+          "begin": 83.33333333333334,
+          "mean": 91.66666666666667,
+          "end": 100.0
+        }
+      ],
+      "source": "existing accepted pair issued prefix research",
+      "available_at": "2026-11-11T00:30:00+08:00",
+      "min_up_basis": "startup_begin",
+      "min_down_basis": "shutdown_end"
+    }
+  },
+  "thermal_age_h": {
+    "G": 0.25
+  },
+  "age_basis": "connected since startup begin; off since actual shutdown completion",
+  "typed_state": {
+    "unit": "G",
+    "tick": 9,
+    "phase": "startup",
+    "phase_since_tick": 6,
+    "connection_anchor_tick": 6,
+    "last_disconnect_tick": -9,
+    "offline_ticks": 0,
+    "min_up_anchor_tick": 6,
+    "min_down_anchor_tick": -9,
+    "end_power_mw": 50.0,
+    "event_id": "G:startup:6",
+    "phase_age_ticks": 3,
+    "connected": 1,
+    "connection_state_age_ticks": 3,
+    "residual_up_ticks": 0,
+    "residual_down_ticks": 0,
+    "event_elapsed_ticks": 3,
+    "remaining_curve": [
+      {
+        "begin": 50.0,
+        "mean": 58.333333333333336,
+        "end": 66.66666666666667
+      },
+      {
+        "begin": 66.66666666666667,
+        "mean": 75.0,
+        "end": 83.33333333333334
+      },
+      {
+        "begin": 83.33333333333334,
+        "mean": 91.66666666666667,
+        "end": 100.0
+      }
+    ],
+    "startup_kind": "warm"
+  },
+  "events": {
+    "G:startup:6": {
+      "event_id": "G:startup:6",
+      "unit": "G",
+      "phase": "startup",
+      "begin_tick": 6,
+      "notice_tick": 0,
+      "kind": "warm",
+      "curve_parameter_sha256": "9b9ff614b7a97ab2df902ed277e4d924303e2cb9994c69ed531f603e6fb5c2b3",
+      "rows": [
+        {
+          "begin": 0.0,
+          "mean": 8.333333333333334,
+          "end": 16.666666666666668
+        },
+        {
+          "begin": 16.666666666666668,
+          "mean": 25.0,
+          "end": 33.333333333333336
+        },
+        {
+          "begin": 33.333333333333336,
+          "mean": 41.66666666666667,
+          "end": 50.0
+        },
+        {
+          "begin": 50.0,
+          "mean": 58.333333333333336,
+          "end": 66.66666666666667
+        },
+        {
+          "begin": 66.66666666666667,
+          "mean": 75.0,
+          "end": 83.33333333333334
+        },
+        {
+          "begin": 83.33333333333334,
+          "mean": 91.66666666666667,
+          "end": 100.0
+        }
+      ],
+      "issued": true,
+      "issued_tick": 0,
+      "published_at_tick": 0,
+      "source": "explicit research simulated publication, not operator instruction",
+      "run_id": "independent-r68-typed-notice-bridge-v2",
+      "origin": "2026-11-11T00:00:00+08:00",
+      "plan_sha256": "6440d542409eac99d3a1dcde98b3c0255f9dbd91206926525ab4704cedf178fe",
+      "accepted_pair_sha256": "974cdf6b74f486bbae1f4f82c2594884b31c3f2ce5a2f628c2cff2927e946c6f",
+      "SCUC_response_sha256": "a30c1527e78c49ccfcf61f87b019ed84fe738eb3255f31baf8f556de0c02c48b",
+      "SCED_response_sha256": "f9bdc1fd5de86fb2eab286f8d34a6845ca691afef30a30a6a75d846d25a0533a",
+      "publication_policy": "exact_notice_tick_no_late_backfill",
+      "formal": false,
+      "receipt_hash": "66bc60a925ebfd9ba304fa42a9b3acbeab271ae167e3f92f4e7de0d32d8daac9"
+    }
+  },
+  "predicted_issued_prefix": true,
+  "notice_receipts_created": 0,
+  "formal": false,
+  "safety_release": false,
+  "notice_values": {
+    "G": {
+      "0": 1
+    }
+  },
+  "notice_ledger_sha256": "de877fd3512d246e4df04b6a92114abda64c04fa6a7df34efebfe79c5e0724f0",
+  "run_id": "independent-r68-typed-notice-bridge-v2",
+  "DA_protection_changed": false,
+  "dispatch_contract_sha256": "f5fccab84d59a4fa4edf210b3dce8b7d3601f3938c4f2f3e3c1eff8cce9d7707"
+}

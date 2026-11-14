@@ -1,0 +1,12 @@
+{
+  "schema": "gd.delivery.prepared.v1",
+  "source_map_sha256": "ddd43c958cee3cbb757829a4939cf44718bca8d8f71fbac227a8dadaba24bd57",
+  "core_sha256": "650e485881424f18b1af9944d4eac703dd77ee6f08d2413fe8148b2704470d75",
+  "template_sha256": "d086b8c26656f4e716b62fc2070b00a0cafbfc6c928c268401ef6d2d3e00fb7c",
+  "names_sha256": "f0b70e2a1eb53a7d71e56419f5d8dc30dc881b3f22c80fff0e030aed6e9914d4",
+  "scope": "R68 synthetic small thermal three-state energy balance; not network/full market",
+  "inputs": {},
+  "variables": 1623,
+  "rows": 3073,
+  "native_calls": 0
+}

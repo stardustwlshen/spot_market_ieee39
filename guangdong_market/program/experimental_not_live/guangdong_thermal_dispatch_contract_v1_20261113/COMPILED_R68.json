@@ -1,0 +1,125 @@
+{
+  "schema": "gd.thermal.compiled.boundaries.v1",
+  "run_id": "independent-r68-typed-notice-bridge-v2",
+  "origin": "2026-11-11T00:00:00+08:00",
+  "begin_tick": 9,
+  "cutoff_tick": 6,
+  "cells": 24,
+  "units": [
+    "G"
+  ],
+  "fixes": {
+    "G": [
+      {
+        "online": {
+          "value": 1,
+          "record_ids": [
+            "G:startup:6"
+          ]
+        },
+        "start": {
+          "value": 0,
+          "record_ids": [
+            "G:startup:6"
+          ]
+        },
+        "stop": {
+          "value": 0,
+          "record_ids": [
+            "G:startup:6"
+          ]
+        },
+        "power": {
+          "value": 58.333333333333336,
+          "record_ids": [
+            "G:startup:6"
+          ]
+        }
+      },
+      {
+        "online": {
+          "value": 1,
+          "record_ids": [
+            "G:startup:6"
+          ]
+        },
+        "start": {
+          "value": 0,
+          "record_ids": [
+            "G:startup:6"
+          ]
+        },
+        "stop": {
+          "value": 0,
+          "record_ids": [
+            "G:startup:6"
+          ]
+        },
+        "power": {
+          "value": 75.0,
+          "record_ids": [
+            "G:startup:6"
+          ]
+        }
+      },
+      {
+        "online": {
+          "value": 1,
+          "record_ids": [
+            "G:startup:6"
+          ]
+        },
+        "start": {
+          "value": 0,
+          "record_ids": [
+            "G:startup:6"
+          ]
+        },
+        "stop": {
+          "value": 0,
+          "record_ids": [
+            "G:startup:6"
+          ]
+        },
+        "power": {
+          "value": 91.66666666666667,
+          "record_ids": [
+            "G:startup:6"
+          ]
+        }
+      },
+      {},
+      {},
+      {},
+      {},
+      {},
+      {},
+      {},
+      {},
+      {},
+      {},
+      {},
+      {},
+      {},
+      {},
+      {},
+      {},
+      {},
+      {},
+      {},
+      {},
+      {}
+    ]
+  },
+  "references": [],
+  "publication_obligations": [],
+  "permissions": [],
+  "selected_ids": [
+    "G:startup:6"
+  ],
+  "contract_sha256": "b64b46e650d023d512dd3728dc8ccd57d57473521615a8e5ad1c7eb0bfb58aa5",
+  "formal": false,
+  "native_calls": 0,
+  "operator_authority_verified": false,
+  "compiled_sha256": "f5fccab84d59a4fa4edf210b3dce8b7d3601f3938c4f2f3e3c1eff8cce9d7707"
+}

@@ -1,0 +1,22 @@
+{
+  "depends_on_frozen_R46": true,
+  "files": {
+    "COMPARE.log": "bcdffa822e2568d7694b44e5090a312c1d4f73e48dc3010f2167b992d3913f0f",
+    "README.md": "8f47898d2d5c3649f6ed29737d1dbed1b3d4b2e7ae90c3fd5d3108c1a4bec3cc",
+    "READY.json": "fbddb3a31b94c5dddd15860359a55d1d02c0dee311b637ed10be1b8bf21a38ef",
+    "compare_once.py": "eb3d6f25c28051fd6627067f14cf7f47ce7a53d179cfb64ce3af1bd5a802c1a2",
+    "evidence_v1/RESULT.json": "d6de63f7f6eaff1a8ed47930acf4faf4c87c94b4e1c649e5be68a945ac5a09c9",
+    "evidence_v1/new_PRICE.txt": "36ad52b59a53738857889db869fba7dc388d93cd44ba39bcb2cf19e1b6f0f15d",
+    "evidence_v1/new_RT.txt": "2393641d601e7259eb085f09ba59c9f4e70fac18fd9566ba4980d5ccd75676bc",
+    "evidence_v1/new_initialize.txt": "ed997b0554c35483f282a2e157187d9ca93b78ddf290356265bf571df3a16ca5",
+    "evidence_v1/new_load.txt": "1717a6967d75cfb64bf7c9f3c878bc17710721061a9d7b68f76132bcf9c0c7c3",
+    "evidence_v1/old_PRICE.txt": "19e5881792f593c197f22bdc7aba9f3adc0fd4036488e1e0e731b65692579023",
+    "evidence_v1/old_RT.txt": "1c7a5fa5fb9fe6e9d4634bf8e27b3634143304b743fec97ed084af9dcf8b764f",
+    "evidence_v1/old_initialize.txt": "1d949ada38efc7ab4cdba2672c09b93860590312c1eae8a7906b67d38660927e",
+    "evidence_v1/old_load.txt": "e42f72572397d80b758cfe87224fc8e7eb7540c0579c14272a995144d3fec917",
+    "r52smm/__init__.py": "b67d59f765e8ec48074e8c0b4f5550db857d7c880cb113ec8336a96bf0485599",
+    "r52smm/gd_r46_source_contract.py": "9b19b18fc0f4319c12e15bc140b1e170417a31005cfea22ca81ce64a3576b111",
+    "r52smm/minimal_source.py": "6e8481661dc42fea38db2244a77c2f4b406d9272949a3cbfab20c867cda29a0d"
+  },
+  "large_data_tree_copied": false
+}

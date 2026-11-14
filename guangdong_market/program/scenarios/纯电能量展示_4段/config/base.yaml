@@ -1,0 +1,26 @@
+date: '2026-07-15'
+season: wet
+rule_set: MKT
+periods: 96
+dt_h: 0.25
+load_scale: 0.68
+seed: 20260715
+line_capacity_multiplier: 1.2
+line_scale:
+  L2-3: 1.2
+  L16-19: 0.6
+  L2-25: 0.6
+  L25-26: 0.7
+  T6-31: 0.5
+  T2-30: 0.7
+solver:
+  name: highs
+  mip_rel_gap: 0.05
+  time_limit_s: 30
+  threads: 4
+  storage_binary: true
+  highs_extra: {}
+  tighten: false
+  warm_start: false
+  commit_step_periods: 1
+  log: false

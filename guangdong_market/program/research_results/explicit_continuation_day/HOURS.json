@@ -1,0 +1,146 @@
+[
+  {
+    "hour": 0,
+    "total_energy_component_CNY": "984919.7573504869877597878065",
+    "prices": 4,
+    "executed_cells": 12
+  },
+  {
+    "hour": 1,
+    "total_energy_component_CNY": "944806.6286145688624620766717",
+    "prices": 4,
+    "executed_cells": 12
+  },
+  {
+    "hour": 2,
+    "total_energy_component_CNY": "918223.2673795421822490565205",
+    "prices": 4,
+    "executed_cells": 12
+  },
+  {
+    "hour": 3,
+    "total_energy_component_CNY": "899357.3375991937025569191185",
+    "prices": 4,
+    "executed_cells": 12
+  },
+  {
+    "hour": 4,
+    "total_energy_component_CNY": "886072.0316763499695532612181",
+    "prices": 4,
+    "executed_cells": 12
+  },
+  {
+    "hour": 5,
+    "total_energy_component_CNY": "879695.4148004144879277894244",
+    "prices": 4,
+    "executed_cells": 12
+  },
+  {
+    "hour": 6,
+    "total_energy_component_CNY": "845639.5495624084483381328124",
+    "prices": 4,
+    "executed_cells": 12
+  },
+  {
+    "hour": 7,
+    "total_energy_component_CNY": "99863.78432663249453120407311",
+    "prices": 4,
+    "executed_cells": 12
+  },
+  {
+    "hour": 8,
+    "total_energy_component_CNY": "-141543.6054353187291576212617",
+    "prices": 4,
+    "executed_cells": 12
+  },
+  {
+    "hour": 9,
+    "total_energy_component_CNY": "-145511.1749003812403833333334",
+    "prices": 4,
+    "executed_cells": 12
+  },
+  {
+    "hour": 10,
+    "total_energy_component_CNY": "-150315.7763106062805555833334",
+    "prices": 4,
+    "executed_cells": 12
+  },
+  {
+    "hour": 11,
+    "total_energy_component_CNY": "-155569.2522770374783708333334",
+    "prices": 4,
+    "executed_cells": 12
+  },
+  {
+    "hour": 12,
+    "total_energy_component_CNY": "-160825.3220219250361854166666",
+    "prices": 4,
+    "executed_cells": 12
+  },
+  {
+    "hour": 13,
+    "total_energy_component_CNY": "-165634.3213875124918910253159",
+    "prices": 4,
+    "executed_cells": 12
+  },
+  {
+    "hour": 14,
+    "total_energy_component_CNY": "700952.8018475202027158488170",
+    "prices": 4,
+    "executed_cells": 12
+  },
+  {
+    "hour": 15,
+    "total_energy_component_CNY": "1078709.198584087362033145266",
+    "prices": 4,
+    "executed_cells": 12
+  },
+  {
+    "hour": 16,
+    "total_energy_component_CNY": "1175901.589633278505139100000",
+    "prices": 4,
+    "executed_cells": 12
+  },
+  {
+    "hour": 17,
+    "total_energy_component_CNY": "1432256.764029095902475428238",
+    "prices": 4,
+    "executed_cells": 12
+  },
+  {
+    "hour": 18,
+    "total_energy_component_CNY": "1471164.036367786022789653783",
+    "prices": 4,
+    "executed_cells": 12
+  },
+  {
+    "hour": 19,
+    "total_energy_component_CNY": "1452397.625132172459865014291",
+    "prices": 4,
+    "executed_cells": 12
+  },
+  {
+    "hour": 20,
+    "total_energy_component_CNY": "1405926.111344016856142133981",
+    "prices": 4,
+    "executed_cells": 12
+  },
+  {
+    "hour": 21,
+    "total_energy_component_CNY": "1329004.145858301839794829080",
+    "prices": 4,
+    "executed_cells": 12
+  },
+  {
+    "hour": 22,
+    "total_energy_component_CNY": "1147966.364055772925909946916",
+    "prices": 4,
+    "executed_cells": 12
+  },
+  {
+    "hour": 23,
+    "total_energy_component_CNY": "1061210.702856190878774617410",
+    "prices": 4,
+    "executed_cells": 12
+  }
+]

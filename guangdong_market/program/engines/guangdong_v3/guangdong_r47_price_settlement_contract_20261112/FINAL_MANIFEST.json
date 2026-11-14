@@ -1,0 +1,70 @@
+{
+  "schema": "gd.research.r47.final_manifest.v1",
+  "native_calls": 0,
+  "files": {
+    "FINAL_INDEPENDENT_REVIEW.json": {
+      "bytes": 3095,
+      "sha256": "0bbbdff588249cfc1625784110a0d206e2dea1862d08ffa97fd90ce90d7badf3"
+    },
+    "INDEPENDENT_RULE_NOTES.json": {
+      "bytes": 2919,
+      "sha256": "88722d8b0cf7d0f24fea704100b65441d7c45f3aaed9aec36479c8ebaf59a663"
+    },
+    "MANIFEST.json": {
+      "bytes": 1296,
+      "sha256": "3c155d7d99ca9e7232b02dcbda38bc1bb6ef334a7517f6f7785d7759252b5c83"
+    },
+    "R45_PRICE_CANDIDATES.json": {
+      "bytes": 216693,
+      "sha256": "75da5d24184375e496dc91fbb1b3ede39750f8473feccab83b47449c03cd5f8a"
+    },
+    "README.md": {
+      "bytes": 6604,
+      "sha256": "b5389623ba113447151e9509d38a7f8dca2b4bb6eebd180b4721cf89d6cc67da"
+    },
+    "RESULT.json": {
+      "bytes": 164,
+      "sha256": "6430213bd214faa5417100f5d0e1b456c3c0eb3b02051ced63fae9caf8277d20"
+    },
+    "actual_binding.json": {
+      "bytes": 32006,
+      "sha256": "93a6154ae5c88b5b689384fd589197bbfad008cec9063460971f149b01714ca3"
+    },
+    "apply_verified.log": {
+      "bytes": 250,
+      "sha256": "e10ad980086d2ee0533ae20a71fb22aa72d4b45fc355518e0fb45f46f9296071"
+    },
+    "apply_verified_r45_prices.py": {
+      "bytes": 4475,
+      "sha256": "982642ce2ccc79773818e0a28b959642ea58c73153ff6528282e0a3b852999cf"
+    },
+    "baseline_registry.json": {
+      "bytes": 361,
+      "sha256": "98014d5685c917529f7604fe8faa7de772883d6eb5eb1f393e61bef5daa84cb9"
+    },
+    "independent_tests.log": {
+      "bytes": 99,
+      "sha256": "e4c0c618ce1c326456771af833546fea51520615a3c2e055f04f16fcdefdc8a6"
+    },
+    "r47_price.py": {
+      "bytes": 5066,
+      "sha256": "6c8bf6cc0e73ae40d763f5ae8fb3a6156a743aee378de34ff2ba5be55bb59aef"
+    },
+    "r47_settlement_inputs.py": {
+      "bytes": 6629,
+      "sha256": "a25028790d02ece2f868a6baa71272798d39257d828feea844453534cffa71e0"
+    },
+    "test_r47.py": {
+      "bytes": 7264,
+      "sha256": "7626cca0508a248356318cd8c1e099ace099a38e90057c1f0fbf501f3ce0601b"
+    },
+    "tests.log": {
+      "bytes": 99,
+      "sha256": "05f0c6f8a7918aee199f9622e29aae29357785ab3b2b8a549a713423a2946786"
+    },
+    "tests_initial_12pass.log": {
+      "bytes": 99,
+      "sha256": "468e689e139b7e68ec038b0c54b35b37f60c211560f04d323bfedafe3d5c6b74"
+    }
+  }
+}

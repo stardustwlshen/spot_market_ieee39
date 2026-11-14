@@ -1,0 +1,2 @@
+# Runtime: Python >=3.11; pure delivery uses only the standard library.
+# No mandatory pip dependencies; no solver is invoked by this package.

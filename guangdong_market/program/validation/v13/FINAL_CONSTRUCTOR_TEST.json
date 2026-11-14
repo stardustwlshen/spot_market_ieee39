@@ -1,0 +1,10 @@
+{
+  "status": "passed",
+  "native_calls": 0,
+  "AC_calls": 0,
+  "fresh_installed_live_host_constructor": true,
+  "default_run_zero": true,
+  "event_profile_transport": true,
+  "hour_profile_guard_positive_negative": true,
+  "full_hour_not_repeated": true
+}

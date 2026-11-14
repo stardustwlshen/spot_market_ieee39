@@ -1,0 +1,24 @@
+{
+  "library_file_id": "libfile_fde3_f-bb4d0331d3048191a87d6643b6c609e2_da36cc1b542081919a2fe7f8af93584c",
+  "file_id": "file_00000000ef0881fd96fa81b68b76abc3",
+  "file_name": "广东修正全天与v6界面证据备份_恢复索引_20261113.json",
+  "sha256": "3a8e04dcd84bb43db110fb505c9df2304c0fdad519377b180e5e2eb5e380a2f6",
+  "restore_verification": {
+    "status": "downloaded_all_nine_archives_stream_extracted_every_selected_file_verified",
+    "parts": 9,
+    "selected_files": 13541,
+    "raw_bytes": 1500985907,
+    "archive_bytes": 232931312,
+    "RT_raw_response_and_request_stages": 192,
+    "PRICE_analytic_quarters": 96,
+    "hours": 24,
+    "executed_cells": 288,
+    "frozen_v6_included": true,
+    "AGC_failed_gate_preserved": true,
+    "selected_file_hashes_verified_from_independent_download": true,
+    "full_tree_written_to_disk": false,
+    "unproven_full_history_replay": true,
+    "excluded_cache_references": 191,
+    "new_native_calls": 0
+  }
+}

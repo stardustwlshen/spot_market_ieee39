@@ -1,0 +1,1 @@
+{"explicit_native_flag_required":true,"rt_windows":4,"run":"/workspace/scratch/42c5fe32dad0/guangdong_pipeline_20261112/pure_fresh_run_v1","simulation_settlement":false,"stages":["DA_SCUC","DA_SCED","DA_PRICE","RT","independent_RT_PRICE","simulation_settlement_if96"],"status":"dryrun_no_native_no_initialization"}

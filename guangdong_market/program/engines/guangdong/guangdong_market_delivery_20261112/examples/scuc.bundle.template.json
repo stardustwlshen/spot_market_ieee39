@@ -1,0 +1,8 @@
+{
+  "schema": "gd.delivery.scuc_inputs.v1",
+  "case_file": "MISSING_explicit_case_job_codec.json",
+  "grid_file": "MISSING_explicit_98_grid.json",
+  "policy_file": "MISSING_sourced_research_policy.json",
+  "agc_file": "MISSING_explicit_qualified_awards.json",
+  "note": "Contract template only. Intentionally missing inputs, never synthesized from old actual results. Paths relative to this bundle."
+}

@@ -1,0 +1,15 @@
+{
+  "native_calls": 0,
+  "tiny_original_domain_deviation_recorded": {
+    "name": "power[C1,0]",
+    "raw_fixed_unchanged": 299.999999999999,
+    "original_lower": 300.0,
+    "original_upper": 636.0,
+    "violation": 1.0231815394945443e-12,
+    "tolerance": 1e-07,
+    "policy": "raw native unchanged; explicit numerical bound deviation, not physical capacity change"
+  },
+  "raw_value_unchanged": true,
+  "large_deviation_rejected": true,
+  "these_are_unit_controls_not_actual_issued_commands": true
+}

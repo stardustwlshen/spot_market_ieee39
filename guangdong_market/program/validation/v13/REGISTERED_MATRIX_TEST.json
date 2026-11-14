@@ -1,0 +1,59 @@
+{
+  "status": "passed",
+  "fixture_not_operating_declaration": true,
+  "original_rows_unchanged": 20768,
+  "added_rows": [
+    "research_safety_power_caps[1]"
+  ],
+  "variables_objective_options_unchanged": true,
+  "AGC_boundary_unchanged": true,
+  "fixed_SCED_inherits_cap": true,
+  "prepared": {
+    "branch_id": "unified-first-hour-b659de20ba084123ad50eceff1d09a6d",
+    "window": 1,
+    "prepared": "/workspace/scratch/42c5fe32dad0/guangdong_safety_tightening_adapter_v1_20261113/fixture_host_v2/W1/prepared",
+    "declaration_path": "/workspace/scratch/42c5fe32dad0/guangdong_safety_tightening_adapter_v1_20261113/fixture_host_v2/safety_declarations/1e098da5c1b16959bcf8eca132110e73471a1564042a6a12e08b3867f87cb124.json",
+    "declaration_sha256": "1442c80b46dd6af535656ff3a55d2c68783b91da919507125b4c18c8de0c0c8b",
+    "added_rows": [
+      {
+        "name": "research_safety_power_caps[1]",
+        "unit": "C1",
+        "tick": 0,
+        "cap_mw": 635.0,
+        "kind": "additional_upper_bound_only"
+      }
+    ],
+    "native_calls": 0,
+    "status": "PREPARED_UNSOLVED_RESEARCH_TIGHTENING",
+    "original_AGC_50_preserved": true,
+    "original_400_400_preserved": true,
+    "safety_release": false,
+    "base_source_window": 0,
+    "not_AC_loss_linearization": true,
+    "constraint_semantics": "redispatch_basepoint_only",
+    "technical_capacity_unchanged": true,
+    "AC_failure_resolved_not_claimed": true
+  },
+  "plan": {
+    "branch_id": "unified-first-hour-b659de20ba084123ad50eceff1d09a6d",
+    "window": 1,
+    "status": "pending_authorization",
+    "requested_native_calls": {
+      "SCUC": 1,
+      "SCED": 1,
+      "PRICE": 0
+    },
+    "SCUC_seconds": 300,
+    "SCED_seconds": 120,
+    "mip_gap": 0.001,
+    "threads": 1,
+    "automatic_fallback": false,
+    "actual_native_calls": 0,
+    "actual_AC_calls": 0,
+    "new_AC_not_authorized": true,
+    "safety_release": false,
+    "execution_entry": "existing live host.run(execute_native=True), only after separate authorization; no old raw adoption"
+  },
+  "native_calls": 0,
+  "actual_reclear": false
+}

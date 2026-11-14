@@ -1,0 +1,12 @@
+{
+  "bundle": "../research_results/corrected_day_v6",
+  "manifest_sha256": "713468c712d198456aa606242bf7909c28ee14ffeccaf763d73c1c723dbd22e7",
+  "original_selected_DA": "/workspace/scratch/42c5fe32dad0/guangdong_pipeline_20261112/pure_fresh_run_v1",
+  "context_sha256": "bd0288fd9fc3a3b69d1f5af75ebb2a82201c3ca1a923d3111917d88598e61e6d",
+  "lineage": "CLI11 preserved actual corrected branch, not v5 native",
+  "DA_identity": {
+    "run_id": "gd-760dddd43b9a4f24af0b58f1af0c4e8a",
+    "case_sha256": "c10e5cbfbe0f39f028d10cb2b2d30003e803033a3d883f4c753339bc9c1cdbe9",
+    "SCED_response_sha256": "615e7dafe88fc3d9efdc444f394014ab7d6112a88418122976eb0d6b9afb620a"
+  }
+}

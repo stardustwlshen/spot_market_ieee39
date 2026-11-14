@@ -1,0 +1,22 @@
+{
+  "schema": "gd.agc.safety.r77.current_chain.v1",
+  "status": "research_no_increase_not_certified",
+  "source": "guangdong_r76_agc_curtailment_comparison_20261112/RESULT.json",
+  "source_sha256": "6fb2b5394d183eb3839216faf5c772eef2ad205f4e598820c955594417e2fd17",
+  "comparison": {
+    "AGC0_D_curtailment_MWh": 612.6071506621912,
+    "AGC0_objective": 4530033.15778337,
+    "baseline_D_curtailment_MWh": 928.4927026821798,
+    "baseline_objective": 5060355.409300698,
+    "objective_difference_AGC0_minus_baseline": -530322.2515173275,
+    "scope": "fixed UC/modes, research98 objective; not all48h energy cost or official article58 procedure"
+  },
+  "aggregate_difference_MWh": 315.8855520199886,
+  "unit_attribution": "unknown",
+  "per_unit_failure_allocation_performed": false,
+  "removed_units": null,
+  "removal_decision": "not performed; no unit-specific evidence supplied",
+  "formal_safety_certified": false,
+  "native_calls": 0,
+  "original_chain_changed": false
+}

@@ -1,0 +1,13 @@
+{
+  "pid": 20,
+  "raw_wait_status": 0,
+  "exitcode": 0,
+  "preflight_seconds": 20.319785863001016,
+  "worker_wall_seconds": 346.68655189500714,
+  "total_elapsed_before_status_s": 369.5173573420034,
+  "peak_sampled_tree_RSS_bytes": 801579008,
+  "tree_RSS_caveat": "2s samples may miss peaks; shared pages counted multiple times",
+  "wait4_maxrss_KiB": 738456,
+  "user_cpu_s": 319.769115,
+  "system_cpu_s": 25.432776
+}

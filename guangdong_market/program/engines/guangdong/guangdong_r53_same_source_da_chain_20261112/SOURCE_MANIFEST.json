@@ -1,0 +1,18 @@
+{
+  "status": "pure_code_ready_waiting_new_SCUC_acceptance_and_SCED_actual_results",
+  "native_calls": 0,
+  "tests": 5,
+  "files": {
+    "README.md": "bb2becc481d064b02b4e5166641818936cfd8cd530989ce8321813b4ffcad421",
+    "TEST.log": "c1c197155dddeb0aee318a0a443c32f00399ecc13eb087c015cfa88e28ccc82b",
+    "common53.py": "af8682f62a69ec8a5e4fc6fdf6ccc5c6ba21462679ad9953c830e43e8238d1c6",
+    "eligible_vre53.py": "eb8791f6a1c5d57d7852017fec13e4095234ec4b8a3b6663cfa38eea097e96a1",
+    "physical_geometry.py": "352d6f204927e4f9b74e8e7f1dee81ae1147a3b506ac0c5a49a6acb78c1e8423",
+    "prepare_price.py": "07c2425f7cf44f9429f68524c755bd4c92ae000f581569de675ee02975901f4a",
+    "prepare_sced.py": "58d89cb12ea44d0e27f5f5dc107a26ecd94620d01168f4a0bc43e3ae67809628",
+    "r53_bridge.py": "224755710a20c32baadf50d150c4faf38bff840b6dd5562b8a0d7fed340aa795",
+    "review_price.py": "5e3709a0f0a1b3e2c8154154b7b468701cf02ea71bd3726d7d37cde4b8b679ad",
+    "review_sced.py": "4076cc1cf51607e62e16a07b2457207f909b4994c798c9128bb01cb78ffa4d57",
+    "test_cost_scope.py": "7695ddb2b8d34de940886935c9fe431d00629f2dedcd8829cf77e475ea99dcee"
+  }
+}

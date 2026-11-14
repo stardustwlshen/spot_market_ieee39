@@ -1,0 +1,10 @@
+{
+  "scope": "pure PRICE mechanism API; not wired into default energy CLI",
+  "files": {
+    "RESEARCH_PENALTIES.txt": "4440f31f28120687737fabb0366116d4fd8d2e4462f4721ae64c99ecc62f55e1",
+    "mechanisms.py": "1dd72760d2f255ffd6f63696c0d392b2747ee2e4e40b643b7b410520bee8e2a9",
+    "README.md": "d69dae3be21471efc1b954fa67b963924b8cea87ad279bd9d4112389b7017ed6",
+    "TINY_CONTRACT.json": "167206b92b7215c1969d832df9506fec1625d54e326bec57c0024ec2420bdc8d",
+    "RULE_SOURCE_PINS.json": "6a22da9dbf6b3149c78a06800921287825b76040fb4320eff778dbdb85a03569"
+  }
+}

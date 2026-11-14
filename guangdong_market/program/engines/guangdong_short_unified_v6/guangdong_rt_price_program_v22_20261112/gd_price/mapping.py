@@ -1,0 +1,12 @@
+from mechanisms import need,digest
+def build(q,names):
+ ri={n:i for i,n in enumerate(names['constraints'])};vn=names['variables'];balances=[n for n in names['constraints']if n.startswith('balance[')];balance=[];accident=[];positive=[]
+ for t in range(8):
+  rows={n:(1. if n.split('[',1)[1].split(',')[0].strip("'")=='39'else 0.)for n in balances if n.endswith(','+str(t)+']')};need(len(rows)==39,'complete39balance inventory');balance.append(dict(period=t,duration_h=.25,rows=rows))
+  for n,r in zip(names['constraints'],q['rows']):
+   terms=[(vn[j],c)for j,c in r['terms']]
+   if r['lb']==400 and r['ub']is None and len(terms)==5 and all(s.startswith('accident[')and s.endswith(','+str(t)+']')and c==1 for s,c in terms):accident.append(dict(period=t,duration_h=.25,row=n,requirement_MW=400.,qualified_columns=[s for s,c in terms]))
+   if r['ub']is None and len(terms)==5 and all(s.startswith('P[')and s.endswith(','+str(t)+']')and c==-1 for s,c in terms):positive.append(n)
+ need(len(accident)==len(positive)==8,'exact8 reserve rows')
+ flows=[n for n in vn if n.startswith('flow[')];m=dict(schema='gd.PRICE.slack_mapping.v1',base_template_sha256=digest(q),base_names_sha256=digest(names),balance=balance,balance_inventory=balances,accident=accident,lines=[dict(id=s[5:-1],duration_h=.25,column=s)for s in flows],line_column_inventory=flows,sections=[],section_row_inventory=[],positive_reserve_rows=positive)
+ return m

@@ -1,0 +1,202 @@
+{
+  "cell": 0,
+  "active_resources": [
+    {
+      "id": "W1",
+      "technology": "wind",
+      "internal_bus": 29,
+      "external_bus": 30,
+      "P_nameplate_MW": 1040,
+      "S_continuous_MVA": 1094.7368421052631,
+      "Qcap_Mvar": 341.8314693860177,
+      "research_design_pf": 0.95,
+      "assumption": "new synthetic direct-connection aggregate, lossless converter/collection; standard-motivated not specified manufacturer capability",
+      "fixed_P_MW": 292.90001517183333,
+      "enabled_Q": true,
+      "Q_min_Mvar": -341.8314693860177,
+      "Q_max_Mvar": 341.8314693860177
+    },
+    {
+      "id": "W2",
+      "technology": "wind",
+      "internal_bus": 36,
+      "external_bus": 37,
+      "P_nameplate_MW": 564,
+      "S_continuous_MVA": 593.6842105263158,
+      "Qcap_Mvar": 185.37783532087886,
+      "research_design_pf": 0.95,
+      "assumption": "new synthetic direct-connection aggregate, lossless converter/collection; standard-motivated not specified manufacturer capability",
+      "fixed_P_MW": 171.5069727938333,
+      "enabled_Q": true,
+      "Q_min_Mvar": -185.37783532087886,
+      "Q_max_Mvar": 185.37783532087886
+    },
+    {
+      "id": "ES4",
+      "technology": "battery",
+      "internal_bus": 3,
+      "external_bus": 4,
+      "P_nameplate_MW": 150,
+      "S_continuous_MVA": 166.66666666666666,
+      "Qcap_Mvar": 72.64831572567788,
+      "research_design_pf": 0.9,
+      "assumption": "new synthetic direct-connection aggregate, lossless converter/collection; standard-motivated not specified manufacturer capability",
+      "fixed_P_MW": 50.0,
+      "enabled_Q": true,
+      "Q_min_Mvar": -72.64831572567788,
+      "Q_max_Mvar": 72.64831572567788
+    },
+    {
+      "id": "ES5",
+      "technology": "battery",
+      "internal_bus": 7,
+      "external_bus": 8,
+      "P_nameplate_MW": 150,
+      "S_continuous_MVA": 166.66666666666666,
+      "Qcap_Mvar": 72.64831572567788,
+      "research_design_pf": 0.9,
+      "assumption": "new synthetic direct-connection aggregate, lossless converter/collection; standard-motivated not specified manufacturer capability",
+      "fixed_P_MW": 19.160527609735574,
+      "enabled_Q": true,
+      "Q_min_Mvar": -72.64831572567788,
+      "Q_max_Mvar": 72.64831572567788
+    }
+  ],
+  "disabled_resources": [
+    {
+      "id": "PV1",
+      "technology": "pv",
+      "internal_bus": 32,
+      "external_bus": 33,
+      "P_nameplate_MW": 652,
+      "S_continuous_MVA": 686.3157894736843,
+      "Qcap_Mvar": 214.3020365766188,
+      "research_design_pf": 0.95,
+      "assumption": "new synthetic direct-connection aggregate, lossless converter/collection; standard-motivated not specified manufacturer capability",
+      "fixed_P_MW": -0.0,
+      "enabled_Q": false,
+      "Q_min_Mvar": 0.0,
+      "Q_max_Mvar": 0.0
+    },
+    {
+      "id": "PV2",
+      "technology": "pv",
+      "internal_bus": 3,
+      "external_bus": 4,
+      "P_nameplate_MW": 750,
+      "S_continuous_MVA": 789.4736842105264,
+      "Qcap_Mvar": 246.5130788841474,
+      "research_design_pf": 0.95,
+      "assumption": "new synthetic direct-connection aggregate, lossless converter/collection; standard-motivated not specified manufacturer capability",
+      "fixed_P_MW": -0.0,
+      "enabled_Q": false,
+      "Q_min_Mvar": 0.0,
+      "Q_max_Mvar": 0.0
+    },
+    {
+      "id": "PV3",
+      "technology": "pv",
+      "internal_bus": 7,
+      "external_bus": 8,
+      "P_nameplate_MW": 750,
+      "S_continuous_MVA": 789.4736842105264,
+      "Qcap_Mvar": 246.5130788841474,
+      "research_design_pf": 0.95,
+      "assumption": "new synthetic direct-connection aggregate, lossless converter/collection; standard-motivated not specified manufacturer capability",
+      "fixed_P_MW": -0.0,
+      "enabled_Q": false,
+      "Q_min_Mvar": 0.0,
+      "Q_max_Mvar": 0.0
+    },
+    {
+      "id": "ES1",
+      "technology": "battery",
+      "internal_bus": 18,
+      "external_bus": 19,
+      "P_nameplate_MW": 100,
+      "S_continuous_MVA": 111.11111111111111,
+      "Qcap_Mvar": 48.432210483785255,
+      "research_design_pf": 0.9,
+      "assumption": "new synthetic direct-connection aggregate, lossless converter/collection; standard-motivated not specified manufacturer capability",
+      "fixed_P_MW": -0.0,
+      "enabled_Q": false,
+      "Q_min_Mvar": 0.0,
+      "Q_max_Mvar": 0.0
+    },
+    {
+      "id": "ES2",
+      "technology": "battery",
+      "internal_bus": 15,
+      "external_bus": 16,
+      "P_nameplate_MW": 200,
+      "S_continuous_MVA": 222.22222222222223,
+      "Qcap_Mvar": 96.86442096757051,
+      "research_design_pf": 0.9,
+      "assumption": "new synthetic direct-connection aggregate, lossless converter/collection; standard-motivated not specified manufacturer capability",
+      "fixed_P_MW": -0.0,
+      "enabled_Q": false,
+      "Q_min_Mvar": 0.0,
+      "Q_max_Mvar": 0.0
+    },
+    {
+      "id": "ES3",
+      "technology": "battery",
+      "internal_bus": 24,
+      "external_bus": 25,
+      "P_nameplate_MW": 100,
+      "S_continuous_MVA": 111.11111111111111,
+      "Qcap_Mvar": 48.432210483785255,
+      "research_design_pf": 0.9,
+      "assumption": "new synthetic direct-connection aggregate, lossless converter/collection; standard-motivated not specified manufacturer capability",
+      "fixed_P_MW": -0.0,
+      "enabled_Q": false,
+      "Q_min_Mvar": 0.0,
+      "Q_max_Mvar": 0.0
+    }
+  ],
+  "thermal_limits": [
+    {
+      "id": "C1",
+      "lower_P_MW": 587.5,
+      "upper_P_MW": 636.0,
+      "previous_SCED_P_MW": 636.0,
+      "next_SCED_P_MW": 636.0
+    },
+    {
+      "id": "C2",
+      "lower_P_MW": 660.5,
+      "upper_P_MW": 698.3144595889985,
+      "previous_SCED_P_MW": 643.8144595889985,
+      "next_SCED_P_MW": 715.0
+    },
+    {
+      "id": "C3",
+      "lower_P_MW": 720.6036953118341,
+      "upper_P_MW": 720.6036953118341,
+      "previous_SCED_P_MW": 655.6036953118341,
+      "next_SCED_P_MW": 785.6036953118341
+    },
+    {
+      "id": "CCGT",
+      "lower_P_MW": 320.0,
+      "upper_P_MW": 457.5,
+      "previous_SCED_P_MW": 320.0,
+      "next_SCED_P_MW": 329.8415422201661
+    },
+    {
+      "id": "GT",
+      "lower_P_MW": 85.0,
+      "upper_P_MW": 220.0,
+      "previous_SCED_P_MW": 85.0,
+      "next_SCED_P_MW": 85.0
+    }
+  ],
+  "SCED_response_sha256": "f036600aead22bea2e9b98767e1e967988f33566944800b60f8c3bed88b7401d",
+  "capability_contract_sha256": "0bc478354e0cb6594f0d05b140ec7b4626b494afa4c487304e1a395708a4c686",
+  "source_mapping_sha256": "0c4b39bda379ae344ea70dca07a3076b98884d3135abb79491446ff6a57a8e98",
+  "producer_sha256": "44ed387c1121f074d5a370a15e5863c3a0f1a7955e7c2ae9493b499c8414c8a8",
+  "same_Pn_and_Qcap": true,
+  "original_400_and_Vlimits_unchanged": true,
+  "max_nfev": 500,
+  "max_seconds": 180
+}

@@ -1,0 +1,57 @@
+{
+  "status": "one_local_PQV_candidate_search_rejected",
+  "actual_new_LP": 0,
+  "actual_new_AC": 0,
+  "actual_nonlinear_diagnostics": 1,
+  "nfev": 337,
+  "final_review": {
+    "cell": 0,
+    "max_AC_equation_pu": 0.0003169037476037731,
+    "max_line_squared_pu": 0.0,
+    "max_inverter_normalized": 0.0,
+    "max_bound_pu": 0.005048897729633128,
+    "max_reserve_pu": 0.0,
+    "nfev": 337,
+    "elapsed_seconds": 5.4536109150067205,
+    "solver_success": true,
+    "zero_P_Q_policy_passed": false,
+    "strict_feasible_candidate": false
+  },
+  "full48_storage_domain_pure_validated": true,
+  "capability_and_initial_active_set_unchanged": true,
+  "source_same_legal_PF_from_v2": true,
+  "zero_P_Q_rejection": [
+    {
+      "id": "ES4",
+      "original_P_MW": 50.0,
+      "failed_iterate_P_MW": 7.105427357601002e-15,
+      "failed_iterate_Q_Mvar": 72.64831572567786,
+      "Qcap_Mvar": 72.64831572567788,
+      "S_MVA": 166.66666666666666,
+      "Vpu": 1.035131069914645
+    },
+    {
+      "id": "ES5",
+      "original_P_MW": 19.160527609735574,
+      "failed_iterate_P_MW": 0.0,
+      "failed_iterate_Q_Mvar": -72.64831572567786,
+      "Qcap_Mvar": 72.64831572567788,
+      "S_MVA": 166.66666666666666,
+      "Vpu": 1.0248658644735515
+    }
+  ],
+  "failed_iterate_never_applied": true,
+  "global_infeasibility_proved": false,
+  "conditional_LP_and_final_AC_not_triggered": true,
+  "formal_release": false,
+  "security_release": false,
+  "execution_ledger_allowed": false,
+  "source_pins": {
+    "guangdong_short_pqv_redispatch_v3_20261112/derive_domain.py": "7eaa45a645af44650f9966d6558f3ac85682978efe06a3a0fd448ce894c774af",
+    "guangdong_short_pqv_redispatch_v3_20261112/LOCAL_P_DOMAIN.json": "e776f23f36c6526a94f5b1209da8d0d1437e573ceed994c5851b21c94a17165f",
+    "guangdong_short_pqv_redispatch_v3_20261112/diagnose_pqv_once.py": "a2dbc02e868b2ef4d20fe1db3f6769c73f67c24b976680431ec8dfecb0b85899",
+    "guangdong_short_pqv_redispatch_v3_20261112/diagnostic_once/RESULT.json": "1d06a3e2428885b50737d96ff8b1a0b1972b307548a66bf4435d1bc5730aff5b",
+    "guangdong_short_pqv_redispatch_v3_20261112/FAILED_CONTROL_LOCATION.json": "be9a2fb8b9961e44499dc6e18d38c760d23556d2a1c589b7aa5d94f171a2edec",
+    "guangdong_short_qv_zeroequiv_v2_20261112/LEGAL_INITIAL_AC.json": "7d5e4d132581c596c67bb75a9bc1ba15558a753dfa447785b05fd9972dba70f5"
+  }
+}

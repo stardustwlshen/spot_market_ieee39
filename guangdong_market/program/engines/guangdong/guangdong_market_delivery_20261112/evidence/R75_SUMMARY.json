@@ -1,0 +1,78 @@
+{
+  "source_relative_original_path": "guangdong_r75_daily_simulated_settlement_20261112/actual_day_v1/RESULT.json",
+  "source_sha256": "125bbf32498cbb3b836b2238ccc52d02e206cd2d5c462ac4dfba6fb29be343a5",
+  "extraction": "selected source fields only, no recalculation; original complete evidence external",
+  "not_independent_reproduction": true,
+  "omitted_collection_counts": {
+    "rows": 480
+  },
+  "summary": {
+    "schema": "gd.research.r75.daily_simulated_energy.v1",
+    "status": "computed_simulation_only",
+    "assumptions": {
+      "channel": "simulation",
+      "participation": "participates",
+      "participation_scope": "all listed thermal/storage/VRE resources solely this research day; actual entitlement unknown",
+      "contracts": [],
+      "known_empty_contracts": true,
+      "agency_contracts": [],
+      "agency_mode": "non_decoupled_provincial assumed for thermal with explicit zero agency quantity",
+      "actual_meter": null,
+      "quantity_kind": "simulated_executed_not_metered",
+      "price_kind": "source_verified_bounded_research_price",
+      "official_publication": false,
+      "formal_bill": null,
+      "payable": false,
+      "dynamic_price_limit_verified": false,
+      "price_limit_baseline": "粤发改价格〔2025〕263号; -50/1800 CNY/MWh; quarter clip then four-point arithmetic mean",
+      "storage": "separate signed discharge and charge ledgers; never net before calculation",
+      "scope": "electric energy components only; excludes AGC, reserves compensation, monthly mechanisms, green certificates, fees and taxes"
+    },
+    "totals": {
+      "QDA_MWh": "74616.10625664074738092500005",
+      "simulated_executed_MWh": "74616.10625664074853607367513",
+      "deviation_MWh": "1.15514867508863E-12",
+      "energy_amount_CNY": "17860524.97662244718369119628"
+    },
+    "components_CNY": {
+      "LT": "0E-16",
+      "DA": "17860526.40452469110739063868",
+      "RT_deviation": "-1.427902243923699442430590000"
+    },
+    "accounting_zero_normalizations": [
+      {
+        "resource": "ES3",
+        "direction": "charge",
+        "start": "2026-11-11T23:00:00+08:00",
+        "source": "executed",
+        "raw_signed_MWh": "8.376924884750655E-13",
+        "accounting_signed_MWh": "0",
+        "delta_MWh": "-8.376924884750655E-13",
+        "threshold_MWh": "1E-9",
+        "reason": "native roundoff at zero; accounting only, original execution unchanged"
+      }
+    ],
+    "accounting_quantity_policy": "Only wrong-direction native residual <=1e-9 MWh set to zero for retained strict-sign arithmetic; raw per-row and physical sums retained, commands unchanged",
+    "physical_energy_conservation": {
+      "modeled_resource_signed_net_MWh": "74616.10625664074937376616357",
+      "fixed_injection_MWh": "18511.67999999999991666666667",
+      "load_MWh": "93127.78625664074986621666667",
+      "residual_MWh": "-5.7578383643675E-13",
+      "fixed_injection_financial_amount": null,
+      "load_side_bill": null,
+      "note": "System physical energy balances; financial totals cover specified modeled resources only. Fixed injections and load-side contracts/registration are not supplied, so no whole-system monetary conservation claim."
+    },
+    "resource_direction_hour_rows": 480,
+    "executed_cells": 288,
+    "max_cell_power_balance_residual_MW": "1.5785E-12",
+    "day_energy_balance_residual_MWh": "-5.7578383643675E-13",
+    "unknown_formal_bill": true,
+    "formal_bill": null,
+    "payable": false,
+    "actual_meter": null,
+    "native_calls": 0,
+    "KKT_repeated": false,
+    "price_source_model": "R74 pure eight-quarter independent PRICE; 15min ramp mapping is research",
+    "retained_arithmetic": "R71 unchanged R36/R47 formula path"
+  }
+}

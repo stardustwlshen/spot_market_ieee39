@@ -1,0 +1,31 @@
+{
+  "schema": "gd.agc.joint.actual_and_synthetic_separate_summary.v1",
+  "actual": {
+    "native_SCED_calls": 1,
+    "AC_calls": 1,
+    "status": "loss_allocation_pending",
+    "excluded": [],
+    "KKT_passed": true,
+    "objective": 1878352.1880516366,
+    "AC_safe": false,
+    "parent_window": 67,
+    "source_available_at": "2026-11-11T16:30:00+08:00",
+    "fixed_issued_frontier": 201,
+    "formal_market_complete": false,
+    "payable": false
+  },
+  "synthetic_health": {
+    "native_calls": 0,
+    "AC_calls": 0,
+    "status": "shortage_pending",
+    "hypothesis_only": true,
+    "available_mw": 40,
+    "unmet_mw": 10,
+    "actual_health_evidence": false
+  },
+  "original_actual_runs_unchanged": true,
+  "tests_passed": 12,
+  "deprecated_context": "FAILED_FUTURE_PARENT_CONTEXT_v1.json",
+  "current_candidate": "candidate_v3_causal_receipted",
+  "actual_receipt": "actual_review_v1/LOOP_RESULT.json"
+}

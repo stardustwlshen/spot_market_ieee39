@@ -1,0 +1,2 @@
+[console_scripts]
+gd-three-state = gd_three_state.adapter:main

@@ -1,0 +1,35 @@
+{
+  "variables": 21769,
+  "rows": 20718,
+  "integer_count": 0,
+  "max_primal_violation": 3.069544618483633e-12,
+  "max_integer_violation": 0.0,
+  "objective": 1537535.302687609,
+  "KKT": {
+    "primal_objective": 1537535.302687609,
+    "dual_objective": 1537535.3026876093,
+    "max_primal_violation": 3.069544618483633e-12,
+    "max_complementarity": 8.952838470577255e-11,
+    "max_dual_sign_violation": 3.762947944389202e-10,
+    "max_non_angle_dual_sign_violation": 3.762947944389202e-10,
+    "max_free_angle_stationarity": 0.0,
+    "worst_free_angle": null,
+    "scoped_angle_columns": [],
+    "allowed_angle_column_names": [
+      "angle['6',206]",
+      "angle['6',253]",
+      "angle['6',254]",
+      "angle['6',255]",
+      "angle['6',259]"
+    ],
+    "absolute_gap": 2.3283064365386963e-10,
+    "objective_complementarity_tolerance": 0.0015475353026876092,
+    "angle_stationarity_tolerance": 1e-08,
+    "strict_legacy_1e_8_pass": true,
+    "raw_witness_unchanged": true,
+    "variables": 21769,
+    "rows": 20718,
+    "checks": "all rows and columns with fsum accumulation",
+    "passed": true
+  }
+}

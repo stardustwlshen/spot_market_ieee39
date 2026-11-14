@@ -1,0 +1,16 @@
+{
+  "status": "passed",
+  "new_native_calls": 0,
+  "new_AC_calls": 0,
+  "source_state_exact_frozen": true,
+  "domain_only_app_relative_path_change": true,
+  "not_tested": [
+    "new IEEE39 nonzero event PRICE LP",
+    "UI actual new 12-call hour",
+    "native tightened future pair",
+    "generic 96-window/H24",
+    "complete AC and AGC safety release",
+    "formal settlement"
+  ],
+  "old_context_negative": "old installation context rejected; initialized fresh v13 context instead of rewriting code pins"
+}

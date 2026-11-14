@@ -1,0 +1,61 @@
+{
+  "source_relative_original_path": "guangdong_r74_price_summary_20261112/actual_day_v1/PRICE_SUMMARY.json",
+  "source_sha256": "dd730f0ff68f794a308cae2f0a39d37d09dfe303ce084093e0556302ca99c8e2",
+  "extraction": "selected source fields only, no recalculation; original complete evidence external",
+  "not_independent_reproduction": true,
+  "omitted_collection_counts": {
+    "hours": 936,
+    "quarters": 3744,
+    "windows": 96
+  },
+  "summary": {
+    "schema": "gd.research.r74.full96_price_summary.v1",
+    "source_contract_sha256": "5d1d8d3e3b3b4b4c0de9857616d534c69155fd6b4127d20bbea3e3358c05ef3a",
+    "upstream_RT_run": "R67-4b0ae3be9c0b430cb8d412f9229740e2",
+    "source_batches": [
+      {
+        "plan_path": "/workspace/scratch/42c5fe32dad0/guangdong_r74_quarter_price_20261112/batch_six_v1/BATCH_PLAN.json",
+        "plan_sha256": "df1a30185e3e730addcc5969d91eb6cf4fa00cb18a91ad0d3145e099c9b2b30d",
+        "review_path": "/workspace/scratch/42c5fe32dad0/guangdong_r74_actual_quarter_price_20261112/native_six_v1/review_v1/BATCH_REVIEW.json",
+        "review_sha256": "c3631c4f98f244e9fe91e669a5a8f21f7ef16516a0d80717e6e936ea71684025"
+      },
+      {
+        "plan_path": "/workspace/scratch/42c5fe32dad0/guangdong_r74_quarter_price_20261112/batch_remaining90_v1/BATCH_PLAN.json",
+        "plan_sha256": "cc9f1f07ca28fb7cd2b520776cd719e530e1f7ba7709514125455afb8d8fa0cf",
+        "review_path": "/workspace/scratch/42c5fe32dad0/guangdong_r74_actual_quarter_price_20261112/native_remaining90_v1/review_v1/BATCH_REVIEW.json",
+        "review_sha256": "a15ee0df16a821a138022f676d5391b63714c4e6f959b58af81f3de00f71b60d"
+      }
+    ],
+    "quarter_node_count": 3744,
+    "hour_node_count": 936,
+    "policy": {
+      "region": "GD",
+      "stage": "both",
+      "unit": "CNY/MWh",
+      "lower": "-50",
+      "upper": "1800",
+      "effective_from": "2025-11-01T00:00:00+08:00",
+      "effective_to": null,
+      "source_url": "https://drc.gd.gov.cn/gkmlpt/content/4/4775/post_4775501.html",
+      "source_id": "粤发改价格〔2025〕263号",
+      "source_status": "official_published",
+      "as_of_search": "2026-11-12T00:00:00+00:00",
+      "no_expiry_known": true,
+      "override_status": "not_found",
+      "dynamic_current_verified": false
+    },
+    "new_optimizer_calls": 0,
+    "KKT_repeated": false,
+    "full_raw_price_available": true,
+    "official_market_price": null,
+    "settlement_price": null,
+    "formal_bill": null,
+    "payable": false,
+    "basis": "R74_8quarter_PRICE_research_actual_previous_power_C_SOC_and_datedU_with_published_baseline_clip_before_hour_mean_NOT_official",
+    "pricing_math": "8quarter_power_ramp_rate_MW_per_h_times_0.25_no5min_powerlift",
+    "prior_R69_infeasible_records_unchanged": true,
+    "mathematical_domain_changed": true,
+    "source_transport_only_delta": false,
+    "review_label_erratum": "ERRATUM.json: inherited raw review transport-only label is invalid for R74; original reviews unchanged"
+  }
+}

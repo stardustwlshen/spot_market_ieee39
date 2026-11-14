@@ -1,0 +1,20 @@
+{
+  "gate": {
+    "status": "verified_research_AGC_safety_not_released",
+    "target_hour": "2026-11-11T12:00:00+08:00",
+    "research_no_increase_check": "fail",
+    "hour_excess_MWh": 27.691195469279826,
+    "full4h_excess_MWh": 49.999999999999446,
+    "unit_removals": [],
+    "unit_attribution_not_established": true,
+    "requires_AC_and_security": true,
+    "native_calls": 0,
+    "formal": false,
+    "safety_release": false,
+    "dispatch_authorized": false
+  },
+  "original_manifest_sha256": "0fb8378ad321c0b5a390fc6b21c9eeecf3fbed9769e12a8f742bbd20e61cb2cd",
+  "original_directory": "/workspace/scratch/42c5fe32dad0/guangdong_short_agc_safety_hour12_v1_20261113",
+  "raw_sources_verified_at_export": true,
+  "raw_sources_not_embedded": true
+}

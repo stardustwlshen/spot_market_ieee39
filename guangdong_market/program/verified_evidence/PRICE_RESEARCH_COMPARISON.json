@@ -1,0 +1,496 @@
+{
+  "actual_new_PRICE_optimizations": 4,
+  "all_optimal_strict_KKT": true,
+  "comparison_rows": 78,
+  "first_quarter_node_prices": 156,
+  "formal_market_price": null,
+  "full_hour_prices_not_complete": true,
+  "initial_seed_quarter_unpriced": true,
+  "no_RT_dual": true,
+  "official_interpretation_unresolved": true,
+  "results": [
+    {
+      "KKT": {
+        "absolute_gap": 1.0989606380462646e-07,
+        "allowed_angle_column_names": [
+          "angle['6',206]",
+          "angle['6',253]",
+          "angle['6',254]",
+          "angle['6',255]",
+          "angle['6',259]"
+        ],
+        "angle_stationarity_tolerance": 1e-08,
+        "checks": "all rows and columns with fsum accumulation",
+        "dual_objective": 1554654.2272186836,
+        "max_complementarity": 6.110422332251953e-09,
+        "max_dual_sign_violation": 0.0,
+        "max_free_angle_stationarity": 0.0,
+        "max_non_angle_dual_sign_violation": 0.0,
+        "max_primal_violation": 1.5347723092418164e-12,
+        "objective_complementarity_tolerance": 0.0015646542272187937,
+        "passed": true,
+        "primal_objective": 1554654.2272187935,
+        "raw_witness_unchanged": true,
+        "rows": 1333,
+        "scoped_angle_columns": [],
+        "strict_legacy_1e_8_pass": true,
+        "variables": 1830,
+        "worst_free_angle": null
+      },
+      "accident_by_quarter": [
+        {
+          "accident_MW": 400.0,
+          "quarter": 0
+        },
+        {
+          "accident_MW": 400.0,
+          "quarter": 1
+        },
+        {
+          "accident_MW": 400.0,
+          "quarter": 2
+        },
+        {
+          "accident_MW": 400.0,
+          "quarter": 3
+        },
+        {
+          "accident_MW": 400.0,
+          "quarter": 4
+        },
+        {
+          "accident_MW": 400.0,
+          "quarter": 5
+        },
+        {
+          "accident_MW": 400.0,
+          "quarter": 6
+        },
+        {
+          "accident_MW": 400.0,
+          "quarter": 7
+        }
+      ],
+      "boundary": "current_sced_research",
+      "current_mode_vs_DA_mode_changed_cells": 74,
+      "end": "2026-11-11T00:30:00+08:00",
+      "full5min_physical_execution_certified": false,
+      "objective": 1554654.227218794,
+      "positive_headroom_by_quarter": [
+        {
+          "margin_above400_MW": 232.75226631355054,
+          "positive_headroom_MW": 632.7522663135505,
+          "quarter": 0
+        },
+        {
+          "margin_above400_MW": 255.08936603249913,
+          "positive_headroom_MW": 655.0893660324991,
+          "quarter": 1
+        },
+        {
+          "margin_above400_MW": 288.1972122295001,
+          "positive_headroom_MW": 688.1972122295001,
+          "quarter": 2
+        },
+        {
+          "margin_above400_MW": 247.0,
+          "positive_headroom_MW": 647.0,
+          "quarter": 3
+        },
+        {
+          "margin_above400_MW": 247.0,
+          "positive_headroom_MW": 647.0,
+          "quarter": 4
+        },
+        {
+          "margin_above400_MW": 247.0,
+          "positive_headroom_MW": 647.0,
+          "quarter": 5
+        },
+        {
+          "margin_above400_MW": 247.0,
+          "positive_headroom_MW": 647.0,
+          "quarter": 6
+        },
+        {
+          "margin_above400_MW": 247.0,
+          "positive_headroom_MW": 647.0,
+          "quarter": 7
+        }
+      ],
+      "raw_price_max": 359.1000000000009,
+      "raw_price_min": 359.0999999999997,
+      "selected_pricing_mode_compatible": true,
+      "slack_interpretation": "No official ML/MR/network slack variables implemented: all present constraints hard; do not confuse unavailable slack mechanism with measured zero slack.",
+      "slack_values": null,
+      "slack_variables_present": false,
+      "source_result_sha256": "c6df7a7231f957742dce6a41a5fc6ff14053754561b9fe689f0733edf2f5eb0d",
+      "start": "2026-11-11T00:15:00+08:00",
+      "window": 0
+    },
+    {
+      "KKT": {
+        "absolute_gap": 1.0128132998943329e-07,
+        "allowed_angle_column_names": [
+          "angle['6',206]",
+          "angle['6',253]",
+          "angle['6',254]",
+          "angle['6',255]",
+          "angle['6',259]"
+        ],
+        "angle_stationarity_tolerance": 1e-08,
+        "checks": "all rows and columns with fsum accumulation",
+        "dual_objective": 1589490.22450413,
+        "max_complementarity": 4.155982576536879e-09,
+        "max_dual_sign_violation": 0.0,
+        "max_free_angle_stationarity": 0.0,
+        "max_non_angle_dual_sign_violation": 0.0,
+        "max_primal_violation": 5.172751116333529e-12,
+        "objective_complementarity_tolerance": 0.0015994902245042315,
+        "passed": true,
+        "primal_objective": 1589490.2245042312,
+        "raw_witness_unchanged": true,
+        "rows": 1333,
+        "scoped_angle_columns": [],
+        "strict_legacy_1e_8_pass": true,
+        "variables": 1830,
+        "worst_free_angle": null
+      },
+      "accident_by_quarter": [
+        {
+          "accident_MW": 405.0,
+          "quarter": 0
+        },
+        {
+          "accident_MW": 405.0,
+          "quarter": 1
+        },
+        {
+          "accident_MW": 405.0,
+          "quarter": 2
+        },
+        {
+          "accident_MW": 405.0,
+          "quarter": 3
+        },
+        {
+          "accident_MW": 405.0,
+          "quarter": 4
+        },
+        {
+          "accident_MW": 405.0,
+          "quarter": 5
+        },
+        {
+          "accident_MW": 405.0,
+          "quarter": 6
+        },
+        {
+          "accident_MW": 405.0,
+          "quarter": 7
+        }
+      ],
+      "boundary": "DA_reference_R61_compatible_research",
+      "current_mode_vs_DA_mode_changed_cells": 74,
+      "end": "2026-11-11T00:30:00+08:00",
+      "full5min_physical_execution_certified": false,
+      "objective": 1589490.2245042312,
+      "positive_headroom_by_quarter": [
+        {
+          "margin_above400_MW": 431.55446246799966,
+          "positive_headroom_MW": 831.5544624679997,
+          "quarter": 0
+        },
+        {
+          "margin_above400_MW": 465.08906603250034,
+          "positive_headroom_MW": 865.0890660325003,
+          "quarter": 1
+        },
+        {
+          "margin_above400_MW": 498.1969122295004,
+          "positive_headroom_MW": 898.1969122295004,
+          "quarter": 2
+        },
+        {
+          "margin_above400_MW": 530.2953444335035,
+          "positive_headroom_MW": 930.2953444335035,
+          "quarter": 3
+        },
+        {
+          "margin_above400_MW": 558.7454907570514,
+          "positive_headroom_MW": 958.7454907570514,
+          "quarter": 4
+        },
+        {
+          "margin_above400_MW": 566.2553325464032,
+          "positive_headroom_MW": 966.2553325464032,
+          "quarter": 5
+        },
+        {
+          "margin_above400_MW": 577.1407657120976,
+          "positive_headroom_MW": 977.1407657120976,
+          "quarter": 6
+        },
+        {
+          "margin_above400_MW": 579.481701049805,
+          "positive_headroom_MW": 979.481701049805,
+          "quarter": 7
+        }
+      ],
+      "raw_price_max": 330.75000000000034,
+      "raw_price_min": 330.7499999999999,
+      "selected_pricing_mode_compatible": true,
+      "slack_interpretation": "No official ML/MR/network slack variables implemented: all present constraints hard; do not confuse unavailable slack mechanism with measured zero slack.",
+      "slack_values": null,
+      "slack_variables_present": false,
+      "source_result_sha256": "69e0c1e7015163919f2b60bd572f1789cf9f598007370e8bba53869302ca4f6b",
+      "start": "2026-11-11T00:15:00+08:00",
+      "window": 0
+    },
+    {
+      "KKT": {
+        "absolute_gap": 8.475035429000854e-08,
+        "allowed_angle_column_names": [
+          "angle['6',206]",
+          "angle['6',253]",
+          "angle['6',254]",
+          "angle['6',255]",
+          "angle['6',259]"
+        ],
+        "angle_stationarity_tolerance": 1e-08,
+        "checks": "all rows and columns with fsum accumulation",
+        "dual_objective": 1533271.4055160072,
+        "max_complementarity": 6.120243454230495e-09,
+        "max_dual_sign_violation": 0.0,
+        "max_free_angle_stationarity": 0.0,
+        "max_non_angle_dual_sign_violation": 0.0,
+        "max_primal_violation": 1.2221335055073723e-12,
+        "objective_complementarity_tolerance": 0.001543271405516092,
+        "passed": true,
+        "primal_objective": 1533271.405516092,
+        "raw_witness_unchanged": true,
+        "rows": 1333,
+        "scoped_angle_columns": [],
+        "strict_legacy_1e_8_pass": true,
+        "variables": 1830,
+        "worst_free_angle": null
+      },
+      "accident_by_quarter": [
+        {
+          "accident_MW": 400.0,
+          "quarter": 0
+        },
+        {
+          "accident_MW": 400.0,
+          "quarter": 1
+        },
+        {
+          "accident_MW": 400.0,
+          "quarter": 2
+        },
+        {
+          "accident_MW": 400.0,
+          "quarter": 3
+        },
+        {
+          "accident_MW": 400.0,
+          "quarter": 4
+        },
+        {
+          "accident_MW": 400.0,
+          "quarter": 5
+        },
+        {
+          "accident_MW": 400.0,
+          "quarter": 6
+        },
+        {
+          "accident_MW": 400.0,
+          "quarter": 7
+        }
+      ],
+      "boundary": "current_sced_research",
+      "current_mode_vs_DA_mode_changed_cells": 90,
+      "end": "2026-11-11T00:45:00+08:00",
+      "full5min_physical_execution_certified": false,
+      "objective": 1533271.4055160924,
+      "positive_headroom_by_quarter": [
+        {
+          "margin_above400_MW": 255.08936603249913,
+          "positive_headroom_MW": 655.0893660324991,
+          "quarter": 0
+        },
+        {
+          "margin_above400_MW": 288.1972122295001,
+          "positive_headroom_MW": 688.1972122295001,
+          "quarter": 1
+        },
+        {
+          "margin_above400_MW": 247.0,
+          "positive_headroom_MW": 647.0,
+          "quarter": 2
+        },
+        {
+          "margin_above400_MW": 247.0,
+          "positive_headroom_MW": 647.0,
+          "quarter": 3
+        },
+        {
+          "margin_above400_MW": 247.0,
+          "positive_headroom_MW": 647.0,
+          "quarter": 4
+        },
+        {
+          "margin_above400_MW": 247.0,
+          "positive_headroom_MW": 647.0,
+          "quarter": 5
+        },
+        {
+          "margin_above400_MW": 247.0,
+          "positive_headroom_MW": 647.0,
+          "quarter": 6
+        },
+        {
+          "margin_above400_MW": 247.0,
+          "positive_headroom_MW": 647.0,
+          "quarter": 7
+        }
+      ],
+      "raw_price_max": 343.3500000000008,
+      "raw_price_min": 343.3499999999999,
+      "selected_pricing_mode_compatible": true,
+      "slack_interpretation": "No official ML/MR/network slack variables implemented: all present constraints hard; do not confuse unavailable slack mechanism with measured zero slack.",
+      "slack_values": null,
+      "slack_variables_present": false,
+      "source_result_sha256": "c00df3ad8f90f1bce1b5c7ce42fbd5e264d96e8789387e1308c912be4e2eb7e6",
+      "start": "2026-11-11T00:30:00+08:00",
+      "window": 1
+    },
+    {
+      "KKT": {
+        "absolute_gap": 1.0174699127674103e-07,
+        "allowed_angle_column_names": [
+          "angle['6',206]",
+          "angle['6',253]",
+          "angle['6',254]",
+          "angle['6',255]",
+          "angle['6',259]"
+        ],
+        "angle_stationarity_tolerance": 1e-08,
+        "checks": "all rows and columns with fsum accumulation",
+        "dual_objective": 1567739.2989064602,
+        "max_complementarity": 4.155982576536879e-09,
+        "max_dual_sign_violation": 0.0,
+        "max_free_angle_stationarity": 0.0,
+        "max_non_angle_dual_sign_violation": 0.0,
+        "max_primal_violation": 5.172751116333529e-12,
+        "objective_complementarity_tolerance": 0.0015777392989065621,
+        "passed": true,
+        "primal_objective": 1567739.298906562,
+        "raw_witness_unchanged": true,
+        "rows": 1333,
+        "scoped_angle_columns": [],
+        "strict_legacy_1e_8_pass": true,
+        "variables": 1830,
+        "worst_free_angle": null
+      },
+      "accident_by_quarter": [
+        {
+          "accident_MW": 405.0,
+          "quarter": 0
+        },
+        {
+          "accident_MW": 405.0,
+          "quarter": 1
+        },
+        {
+          "accident_MW": 405.0,
+          "quarter": 2
+        },
+        {
+          "accident_MW": 405.0,
+          "quarter": 3
+        },
+        {
+          "accident_MW": 405.0,
+          "quarter": 4
+        },
+        {
+          "accident_MW": 405.0,
+          "quarter": 5
+        },
+        {
+          "accident_MW": 405.0,
+          "quarter": 6
+        },
+        {
+          "accident_MW": 405.0,
+          "quarter": 7
+        }
+      ],
+      "boundary": "DA_reference_R61_compatible_research",
+      "current_mode_vs_DA_mode_changed_cells": 90,
+      "end": "2026-11-11T00:45:00+08:00",
+      "full5min_physical_execution_certified": false,
+      "objective": 1567739.298906562,
+      "positive_headroom_by_quarter": [
+        {
+          "margin_above400_MW": 465.08906603250034,
+          "positive_headroom_MW": 865.0890660325003,
+          "quarter": 0
+        },
+        {
+          "margin_above400_MW": 498.1969122295004,
+          "positive_headroom_MW": 898.1969122295004,
+          "quarter": 1
+        },
+        {
+          "margin_above400_MW": 530.2953444335035,
+          "positive_headroom_MW": 930.2953444335035,
+          "quarter": 2
+        },
+        {
+          "margin_above400_MW": 558.7454907570514,
+          "positive_headroom_MW": 958.7454907570514,
+          "quarter": 3
+        },
+        {
+          "margin_above400_MW": 566.2553325464032,
+          "positive_headroom_MW": 966.2553325464032,
+          "quarter": 4
+        },
+        {
+          "margin_above400_MW": 577.1407657120976,
+          "positive_headroom_MW": 977.1407657120976,
+          "quarter": 5
+        },
+        {
+          "margin_above400_MW": 579.481701049805,
+          "positive_headroom_MW": 979.481701049805,
+          "quarter": 6
+        },
+        {
+          "margin_above400_MW": 586.0968113089984,
+          "positive_headroom_MW": 986.0968113089984,
+          "quarter": 7
+        }
+      ],
+      "raw_price_max": 330.75000000000034,
+      "raw_price_min": 330.7499999999999,
+      "selected_pricing_mode_compatible": true,
+      "slack_interpretation": "No official ML/MR/network slack variables implemented: all present constraints hard; do not confuse unavailable slack mechanism with measured zero slack.",
+      "slack_values": null,
+      "slack_variables_present": false,
+      "source_result_sha256": "dd346c67d91915e613e6f4c2f1e6e86fb437f132cbcf0039677c94d2a11bbfaa",
+      "start": "2026-11-11T00:30:00+08:00",
+      "window": 1
+    }
+  ],
+  "settlement_amount": null,
+  "source_pins": {
+    "/workspace/scratch/42c5fe32dad0/guangdong_generic_rt_price_bridge_v1_20261112/W0_DA_reference_R61_compatible_research_v3_PRICE_RESULT.json": "69e0c1e7015163919f2b60bd572f1789cf9f598007370e8bba53869302ca4f6b",
+    "/workspace/scratch/42c5fe32dad0/guangdong_generic_rt_price_bridge_v1_20261112/W0_current_sced_research_v3_PRICE_RESULT.json": "c6df7a7231f957742dce6a41a5fc6ff14053754561b9fe689f0733edf2f5eb0d",
+    "/workspace/scratch/42c5fe32dad0/guangdong_generic_rt_price_bridge_v1_20261112/W1_DA_reference_R61_compatible_research_v3_PRICE_RESULT.json": "dd346c67d91915e613e6f4c2f1e6e86fb437f132cbcf0039677c94d2a11bbfaa",
+    "/workspace/scratch/42c5fe32dad0/guangdong_generic_rt_price_bridge_v1_20261112/W1_current_sced_research_v3_PRICE_RESULT.json": "c00df3ad8f90f1bce1b5c7ce42fbd5e264d96e8789387e1308c912be4e2eb7e6"
+  }
+}

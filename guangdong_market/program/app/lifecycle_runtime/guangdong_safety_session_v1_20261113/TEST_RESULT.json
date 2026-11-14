@@ -1,0 +1,155 @@
+{
+  "status": "passed",
+  "checks": [
+    "actual live source full pair",
+    "full AC payload identity",
+    "complete mapped input and result identity",
+    "same-run failure workflow opened",
+    "missing declaration blocks",
+    "counterfactual never releases",
+    "publication refuses",
+    "cross branch refuses"
+  ],
+  "result": {
+    "branch_id": "unified-first-hour-88eb73a0b823424abe6acecacfb89881",
+    "window": 0,
+    "domain_start": "2026-11-11T00:15:00+08:00",
+    "checks": {
+      "agc_normal": {
+        "status": "unknown",
+        "reason": "not verified for this branch and point"
+      },
+      "capacity_balance": {
+        "status": "model_mathematics_verified",
+        "row_counts": {
+          "c_balance": 1872,
+          "phase_balance": 960,
+          "reserves": 1152
+        },
+        "operating_safety_proven": false
+      },
+      "network_sections_ac": {
+        "status": "fail",
+        "source_sha256": "43ac6e18a9e6f8b4557f1ad15c022086880c5b563ad842a6cc10a28f5d254218",
+        "scope": "single research mean-P snapshot; no hour/day/N-1/dynamics claim"
+      },
+      "hydro_vibration": {
+        "status": "not_applicable_to_explicit_five_thermal_inventory",
+        "operating_safety_proven": false
+      },
+      "storage_soc": {
+        "status": "model_mathematics_verified",
+        "row_counts": {
+          "battery.c_soc": 240
+        },
+        "operating_safety_proven": false
+      },
+      "no_increase_curtailment": {
+        "status": "unknown",
+        "reason": "not verified for this branch and point"
+      }
+    },
+    "hourly_receipt_digests": {
+      "0": "a86a900bba7d701c91229a96e61975166540ffe0e82d05aa72c352dd9a2a23e7",
+      "1": "b0b7250b5b57d6bf0788fa56b0eb5468863df3385baf97328ba2ca7d63cafe0f"
+    },
+    "source_pins": {
+      "/workspace/scratch/42c5fe32dad0/guangdong_unified_sced_recovery_v1_20261113/recovered_first_hour_v1/W0/prepared/names.json": "c01da5850eeb43108601df91e6a97673363550cee730b7a20ee0110b797df80c",
+      "/workspace/scratch/42c5fe32dad0/guangdong_unified_sced_recovery_v1_20261113/recovered_first_hour_v1/W0/prepared/derived_case.json": "e8e08d1417b4122dc6a534143646555082096de1aec1afecec561326389ea0bc",
+      "/workspace/scratch/42c5fe32dad0/guangdong_unified_sced_recovery_v1_20261113/recovered_first_hour_v1/W0/prepared/BOUNDARY.json": "edaad62490b965cde74b1c5ca797c5d450e2ef43505f08f737e823c88d2b70ce",
+      "/workspace/scratch/42c5fe32dad0/guangdong_unified_sced_recovery_v1_20261113/accepted_pair_view/SCED/request.json.gz": "d7d5f863440a3dc651325144fb61ba0140c8baf7ea4bfd0919af9c70f736a5f7",
+      "/workspace/scratch/42c5fe32dad0/guangdong_unified_sced_recovery_v1_20261113/accepted_pair_view/SCED/response.json.gz": "032fbad32192c4067e2eb0a7948d529b42bebcaa8cac6d0b56c8fd442c5eb57a"
+    },
+    "status": "BLOCKED_SYSTEM_SAFETY",
+    "publication_allowed": false,
+    "dispatch_authorized": false,
+    "safety_release": false,
+    "counterfactual_research_enabled": false,
+    "new_AC_calls": 0,
+    "AC": {
+      "basis": "complete payload and AC input identity with completed original one-call evidence; no new AC",
+      "input_sha256": "b0fc5b592d17169586ab0e4afb8d026a9bd1d43ab90214d1de1457211729236b",
+      "result_sha256": "43ac6e18a9e6f8b4557f1ad15c022086880c5b563ad842a6cc10a28f5d254218",
+      "start": "2026-11-11T00:15:00+08:00",
+      "end": "2026-11-11T00:20:00+08:00",
+      "status": "ac_snapshot_unsafe",
+      "scope": "single research mean-P snapshot; no hour/day/N-1/dynamics claim",
+      "violations": [
+        {
+          "kind": "GENERATOR_P_LIMIT",
+          "element": "C1",
+          "value": 668.041280400564,
+          "lower": 290.0,
+          "upper": 646.0
+        },
+        {
+          "kind": "BUS_VOLTAGE_LIMIT",
+          "element": "0",
+          "value": 1.0737257063853738,
+          "lower": 0.94,
+          "upper": 1.06
+        },
+        {
+          "kind": "BUS_VOLTAGE_LIMIT",
+          "element": "1",
+          "value": 1.0617535969623508,
+          "lower": 0.94,
+          "upper": 1.06
+        },
+        {
+          "kind": "BUS_VOLTAGE_LIMIT",
+          "element": "8",
+          "value": 1.0727532485208815,
+          "lower": 0.94,
+          "upper": 1.06
+        },
+        {
+          "kind": "BUS_VOLTAGE_LIMIT",
+          "element": "24",
+          "value": 1.0615456559092085,
+          "lower": 0.94,
+          "upper": 1.06
+        },
+        {
+          "kind": "BUS_VOLTAGE_LIMIT",
+          "element": "25",
+          "value": 1.061117257898246,
+          "lower": 0.94,
+          "upper": 1.06
+        },
+        {
+          "kind": "BUS_VOLTAGE_LIMIT",
+          "element": "33",
+          "value": 0.9316973750856731,
+          "lower": 0.94,
+          "upper": 1.06
+        },
+        {
+          "kind": "BUS_VOLTAGE_LIMIT",
+          "element": "35",
+          "value": 1.0635999999999999,
+          "lower": 0.94,
+          "upper": 1.06
+        },
+        {
+          "kind": "BUS_VOLTAGE_LIMIT",
+          "element": "38",
+          "value": 1.0684510484168108,
+          "lower": 0.94,
+          "upper": 1.06
+        }
+      ]
+    }
+  },
+  "plan": {
+    "default_new_AC_calls": 0,
+    "max_new_AC_calls_per_session": 1,
+    "supported_point": "accepted window first 5-minute domain point only",
+    "new_optimization_calls": 0,
+    "automatic_AC": false,
+    "automatic_reclear": false,
+    "default_publication_allowed": false
+  },
+  "new_AC_calls": 0,
+  "new_optimization_calls": 0
+}

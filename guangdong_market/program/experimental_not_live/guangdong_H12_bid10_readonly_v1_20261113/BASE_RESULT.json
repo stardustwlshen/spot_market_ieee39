@@ -1,0 +1,141 @@
+{
+  "awards_mw": {
+    "C1": 10.0,
+    "C2": 10.0,
+    "C3": 10.0,
+    "CCGT": 10.0,
+    "GT": 10.0
+  },
+  "ranked_ids": [
+    "C1",
+    "C2",
+    "C3",
+    "CCGT",
+    "GT"
+  ],
+  "reserved_non_price_setters": [],
+  "raw_marginal": 6.0,
+  "price": 6.0,
+  "price_source": "current",
+  "unmet_mw": 0,
+  "trace": [
+    {
+      "added": "C1",
+      "awards_mw": {
+        "C1": 10.0
+      },
+      "total_mw": 10.0
+    },
+    {
+      "added": "C2",
+      "awards_mw": {
+        "C1": 10.0,
+        "C2": 10.0
+      },
+      "total_mw": 20.0
+    },
+    {
+      "added": "C3",
+      "awards_mw": {
+        "C1": 10.0,
+        "C2": 10.0,
+        "C3": 10.0
+      },
+      "total_mw": 30.0
+    },
+    {
+      "added": "CCGT",
+      "awards_mw": {
+        "C1": 10.0,
+        "C2": 10.0,
+        "C3": 10.0,
+        "CCGT": 10.0
+      },
+      "total_mw": 40.0
+    },
+    {
+      "added": "GT",
+      "awards_mw": {
+        "C1": 10.0,
+        "C2": 10.0,
+        "C3": 10.0,
+        "CCGT": 10.0,
+        "GT": 10.0
+      },
+      "total_mw": 50.0
+    }
+  ],
+  "safety_excluded": [],
+  "hour_start": "2026-11-11T12:00:00+08:00",
+  "binding_end": "2026-11-11T13:00:00+08:00",
+  "research_only": true,
+  "formal_publication_allowed": false,
+  "dispatch_authorized": false,
+  "scope": "guangdong_local_research_projection",
+  "assumptions": [
+    "exclude_crossing_unit",
+    "resource_id_research",
+    "synthetic/local demand, external full-area kmax",
+    "security exclusions are supplied, NOT independently certified"
+  ],
+  "schema": "gd.agc.r73.result.v1",
+  "parameters": {
+    "bid_floor": {
+      "value": 1.0,
+      "unit": "yuan/MW_mileage",
+      "version": "synthetic_v1",
+      "source": "Explicit independent research assumption copied from R73 synthetic fixture except Qzone/target fixed50; not current official parameters",
+      "source_grade": "research_assumption",
+      "available_at": "2026-11-10T00:00:00+08:00",
+      "effective_from": "2026-11-11T00:00:00+08:00",
+      "effective_to": "2026-11-12T00:00:00+08:00"
+    },
+    "distribution_zone_demand_mw": {
+      "value": 50.0,
+      "unit": "MW",
+      "version": "synthetic_v1",
+      "source": "Explicit independent research assumption copied from R73 synthetic fixture except Qzone/target fixed50; not current official parameters",
+      "source_grade": "research_assumption",
+      "available_at": "2026-11-10T00:00:00+08:00",
+      "effective_from": "2026-11-11T00:00:00+08:00",
+      "effective_to": "2026-11-12T00:00:00+08:00"
+    },
+    "provincial_procurement_target_mw": {
+      "value": 50.0,
+      "unit": "MW",
+      "version": "synthetic_v1",
+      "source": "Explicit independent research assumption copied from R73 synthetic fixture except Qzone/target fixed50; not current official parameters",
+      "source_grade": "research_assumption",
+      "available_at": "2026-11-10T00:00:00+08:00",
+      "effective_from": "2026-11-11T00:00:00+08:00",
+      "effective_to": "2026-11-12T00:00:00+08:00"
+    },
+    "local_reserved_floor_mw": {
+      "value": 0.0,
+      "unit": "MW",
+      "version": "synthetic_v1",
+      "source": "Explicit independent research assumption copied from R73 synthetic fixture except Qzone/target fixed50; not current official parameters",
+      "source_grade": "research_assumption",
+      "available_at": "2026-11-10T00:00:00+08:00",
+      "effective_from": "2026-11-11T00:00:00+08:00",
+      "effective_to": "2026-11-12T00:00:00+08:00"
+    },
+    "full_control_area_kmax": {
+      "value": 2.0,
+      "unit": "dimensionless",
+      "version": "synthetic_v1",
+      "source": "Explicit independent research assumption copied from R73 synthetic fixture except Qzone/target fixed50; not current official parameters",
+      "source_grade": "research_assumption",
+      "available_at": "2026-11-10T00:00:00+08:00",
+      "effective_from": "2026-11-11T00:00:00+08:00",
+      "effective_to": "2026-11-12T00:00:00+08:00"
+    }
+  },
+  "nonparticipants": [],
+  "unmet_requirement_mw": 0,
+  "cross_zone_exchange_assumption": 0,
+  "formal_supported": false,
+  "source_authentication_performed": false,
+  "security_certified": false,
+  "native_calls": 0
+}

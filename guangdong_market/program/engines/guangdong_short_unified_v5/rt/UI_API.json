@@ -1,0 +1,71 @@
+{
+  "entry": "engines/guangdong_short_rt_v2/user_entry.py",
+  "core": "guangdong_rt_short_user_cli_v5_20261112/program.py (isolated candidate revision, NOT live CLI5 exact copy)",
+  "version": "portable_v2.1_candidate_explicit_stable_trajectory_age_guard",
+  "install": "copy package contents into a NEW engines/guangdong_short_rt_v2; do not overwrite prior engines or source-bound existing runs",
+  "commands": {
+    "declare": "declare --da ACCEPTED_DA --output NEW_JSON --profile repeat-selected-da-terminal-and-48h-online-plan-research --hypothetical-published-at ISO_UTC8 --hypothetical-available-at ISO_UTC8",
+    "seed": "seed --da SAME_ACCEPTED_DA --run NEW_RUN --day-declarations DECLARATIONS_JSON",
+    "build": "build --run RUN --window W [--agc-projection EXPLICIT_CONFIG_JSON]",
+    "preflight": "preflight --run RUN --window W",
+    "run": "run --run RUN --window W [--execute-native]",
+    "accept": "accept --run RUN --window W",
+    "handoff": "handoff --run RUN --window W --simulate-no-deviation"
+  },
+  "window_range": [
+    0,
+    95
+  ],
+  "run_without_execute_native": "read-only status; zero optimization",
+  "UI_required_fields": [
+    "selected accepted DA",
+    "fresh run directory",
+    "explicit research day-declaration JSON",
+    "research profile and hypothetical publication/availability if generating declarations",
+    "window index",
+    "native execution checkbox separate from preparation",
+    "explicit no-deviation handoff checkbox"
+  ],
+  "UI_result_contract": {
+    "format": "last stdout line JSON; nonzero exit is rejection, retain preceding output",
+    "states": [
+      "seeded",
+      "prepared",
+      "ready",
+      "accepted",
+      "counterfactual_handoff",
+      "blocked"
+    ],
+    "show": [
+      "native_calls",
+      "stage_status",
+      "pending_stages",
+      "source_identity",
+      "formal",
+      "safety_release"
+    ]
+  },
+  "UI_precautions": [
+    "v2.1 thermal handoff accepts only unchanged stable-online through all three carried five-minute cells, with start=stop=0. Any off/active/change or within-prefix stop/start excursion is explicitly rejected; generic on/off trajectory-age recomputation is NOT supported. Old v2 and live CLI5 remain untouched.",
+    "No automatic native retry, cancellation or process kill. Keep owning supervisor alive until explicit completed/failed outcome.",
+    "Unknown native occurrence blocks. Repeated accepted run is read-only.",
+    "Old CLI1 and frozen CLI2–5 historical tickets are not re-signed or imported by moving files. New package supports new runs only.",
+    "Initial seed requires accepted stable original DA prefix. Active startup notices and typed continuation still fail closed.",
+    "New day declaration consumes a chosen source, not real publication: both D and D+1 original declared targets repeated; selected48h online plan hypothetically already available.",
+    "Default AGC is inherited research awards; optional separately sourced future-hour receipt projection exists but is not automatically cleared every hour. Portable receipt consumption has not been tested here.",
+    "Negative/zero numerical mode-power roundoff canonicalization only in carry, explicit correction list; original native and SOC/cycle ledger retained.",
+    "W95 supports final day execution handoff but its newly issued 00:00–00:15 plan is next-day data. D-day end SOC uses W94 local2/W95 initial.",
+    "No AC safety, N-1, real telemetry/contracts/payment connection or formal market certification.",
+    "Relocated source seed/build passed; this is not an independent Space backup or full-day solve."
+  ],
+  "solver": {
+    "name": "HiGHS",
+    "gap": 0.001,
+    "abs_gap": 0,
+    "threads": 1,
+    "SCED": "IPM/no crossover/optimality1e-12; strict original KKT unchanged"
+  },
+  "formal": false,
+  "safety_release": false,
+  "thermal_age_scope": "unchanged stable-online three-cell prefixes only"
+}

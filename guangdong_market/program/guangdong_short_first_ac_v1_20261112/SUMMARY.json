@@ -1,0 +1,143 @@
+{
+  "AC_status": "ac_snapshot_unsafe",
+  "AC_converged": true,
+  "violations": [
+    {
+      "kind": "GENERATOR_P_LIMIT",
+      "element": "C1",
+      "value": 667.8355147912363,
+      "lower": 290.0,
+      "upper": 646.0
+    },
+    {
+      "kind": "BUS_VOLTAGE_LIMIT",
+      "element": "0",
+      "value": 1.0741921928536955,
+      "lower": 0.94,
+      "upper": 1.06
+    },
+    {
+      "kind": "BUS_VOLTAGE_LIMIT",
+      "element": "1",
+      "value": 1.0622693798507405,
+      "lower": 0.94,
+      "upper": 1.06
+    },
+    {
+      "kind": "BUS_VOLTAGE_LIMIT",
+      "element": "8",
+      "value": 1.0731132812533306,
+      "lower": 0.94,
+      "upper": 1.06
+    },
+    {
+      "kind": "BUS_VOLTAGE_LIMIT",
+      "element": "24",
+      "value": 1.0620531477187858,
+      "lower": 0.94,
+      "upper": 1.06
+    },
+    {
+      "kind": "BUS_VOLTAGE_LIMIT",
+      "element": "25",
+      "value": 1.0614894201608485,
+      "lower": 0.94,
+      "upper": 1.06
+    },
+    {
+      "kind": "BUS_VOLTAGE_LIMIT",
+      "element": "33",
+      "value": 0.932096644119667,
+      "lower": 0.94,
+      "upper": 1.06
+    },
+    {
+      "kind": "BUS_VOLTAGE_LIMIT",
+      "element": "35",
+      "value": 1.0636,
+      "lower": 0.94,
+      "upper": 1.06
+    },
+    {
+      "kind": "BUS_VOLTAGE_LIMIT",
+      "element": "38",
+      "value": 1.0688832810787103,
+      "lower": 0.94,
+      "upper": 1.06
+    }
+  ],
+  "capacity_postcheck": {
+    "status": "research_unsafe",
+    "research_safe": false,
+    "thermal": [
+      {
+        "unit": "C1",
+        "p_AC_mw": 667.8355147912363,
+        "scheduled_p_mw": 636.0,
+        "slack_loss_adjustment_mw": 31.835514791236278,
+        "up_headroom_after_AGC_mw": -31.835514791236278,
+        "down_headroom_after_AGC_mw": 367.8355147912363,
+        "positive_available_mw": 0.0,
+        "accident_available_mw": 0.0
+      },
+      {
+        "unit": "C2",
+        "p_AC_mw": 698.3144595889985,
+        "scheduled_p_mw": 698.3144595889985,
+        "slack_loss_adjustment_mw": 0.0,
+        "up_headroom_after_AGC_mw": 16.68554041100151,
+        "down_headroom_after_AGC_mw": 363.3144595889985,
+        "positive_available_mw": 16.68554041100151,
+        "accident_available_mw": 16.68554041100151
+      },
+      {
+        "unit": "C3",
+        "p_AC_mw": 720.6036953118341,
+        "scheduled_p_mw": 720.6036953118341,
+        "slack_loss_adjustment_mw": 0.0,
+        "up_headroom_after_AGC_mw": 134.39630468816586,
+        "down_headroom_after_AGC_mw": 320.60369531183414,
+        "positive_available_mw": 134.39630468816586,
+        "accident_available_mw": 130.0
+      },
+      {
+        "unit": "CCGT",
+        "p_AC_mw": 385.4,
+        "scheduled_p_mw": 385.4,
+        "slack_loss_adjustment_mw": 0.0,
+        "up_headroom_after_AGC_mw": 291.6,
+        "down_headroom_after_AGC_mw": 65.39999999999998,
+        "positive_available_mw": 291.6,
+        "accident_available_mw": 275.0
+      },
+      {
+        "unit": "GT",
+        "p_AC_mw": 85.0,
+        "scheduled_p_mw": 85.0,
+        "slack_loss_adjustment_mw": 0.0,
+        "up_headroom_after_AGC_mw": 205.0,
+        "down_headroom_after_AGC_mw": 0.0,
+        "positive_available_mw": 205.0,
+        "accident_available_mw": 205.0
+      }
+    ],
+    "positive_available_mw": 647.6818450991674,
+    "accident_available_mw": 626.6855404110015,
+    "positive_requirement_mw": 400,
+    "accident_requirement_mw": 400,
+    "synthetic_AGC50_headroom_preserved": false,
+    "fixed_PQ_service_credit": 0,
+    "slack_adjustment_not_settlement": true,
+    "formal_security_certification": false
+  },
+  "new_AC_calls": 1,
+  "new_optimization_calls": 0,
+  "formal_release": false,
+  "security_release": false,
+  "execution_ledger_allowed": false,
+  "source_AC_result_sha256": "92f9128a4010d8ce9a9642367de8f4a7ebe77bd494bfac47099af5204cbba245",
+  "Vmin": 0.932096644119667,
+  "Vmax": 1.0741921928536955,
+  "actual_loss_MW": 31.83551479123424,
+  "max_plan_actual_P_difference_MW": 31.835514791236278
+}

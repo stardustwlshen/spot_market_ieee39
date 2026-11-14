@@ -1,0 +1,1 @@
+Independent mechanism test assumptions only. ML prime=1000, MR prime=200, M1 prime=100 yuan/MWh. These are NOT Guangdong official parameter values. Five disconnected scenarios only; 400MW reserve demand retained as test scaling, not actual reserve procurement. Explicit system slack at the sole balance row per toy period.

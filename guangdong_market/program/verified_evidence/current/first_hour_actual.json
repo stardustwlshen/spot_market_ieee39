@@ -1,0 +1,136 @@
+{
+  "status": "installed_final_batch_actual_first_hour_complete",
+  "scope": "Independent edited-DA first-hour user workflow, not rerun of original full day",
+  "native_calls": 12,
+  "SCUC": 4,
+  "SCED": 4,
+  "PRICE": 4,
+  "steps_verified": 13,
+  "actual_RT_windows": [
+    0,
+    1,
+    2,
+    3
+  ],
+  "actual_PRICE_windows": [
+    -1,
+    0,
+    1,
+    2
+  ],
+  "executed_cells": 12,
+  "quarter_prices": 4,
+  "hour_energy_component_CNY": "984919.7573504869784083185913",
+  "formal": false,
+  "safety_release": false,
+  "payable": false,
+  "unknown_or_failed_native_retries": 0,
+  "original_full_day_untouched": true,
+  "source_pins": {
+    "/workspace/scratch/42c5fe32dad0/guangdong_unified_batch_candidate_v1_20261113/actual_first_hour_v1/price/seed/ACCEPTED.json": "231fc5bd026bf381a8715073bc512024776088e922c2fde7b0fa69fbe557a256",
+    "/workspace/scratch/42c5fe32dad0/guangdong_unified_batch_candidate_v1_20261113/actual_first_hour_v1/rt/W0/actual/ACCEPTED_PAIR.json": "edde2f682b8e2e09b5e2f192dc9cb03414a98e638db8d4cd210a8e37149e9619",
+    "/workspace/scratch/42c5fe32dad0/guangdong_unified_batch_candidate_v1_20261113/actual_first_hour_v1/rt/handoff/W1/HANDOFF.json": "3c87650fb83336c18a550582dfaaaa992c78ebf995787f903d5e031238de3ee5",
+    "/workspace/scratch/42c5fe32dad0/guangdong_unified_batch_candidate_v1_20261113/actual_first_hour_v1/rt/handoff/W1/CARRY.json": "97d66a9399980fdb8f551b09e939f63c35cd3fba7770aa5eab856cfedd7ff005",
+    "/workspace/scratch/42c5fe32dad0/guangdong_unified_batch_candidate_v1_20261113/actual_first_hour_v1/price/W0/ACCEPTED.json": "487f8d114927d97cfd178f0fcd7c30c7d120ce93396f1cb5e5622114f2fb5588",
+    "/workspace/scratch/42c5fe32dad0/guangdong_unified_batch_candidate_v1_20261113/actual_first_hour_v1/rt/W1/actual/ACCEPTED_PAIR.json": "f9c7ca261a8f2fca609317ffe05f3d9dd80cd7cf391bce8c203eb6a17eafdaca",
+    "/workspace/scratch/42c5fe32dad0/guangdong_unified_batch_candidate_v1_20261113/actual_first_hour_v1/rt/handoff/W2/HANDOFF.json": "644007b1e5bf4c0578c529a459241f452f3e0e912ecc9c7363484929d39394c7",
+    "/workspace/scratch/42c5fe32dad0/guangdong_unified_batch_candidate_v1_20261113/actual_first_hour_v1/rt/handoff/W2/CARRY.json": "e3a5f1509278e23bde6f802d596a4aabdb949a7bd68ef7e7a89a9c76b0860ce8",
+    "/workspace/scratch/42c5fe32dad0/guangdong_unified_batch_candidate_v1_20261113/actual_first_hour_v1/price/W1/ACCEPTED.json": "48dd9ae93d223ee368cd5e34666422a94a24be1d4795e058ce41b8448876734f",
+    "/workspace/scratch/42c5fe32dad0/guangdong_unified_batch_candidate_v1_20261113/actual_first_hour_v1/rt/W2/actual/ACCEPTED_PAIR.json": "c5d36c3610c84630bdc9642bdbf85cd83cbd8629e67a42cc1c3b5ae16071952b",
+    "/workspace/scratch/42c5fe32dad0/guangdong_unified_batch_candidate_v1_20261113/actual_first_hour_v1/rt/handoff/W3/HANDOFF.json": "1d4a08aee281a5e30e31a81aa8dede123b052d497e42f661e5d2c7a84dd855df",
+    "/workspace/scratch/42c5fe32dad0/guangdong_unified_batch_candidate_v1_20261113/actual_first_hour_v1/rt/handoff/W3/CARRY.json": "d25c53587834436a2e80ec781b04a8bd4ce2981cd51325d04755709e2cf6a80e",
+    "/workspace/scratch/42c5fe32dad0/guangdong_unified_batch_candidate_v1_20261113/actual_first_hour_v1/price/W2/ACCEPTED.json": "97d2f9b77717005de682ee569406f44c6ac5e0c78b01dc6bc167e561ef8cf13a",
+    "/workspace/scratch/42c5fe32dad0/guangdong_unified_batch_candidate_v1_20261113/actual_first_hour_v1/rt/W3/actual/ACCEPTED_PAIR.json": "478a5a8c151518bf2f57b9d291d7ea7c9b3c9928042427bd1610b584a42709ee",
+    "/workspace/scratch/42c5fe32dad0/guangdong_unified_batch_candidate_v1_20261113/actual_first_hour_v1/rt/handoff/W4/HANDOFF.json": "0b314636e4da35593c13e5f271ee58ac2c6f52b251389fdb657eeec6616f174c",
+    "/workspace/scratch/42c5fe32dad0/guangdong_unified_batch_candidate_v1_20261113/actual_first_hour_v1/rt/handoff/W4/CARRY.json": "7914346dc68cfd0bd35ebd0e42c1ac1d023fc1a8e745b663c18c87ba588d5e45",
+    "/workspace/scratch/42c5fe32dad0/guangdong_unified_batch_candidate_v1_20261113/actual_first_hour_v1/hours/H0/COMPLETED.json": "cb2a1e211858b956a4e32779c0249e0b2d78004902832fcfc6879adb92f72d25"
+  },
+  "native_receipts": [
+    {
+      "kind": "SCUC",
+      "window": 0,
+      "native_status": "Optimal",
+      "native_gap": 8.12658475035986e-05,
+      "response_sha256": "2c7924a319588e9493c07f8a0d599780a80b633fa70b6f9bb92bbb05cb2f8845"
+    },
+    {
+      "kind": "SCED",
+      "window": 0,
+      "native_status": "Optimal",
+      "native_gap": null,
+      "response_sha256": "46de09090e61232938863191ca6962085637f6255b86c8b3b9211dd887d0db37"
+    },
+    {
+      "kind": "SCUC",
+      "window": 1,
+      "native_status": "Optimal",
+      "native_gap": 0.00013063128412076612,
+      "response_sha256": "2e6d76b45ca3d990b54ad2133d1ea965add89dd9bccf4316864df06159ba8dae"
+    },
+    {
+      "kind": "SCED",
+      "window": 1,
+      "native_status": "Optimal",
+      "native_gap": null,
+      "response_sha256": "6c995132a1ff611efe6e5077d814029c7885c9e4408d7a1f57b69f12061ba080"
+    },
+    {
+      "kind": "SCUC",
+      "window": 2,
+      "native_status": "Optimal",
+      "native_gap": 0.00022545061407488735,
+      "response_sha256": "5698bc45f24cd9bde5f28fe9bc8f6810abc367379454273041938ca6619ad824"
+    },
+    {
+      "kind": "SCED",
+      "window": 2,
+      "native_status": "Optimal",
+      "native_gap": null,
+      "response_sha256": "bf11ed05b6667ecdab051e126e01730ae8ccc315961be28325748d1bcaee6321"
+    },
+    {
+      "kind": "SCUC",
+      "window": 3,
+      "native_status": "Optimal",
+      "native_gap": 0.00019152459391239834,
+      "response_sha256": "1d85ab662413a813bee07b2fc0c2db45b54d3264f3ba179cbcfc72b005f79cfd"
+    },
+    {
+      "kind": "SCED",
+      "window": 3,
+      "native_status": "Optimal",
+      "native_gap": null,
+      "response_sha256": "a2eb2c462577ebab5fbc1bbebd75ba90b2d8059c6510da87c2c44d728ceb269b"
+    },
+    {
+      "kind": "PRICE",
+      "window": -1,
+      "native_status": "Optimal",
+      "response_sha256": "14b633608a68b8bdb2855005b2c61c4fb516251f1b10fdfb22477dadfda6eec2"
+    },
+    {
+      "kind": "PRICE",
+      "window": 0,
+      "native_status": "Optimal",
+      "response_sha256": "bd5157158e222c5179f7dcb54e17483fe99fa059819463095a1a037aa4f8289b"
+    },
+    {
+      "kind": "PRICE",
+      "window": 1,
+      "native_status": "Optimal",
+      "response_sha256": "bd71594678006dfaa98c8389ceb010ce7290683a03761203d558fc1750282d87"
+    },
+    {
+      "kind": "PRICE",
+      "window": 2,
+      "native_status": "Optimal",
+      "response_sha256": "80c11ec690f3f05c37d0959878d8328ae4bb14ad75e84cf4aaa7f85af906cbd3"
+    }
+  ],
+  "plan_sha256": "69645fb8ad0ee55dc7c7364243a18ddce61b0db8bd47713290312d67b1eb716c",
+  "limits": [
+    "Research assumptions remain; not proof of all-day batch orchestration",
+    "Existing complete original full-day mathematical results separate",
+    "No formal bills, actual telemetry or AC/AGC operational release"
+  ]
+}

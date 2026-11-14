@@ -1,0 +1,37 @@
+{
+  "status": "portable_source_delivery_ready_with_explicit_scope",
+  "pure_modules": [
+    "R73 thermal",
+    "R77 safety evidence",
+    "R78 storage Fm",
+    "R79 mixed procurement"
+  ],
+  "core_source_files": 52,
+  "core_source_bytes": 967215,
+  "small_build": {
+    "variables": 1623,
+    "rows": 3073,
+    "relocated_and_different_cwd": true
+  },
+  "tests": 3,
+  "native_calls": 0,
+  "large_builds": 0,
+  "native_execution_in_new_package": "prior snapshot actually verified by parent once; this R80 addition not native rerun",
+  "full_market_pipeline": "not independently bundled",
+  "codec_decode_test": "horizon dataclasses and AGC int keys verified before intercepting large builder",
+  "source_integrity": "each mapped vendor file checked",
+  "real_qualifications_created": false,
+  "R80": "source-preserving fixed-fixture two-window runner with LP KKT, relocated pure build/dryrun passed",
+  "ieee39_four_inputs_bundled": true,
+  "ieee39_contract_preflight": "576 physical /98 market; R56 validate passed; no build",
+  "read_only_evidence_summaries": [
+    "R67",
+    "R74",
+    "R75"
+  ],
+  "initial_packaging_native_calls": 0,
+  "later_parent_relocated_native_calls": 1,
+  "later_parent_result": "Optimal6140.75 gap0; ACTUAL_PORTABLE_VERIFICATION.json",
+  "R80_portable_test": 1,
+  "R80_packaging_native_calls": 0
+}

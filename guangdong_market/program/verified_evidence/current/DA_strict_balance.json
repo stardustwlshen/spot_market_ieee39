@@ -1,0 +1,37 @@
+{
+  "native_calls": 0,
+  "strict_balance_checks": {
+    "balance[": {
+      "count": 98,
+      "all_equalities": true,
+      "variable_families": [
+        "power",
+        "vre_power"
+      ],
+      "max_abs_original_primal_residual_mw": 9.094947017729282e-13
+    },
+    "physical_balance[": {
+      "count": 576,
+      "all_equalities": true,
+      "variable_families": [
+        "physical_power",
+        "physical_vre_power"
+      ],
+      "max_abs_original_primal_residual_mw": 4.547473508864641e-12
+    }
+  },
+  "slack_variable_count": 9016,
+  "slack_row_families": [
+    "line_lower",
+    "line_upper"
+  ],
+  "slack_max_abs_primal": 0.0,
+  "matrix_sha256": "941926af93f9e243d58665b1b7b1c16a0f03316ae1ef0471a9372eaeb404e2a4",
+  "installed_source_hash_matches": {
+    "da_math/smm_extend/gd_r14_da_lmp.py": true,
+    "price_dependencies_v4/gd_r14_da_sced.py": true,
+    "da_math/eligible_vre53.py": true,
+    "da_pipeline_v4.py": false,
+    "da_native_price_v4.py": true
+  }
+}

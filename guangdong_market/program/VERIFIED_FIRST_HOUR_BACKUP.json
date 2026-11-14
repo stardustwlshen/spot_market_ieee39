@@ -1,0 +1,20 @@
+{
+  "library_file_id": "libfile_fde3_f-2de0326a0bb88191952d253dd633507f_da36cc1b542081919a2fe7f8af93584c",
+  "file_id": "file_000000000f5c81fd8bd34939ccae4354",
+  "file_name": "广东安装批入口首小时与编辑日前补充证据_恢复索引_20261113.json",
+  "sha256": "689711d633672920eeb120677765d39c0179ab383fbbae95c7775d9d8cc26de8",
+  "restore_verification": {
+    "status": "three_downloaded_archives_stream_extracted_all_selected_bytes_verified",
+    "parts": 3,
+    "selected_files": 923,
+    "raw_bytes": 415914430,
+    "archive_bytes": 45937637,
+    "actual_first_hour_native_count_preserved": 12,
+    "selected_DA_artifact_file_coverage": true,
+    "index_reentry_record_preserved": true,
+    "new_native_calls": 0,
+    "whole_tree_written_to_disk": false,
+    "full_history_replay_not_claimed": true,
+    "outside_selected_hashed_references": 108
+  }
+}

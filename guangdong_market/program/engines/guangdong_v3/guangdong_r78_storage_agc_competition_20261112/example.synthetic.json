@@ -1,0 +1,145 @@
+{
+  "schema": "gd.agc.storage.r78.v1",
+  "mode": "research",
+  "hour_start": "2026-11-12T01:00:00+08:00",
+  "as_of": "2026-11-12T00:30:00+08:00",
+  "zone": "GD_fixture",
+  "population": {
+    "complete": true,
+    "zone": "GD_fixture",
+    "demand_mw": "1200",
+    "evidence": {
+      "id": "fixture",
+      "source": "synthetic NOT operating data",
+      "source_grade": "research",
+      "hour_start": "2026-11-12T01:00:00+08:00",
+      "as_of": "2026-11-12T00:00:00+08:00"
+    },
+    "offers": [
+      {
+        "resource_id": "D",
+        "participant_type": "independent_storage_third_party",
+        "zone": "GD_fixture",
+        "evidence": {
+          "id": "fixture",
+          "source": "synthetic NOT operating data",
+          "source_grade": "research",
+          "hour_start": "2026-11-12T01:00:00+08:00",
+          "as_of": "2026-11-12T00:00:00+08:00"
+        },
+        "submitted": true,
+        "normal_service": true,
+        "operator_excluded": false,
+        "participation_mode": "simultaneous_energy_agc",
+        "qualification": {
+          "market_registered": true,
+          "dispatch_direct_control": true,
+          "dispatch_agreement": true,
+          "purchase_sale_contract": true,
+          "agc_capable": true,
+          "initial_model_performance_test": true,
+          "autor_test_published": true,
+          "simultaneous_energy_market_qualified": true,
+          "simultaneous_technical_test_completed": true,
+          "evidence": {
+            "id": "fixture",
+            "source": "synthetic NOT operating data",
+            "source_grade": "research",
+            "hour_start": "2026-11-12T01:00:00+08:00",
+            "as_of": "2026-11-12T00:00:00+08:00"
+          },
+          "sustained_response_hours": "1",
+          "autor_test_hours": "8"
+        },
+        "rated_power_mw": "100",
+        "installed_capacity_mw": "100",
+        "declared_capacity_mw": "75",
+        "bid_yuan_per_mw_mileage": "15",
+        "k": "1"
+      },
+      {
+        "resource_id": "E",
+        "participant_type": "independent_storage_third_party",
+        "zone": "GD_fixture",
+        "evidence": {
+          "id": "fixture",
+          "source": "synthetic NOT operating data",
+          "source_grade": "research",
+          "hour_start": "2026-11-12T01:00:00+08:00",
+          "as_of": "2026-11-12T00:00:00+08:00"
+        },
+        "submitted": true,
+        "normal_service": true,
+        "operator_excluded": false,
+        "participation_mode": "simultaneous_energy_agc",
+        "qualification": {
+          "market_registered": true,
+          "dispatch_direct_control": true,
+          "dispatch_agreement": true,
+          "purchase_sale_contract": true,
+          "agc_capable": true,
+          "initial_model_performance_test": true,
+          "autor_test_published": true,
+          "simultaneous_energy_market_qualified": true,
+          "simultaneous_technical_test_completed": true,
+          "evidence": {
+            "id": "fixture",
+            "source": "synthetic NOT operating data",
+            "source_grade": "research",
+            "hour_start": "2026-11-12T01:00:00+08:00",
+            "as_of": "2026-11-12T00:00:00+08:00"
+          },
+          "sustained_response_hours": "1",
+          "autor_test_hours": "8"
+        },
+        "rated_power_mw": "100",
+        "installed_capacity_mw": "100",
+        "declared_capacity_mw": "75",
+        "bid_yuan_per_mw_mileage": "15",
+        "k": "1"
+      }
+    ]
+  },
+  "parameters": {
+    "version": "scan_baseline_fixture_not_current",
+    "evidence": {
+      "id": "fixture",
+      "source": "synthetic NOT operating data",
+      "source_grade": "research",
+      "hour_start": "2026-11-12T01:00:00+08:00",
+      "as_of": "2026-11-12T00:00:00+08:00"
+    },
+    "effective_from": "2026-11-12T00:00:00+08:00",
+    "effective_to": "2026-11-13T00:00:00+08:00",
+    "values": {
+      "G": "80",
+      "H": "20",
+      "QLL": ".2",
+      "Ux": ".7",
+      "Uy": "2.5",
+      "zx": ".4",
+      "zy": ".6",
+      "Qlb": "5",
+      "bid_floor": "3",
+      "bid_upper": "15",
+      "lambdaI": ".5",
+      "lambdaII": ".25",
+      "lambdaIII": ".25",
+      "KI_upper": "5",
+      "Lss_hours": "1",
+      "Ts_hours": "8"
+    }
+  },
+  "performance_universe": {
+    "scope": "entire_southern_unified_control_area",
+    "complete": true,
+    "kmax": "3",
+    "evidence": {
+      "id": "fixture",
+      "source": "synthetic NOT operating data",
+      "source_grade": "research",
+      "hour_start": "2026-11-12T01:00:00+08:00",
+      "as_of": "2026-11-12T00:00:00+08:00"
+    }
+  }
+}

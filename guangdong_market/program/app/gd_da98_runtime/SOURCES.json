@@ -1,0 +1,19 @@
+{
+  "document": "南方区域电力现货市场实施细则（2026年V1.0版）",
+  "official_url": "http://www.gzpec.cn/law/jygz/202611/P020261103633894465723.pdf",
+  "local_verified_pdf": "/workspace/scratch/42c5fe32dad0/guangdong_r21_day_verified_final_v1_20261112/source/rules/region202610_official.pdf",
+  "sha256": "978d7d7179e3629f8a86fb2d770470e1700b67c4bb867123b07a2d8f480c3caf",
+  "source_type": "saved_official_document_not_new_web_research",
+  "rules": {
+    "DA98": "2.5.3/2.5.4/2.5.5 print39/55/68 PDF42/58/71",
+    "calendar": "2.4.1 print32 PDF35;2.4.2 print33 PDF36;2.4.2.3 print34 PDF37;2.4.4 print36 PDF39;2.7.2.1 print86 PDF89",
+    "storage_declaration": "2.4.2.4 print35 PDF38",
+    "hourly_price": "2.7.1.1 print84 PDF87",
+    "publication_contents": "2.7.2.2–.5 print86 PDF89"
+  },
+  "unresolved": [
+    "representative absolute times/weights/state connections",
+    "regional storage printed band/terminal interpretation",
+    "effective business delta/resource eligibility"
+  ]
+}

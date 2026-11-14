@@ -1,0 +1,5 @@
+Traceback (most recent call last):
+  File "/workspace/scratch/42c5fe32dad0/guangdong_short_pqv_redispatch_v3_20261112/derive_domain.py", line 44, in <module>
+    lower=q['variables'][k]['lb']or 0.;upper=q['variables'][k]['ub'];assert upper is not None
+                                                                            ^^^^^^^^^^^^^^^^^
+AssertionError
