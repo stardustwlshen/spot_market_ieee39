@@ -1,0 +1,65 @@
+name: Expand verified Guangdong research package once
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/expand-guangdong-once.yml']
+permissions:
+  contents: write
+concurrency:
+  group: expand-guangdong-once
+  cancel-in-progress: false
+jobs:
+  expand:
+    if: github.repository == 'stardustwlshen/spot_market_ieee39' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          fetch-depth: 1
+      - name: Verify locked archive and restore without overwriting
+        shell: bash
+        run: |
+          set -euo pipefail
+          test ! -e guangdong_market
+          python3 - <<'PY'
+          import hashlib, json
+          from pathlib import Path
+          b=Path('guangdong_market_bundle')
+          m=json.loads((b/'package_manifest.json').read_text())
+          data=b''.join((b/p['name']).read_bytes() for p in m['parts'])
+          assert hashlib.sha256(data).hexdigest() == 'be329d5377035a37389915bdb5d13b18c07a6edad9cead73e4c2f29baa2dc427'
+          PY
+          python3 guangdong_market_bundle/restore.py
+          python3 - <<'PY'
+          import hashlib, io, json, tarfile
+          from pathlib import Path
+          b=Path('guangdong_market_bundle')
+          m=json.loads((b/'package_manifest.json').read_text())
+          data=b''.join((b/p['name']).read_bytes() for p in m['parts'])
+          n=0
+          with tarfile.open(fileobj=io.BytesIO(data),mode='r:xz') as a:
+              for member in a:
+                  if member.isfile():
+                      assert hashlib.sha256(a.extractfile(member).read()).digest() == hashlib.sha256(Path(member.name).read_bytes()).digest(), member.name
+                      n+=1
+          assert n == 4724, n
+          print('Exact restored files:',n)
+          bad=[str(p) for p in Path('guangdong_market').rglob('*') if p.is_file() and (p.name in {'license.key','license.dat','.env','id_rsa','id_ed25519'} or any(x in p.parts for x in {'.venv','venv','__pycache__','.git'}))]
+          assert not bad,bad
+          r=b/'README.md'
+          text=r.read_text(encoding='utf-8')
+          r.write_text('> 源码和研究结果现已展开在 [guangdong_market](../guangdong_market)，可直接浏览。分块包保留作校验备份；已有展开目录时无需再次解包。\n\n'+text,encoding='utf-8')
+          PY
+      - name: Commit expanded files
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git config core.quotepath false
+          git add -f -- guangdong_market
+          git add -- guangdong_market_bundle/README.md
+          git diff --cached --name-only | python3 -c "import sys; names=sys.stdin.read().splitlines(); assert all(x.startswith('guangdong_market/') or x in {'guangdong_market_bundle/README.md','.github/workflows/expand-guangdong-once.yml'} for x in names)"
+          git commit -m 'Expand exact research source and results for direct browsing'
+          git push origin HEAD:main
