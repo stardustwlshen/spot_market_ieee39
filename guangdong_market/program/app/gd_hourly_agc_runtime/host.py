@@ -5,7 +5,7 @@ from datetime import timedelta
 B=Path(__file__).resolve().parent;R=B.parents[1]
 INSTALL=R/'engines/guangdong_short_unified_v6'
 INPUT_SHA='e947dffb0ff3ca8f21bcdf0391142274c32b2a78c7cf9ad60c5b17fabbb4c409'
-MANIFEST='6a05c3018a6548428bdb68845ff428d74b5e2aec510d8dd0293cc34899a23e85'
+MANIFEST='c8b3e53419eb178545a87f3e4854d0631c5217df126cdde1360f411b8cbf18d7'
 read=lambda p:json.loads(Path(p).read_bytes())
 sha=lambda p:hashlib.sha256(Path(p).read_bytes()).hexdigest()
 def write(p,z):

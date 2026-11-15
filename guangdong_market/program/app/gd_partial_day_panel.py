@@ -80,22 +80,33 @@ def render(selected_da):
      if rs is not None:
       if name=='PHYSICAL_CELLS.json':render_physical_charts(rs)
       if name=='QUARTER_PRICES.json':render_price_chart(rs)
-      st.dataframe(rs,hide_index=True)
+      if name=='PHYSICAL_CELLS.json':st.dataframe([dict(r,**{'时段末SOC时刻':_soc_end(r)}) if isinstance(r.get('storage_SOC_MWh'),dict) else r for r in rs],hide_index=True)
+      else:st.dataframe(rs,hide_index=True)
      else:st.json(data)
    with accounts:st.caption('仅列本选定来源的已完成小时账户电能量分项；分项净合计不是市场总额、利润、正式净账单。原分支缺价小时仍不补造。')
   except Exception as exc:st.error('部分结果未通过来源读取：'+str(exc))
+
+def _soc_end(cell):
+ # This registered historical panel has fixed five-minute cells.  Old snapshots
+ # omit end; derive only the timestamp, never the stored end-energy value.
+ if cell.get('end'):return cell['end']
+ if cell.get('start'):
+  from datetime import datetime,timedelta
+  return (datetime.fromisoformat(cell['start'])+timedelta(minutes=5)).isoformat()
+ return None
 
 def render_physical_charts(cells):
  import streamlit as st
  import pandas as pd
  import plotly.express as px
- for key,title,unit in [('thermal_MW','热机执行功率','MW'),('storage_charge_MW','储能充电功率','MW'),('storage_discharge_MW','储能放电功率','MW'),('storage_SOC_MWh','储能SOC','MWh'),('VRE_MW','风光执行功率','MW'),('AGC_up_MW','调频向上预留','MW'),('AGC_down_MW','调频向下预留','MW')]:
+ for key,title,unit in [('thermal_MW','热机执行功率','MW'),('storage_charge_MW','储能充电功率','MW'),('storage_discharge_MW','储能放电功率','MW'),('storage_SOC_MWh','储能时段末SOC','MWh'),('VRE_MW','风光执行功率','MW'),('AGC_up_MW','调频向上预留','MW'),('AGC_down_MW','调频向下预留','MW')]:
   plotted=[]
   for c in cells:
    value=c.get(key)
    if isinstance(value,dict):
     for resource,amount in value.items():
-     if isinstance(amount,(int,float,str))and amount is not None:plotted.append({'时刻':c.get('start',c.get('tick')),'资源':resource,unit:float(amount)})
+     at=_soc_end(c) if key=='storage_SOC_MWh' else c.get('start',c.get('tick'))
+     if isinstance(amount,(int,float,str))and amount is not None and at is not None:plotted.append({'时刻':at,'资源':resource,unit:float(amount)})
   if plotted:st.plotly_chart(px.line(pd.DataFrame(plotted),x='时刻',y=unit,color='资源',title=title),width='stretch')
   elif key in ('storage_SOC_MWh','AGC_up_MW','AGC_down_MW'):st.caption(title+'：快照未提供该字段，保持未知，不由功率或资格推造。')
 

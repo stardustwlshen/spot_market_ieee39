@@ -1,0 +1,51 @@
+{
+  "kind": "near24_far24_prediction_static_AC",
+  "coverage": 48,
+  "new_HiGHS": 0,
+  "new_PRICE": 0,
+  "new_AC": 48,
+  "elapsed_seconds": 11.923162279003009,
+  "converged": 48,
+  "safe": 0,
+  "unsupported": 0,
+  "execution_advancement": 0,
+  "release": false,
+  "N_1": false,
+  "dynamic": false,
+  "actual_clocks_unknown": true,
+  "source_binding_sha256": "379d04362eeb4b6b7728ba01edf1a8756612e12dd61dea4d682ca0cfdc1fd344",
+  "violations_by_kind": {
+    "GENERATOR_P_LIMIT": 48,
+    "BUS_VOLTAGE_LIMIT": 358
+  },
+  "minimum_voltage": {
+    "pu": 0.9264604711248806,
+    "global_tick": 17,
+    "AC_bus": "33"
+  },
+  "maximum_voltage": {
+    "pu": 1.0875804484520089,
+    "global_tick": 50,
+    "AC_bus": "0"
+  },
+  "AGC_preserved_cells": 0,
+  "minimum_positive_MW": 621.5547624679994,
+  "minimum_accident_MW": 549.3963046881659,
+  "loss_range_MW": [
+    31.835514791237415,
+    36.943611297070106
+  ],
+  "C1_AC_power_range_MW": [
+    667.8355147912458,
+    672.9436112970742
+  ],
+  "C1_technical_Pmax_MW": 646.0,
+  "C1_AGC_adjusted_Pmax_MW": 636.0,
+  "hypothetical_consecutive_AC_ramp_violations": [],
+  "notes": [
+    "GT original VG1.0636 > upper1.06 retained as original diagnostic, never normalized",
+    "Full curve means 48 planning snapshots, not full-day 288 actual cells",
+    "Post-AC snapshot ramp arithmetic is diagnostic; no endpoint/dynamic feasibility certification",
+    "Logical cutoff is a replay declaration, actual arrival timestamps unknown"
+  ]
+}

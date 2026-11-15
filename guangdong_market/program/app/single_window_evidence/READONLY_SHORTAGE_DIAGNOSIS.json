@@ -1,0 +1,116 @@
+{
+  "status": "readonly_constraint_diagnosis",
+  "native_calls": 0,
+  "contributions": [
+    {
+      "resource": "C1",
+      "near_average_mw": 635.9999999999999,
+      "PRICE_mw": 636.0,
+      "PRICE_minus_near_mw": 1.1368683772161603e-13,
+      "lb": 572.4,
+      "ub": 636.0,
+      "at_upper": true
+    },
+    {
+      "resource": "C2",
+      "near_average_mw": 709.4381531963327,
+      "PRICE_mw": 709.5000000000001,
+      "PRICE_minus_near_mw": 0.06184680366743578,
+      "lb": 580.5,
+      "ub": 709.5000000000001,
+      "at_upper": true
+    },
+    {
+      "resource": "C3",
+      "near_average_mw": 763.4848993227793,
+      "PRICE_mw": 695.3234612851998,
+      "PRICE_minus_near_mw": -68.1614380375795,
+      "lb": 568.9010137787998,
+      "ub": 695.3234612851998,
+      "at_upper": true
+    },
+    {
+      "resource": "CCGT",
+      "near_average_mw": 345.0805140733889,
+      "PRICE_mw": 352.0,
+      "PRICE_minus_near_mw": 6.919485926611117,
+      "lb": 320.0,
+      "ub": 352.0,
+      "at_upper": true
+    },
+    {
+      "resource": "GT",
+      "near_average_mw": 85.0,
+      "PRICE_mw": 93.50000000000001,
+      "PRICE_minus_near_mw": 8.500000000000014,
+      "lb": 85.0,
+      "ub": 93.50000000000001,
+      "at_upper": true
+    },
+    {
+      "resource": "ES1",
+      "near_average_mw": 0.0,
+      "PRICE_mw": 0.0,
+      "PRICE_minus_near_mw": 0.0,
+      "lb": 0.0,
+      "ub": 0.0,
+      "at_upper": true
+    },
+    {
+      "resource": "ES2",
+      "near_average_mw": 0.0,
+      "PRICE_mw": 0.0,
+      "PRICE_minus_near_mw": 0.0,
+      "lb": 0.0,
+      "ub": 0.0,
+      "at_upper": true
+    },
+    {
+      "resource": "ES3",
+      "near_average_mw": 0.0,
+      "PRICE_mw": 0.0,
+      "PRICE_minus_near_mw": 0.0,
+      "lb": 0.0,
+      "ub": 0.0,
+      "at_upper": true
+    },
+    {
+      "resource": "ES4",
+      "near_average_mw": 12.441670939500264,
+      "PRICE_mw": 13.685838033450292,
+      "PRICE_minus_near_mw": 1.2441670939500273,
+      "lb": 11.197503845550237,
+      "ub": 13.685838033450292,
+      "at_upper": true
+    },
+    {
+      "resource": "ES5",
+      "near_average_mw": 0.0,
+      "PRICE_mw": 0.0,
+      "PRICE_minus_near_mw": 0.0,
+      "lb": 0.0,
+      "ub": 0.0,
+      "at_upper": true
+    }
+  ],
+  "mapped_physical_rows_checked": 202,
+  "unmapped_rows_not_claimed": 27,
+  "mapped_row_violations": [],
+  "mapped_column_violations": [
+    {
+      "name": "P[C3,0]",
+      "value": 763.4848993227793,
+      "lb": 568.9010137787998,
+      "ub": 695.3234612851998,
+      "violation": 68.1614380375795
+    }
+  ],
+  "system_balance_rhs_mw": 3020.0564748690003,
+  "sum_P_and_vre_upper_bounds_mw": 2968.62053665565,
+  "algebraic_minimum_shortage_from_supply_bounds_mw": 51.435938213350255,
+  "accepted_PRICE_generation_mw": 2968.62053665565,
+  "shortage_mw": 51.435938213350944,
+  "net_vre_change_mw": 0.0,
+  "single_column_terminal_energy_equalities": [],
+  "scope": "physical witness rows only; segments/additional reserve not fully mapped. No counterfactual feasibility solve. Cannot infer original physical infeasibility from PRICE relaxation."
+}

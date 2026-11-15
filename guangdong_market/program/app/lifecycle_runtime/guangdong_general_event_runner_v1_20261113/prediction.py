@@ -3,12 +3,12 @@ from copy import deepcopy
 from datetime import datetime
 from exact_fixed import aligned_tick,validate_receipts
 from thermal_prefix_reader import derive_prefix
-def predict(case,incoming,names,primal,*,issue_tick,executed_cells=3,receipts=()):
+def predict(case,incoming,names,primal,*,issue_tick,executed_cells=1,receipts=()):
  # Check all receipts identically before consuming new or inherited events.
- start=aligned_tick((datetime.fromisoformat(case['contract']['domain_start'])-datetime.fromisoformat(case['contract']['origin'])).total_seconds()/300,'domain clock')
- model_cut=aligned_tick((datetime.fromisoformat(case['contract']['cutoff'])-datetime.fromisoformat(case['contract']['origin'])).total_seconds()/300,'model cutoff clock')
+ start=aligned_tick((datetime.fromisoformat(case['contract']['domain_start'])-datetime.fromisoformat(case['contract']['origin'])).total_seconds()/900,'domain clock')
+ model_cut=aligned_tick((datetime.fromisoformat(case['contract']['cutoff'])-datetime.fromisoformat(case['contract']['origin'])).total_seconds()/900,'model cutoff clock')
  assert type(issue_tick)is int and issue_tick==start and model_cut<=issue_tick,'accepted issue clock must equal issued prefix start, not old model cutoff'
- cut=issue_tick
+ cut=issue_tick+executed_cells-1 if case['contract'].get('rt_clock_mode')=='provincial_15min_execution' else issue_tick
  leads=validate_receipts(case,receipts,cut)
  z=derive_prefix(case,incoming,names,primal,executed_cells=executed_cells)
  for state in z['boundary_states'].values():state['available_at']=case['contract']['domain_start']
@@ -16,7 +16,7 @@ def predict(case,incoming,names,primal,*,issue_tick,executed_cells=3,receipts=()
  vals=dict(zip(names['variables'],primal))
  ages={};states={};old=incoming['thermal']
  for g,d in case['energy_inputs']['thermal'].items():
-  age=d['initial_state_age_h']*12;assert abs(age-round(age))<1e-7,'declared age must align5min';anchor=start-round(age);phase=old[g]['phase'];disconnect=None
+  age=d['initial_state_age_h']*4;assert abs(age-round(age))<1e-7,'declared age must align15min';anchor=start-round(age);phase=old[g]['phase'];disconnect=None
   # No historic disconnect invented for a currently online unit.
   if phase=='off':disconnect=anchor
   scheduled=[]
@@ -41,7 +41,7 @@ def predict(case,incoming,names,primal,*,issue_tick,executed_cells=3,receipts=()
      else:scheduled.append(at+len(expected))
    # connection changes to off only at shutdown completion, not stop initiation.
    if start+j+1 in scheduled:anchor=start+j+1;disconnect=anchor
-  end=start+executed_cells;ages[g]=(end-anchor)/12
+  end=start+executed_cells;ages[g]=(end-anchor)/4
   if z['boundary_states'][g]['phase']=='off':assert disconnect is not None
   states[g]=dict(boundary_tick=end,connection_anchor_tick=anchor,last_disconnect_tick=disconnect,connection_state_age_ticks=end-anchor,phase=z['boundary_states'][g]['phase'],event_id=z['boundary_states'][g]['event_id'],event_elapsed_ticks=z['boundary_states'][g]['event_elapsed_ticks'],remaining_curve=deepcopy(z['boundary_states'][g]['remaining_curve']),startup_class=None,startup_class_basis='not supplied: fixed single declared research curve only')
  z.update(thermal_age_h=ages,fixed_curve_state=states,typed_classification_supported=False,source_receipts_verified_by_caller=True)

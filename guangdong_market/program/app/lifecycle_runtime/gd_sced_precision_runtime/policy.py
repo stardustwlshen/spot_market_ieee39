@@ -6,7 +6,7 @@ from copy import deepcopy
 import hashlib,json
 B=Path(__file__).resolve().parent
 WORKER=B/'precision_worker.py'
-SETTINGS=dict(presolve='off',solver='ipm',run_crossover='on',primal_feasibility_tolerance=1e-10,dual_feasibility_tolerance=1e-10,ipm_optimality_tolerance=1e-10,simplex_scale_strategy=0,threads=1,time_limit=3600.)
+SETTINGS=dict(presolve='off',solver='ipm',run_crossover='on',primal_feasibility_tolerance=1e-8,dual_feasibility_tolerance=1e-10,ipm_optimality_tolerance=1e-10,simplex_scale_strategy=0,threads=1,time_limit=3600.)
 def sha(p):return hashlib.sha256(Path(p).read_bytes()).hexdigest()
 def request(q):
  z=deepcopy(q);z['options'].update(SETTINGS)

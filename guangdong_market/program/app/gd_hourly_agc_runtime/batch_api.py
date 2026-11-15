@@ -14,7 +14,7 @@ def apply_available(receipts,consumer,base_agc,*,expected_receipt_digests,expect
   seen.add(hour)
   if stamp(c['as_of'])>stamp(consumer['cutoff']):continue
   from datetime import timedelta
-  begin=stamp(consumer['domain_start']);end=begin+timedelta(minutes=5*consumer['cells'])
+  begin=stamp(consumer['domain_start']);end=begin+timedelta(minutes=(15 if consumer.get('rt_clock_mode')=='provincial_15min_execution' else 5)*consumer['cells'])
   if stamp(c['hour_end'])<=begin or stamp(hour)>=end:continue
   z=project(r,consumer,out,already_applied=applied);out=z['agc'];applied=z['applied_receipts'];selected.append(hour)
  return dict(agc=out,applied_receipts=applied,selected_hours=selected,native_calls=0,formal=False,safety_release=False,already_consumed_by_existing_SCED=False,requires_new_SCED_for_changed_inputs=True)

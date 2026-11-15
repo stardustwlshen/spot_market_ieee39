@@ -31,12 +31,18 @@ def bound(da,run):
  c=read(r/'SHORT_CONTEXT.json');need(Path(c['selected_DA']).resolve()==Path(da).resolve(),'日前来源与此运行不匹配');return r
 
 def prepare(da,base,name,published_at,confirmed=False):
- need(confirmed,'须明确接受研究边界假设');need(str(da).strip(),'填写已接受日前来源');trusted();p=layout(base,name);need(not p['root'].exists(),'运行名已存在，改用已有运行；不覆盖或重复准备');p['root'].mkdir(parents=True)
- write(p['root']/'UI_INPUT.json',dict(selected_DA=str(Path(da).resolve()),profile='conservative_DA_protection_research',published_at=published_at,formal=False))
- commands=[['rt','declare','--da',da,'--output',p['days'],'--profile','repeat-selected-da-terminal-and-48h-online-plan-research','--protection-policy','conservative_DA_protection_research','--hypothetical-published-at',published_at,'--hypothetical-available-at',published_at],['rt','seed','--da',da,'--run',p['run'],'--day-declarations',p['days']],['rt','build','--run',p['run'],'--window',0]]
- for i,a in enumerate(commands):
-  write(p['root']/f'PREPARE_{i}_COMMAND.json',list(map(str,a)));z=call(a);need(z.get('native_calls')==0,'纯准备不得启动求解');write(p['root']/f'PREPARE_{i}_RESULT.json',z)
- return rt_proof(da,p['run'],0)
+ raise ValueError('旧日前复用准备入口已停用；请从单日市场模拟入口按当前场景重新计算省级日前。')
+ need(confirmed,'须明确接受研究边界假设');need(str(da).strip(),'填写已接受日前来源');trusted()
+ da=str(Path(da).resolve());need((Path(da)/'ARTIFACTS.json').is_file(),'缺已接受日前ARTIFACTS；实际接受链由声明/工厂完整核验');p=layout(base,name);need(not p['root'].exists(),'运行名已存在，不覆盖或重复准备');p['root'].mkdir(parents=True)
+ write(p['root']/'UI_INPUT.json',dict(selected_DA=str(Path(da).resolve()),model_scope='active_power_dc',profile='conservative_DA_protection_research',published_at=published_at,formal=False))
+ command=['rt','declare','--da',da,'--output',p['days'],'--profile','repeat-selected-da-terminal-and-48h-online-plan-research','--protection-policy','conservative_DA_protection_research','--hypothetical-published-at',published_at,'--hypothetical-available-at',published_at]
+ write(p['root']/'DECLARE_COMMAND.json',list(map(str,command)));z=call(command);need(z.get('native_calls')==0,'纯声明不得启动求解');write(p['root']/'DECLARE_RESULT.json',z)
+ cmd=[sys.executable,'-B',str(B/'gd_dc_base_worker.py'),str(Path(da).resolve()),str(p['days']),str(p['run'])]
+ q=subprocess.run(cmd,capture_output=True,text=True,timeout=180,env={**os.environ,'PYTHONDONTWRITEBYTECODE':'1'})
+ write(p['root']/'INITIALIZE_PROCESS.json',dict(returncode=q.returncode,stdout=q.stdout,stderr=q.stderr))
+ need(q.returncode==0,'新DC初态准备失败，保留现场，不重复：'+q.stderr[-1000:])
+ result=json.loads(q.stdout.strip().splitlines()[-1]);need(result['receipt']['native_calls']==0,'准备不得求解')
+ return dict(status='new_DC_initial_base_ready',run=str(p['run']),model_scope='active_power_dc',ac_assessment='not_in_model_scope',reactive_power_modeled=False,native_calls=0,initialization=result)
 def rt_proof(da,run,w):
  need(type(w)is int and 0<=w<=95,'窗口必须为0–95');r=bound(da,run);z=call(['rt','preflight','--run',r,'--window',w]);need(z.get('native_calls')==0,'读取不得求解')
  return dict(da=str(Path(da).resolve()),run=str(r),window=w,core=z,install_sha256=sha(CONFIG))
@@ -67,6 +73,7 @@ def native_command(kind,run,w):
  need(kind in ('rt','price'),'未知求解阶段')
  return ['rt','run','--run',str(Path(run).resolve()),'--window',w,'--execute-native']if kind=='rt'else['price','native','--prepared',str(price_paths(run,w)['prepared']),'--execute-native']
 def launch(kind,da,run,w,confirmed=False,proof=None):
+ raise ValueError('旧独立启动入口仅保留历史只读；请使用当前DC连续滚动入口，不能把旧结果改标新范围。')
  need(confirmed,'须明确允许本阶段一次研究求解');r=bound(da,run)
  state=rt_proof(da,r,w)if kind=='rt'else price_status(r,w)
  if kind=='rt':
@@ -80,6 +87,7 @@ def launch(kind,da,run,w,confirmed=False,proof=None):
  with(lock/'SUPERVISOR.log').open('x')as f:proc=subprocess.Popen([sys.executable,'-B',str(B/'gd_unified_supervisor.py'),str(lock)],stdout=f,stderr=f,start_new_session=os.name!='nt',env={**os.environ,'PYTHONDONTWRITEBYTECODE':'1','OMP_NUM_THREADS':'1','OPENBLAS_NUM_THREADS':'1','MKL_NUM_THREADS':'1'})
  write(lock/'LAUNCH.json',dict(pid=proc.pid,automatic_retry=False));return dict(status='started_not_yet_accepted',control=str(lock),native_calls='pending_check_receipts')
 def handoff(da,run,w,confirmed=False):
+ raise ValueError('旧反事实交接入口已停用；请使用当前DC滚动入口按真实接受状态交接，历史文件不改写。')
  need(confirmed,'须明确选择无偏差反事实回执');p=rt_proof(da,run,w);need(p['core']['status']=='accepted','尚未严格接受');r=Path(p['run'])
  # Never sign or overwrite an existing handoff. Core will verify it at the next build.
  need(not(r/f'handoff/W{w+1}').exists(),'交接已有记录，不重新生成；构建下一窗时会严格重放')

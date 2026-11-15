@@ -4,7 +4,7 @@ from datetime import datetime,timedelta
 from copy import deepcopy
 import sys,json,hashlib,math,importlib.util
 B=Path(__file__).resolve().parent
-MANIFEST='6a05c3018a6548428bdb68845ff428d74b5e2aec510d8dd0293cc34899a23e85'
+MANIFEST='c8b3e53419eb178545a87f3e4854d0631c5217df126cdde1360f411b8cbf18d7'
 read=lambda p:json.loads(Path(p).read_bytes())
 sha=lambda p:hashlib.sha256(Path(p).read_bytes()).hexdigest()
 def need(x,m):

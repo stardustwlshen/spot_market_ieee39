@@ -26,15 +26,16 @@ def checked_pair(prepared,actual):
  ua=checks(uq,u,n,True);ea=checks(eq,e,n,False);return n,e
 
 def canonical_energy_boundaries(storage,case,values):
+ provincial=case.get('contract',{}).get('rt_clock_mode')=='provincial_15min_execution';count=1 if provincial else 3;dt=.25 if provincial else 1/12
  corrections=[]
  for unit,state in storage.items():
   raw=state['initial_energy_mwh'];b=case['batteries'][unit];lo=b['energy_min_mwh'];hi=b['energy_max_mwh']
   if lo<=raw<=hi:continue
-  bound=lo if raw<lo else hi;native=values[f'battery.energy[{unit},2]'];tol=1e-10
+  bound=lo if raw<lo else hi;native=values[f'battery.energy[{unit},{count-1}]'];tol=1e-10
   assert abs(raw-bound)<=tol and abs(native-bound)<=tol,'material SOC hard-bound violation; no canonicalization'
   canonical=native if lo<=native<=hi else bound
   assert abs(canonical-raw)<=tol,'material SOC replay mismatch'
-  fsum_end=math.fsum([b['initial_energy_mwh']]+[(math.sqrt(b['roundtrip_efficiency'])*values[f'battery.charge[{unit},{t}]']-values[f'battery.discharge[{unit},{t}]']/math.sqrt(b['roundtrip_efficiency']))/12 for t in range(3)])
+  fsum_end=math.fsum([b['initial_energy_mwh']]+[(math.sqrt(b['roundtrip_efficiency'])*values[f'battery.charge[{unit},{t}]']-values[f'battery.discharge[{unit},{t}]']/math.sqrt(b['roundtrip_efficiency']))*dt for t in range(count)])
   assert abs(fsum_end-native)<=tol and abs(fsum_end-canonical)<=tol,'SOC normalization fails independent fsum gate'
   corrections.append(dict(unit=unit,field='initial_energy_mwh',raw_replayed=raw,native_terminal=native,canonical=canonical,delta_mwh=canonical-raw,tolerance_mwh=tol,fsum_replayed=fsum_end,fsum_difference=fsum_end-native,reason='accepted native SOC/bounded floating arithmetic only; no ledger or original witness changes'))
   state['initial_energy_mwh']=canonical

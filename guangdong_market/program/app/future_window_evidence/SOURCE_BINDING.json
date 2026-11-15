@@ -1,0 +1,26 @@
+{
+  "pins": {
+    "/workspace/scratch/42c5fe32dad0/guangdong_isolated_quarter_persistence_20261114/FUTURE_SAFETY_W96_ACTUAL/W96/prepared/derived_case.json": "e0df52bfcaf8cd6f25a0140ae1c4978c480060a5d0b95060c35f5d57a69323a4",
+    "/workspace/scratch/42c5fe32dad0/guangdong_isolated_quarter_persistence_20261114/FUTURE_SAFETY_W96_ACTUAL/W96/prepared/names.json": "f91cf73131bdae79469c0ea3530122116496f5d1d1c8678e5a542e4657e3dd49",
+    "/workspace/scratch/42c5fe32dad0/guangdong_isolated_quarter_persistence_20261114/FUTURE_SAFETY_W96_ACTUAL/W96/prepared/agc.json": "ea1973f333638c4c3391447dcb989dcf3427fe170b5d5199dcdb013293f05ba9",
+    "/workspace/scratch/42c5fe32dad0/guangdong_isolated_quarter_persistence_20261114/FUTURE_SAFETY_W96_ACTUAL/W96/prepared/BOUNDARY.json": "687db141584285f5fdc2f8f3714d71d55bbc73872d78cd06cecc952640f310d9",
+    "/workspace/scratch/42c5fe32dad0/guangdong_isolated_quarter_persistence_20261114/FUTURE_SAFETY_W96_ACTUAL/W96/actual/ACCEPTED_PAIR.json": "e2f2abf6907c7ee3511046b876138643cc6d1a37e316d5239c7e2a1125d19a2a",
+    "/workspace/scratch/42c5fe32dad0/guangdong_isolated_quarter_persistence_20261114/FUTURE_SAFETY_W96_ACTUAL/W96/actual/SCED/response.json.gz": "4c3a49b2c63f7ff6737bff937e7cfac4b93329a5537ffe9aaeb46adacdfc9b9e",
+    "/workspace/scratch/42c5fe32dad0/guangdong_isolated_quarter_persistence_20261114/FUTURE_SAFETY_W96_ACTUAL/W96/actual/SCUC/response.json.gz": "4c64ffd182c69b79fc845d28ed311c054ccda1820d13447f2f6c6c43e1e7cc79",
+    "/workspace/scratch/42c5fe32dad0/guangdong_isolated_quarter_persistence_20261114/FUTURE_SAFETY_W96_ACTUAL/AC_PAYLOAD.json": "8f3846857dcd6fef1c759baa13c28f34595096380c4c8f7b6872bd842505782e",
+    "/workspace/scratch/42c5fe32dad0/guangdong_isolated_quarter_persistence_20261114/FUTURE_SAFETY_W96_ACTUAL/AC_MAPPING.json": "7c7ac9e0b94239634a40f21e9c6158867389f109e272c21975c53000fb21e223",
+    "/workspace/scratch/42c5fe32dad0/guangdong_isolated_quarter_persistence_20261114/FUTURE_SAFETY_W96_ACTUAL/AC_RESULT.json": "10cfaefa9ba707655af252241e2e7ce915dd36939dcf0cf91fcb650bd2afdccc",
+    "/workspace/scratch/42c5fe32dad0/guangdong_isolated_quarter_persistence_20261114/FUTURE_SAFETY_W96_ACTUAL/AC_CAPACITY.json": "6d88343bba3cc3fa12a87c6dcc645adaf0f495005449c2152742a95a5baeb72c",
+    "/workspace/scratch/42c5fe32dad0/guangdong_isolated_quarter_persistence_20261114/FUTURE_SAFETY_W96_ACTUAL/FINAL_STATUS.json": "ba6e96b9e1d1c36da71ea6df31010e648bc7001d893938c8e93802d531723505",
+    "/workspace/scratch/42c5fe32dad0/future_window_ac_20261114/batch.py": "083dbbe9b0414974f12100b9045b9c8ace75c2be35e265b4cf3471720adfbee2"
+  },
+  "accepted_KKT_original_not_recomputed": true,
+  "SCED_response_sha256": "4c3a49b2c63f7ff6737bff937e7cfac4b93329a5537ffe9aaeb46adacdfc9b9e",
+  "window": 96,
+  "global_ticks": [
+    291,
+    338
+  ],
+  "forecast_only": true,
+  "executed": false
+}

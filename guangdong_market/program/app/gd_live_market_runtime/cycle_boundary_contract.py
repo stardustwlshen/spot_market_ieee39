@@ -24,14 +24,25 @@ def produce(request, accepted, report):
  need(pair['SCED_response_sha256']==done['response']['stored_sha256'],'accepted SCED stored response')
  need(done['response']['raw_sha256']==accepted['SCED_response_sha256']==report['SCED_response_sha256'],'SCED response')
  response=Path(done['response']['path']);need(sha(response)==done['response']['stored_sha256'],'SCED bytes');files.append(response)
- need(summary['carry_sha256']==sha(p/'CARRY.json'),'prepared carry')
- first=request['delivery_tick'];cut=first-3
- need(type(first)is int and first>=3 and first%3==0,'tick')
+ # The compiler pins the original incoming file, then serializes a JSON copy.
+ # Bind BOTH files; whitespace/key order may differ but no state may differ.
+ incoming_hash=summary['carry_sha256']
+ if incoming_hash!=sha(p/'CARRY.json'):
+  candidates=[Path(name) for name,digest in summary['source_pins'].items() if digest==incoming_hash]
+  need(len(candidates)==1,'ambiguous/missing original incoming carry binding')
+  original=candidates[0]
+  need(sha(original)==incoming_hash,'original incoming carry changed')
+  need(read(original)==carry,'prepared carry state differs from compiler-bound original')
+  files.append(original)
+
+ first=request['delivery_tick'];zero=request.get('rt_clock_mode')=='provincial_15min_execution';cut=first
+ need(zero,'provincial cycle contract rejects old 5-minute clock')
+ need(type(first)is int and first>=0,'tick')
  need(carry['delivery_tick']==carry['issued_end_exclusive']==first and carry['cutoff_tick']==carry['executed_end_exclusive']==cut,'issued/executed range')
  need(carry['origin']==request['origin'] and carry['cutoff']==request['cutoff'],'origin/availability')
  origin=datetime.fromisoformat(request['origin']); cutoff=datetime.fromisoformat(request['cutoff'])
- need(cutoff==origin+timedelta(minutes=5*cut),'cutoff time')
- need(datetime.fromisoformat(carry['boundary_at'])==origin+timedelta(minutes=5*first),'boundary time')
+ need(cutoff==origin+timedelta(minutes=15*cut),'cutoff time')
+ need(datetime.fromisoformat(carry['boundary_at'])==origin+timedelta(minutes=15*first),'boundary time')
  need(carry['seed_case_sha256']==request['case_sha256'],'input case')
  need(bd['storage']==carry['storage'],'storage boundary/carry')
  return dict(schema='gd.price.storage_cycle_boundary.v1',units='used_internal_mwh',branch_id=accepted['run_id'],window=accepted['window'],SCED_response_sha256=accepted['SCED_response_sha256'],case_sha256=request['case_sha256'],origin=request['origin'],delivery_tick=first,previous_tick=first-1,available_at=request['cutoff'],boundary_at=carry['boundary_at'],executed_end_exclusive=cut,issued_range=[cut,first],predicted_issued_prefix=carry['predicted_issued_prefix'],prepared=str(p),actual=str(a),storage=copy.deepcopy(bd['storage']),pins={str(f):sha(f)for f in files},formal=False,safety_release=False)
@@ -41,14 +52,14 @@ def validate(contract, request, accepted, case, values, *, report):
  expected=produce(request,accepted,report)
  need(contract==expected,'source/contract binding')
  need(set(contract['storage'])==set(case['batteries']),'resource set')
- first=request['delivery_tick'];origin=datetime.fromisoformat(request['origin']);days={(origin+timedelta(minutes=5*(first+i))).date().isoformat() for i in range(24)}
+ first=request['delivery_tick'];origin=datetime.fromisoformat(request['origin']);days={(origin+timedelta(minutes=15*(first+i))).date().isoformat() for i in range(min(8,96-first))}
  result={}
  for u,d in case['batteries'].items():
   state=contract['storage'][u]; energy=state['initial_energy_mwh'];power=state['initial_power_mw']
   need(finite(energy) and d['energy_min_mwh']-1e-9<=energy<=d['energy_max_mwh']+1e-9,'SOC range')
   need(finite(power) and -d['charge_max_mw']-1e-9<=power<=d['discharge_max_mw']+1e-9,'power range')
-  need(abs(values[f'battery.energy[{u},{first-1}]']-energy)<=1e-10,'SOC mismatch')
-  need(abs(values[f'battery.power[{u},{first-1}]']-power)<=1e-10,'previous power mismatch')
+  if first:need(abs(values[f'battery.energy[{u},{first-1}]']-energy)<=1e-10,'SOC mismatch')
+  if first:need(abs(values[f'battery.power[{u},{first-1}]']-power)<=1e-10,'previous power mismatch')
   budgets=state['cycle_budget'];need(set(budgets)==set(d['cycle_budget']) and days<=set(budgets),'explicit date set')
   result[u]={}
   for date,budget in budgets.items():

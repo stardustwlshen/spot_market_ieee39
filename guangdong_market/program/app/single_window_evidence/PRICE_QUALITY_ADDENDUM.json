@@ -1,0 +1,9 @@
+{
+  "has_nonzero_relaxation": true,
+  "shortage_mw": 51.435938213350944,
+  "execution_allowed": false,
+  "formal_price_usable": false,
+  "source_readout_sha256": "c05e9e007d43d83ba3ce81fa1a62a3a0cef3b9addb59f20e599508dcaebe2360",
+  "original_result_sha256": "726172df7ae1a111844d1313b992b43df28e2bbc3689634e6123ca7388a21d68",
+  "classification": "penalty-driven research price with nonzero load shortage; physical SCED feasible"
+}

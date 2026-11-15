@@ -3,14 +3,14 @@ from copy import deepcopy
 from math import fsum,isfinite
 POLICY='thermal_DA_reference_plus_DA_preceding_complete_15min_first_ramp_RESEARCH'
 def preceding_anchor(da_mean5,first,declared_initial):
- if type(first)is not int or first<0 or first%3:raise ValueError('quarter-aligned nonnegative first index required')
+ if type(first)is not int or first<0:raise ValueError('quarter-aligned nonnegative first index required')
  if first==0:
   if not isfinite(declared_initial):raise ValueError('finite declared source initial required')
   return declared_initial
  if first>len(da_mean5):raise ValueError('DA prefix missing')
- values=da_mean5[first-3:first]
- if len(values)!=3 or not all(isfinite(v)for v in values):raise ValueError('three actual DA mean-MW cells required')
- return fsum(values)/3
+ values=da_mean5[first-1:first]
+ if len(values)!=1 or not all(isfinite(v)for v in values):raise ValueError('one actual DA 15-minute mean-MW cell required')
+ return fsum(values)
 
 def apply_first_ramp(model,names,specs,*,policy):
  """specs keyed exact thermal P[g,0], values DA anchor and existing up/down budgets.

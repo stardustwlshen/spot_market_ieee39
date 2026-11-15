@@ -1,0 +1,18 @@
+{
+  "original_result_unchanged": true,
+  "legacy_shortage_mw_field": "sum of eight MW period values, not first-quarter MW and not MWh",
+  "first_quarter_shortage_mw": 51.435938213350944,
+  "shortage_by_quarter_mw": [
+    51.435938213350944,
+    68.47523660325082,
+    71.78602122295199,
+    134.2028922101015,
+    165.19899480921893,
+    158.37732424700033,
+    171.2838657380572,
+    160.9828744273515
+  ],
+  "total_shortage_mwh": 245.4357868678208,
+  "formal_price_usable": false,
+  "execution_allowed": false
+}

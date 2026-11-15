@@ -1,0 +1,31 @@
+{
+  "status": "research_window_prepared",
+  "far": {
+    "status": "far_raw_reused",
+    "acceptance_path": "/workspace/scratch/42c5fe32dad0/guangdong_isolated_quarter_persistence_20261114/REAL_STAGE_SINGLE_WINDOW/window/FAR_ACCEPTED.json",
+    "sha256": "06f802b622358ecda9b8b1eff4143e801f072a2ee307222f7b01d559de1a925c",
+    "new_native_calls": 0,
+    "near_bundle_sha256": "046d2b5464983ed0bdb7e763696a88e9eb6d1783cba54cf0c71188f90070eb07"
+  },
+  "price": {
+    "status": "prepared_single_quarter_research",
+    "stage_source_bundle_sha256": "046d2b5464983ed0bdb7e763696a88e9eb6d1783cba54cf0c71188f90070eb07",
+    "first_tick": 3,
+    "end_exclusive": 6,
+    "rows": 229,
+    "columns": 335,
+    "native_calls": 0,
+    "formal": false,
+    "publication": false,
+    "execution": false,
+    "settlement": false,
+    "actual_input_available_at": null,
+    "derived_result_available_at": null
+  },
+  "near_source": "/workspace/scratch/42c5fe32dad0/guangdong_isolated_quarter_persistence_20261114/REAL_REGISTERED_STAGE_NATIVE/near24",
+  "far_does_not_replace_near": true,
+  "execution": false,
+  "publication": false,
+  "settlement": false,
+  "full_window_AC": false
+}

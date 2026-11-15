@@ -1,0 +1,8 @@
+{
+  "schema": "gd.rt.battery_soft_target.v1",
+  "band_fraction_of_capacity": 0.02,
+  "penalty_yuan_per_mwh_deviation": 1000.0,
+  "classification": "research_assumption_not_official_rule",
+  "source": "user permits nonidentical RT day-end SOC; 2% band and 1000 yuan/MWh are configurable study assumptions, not observed generation cost",
+  "cost_accounting": "optimization_penalty_only_excluded_from_operating_profit"
+}

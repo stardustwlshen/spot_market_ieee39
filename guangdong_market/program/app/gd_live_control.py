@@ -8,24 +8,45 @@ sha=lambda p:hashlib.sha256(Path(p).read_bytes()).hexdigest()
 def need(x,m):
  if not x:raise ValueError(m)
 def write(p,z):
- with Path(p).open('x')as f:json.dump(z,f,indent=2)
+ payload=json.dumps(z,indent=2,allow_nan=False)
+ with Path(p).open('x')as f:f.write(payload)
 def sources():
  m=read(B/'LIVE_MARKET_MANIFEST.json')
  for name,h in m.items():need(sha(B/name)==h,'live source changed '+name)
  return {str(B/name):h for name,h in m.items()}
 def location(run,name):
  need(re.fullmatch(r'[A-Za-z0-9_-]{1,50}',name),'名称仅字母数字下划线连字符');return Path(run).resolve().parent/'live_market_sessions'/name
-def plan(da,run,name,event_simulation=False,counterfactual_continue=False,ac_once=False,event_price_profile=False,stop_request=None,windows=4,nextday_selection=None,nextday_explicit=False,reference_revision=False,post_scuc_planning=False,post_declarations=None,post_scuc_day=False,candidate_loss_once=False,finite_h1=False,finite_hourly=False):
+def plan(da,run,name,event_simulation=False,counterfactual_continue=False,ac_once=False,event_price_profile=False,stop_request=None,windows=4,nextday_selection=None,nextday_explicit=False,reference_revision=False,post_scuc_planning=False,post_declarations=None,post_scuc_day=False,candidate_loss_once=False,finite_h1=False,finite_hourly=False,pricing_clock_path=None,dispatch_mode="provincial8",pricing_delta=.1,checkpoint_config=None):
+ need(not (counterfactual_continue or ac_once or candidate_loss_once),'AC/reactive/counterfactual options are outside active_power_dc scope; start a new DC run without these options')
+ from gd_dispatch_mode import supported
+ mode_fields=supported(dispatch_mode)
+ from gd_live_market_runtime.pricing_delta import normalize,policy
+ pricing_delta=normalize(pricing_delta);delta_policy=policy(pricing_delta)
  import gd_unified_backend as api
  api.bound(da,run);api.trusted();pins=sources();r=Path(run).resolve()
+ clock_path=str(Path(pricing_clock_path).resolve()) if pricing_clock_path is not None else None
+ if clock_path is not None:
+  clock_policy=read(clock_path);need(clock_policy.get('schema') in ('gd.price.research_clock_policy.v1','gd.price.input_availability.schedule.v1','gd.price.input_availability.declaration.v1'),'unsupported pricing information clock schema');pins[clock_path]=sha(clock_path)
  p=subprocess.run([sys.executable,'-B',str(B/'gd_live_worker.py'),'validate',str(r),str(Path(da).resolve()),str(int(event_simulation)),str(int(counterfactual_continue)),str(int(ac_once)),str(int(event_price_profile)),json.dumps(stop_request),str(windows),json.dumps(nextday_selection),str(int(nextday_explicit)),str(int(reference_revision)),str(int(post_scuc_planning)),json.dumps(post_declarations),str(int(post_scuc_day)),str(int(candidate_loss_once)),str(int(finite_h1)),str(int(finite_hourly))],capture_output=True,text=True)
  need(p.returncode==0,p.stderr or p.stdout or 'live source validation failed');z=json.loads(p.stdout.strip().splitlines()[-1]);pins.update({str(f):sha(f)for f in [r/'SHORT_CONTEXT.json',r/'seed/case.json']});pins.update(z.get('nextday_preflight',{}).get('source_pins',{}));pins.update((z.get('post_preflight')or{}).get('source_pins',{}));pins.update((z.get('post_day_preflight')or{}).get('source_pins',{}))
+ z.update(**mode_fields)
+ from gd_live_market_runtime.durable_entry import review as persistence_review
+ durable=persistence_review(location(r,name),checkpoint_config)
+ if durable.get("config_path"):pins[durable["config_path"]]=durable["config_sha256"]
+ z.update(durable_checkpoint=durable,execution_attempt_id=name,logical_source_branch=str(location(r,name)/"pipeline/dispatch"))
+ z.update(pricing_delta=pricing_delta,pricing_delta_policy=delta_policy)
+ z.update(pricing_clock_path=clock_path,pricing_clock_status='explicit_declaration_selected_pending_actual_input_binding' if clock_path else 'unknown_new_PRICE_native_blocked',pricing_clock_scope='research-only input availability; computation/publication times separate and not inferred')
  return dict(**z,da=str(Path(da).resolve()),run=str(r),output=str(location(r,name)),source_pins=pins)
 def start(p,confirmed=False):
- need(confirmed is True,'explicit complete displayed stage/AC budget required');need(p==plan(p['da'],p['run'],Path(p['output']).name,p['research_event_simulation'],p['counterfactual_continue'],p['ac_once'],p['event_price_profile'],p.get('stop_request'),p.get('windows',4),p.get('nextday_selection'),p.get('nextday_explicit',False),p.get('reference_revision',False),p.get('post_scuc_planning',False),p.get('post_declarations'),p.get('post_scuc_day',False),p.get('candidate_loss_once',False),p.get('finite_h1',False),p.get('finite_hourly',False)),'reviewed plan changed');out=Path(p['output']);out.parent.mkdir(parents=True,exist_ok=True);out.mkdir();write(out/'PLAN.json',p);write(out/'INTENT.json',dict(unknown_is_not_zero_calls=True))
+ need(confirmed is True,'explicit complete displayed stage budget required');need(p==plan(p['da'],p['run'],Path(p['output']).name,p['research_event_simulation'],p['counterfactual_continue'],p['ac_once'],p['event_price_profile'],p.get('stop_request'),p.get('windows',4),p.get('nextday_selection'),p.get('nextday_explicit',False),p.get('reference_revision',False),p.get('post_scuc_planning',False),p.get('post_declarations'),p.get('post_scuc_day',False),p.get('candidate_loss_once',False),p.get('finite_h1',False),p.get('finite_hourly',False),p.get('pricing_clock_path'),p.get('dispatch_mode','provincial8'),p.get('pricing_delta',.1),(p.get('durable_checkpoint')or{}).get('config_path')),'reviewed plan changed');out=Path(p['output']);out.parent.mkdir(parents=True,exist_ok=True);out.mkdir();write(out/'PLAN.json',p);write(out/'INTENT.json',dict(unknown_is_not_zero_calls=True))
  from gd_resume_control import acquire
  lock=acquire(out)if os.name=='posix'else None
- with(out/'stdout.log').open('ab')as f:proc=subprocess.Popen([sys.executable,'-B',str(B/'gd_live_worker.py'),'run',str(out)],stdout=f,stderr=subprocess.STDOUT,start_new_session=True,**({'pass_fds':(lock.fileno(),)}if lock else {}),env={**os.environ,'GD_PIPELINE_LOCK_FD':str(lock.fileno())if lock else 'unsupported','PYTHONDONTWRITEBYTECODE':'1'})
+ with(out/'stdout.log').open('ab')as f:
+  if os.name=='nt':
+   from gd_process_guard import launch_windows
+   proc=launch_windows([sys.executable,'-B',str(B/'gd_live_worker.py'),'run',str(out)],out,out/'PROCESS.guard',f,env={'PYTHONDONTWRITEBYTECODE':'1'})
+  else:
+   proc=subprocess.Popen([sys.executable,'-B',str(B/'gd_live_worker.py'),'run',str(out)],stdout=f,stderr=subprocess.STDOUT,start_new_session=True,pass_fds=(lock.fileno(),),env={**os.environ,'GD_PIPELINE_LOCK_FD':str(lock.fileno()),'PYTHONDONTWRITEBYTECODE':'1'})
  if lock:lock.close()
  write(out/'PID.json',dict(pid=proc.pid));return dict(status='started',output=str(out),publication_allowed=False)
 def status(out):
@@ -52,7 +73,9 @@ def status(out):
  agc_results=scan_agc(out) if dispatch else None
  from gd_candidate_status import read_blocks
  candidate_blocks=read_blocks(out,dispatch) if dispatch else []
- return dict(candidate_blocks=candidate_blocks,agc_results=agc_results,numerical=numerical,safety=safety,events=events,status='worker_exited'if end else'running_or_unknown',exit=end,completed_windows=dispatch.get('completed_windows',0),quarters=prices,hour=hour,hours=hours,hour_exports=[dict(path=str(f.resolve()),sha256=sha(f))for f in sorted((out/'pipeline/price').glob('HOUR*.json'),key=lambda p:int(p.stem[4:]))],verification_scope='same output branch/source-pinned live worker receipts; not a new independent raw/safety certification',publication_allowed=False,dispatch_authorized=False,durable_restart_supported=False)
+ from gd_live_market_runtime.durable_entry import progress as persistence_progress
+ persistence=persistence_progress(out,p.get('durable_checkpoint'))
+ return dict(persistence=persistence,model_scope=p.get('model_scope','historical_unspecified'),ac_assessment=p.get('ac_assessment','historical_unspecified'),reactive_power_modeled=p.get('reactive_power_modeled'),candidate_blocks=candidate_blocks,agc_results=agc_results,numerical=numerical,safety=safety,events=events,status='worker_exited'if end else'running_or_unknown',exit=end,completed_windows=dispatch.get('completed_windows',0),quarters=prices,hour=hour,hours=hours,hour_exports=[dict(path=str(f.resolve()),sha256=sha(f))for f in sorted((out/'pipeline/price').glob('HOUR*.json'),key=lambda p:int(p.stem[4:]))],verification_scope='same output branch/source-pinned live worker receipts; not a new independent raw/safety certification',publication_allowed=False,dispatch_authorized=False,durable_restart_supported=False)
 
 def future_state(out):
  import time
@@ -63,6 +86,7 @@ def future_state(out):
  return z
 
 def future_command(out,kind,*,request=None,confirmation_digest=None,confirmed=False):
+ raise ValueError('Legacy AC/cap-correction commands are disabled in active_power_dc scope; historical files remain read-only')
  import time,os
  out=Path(out);sources();z=future_state(out)
  need(z and z['interactive'],'worker exited, expired or unknown; no live restore')

@@ -8,7 +8,7 @@ B=Path(__file__).resolve().parent;R=B.parent
 sys.path.insert(0,str(R/'guangdong_fixed_event_entry_v1_20261113'))
 import event_path as e
 INSTALL=R.parent.parent/'engines/guangdong_short_unified_v6'
-MANIFEST='6a05c3018a6548428bdb68845ff428d74b5e2aec510d8dd0293cc34899a23e85'
+MANIFEST='c8b3e53419eb178545a87f3e4854d0631c5217df126cdde1360f411b8cbf18d7'
 read=e.read
 from content_hash import sha
 def write(p,z):

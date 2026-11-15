@@ -14,6 +14,8 @@ def summarize(result,*,provenance=None):
  slacks=result.get('slacks')
  if not isinstance(slacks,dict) or not slacks:return unknown('未提供完整定价松弛字段；不能视为零。')
  rows=[];types={};context=result.get('context',{});start=context.get('start')
+ from gd_price_diagnostics import thermal_reference_rows
+ thermal_limits=thermal_reference_rows(context)
  for name,value in sorted(slacks.items()):
   if not isinstance(value,(int,float)) or isinstance(value,bool) or not math.isfinite(value):raise ValueError('nonfinite PRICE slack')
   m=re.fullmatch(r'(PRICE_[^\[]+)\[(.*)\]',name)
@@ -28,8 +30,9 @@ def summarize(result,*,provenance=None):
    rows.append(row)
  return dict(schema=SCHEMA,status='penalty_slacks_active' if rows else 'no_material_penalty_slacks',penalty_slacks_provided=True,
   native_status=result.get('native_status','not_recorded'),stored_KKT_passed=result.get('KKT',{}).get('passed'),
-  nonzero_rows=rows,by_type=types,display_tolerance_MW=DISPLAY_TOL_MW,
+  nonzero_rows=rows,by_type=types,display_tolerance_MW=DISPLAY_TOL_MW,thermal_reference_rows=thermal_limits,
   current_quarter_penalty_active=any(r['is_current_quarter'] for r in rows),
+  load_penalty_yuan_per_MWh=(context.get('explicit_contract')or{}).get('penalties',{}).get('load'),
   delta=context.get('delta'),delta_semantics='relative band: ref ± delta*abs(ref); delta .1 means ±10%, not ±0.1 MW',
   physical_load_shedding='not_inferred_from_PRICE',AC_safety='not_certified_by_PRICE',
   provenance=provenance or {},safety_release=False,formal_bill=None,
@@ -66,23 +69,36 @@ def from_accepted(path):
  result['information_time']=clock
  return result
 
-_TYPE_ZH={'PRICE_load_shortage':'电量不足惩罚松弛','PRICE_load_surplus':'电量过剩惩罚松弛','PRICE_accident_shortfall':'事故备用不足惩罚松弛','PRICE_line_positive':'线路正向越限惩罚松弛','PRICE_line_negative':'线路反向越限惩罚松弛'}
+_TYPE_ZH={'PRICE_load_shortage':'定价模型供给缺口（非实际切负荷）','PRICE_load_surplus':'电量过剩惩罚松弛','PRICE_accident_shortfall':'事故备用不足惩罚松弛','PRICE_line_positive':'线路正向越限惩罚松弛','PRICE_line_negative':'线路反向越限惩罚松弛'}
 def display_rows(rows):
  return [dict({'松弛类型':_TYPE_ZH.get(r['type'],'其他惩罚松弛'),'价格域内时段':r['local_price_tick'],'松弛量（MW）':r['MW'],'当前季度':'是' if r.get('is_current_quarter') else '否'},**({'季度':r['quarter']} if 'quarter' in r else {}),**({'开始时间':r['start'],'结束时间':r['end']} if 'start' in r else {})) for r in rows]
 def render(quality):
  import streamlit as st
  q=quality if isinstance(quality,dict) and quality.get('schema')==SCHEMA else unknown('此历史/当前结果尚未提供价格质量字段；不能默认为零。')
- st.caption('数值状态、定价惩罚松弛、实际物理出力、交流安全与正式账单分别判断。δ=.1为±10%相对带，不是±0.1MW。')
+ st.caption('数值状态、定价惩罚松弛、实际SCED出力与正式账单分别判断。当前DC模型不考虑交流/无功；历史记录保留原身份。')
+ delta=q.get('delta')
+ if isinstance(delta,(int,float)) and not isinstance(delta,bool) and math.isfinite(delta):
+  st.caption(f'此结果使用的定价参考带 δ={delta:g}（{100*delta:g}%）；来自该结果输入，不受当前编辑值影响。δ数值尚未核实为广东正式参数。')
+ else:st.caption('此结果未提供可核实的δ值，不以当前编辑值或默认10%补填。')
+ penalty=q.get('load_penalty_yuan_per_MWh')
+ if isinstance(penalty,(int,float)) and not isinstance(penalty,bool) and math.isfinite(penalty):
+  st.caption(f'此结果负荷平衡罚因子：{penalty:g}元/MWh（源输入）。')
+ else:st.caption('此结果未提供负荷平衡罚因子，不能从价格数值倒推或补填。')
+ st.caption('规则依据：2026 V1.0附录3第21项规定区域默认1000元/MWh；这不是广东当日参数未变更的证明，也不是市场出清价格上限。')
  clock=q.get('information_time')
  if clock and clock.get('status')!='not_declared':
   st.warning(clock['label']+'；不用于正式结算或预出清。')
  if q['status']=='unknown':st.warning(q['reason']);return
  st.write('定价模型数值状态：'+('最优' if q.get('native_status')=='Optimal' else '见技术详情')+'；留存最优性检验：'+('通过' if q.get('stored_KKT_passed') is True else '未提供或未通过'))
  if q['nonzero_rows']:
-  st.warning('定价模型存在惩罚松弛。这不表示实际SCED已切负荷，也不能仅凭Optimal认定无缺供物理出清。')
+  st.warning('定价模型受限，出现缺口或越限，价格可能由罚值决定。这不等于实际调度缺电。')
+  thermal=q.get('thermal_reference_rows',[])
+  if any(r['调度超出定价上限（MW）']>DISPLAY_TOL_MW for r in thermal):
+   st.write('部分机组在调度中能多发，但定价时被该结果采用的参考范围限制。下面显示两者的差别；实际总缺口还取决于其他机组能否补足。')
+   st.dataframe(thermal,hide_index=True)
   st.dataframe(display_rows(q['nonzero_rows']),hide_index=True)
   with st.expander('技术详情：原始变量、字段及数值状态',expanded=False):st.json(q)
- else:st.info('已提供字段在显示阈值内未见惩罚松弛；这仍不构成AC安全或正式账单放行。')
+ else:st.info('已提供字段在显示阈值内未见惩罚松弛；不因此认定正式账单可用，也不构成历史AC结果的新认证。')
  st.caption('本表为当前季度及其价格预测域；未来时段会重叠，不能跨季度直接累加为实际日电量缺口。')
 
 def render_many(rows):

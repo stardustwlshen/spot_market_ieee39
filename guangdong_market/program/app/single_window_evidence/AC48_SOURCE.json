@@ -1,0 +1,40 @@
+{
+  "schema": "gd.single_window.static_ac.sources.v1",
+  "pins": {
+    "/workspace/scratch/42c5fe32dad0/single_window_ac_20261114/run.py": "463b31b233284b97ab940e3bc4fd5faf54800ee8be3a56f3279e179260e38ed6",
+    "/workspace/scratch/42c5fe32dad0/guangdong_final_reference_resume_patch_20261114/app_copy/app/lifecycle_runtime/guangdong_safety_session_v1_20261113/ac_adapter.py": "0d17a1fdc2159af9f22d111ef0779ca780a4e53bef8c33a5b75fccd63742b6e7",
+    "/workspace/scratch/42c5fe32dad0/guangdong_final_reference_resume_patch_20261114/app_copy/app/lifecycle_runtime/guangdong_safety_session_v1_20261113/ac_security.py": "ee4438023bd41d669122107e27d9779e16a7fa393a175054650d23a2e7a1ce91",
+    "/workspace/scratch/42c5fe32dad0/guangdong_final_reference_resume_patch_20261114/app_copy/app/lifecycle_runtime/guangdong_safety_session_v1_20261113/bridge.py": "8d99e87b5bec57d43b816ebdd0b7ced5e2bb4e2b286af7c5ac56d6c5712acbdb",
+    "/workspace/scratch/42c5fe32dad0/guangdong_final_reference_resume_patch_20261114/app_copy/app/lifecycle_runtime/guangdong_safety_session_v1_20261113/data/IEEE39_RESEARCH_INPUT.json": "e11ea32b3c859f3926e872af09adfe2bafd8b84100dc21b3adea8a274cc909a2",
+    "/workspace/scratch/42c5fe32dad0/guangdong_final_reference_resume_patch_20261114/app_copy/app/lifecycle_runtime/guangdong_safety_session_v1_20261113/data/SUPPORTED_SIGNATURE.json": "b1371ebd1913e4ae3a3a685bcb41e62cbf3e13cc9d44179f92c11fcd026829bc",
+    "/workspace/scratch/42c5fe32dad0/guangdong_isolated_quarter_persistence_20261114/REAL_STAGE_SINGLE_WINDOW/window/AGC_CANDIDATES.json": "764ed82109b622401251d5176bfe85c78279a2bd8d411c6a85b2b13c804edd12",
+    "/workspace/scratch/42c5fe32dad0/guangdong_isolated_quarter_persistence_20261114/REAL_STAGE_SINGLE_WINDOW/window/PREDICTED.json": "a0c989bda8de001ea7ef842fe0c3c932163a304524c3efba9238df62311f7547",
+    "/workspace/scratch/42c5fe32dad0/guangdong_isolated_quarter_persistence_20261114/REAL_REGISTERED_STAGE_NATIVE/near24/derived_case.json": "ce50b309f8a57236495bbe91429dde7cfdcf92f5d47f4591d4feb44b0a8d0adf",
+    "/workspace/scratch/42c5fe32dad0/guangdong_isolated_quarter_persistence_20261114/REAL_REGISTERED_STAGE_NATIVE/near24/names.json": "4c810fde53dc1d3bb682fbbffe9ad2a685adf7640739f404676427848468057d",
+    "/workspace/scratch/42c5fe32dad0/guangdong_isolated_quarter_persistence_20261114/REAL_REGISTERED_STAGE_NATIVE/near24/BOUNDARY.json": "356ea1cfbbae031131f31ca7167b4cc1ef510c47524d0c1113ad28d6ce743f14",
+    "/workspace/scratch/42c5fe32dad0/guangdong_isolated_quarter_persistence_20261114/REAL_REGISTERED_STAGE_NATIVE/near24/agc.json": "a24e68414bf0953e0868e7d14d551a0b7a32080d75c71fc99b709808da922ad7",
+    "/workspace/scratch/42c5fe32dad0/guangdong_isolated_quarter_persistence_20261114/REAL_REGISTERED_STAGE_NATIVE/actual/SCED/response.json.gz": "f817ebc46b365a26577240c3b4a0169018eb4171de0fb004b77ec44c9ae2760f",
+    "/workspace/scratch/42c5fe32dad0/guangdong_isolated_quarter_persistence_20261114/REAL_REGISTERED_STAGE_NATIVE/actual/SCUC/response.json.gz": "904613ec60edd2a9b016c11ae8f2f4d9afe40cad3924e3e0b12d72f746783330",
+    "/workspace/scratch/42c5fe32dad0/guangdong_isolated_quarter_persistence_20261114/REAL_REGISTERED_STAGE_NATIVE/actual/ACCEPTED_PAIR.json": "b301ceef6451048f9b926c11250bb7fb4c9676883389a2de4a99e54bfcfdb45f",
+    "/workspace/scratch/42c5fe32dad0/guangdong_isolated_quarter_persistence_20261114/REAL_STAGE_SINGLE_WINDOW/window/far/prepared/derived_case.json": "9989916d22a99ea30acf74d8c64ddef02053d64859e38cdd13507d1e9f82b07d",
+    "/workspace/scratch/42c5fe32dad0/guangdong_isolated_quarter_persistence_20261114/REAL_STAGE_SINGLE_WINDOW/window/far/prepared/names.json": "fc0e5172d7c34130c15a42b16e5481f58f2fc0814cea5d4351d129eb49104a39",
+    "/workspace/scratch/42c5fe32dad0/guangdong_isolated_quarter_persistence_20261114/REAL_STAGE_SINGLE_WINDOW/window/far/prepared/BOUNDARY.json": "64978305025760e86de0f0d970be93b2a5f0690eec9ac04be6ce23c64a2bed0f",
+    "/workspace/scratch/42c5fe32dad0/guangdong_isolated_quarter_persistence_20261114/REAL_STAGE_SINGLE_WINDOW/window/far/prepared/agc.json": "a24e68414bf0953e0868e7d14d551a0b7a32080d75c71fc99b709808da922ad7",
+    "/workspace/scratch/42c5fe32dad0/guangdong_isolated_quarter_persistence_20261114/REAL_STAGE_SINGLE_WINDOW/window/far/actual/SCED/response.json.gz": "44d748ee8fe4c28295aa82732747c87d38c240c6cf5056a358bbfccbd4ed89c2",
+    "/workspace/scratch/42c5fe32dad0/guangdong_isolated_quarter_persistence_20261114/REAL_STAGE_SINGLE_WINDOW/window/far/actual/SCUC/response.json.gz": "986d09eaaeaa11cd12c4a5f78518c2eb39d91c797a90d312b071621fc25bfc65",
+    "/workspace/scratch/42c5fe32dad0/guangdong_isolated_quarter_persistence_20261114/REAL_STAGE_SINGLE_WINDOW/window/FAR_ACCEPTED.json": "06f802b622358ecda9b8b1eff4143e801f072a2ee307222f7b01d559de1a925c"
+  },
+  "global_ticks": [
+    3,
+    50
+  ],
+  "actual_executed_end_exclusive": 0,
+  "issued_end_exclusive": 3,
+  "forecast_only": true,
+  "executed": false,
+  "near_far_boundary_checked": true,
+  "arrival_clocks": "unknown; adapter logical cutoff is research replay only",
+  "accepted_KKT_original_not_recomputed": true,
+  "original_GT_VG_unchanged": 1.0636,
+  "original_VG_limit": 1.06
+}

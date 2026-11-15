@@ -1,0 +1,14 @@
+# Python 3.12 recommended; application/DC runtime only.
+# 求解与建模
+pyomo==6.10.1
+highspy==1.15.1
+numpy==2.4.6
+pandas==2.3.3
+scipy==1.18.1
+PyYAML==6.0.3
+ruamel.yaml==0.19.1      # 网页应用读写 YAML（保留注释）
+matplotlib==3.11.2       # 命令行输出 PNG 图
+# 网页应用
+streamlit==1.66.1
+plotly==7.1.0
+networkx==3.7            # 网络拓扑图

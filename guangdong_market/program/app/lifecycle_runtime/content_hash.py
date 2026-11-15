@@ -7,12 +7,17 @@ _CACHE={}
 STATS={'hits':0,'full_reads':0,'bytes_read':0}
 def signature(s):return (s.st_dev,s.st_ino,s.st_size,s.st_mtime_ns,s.st_ctime_ns)
 def sha(path):
- p=Path(path).resolve(strict=True);before=p.stat();key=(str(p),*signature(before))
+ # Keep OS path traversal semantics (not abspath/normpath: symlink/.. matters).
+ # stat/open follow the original alias each time, so replacing a symlink or
+ # parent directory still changes the identity signature and invalidates cache.
+ # Resolving every ancestor adds many metadata calls on each cache hit without
+ # adding content protection beyond the existing stat/open/fstat/stat checks.
+ p=Path(path).absolute();before=p.stat();key=(str(p),*signature(before))
  if not stat.S_ISREG(before.st_mode):raise ValueError('regular source file required')
  old=_CACHE.get(str(p))
  if old is not None and old[0]==key:
   STATS['hits']+=1;return old[1]
- # One entry per resolved path; outdated versions cannot regain validity.
+ # One entry per absolute access path; outdated versions cannot regain validity.
  _CACHE.pop(str(p),None)
  h=hashlib.sha256();count=0
  with p.open('rb') as f:

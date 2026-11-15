@@ -44,7 +44,7 @@ class GeneralEventHooks(NormalizedHooks):
   if not self.accepted_plans:e.need(all(s['phase']in ('off','offline','stable')and not s['remaining_curve']for s in incoming['thermal'].values()),'active initial event requires sourced importer; unsupported')
   raw_pins=self.session.accepted_phase_pins(actual)if hasattr(self.session,'accepted_phase_pins')else{str(actual/s/f):sha(actual/s/f)for s in ('SCUC','SCED')for f in ('JOB.json','COMPLETED.json','request.json.gz','response.json.gz')}
   self._phase=dict(record=record,raw_pins=raw_pins);self.verify_phase()
-  stage=len(self.accepted_plans);self.accepted_plans[stage]=(deepcopy(bundle),bundle_hash);self._plan_views[stage]=dict(deepcopy(plan),host_source_window=cut//3);self._issue_tick=start;self._stage_pins[stage]={**self._phase['raw_pins'],**record['artifact_pins'],record['carry_path']:record['carry_sha256']}
+  stage=len(self.accepted_plans);self.accepted_plans[stage]=(deepcopy(bundle),bundle_hash);self._plan_views[stage]=dict(deepcopy(plan),host_source_window=cut);self._issue_tick=start;self._stage_pins[stage]={**self._phase['raw_pins'],**record['artifact_pins'],record['carry_path']:record['carry_sha256']}
   # Replay only commitments fixed before this new plan existed, at exact due ticks.
   from schedule import issue_scheduled
   ledger,transitions=issue_scheduled(ledger,record.get('research_commitments',[]),self.accepted_plans,self._stage_pins,cut=cut,available=start,current_stage=stage,research=self.research)
@@ -53,14 +53,23 @@ class GeneralEventHooks(NormalizedHooks):
   if set(newledger['receipts'])-set(ledger['receipts']):e.need(self.research,'explicit research event simulation required')
   self.ledgers[newledger['ledger_sha256']]=newledger;control=AcceptedInstructions(self,self._phase_grant,newledger['ledger_sha256'],start)
   for key,ev in plan['events'].items():
-   if ev['phase']=='shutdown'and start<=ev['begin_tick']<start+3 and key not in newledger['receipts']:
+   if ev['phase']=='shutdown'and start<=ev['begin_tick']<start+1 and key not in newledger['receipts']:
     e.need(self.research,'explicit research event simulation required');token=control.register(stage,key,as_of_tick=start,research=True);control.issue(token,as_of_tick=start,research=True)
   newledger=self.ledgers[control.host.lid];e.verify_ledger(newledger)
+  if incoming.get('rt_clock_mode')=='provincial_15min_execution':
+   # The already accepted plan is known at start. During simulated execution,
+   # issue due notices at their real tick, never backdate them from the next run.
+   for at in range(start+1,start+1):
+    newledger=e.publish(bundle,newledger,expected_bundle_sha256=bundle_hash,cutoff_tick=at,simulate=True,expected_previous_ledger_sha256=newledger['ledger_sha256'])
+   self.ledgers[newledger['ledger_sha256']]=newledger
   # Validated at accepted issue tick. The original optimization cutoff is unchanged.
-  new=predict(case,e.unpack(bundle['boundary']),bundle['names'],bundle['SCED_response']['primal'],issue_tick=start,executed_cells=3,receipts=list(newledger['receipts'].values()))
+  new=predict(case,e.unpack(bundle['boundary']),bundle['names'],bundle['SCED_response']['primal'],issue_tick=start,executed_cells=1,receipts=list(newledger['receipts'].values()))
   normalized,norm=verify_bundle_storage(bundle);new['storage']=normalized
-  begin=e.stamp(case['contract']['domain_start']);new.update(cutoff=begin.isoformat(),boundary_at=(begin+timedelta(minutes=15)).isoformat(),executed_end_exclusive=start,issued_end_exclusive=start+3)
-  phase=dict(intermediate_notice_transitions=transitions,model_cutoff_tick=cut,accepted_plan_available_tick=plan['available_tick'],research_instruction_issue_tick=start,predicted_prefix_start_tick=start,predicted_prefix_end_tick=start+3,executed_clock_end_tick=start,bundle_sha256=bundle_hash,source='host-verified accepted raw pair; fixed declared curves only',research_event_simulation=self.research,formal=False,safety_release=False,actual_dispatch_authorized=False)
+  begin=e.stamp(case['contract']['domain_start']);new.update(cutoff=begin.isoformat(),boundary_at=(begin+timedelta(minutes=15)).isoformat(),executed_end_exclusive=start,issued_end_exclusive=start+1)
+  if incoming.get('rt_clock_mode')=='provincial_15min_execution':
+   end=begin+timedelta(minutes=15)
+   new.update(cutoff=end.isoformat(),executed_end_exclusive=start+1,issued_end_exclusive=start+1)
+  phase=dict(intermediate_notice_transitions=transitions,model_cutoff_tick=cut,accepted_plan_available_tick=plan['available_tick'],research_instruction_issue_tick=start,predicted_prefix_start_tick=start,predicted_prefix_end_tick=start+1,executed_clock_end_tick=start,bundle_sha256=bundle_hash,source='host-verified accepted raw pair; fixed declared curves only',research_event_simulation=self.research,formal=False,safety_release=False,actual_dispatch_authorized=False)
   return new,newledger,norm,phase
  def handoff_accepted(self,prepared,actual,output,*,simulate_no_deviation=False):
   """Once normal runner has REAL accepted SCUC+SCED, replay without stable-only code.
@@ -76,6 +85,16 @@ class GeneralEventHooks(NormalizedHooks):
   else:bundle,h=export(p,a,producer_root=s.registry['accepted_producer_root'],expected_summary_sha256=record['summary_sha256'],case_identity=s.registry['case_identity'],run_id=s.registry['run_id'],available_at=summary['domain_start'])
   ledger=self.ledgers[record['ledger_id']];new,nextledger,norm,phase=self.issue_and_predict(bundle,h,ledger,record,a)
   incoming=read(record['carry_path']);carry=deepcopy(incoming);carry.update(thermal=new['boundary_states'],thermal_age_h=new['thermal_age_h'],storage=new['storage'],notice_requirements=new['notice_requirements'],fixed_curve_state=new['fixed_curve_state'],cutoff=new['cutoff'],boundary_at=new['boundary_at'],executed_end_exclusive=new['executed_end_exclusive'],issued_end_exclusive=new['issued_end_exclusive'],cutoff_tick=new['executed_end_exclusive'],delivery_tick=new['issued_end_exclusive'],formal=False,safety_release=False)
+  if incoming.get('rt_clock_mode')=='provincial_15min_execution':
+   from gd_provincial15_model.pumped_base import derive_pumped_carry
+   from smm.gd_october_job_codec import loads as case_loads
+   import gzip,json
+   ps_raw=json.loads(gzip.decompress((a/'SCED/response.json.gz').read_bytes()))
+   carry['pumped_storage']=derive_pumped_carry(case_loads((p/'derived_case.json').read_bytes()),ps_raw,read(p/'names.json'))
+   from gd_provincial15_model.soft_terminal import record as record_battery_terminal
+   carry['rt_battery_terminal']=record_battery_terminal(bundle)
+   carry['predicted_issued_prefix']=False
+   phase.update(executed_clock_end_tick=new['executed_end_exclusive'],simulation_execution='first_SCED_cell_only')
   phasepath=Path(output).resolve().with_suffix('.ACCEPTED_PHASE.json');write(phasepath,phase);carry['accepted_control_phase']={'path':str(phasepath),'sha256':sha(phasepath)}
   normpath=Path(output).resolve().with_suffix('.NORMALIZATION.json');write(normpath,norm)
   carry['source_pins']={**s.registry['source_pins'],str(Path(__file__).resolve()):sha(__file__),**record['artifact_pins'],str(a/'ACCEPTED_PAIR.json'):sha(a/'ACCEPTED_PAIR.json')}

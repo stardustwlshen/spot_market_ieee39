@@ -11,12 +11,13 @@ def hour(prices,index=0):
  import session
  BRANCH=prices.host.branch_id
  need(prices.host.window>=4*(index+1),'complete hour required')
- needed=set(range(4*index-1,4*index+3));need(needed.issubset(prices.accepted),'four accepted quarters required')
+ offset=0 if getattr(prices.host,'same_period_execution',False) else -1
+ needed=set(range(4*index+offset,4*index+4+offset));need(needed.issubset(prices.accepted),'four accepted quarters required')
  accepted={}
  for w in sorted(needed):
   p,d,owner=prices.accepted[w]
   owner.verify();need(sha(p)==d,'accepted price changed before arithmetic');z=read(p)
-  need(z['context']['run_id']==BRANCH and z['context']['day_quarter']==w+1 and z['KKT']['passed'] is True,'accepted quarter identity')
+  need(z['context']['run_id']==BRANCH and z['context']['day_quarter']==w-offset and z['KKT']['passed'] is True,'accepted quarter identity')
   for f,h in z['source_pins'].items():need(sha(f)==h,'accepted price dependency changed')
   accepted[str(Path(p).resolve())]=d
  manifest=prices.output/f'FOUR_PRICE_ARITHMETIC_INPUTS_H{index}.json'

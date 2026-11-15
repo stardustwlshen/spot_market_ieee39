@@ -134,7 +134,7 @@ def result_tables(run):
     unexecuted.append(dict(global_cell_index=3*w+k,start=cell['start'],end=cell['end'],kind='issued_not_verified_executed',cell=cell));continue
    if cell['end']>boundary['receipt_at']:raise ValueError('cell beyond execution receipt')
    for g,v in cell['thermal'].items():units.append(dict(start=cell['start'],end=cell['end'],resource=g,P_mw=v['mean_mw'],kind='simulated_5min_execution'))
-   for g,v in cell['batteries'].items():storage.append(dict(start=cell['start'],resource=g,charge_mw=v['charge_mw'],discharge_mw=v['discharge_mw'],SOC_MWh=v['energy_end_mwh']))
+   for g,v in cell['batteries'].items():storage.append(dict(start=cell['start'],end=cell['end'],resource=g,charge_mw=v['charge_mw'],discharge_mw=v['discharge_mw'],SOC_MWh=v['energy_end_mwh']))
    for g,v in cell.get('renewable',{}).items():vre.append(dict(start=cell['start'],resource='VRE:'+g,**{key:v[key]for key in ('availability_mw','dispatched_mw','curtailed_mw')}))
   pp=root/f'rt_price/W{w}/PRICE_RECEIPT.json'
   if pp.exists():

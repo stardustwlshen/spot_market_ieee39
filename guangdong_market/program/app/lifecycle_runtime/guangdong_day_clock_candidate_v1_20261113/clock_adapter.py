@@ -8,10 +8,10 @@ from agc_lifecycle import AgcLifecycle,read,sha,need,stamp,digest,produce,write
 
 def schedule(windows=4):
  need(type(windows)is int and windows in (4,96),'windows4 or96 only')
- return dict(windows=windows,default_windows=4,default_native_calls=0,new_full_day_validated=False,capability_blockers=['nextday synthetic AGC parameter validity declaration required','explicit tiny-boundary-normalization receipt adapter absent; no silent clipping'],events=[dict(hour=h,source='same selected DA'if h==0 else'accepted RT',source_window=None if h==0 else 4*h-3,available_cutoff_tick=-6 if h==0 else 12*h-6,first_consumer_window=0 if h==0 else 4*h-2)for h in range(25)if h==0 or 4*h-2<windows],executed_end_tick=3*windows,issued_end_tick=3*windows+3,H25_authorized=False)
+ return dict(windows=windows,default_windows=4,default_native_calls=0,new_full_day_validated=False,capability_blockers=[],events=[dict(hour=h,source='same selected DA'if h==0 else'accepted RT',source_window=None if h==0 else 4*h-3,available_cutoff_tick=-2 if h==0 else 4*h-2,first_consumer_window=0 if h==0 else 4*h-2)for h in range(24)if h==0 or 4*h-2<windows],executed_end_tick=windows,issued_end_tick=windows,H25_authorized=False)
 def due_hours(window):
  need(type(window)is int and 0<=window<96,'window0..95')
- return [h for h in range(25)if h==0 or 12*h-6<=3*window]
+ return [h for h in range(24)if h==0 or 4*h-2<=window]
 def declaration_check(carry,origin,seed_sha,da_response_sha,cutoff):
  path=Path(carry['day_declaration_path']);need(sha(path)==carry['day_declaration_sha256'],'declaration drift')
  d=read(path);need(d['mode']=='hypothetical_published_research','explicit research declaration required');date=(origin+timedelta(days=1)).date().isoformat();need(date in d['days'],'nextday declaration absent');x=d['days'][date]
@@ -22,6 +22,7 @@ def declaration_check(carry,origin,seed_sha,da_response_sha,cutoff):
 
 class DayAgcLifecycle(AgcLifecycle):
  def create(self,hour):
+  need(hour<24,'single-day market has no H24 auction')
   if hour<24:return super().create(hour)
   need(hour==24,'H25 not computed/authorized');self.verify();host=self.clock_host;host.session.verify_sources();cp=Path(host.cp);need(str(cp)in host.hooks.carries and sha(cp)==host.hooks.carries[str(cp)],'live carry drift');carry=read(cp)
   need(stamp(carry['cutoff'])>=self.origin+timedelta(hours=23,minutes=30),'H24 not yet due')
@@ -41,6 +42,7 @@ class DayAgcLifecycle(AgcLifecycle):
    need({f:v for f,v in data['parameters'][k].items()if f not in ('effective_from','effective_to')}=={f:v for f,v in x.items()if f not in ('effective_from','effective_to')},'nextday numerical/source parameter changed')
   plan['source_pins'][str(path)]=sha(path);start=self.origin+timedelta(days=1);data.update(hour_start=start.isoformat(),as_of=(start-timedelta(minutes=30)).isoformat());r=produce(plan,data,expected_plan_sha256=digest(plan),branch_id=self.context['run_id'],seed_case_sha256=self.seed_sha);need(r['result']['awards_mw']=={g:10 for g in plan['thermal']},'changed synthetic awards unsupported');return r
  def produce(self,hour,*,cutoff):
+  need(hour<24,'single-day market has no H24 auction')
   if hour<24:return super().produce(hour,cutoff=cutoff)
   need(hour==24 and stamp(cutoff)>=self.origin+timedelta(hours=23,minutes=30),'H24notdue/H25unsupported');self.verify();f=self.root/'H24.json'
   if hour in self.issued:
@@ -51,23 +53,17 @@ class DayAgcLifecycle(AgcLifecycle):
    need(not f.exists(),'persisted untrusted H24');r=self.create(24);write(f,r);self.issued[24]=copy.deepcopy(r)
   return copy.deepcopy(r)
  def apply_before_scuc(self,kw,carry):
-  kw,binding=super().apply_before_scuc(kw,carry)
-  cut=stamp(carry['cutoff']);begin=stamp(kw['contract']['domain_start']);target=self.origin+timedelta(days=1)
-  if cut<target-timedelta(minutes=30)or not(begin<target+timedelta(hours=1)and begin+timedelta(hours=4)>target):return kw,binding
-  from batch_api import apply_available
-  r=self.produce(24,cutoff=cut.isoformat());thermal={g:dict(maximum=[d['max_mw'][t]for t in range(48)],minimum=[d['min_mw'][t]for t in range(48)])for g,d in kw['energy_inputs']['thermal'].items()};consumer=dict(branch_id=self.context['run_id'],seed_case_sha256=self.seed_sha,cutoff=cut.isoformat(),delivery=begin.isoformat(),domain_start=begin.isoformat(),cells=48,thermal=thermal,zone='explicit_single_research_zone',positive_reserve_mw=[kw['reserve']['positive_mw'][t]for t in range(48)],accident_reserve_mw=[kw['reserve']['contingency_mw'][t]for t in range(48)])
-  base=json.loads(json.dumps(kw['agc_awards']));z=apply_available([r],consumer,base,expected_receipt_digests=[digest(r)],expected_consumer_digest=digest(consumer));same=z['agc']==base
-  kw['agc_awards'].clear();kw['agc_awards'].update({g:{**a,**{side:{int(t):v for t,v in a[side].items()}for side in ('up_mw','down_mw')}}for g,a in z['agc'].items()})
-  binding.update(same_original_awards=same,requires_new_SCUC_SCED_and_safety=True,old_raw_compatibility_not_assumed=True)
-  binding['receipt_files'][str(self.root/'H24.json')]=sha(self.root/'H24.json');binding['applied']+=z['applied_receipts'];binding['issuer_receipt_sha256'].append(digest(r));binding['H24_nextday_declaration']=r['verified_plan']['nextday_declaration'];return kw,binding
+  # Same-day receipts only; truncated domain never consumes an H24 auction.
+  return super().apply_before_scuc(kw,carry)
+
 class DayClockAdapter:
  def __init__(self,host,*,windows=4,nextday_agc_path=None):
   from unified import RollingHost
   need(isinstance(host,RollingHost),'live registered host required');schedule(windows);need(host.pending is None,'cannot alter prepared occurrence');self.host=host;self.windows=windows
   need(type(host.agc)is AgcLifecycle,'only original lifecycle supported');host.agc.__class__=DayAgcLifecycle;host.agc.clock_host=host;host.agc.nextday_agc_path=nextday_agc_path;host.session.registry['source_pins'][str(Path(__file__).resolve())]=sha(__file__)
  def prepare(self):
-  h=self.host;need(h.pending is None and h.window<self.windows,'window bound/pending');h.session.verify_sources();cp=Path(h.cp);need(str(cp)in h.hooks.carries and sha(cp)==h.hooks.carries[str(cp)],'live carry drift');need(read(cp)['cutoff_tick']==3*h.window,'window clock mismatch')
-  import thermal_physical
+  h=self.host;need(h.pending is None and h.window<self.windows,'window bound/pending');h.session.verify_sources();cp=Path(h.cp);need(str(cp)in h.hooks.carries and sha(cp)==h.hooks.carries[str(cp)],'live carry drift');need(read(cp)['cutoff_tick']==h.window,'window clock mismatch')
+  from gd_provincial15_model import thermal_physical
   old=thermal_physical.build_free_scuc;bindings=[]
   def hook(**kw):
    _,binding=h.agc.apply_before_scuc(kw,read(cp));bindings.append(binding);return old(**kw)

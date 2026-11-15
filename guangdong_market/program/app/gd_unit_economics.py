@@ -55,14 +55,15 @@ def summarize(hour, inputs=None):
         missing = []
         c = inputs.get('costs', {}).get(resource)
         generation = startup = None
-        if c and c.get('source') and 'generation_CNY_MWh' in c and 'executed_startup_cost_CNY' in c:
-            rate = number(c['generation_CNY_MWh'])
-            startup = number(c['executed_startup_cost_CNY'])
-            if min(rate, startup) < 0:
-                raise ValueError('negative cost')
-            generation = rate * g['output']
-        else:
-            missing.append('发电成本或已执行启停成本缺失')
+        if c and c.get('source') and c.get('generation_CNY_MWh') is not None:
+            rate=number(c['generation_CNY_MWh'])
+            if rate<0:raise ValueError('negative generation cost')
+            generation=rate*g['output']
+        else:missing.append('发电成本缺失')
+        if c and c.get('source') and c.get('executed_startup_cost_CNY') is not None:
+            startup=number(c['executed_startup_cost_CNY'])
+            if startup<0:raise ValueError('negative executed startup cost')
+        else:missing.append('已执行启停成本缺失')
         service_amounts = {}
         for name, label in [('agc', '调频'), ('reserve', '备用')]:
             v = inputs.get('services', {}).get(resource, {}).get(name)
@@ -71,7 +72,7 @@ def summarize(hour, inputs=None):
                 missing.append(label + '分项缺失（不能用容量中标量代替收入）')
             else:
                 service_amounts[name] = number(v['amount_CNY'])
-        cost = generation + startup if generation is not None else None
+        cost = generation + startup if generation is not None and startup is not None else None
         energy_margin = g['energy'] - cost if cost is not None else None
         profit = energy_margin + sum(service_amounts.values(), D(0)) if not missing else None
         out.append(dict(resource=resource, energy_revenue_CNY=g['energy'],
@@ -118,6 +119,18 @@ def from_components(hour, *, costs=None, agc_by_resource=None, reserve_component
                 inputs['services'].setdefault(r['resource'], {})['reserve'] = dict(amount_CNY=r['amount_CNY'], source=source)
     return summarize(hour, inputs)
 
+def execution_grid_minutes(hour, execution):
+    mode=execution.get('rt_clock_mode')
+    step=15 if mode=='provincial_15min_execution' else 5
+    declared=hour.get('input_binding',{}).get('RT_physical_interval_minutes')
+    if declared is not None and declared!=step:
+        raise ValueError('hour/execution grid mismatch')
+    if mode not in (None,'legacy_issued_prefix','same_period_execution','provincial_15min_execution'):
+        raise ValueError('unknown execution clock mode')
+    if hour.get('executed_cells')!=60//step:
+        raise ValueError('complete hour cell count mismatch')
+    return step
+
 def executed_events(hour, execution):
     """Report model start/stop flags ONLY in the selected executed 5-minute cells.
 
@@ -133,11 +146,12 @@ def executed_events(hour, execution):
         raise ValueError('one hour required')
     start, end = map(datetime.fromisoformat, next(iter(periods)))
     origin = datetime.fromisoformat(execution['origin'])
+    step=execution_grid_minutes(hour, execution)
     cells = execution['cells']
     if not cells or len(set(cells)) != len(cells) or any(type(t) is not int for t in cells):
         raise ValueError('invalid executed cells')
     ordered = sorted(cells)
-    if ordered != list(range(ordered[0], ordered[-1] + 1)) or origin + timedelta(minutes=5*ordered[0]) != start or origin + timedelta(minutes=5*(ordered[-1]+1)) != end:
+    if ordered != list(range(ordered[0], ordered[-1] + 1)) or origin + timedelta(minutes=step*ordered[0]) != start or origin + timedelta(minutes=step*(ordered[-1]+1)) != end:
         raise ValueError('executed cells/hour interval mismatch')
     if ordered[-1] >= execution['executed_end'] or set(cells) & set(execution.get('excluded_issued_ticks', [])):
         raise ValueError('issued-only ticks cannot enter realized events')
@@ -163,7 +177,7 @@ def executed_events(hour, execution):
                 record['missing'].append(kind + ': 已执行时段标记不完整或不适用于此资源')
                 continue
             record[kind + '_count'] = sum(values.values())
-            record['events'] += [dict(kind=kind, tick=t, timestamp=(origin+timedelta(minutes=5*t)).isoformat()) for t,v in sorted(values.items()) if v]
+            record['events'] += [dict(kind=kind, tick=t, timestamp=(origin+timedelta(minutes=step*t)).isoformat()) for t,v in sorted(values.items()) if v]
         record['cost_type_status'] = '仅模型start/stop标记；冷/温/热及曲线类型成本未推断'
         rows.append(record)
     return dict(run_id=hour['run_id'], start=start.isoformat(), end=end.isoformat(), rows=rows,

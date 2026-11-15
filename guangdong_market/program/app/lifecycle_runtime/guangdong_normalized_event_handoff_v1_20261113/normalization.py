@@ -13,14 +13,14 @@ def replay(case,values,canonical_energy):
  begin=e.stamp(case['contract']['domain_start']);delivery=begin+timedelta(minutes=15)
  for u,b in case.get('batteries',{}).items():
   E=b['initial_energy_mwh'];eta=math.sqrt(b['roundtrip_efficiency']);mode=b['initial_mode'];age=b['initial_mode_age_h'];ledger=deepcopy(b['cycle_budget']);terms=[];cells=[]
-  for i in range(3):
+  for i in range(1):
    ch=values[f'battery.charge[{u},{i}]'];dis=values[f'battery.discharge[{u},{i}]'];cm=values[f'battery.charge_mode[{u},{i}]'];dm=values[f'battery.discharge_mode[{u},{i}]'];native=values[f'battery.energy[{u},{i}]']
    e.need(all(math.isfinite(x)for x in (ch,dis,cm,dm,native,E)),'nonfinite storage witness')
    e.need(abs(cm-round(cm))<=1e-6 and abs(dm-round(dm))<=1e-6 and round(cm)in (0,1)and round(dm)in (0,1)and round(cm)+round(dm)<=1,'invalid storage modes')
-   new='charge'if cm>.5 else'discharge'if dm>.5 else'idle';age=age+1/12 if new==mode else 1/12;mode=new;term=(eta*ch-dis/eta)/12;terms.append(term);E+=term;fs=math.fsum([b['initial_energy_mwh'],*terms]);e.need(abs(E-native)<=1e-7 and abs(fs-native)<=1e-7,'three-cell SOC replay failed')
-   date=(begin+timedelta(minutes=5*i)).date().isoformat();ledger[date]['used_internal_mwh']+=(eta*ch+dis/eta)/12
+   new='charge'if cm>.5 else'discharge'if dm>.5 else'idle';age=age+1/4 if new==mode else 1/4;mode=new;term=(eta*ch-dis/eta)/4;terms.append(term);E+=term;fs=math.fsum([b['initial_energy_mwh'],*terms]);e.need(abs(E-native)<=1e-7 and abs(fs-native)<=1e-7,'one-cell SOC replay failed')
+   date=(begin+timedelta(minutes=15*i)).date().isoformat();ledger[date]['used_internal_mwh']+=(eta*ch+dis/eta)/4
    cells.append(dict(tick=i,charge_mw=ch,discharge_mw=dis,mode=new,native_energy_mwh=native,sequential_energy_mwh=E,fsum_energy_mwh=fs))
-  oldhour=(delivery-timedelta(minutes=5)).replace(minute=0,second=0,microsecond=0);hour=delivery.replace(minute=0,second=0,microsecond=0);keys=[k for k in values if k.startswith('battery.hour_direction['+u+',')and oldhour.isoformat()in k];e.need(len(keys)==1,'hour direction source')
+  oldhour=(delivery-timedelta(minutes=15)).replace(minute=0,second=0,microsecond=0);hour=delivery.replace(minute=0,second=0,microsecond=0);keys=[k for k in values if k.startswith('battery.hour_direction['+u+',')and oldhour.isoformat()in k];e.need(len(keys)==1,'hour direction source')
   raw=dis-ch;storage[u]=dict(initial_energy_mwh=E,initial_power_mw=raw,initial_mode=mode,initial_mode_age_h=age,cycle_budget=ledger,initial_hour_direction=(1 if values[keys[0]]>.5 else-1)if oldhour==hour else 0)
   proofs[u]=dict(cells=cells,initial_energy_mwh=b['initial_energy_mwh'],raw_replayed=E,native_terminal=native,fsum_replayed=fs,lower_bound=b['energy_min_mwh'],upper_bound=b['energy_max_mwh'],mode=mode,raw_power=raw)
   wrong=(raw!=0 if mode=='idle'else raw>0 if mode=='charge'else raw<0)

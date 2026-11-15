@@ -1,10 +1,10 @@
 """Source-cell PRICE eligibility; fixed curve and mixed-quarter research mapping."""
 import math
-PROFILE='fixed_curve_5min_source_mixed_quarter_fixed_RESEARCH_v1'
+PROFILE='fixed_curve_15min_source_fixed_RESEARCH_v1'
 def need(x,m):
  if not x:raise ValueError(m)
 def derive(case,values,first,*,quarters=8,event_curves=None,profile=PROFILE):
- need(profile==PROFILE and first%3==0,'explicit quarter-aligned event PRICE research profile');out={};trace={};affected=[]
+ need(profile==PROFILE and type(first) is int and first>=0,'explicit quarter-aligned event PRICE research profile');out={};trace={};affected=[]
  for g,d in case['energy_inputs']['thermal'].items():
   def cell(t):
    power=values[f'power[{g},{t}]'];online=values[f'online[{g},{t}]'];stable=values[f'stable[{g},{t}]'];off=values.get(f'off[{g},{t}]',1-online)
@@ -24,21 +24,21 @@ def derive(case,values,first,*,quarters=8,event_curves=None,profile=PROFILE):
       if begin>=0 and values.get(f'{stem}[{g},{begin}]',0)>.5:matches.append((phase,begin,rows[k]))
    need(len(matches)==1,'active cell lacks unique sourced fixed curve')
    phase,begin,row=matches[0];need(abs(power-row['mean'])<=1e-7,'active SCED power differs from declared curve');return dict(state=phase,begin_tick=begin,mean=power,end=row['end'],curve_row=dict(row))
-  cells=[cell(t)for t in range(first,first+quarters*3)];prior=cell(first-1)if first else dict(state=d.get('initial_state_kind','stable'),mean=d['initial_power_mw'],end=d['initial_power_mw']);states=[]
+  cells=[cell(t)for t in range(first,first+quarters)];prior=cell(first-1)if first else dict(state=d.get('initial_state_kind','stable'),mean=d['initial_power_mw'],end=d['initial_power_mw']);states=[]
   for q in range(quarters):
-   chunk=cells[3*q:3*q+3];kinds={x['state']for x in chunk};status='pricing_stable'if kinds=={'stable'}else'off'if kinds=={'off'}else'fixed_nonpricing'
+   chunk=cells[q:q+1];kinds={x['state']for x in chunk};status='pricing_stable'if kinds=={'stable'}else'off'if kinds=={'off'}else'fixed_nonpricing'
    need(status!='fixed_nonpricing'or any(x['state']in ('startup','shutdown')for x in chunk),'mixed off/stable without a sourced transition is unsupported');states.append(status)
-  out[g]=states;trace[g]=dict(cells=cells,previous_cell=prior,quarter_means=[math.fsum(x['mean']for x in cells[q*3:q*3+3])/3 for q in range(quarters)])
+  out[g]=states;trace[g]=dict(cells=cells,previous_cell=prior,quarter_means=[math.fsum(x['mean']for x in cells[q:q+1]) for q in range(quarters)])
   if any(s!='pricing_stable'for s in states)or prior['state']not in ('stable','off'):affected.append(g)
- return dict(profile=profile,ramp_mapping='affected units:24cell current/curve-endpoint physical interpolation; retain legacy quarter ramps on stable-to-stable legs and DA first-quarter anchor when initial quarter and prior cell are stable; RESEARCH',eligibility=out,trace=trace,affected_units=affected,mixed_quarter_mapping='any active curve cell fixes entire quarter to three accepted mean-MW cells; conservative research mapping, not official implementation certification',source_cells_unchanged=True,formal=False)
+ return dict(profile=profile,ramp_mapping='affected units:8cell current/curve-endpoint physical interpolation; retain legacy quarter ramps on stable-to-stable legs and current incoming-state first-quarter anchor when initial quarter and prior cell are stable; RESEARCH',eligibility=out,trace=trace,affected_units=affected,mixed_quarter_mapping='any active curve cell fixes entire quarter to one accepted 15-minute mean-MW cell; conservative research mapping, not official implementation certification',source_cells_unchanged=True,formal=False)
 
 def add_cell_ramps(model,g,d,values,agc,first,state):
- """Affected unit only: explicit24-cell physical interpolation, no ordinary quarter ramp clipping."""
+ """Affected unit only: explicit8-cell physical interpolation, no ordinary quarter ramp clipping."""
  import pyomo.environ as p
  if not hasattr(model,'event_cells'):model.event_cells=p.Var(p.Any);model.event_rows=p.ConstraintList()
  cells=state['trace'][g]['cells'];statuses=state['eligibility'][g];prior=state['trace'][g]['previous_cell'];prev=prior['end']
  for i,z in enumerate(cells):
-  t=first+i;q=i//3;v=model.event_cells[g,i]
+  t=first+i;q=i;v=model.event_cells[g,i]
   if statuses[q]!='pricing_stable':v.fix(z['mean'])
   else:v.setlb(d['min_mw'][t]+agc[g]['down_mw'][str(t)]);v.setub(d['max_mw'][t]-agc[g]['up_mw'][str(t)])
   # Shutdown begins at the sourced curve boundary, not at an unconstrained
@@ -51,9 +51,9 @@ def add_cell_ramps(model,g,d,values,agc,first,state):
   # only to stable operation, using the prior curve endpoint on its first stable cell.
   if z['state']=='stable':
    anchor=prev if i==0 or cells[i-1]['state']=='stable'else cells[i-1]['end']
-   model.event_rows.add(v-anchor<=d['ramp_up_mw_per_h'][t]/12);model.event_rows.add(anchor-v<=d['ramp_down_mw_per_h'][t]/12)
+   model.event_rows.add(v-anchor<=d['ramp_up_mw_per_h'][t]/4);model.event_rows.add(anchor-v<=d['ramp_down_mw_per_h'][t]/4)
   prev=v if z['state']=='stable'else z['end']
- for q in range(len(statuses)):model.event_rows.add(model.P[g,q]==sum(model.event_cells[g,i]for i in range(3*q,3*q+3))/3)
+ for q in range(len(statuses)):model.event_rows.add(model.P[g,q]==sum(model.event_cells[g,i]for i in range(q,q+1)))
 
 def reference_and_ramp(model,names,specs,ramps,state,thermal_apply,ramp_apply,*,ramp_policy):
  # Never subject fixed trajectory means to stable Pmin/AGC bands or DA quarter ramp.

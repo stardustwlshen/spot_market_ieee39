@@ -12,6 +12,8 @@ def read(p):
 def need(v,m):
  if not v:raise ValueError(m)
 def derive(output,window):
+ from .same_period import enabled,derive as same_period_derive
+ if enabled(read(Path(output)/'PLAN.json')):return same_period_derive(output,window)
  out=Path(output).resolve();w=window;need(type(w)is int and 0<=w<96,'quarter index')
  folder=out/'pipeline/dispatch'/f'W{w}';result=read(folder/'RESULT.json');issued=read(folder/'EXACT_CARRY.json');incoming=read(folder/'prepared/CARRY.json');pair=read(folder/'actual/ACCEPTED_PAIR.json');first=3*w;end=first+3
  need(result['window']==w and result['executed_end_exclusive']==end and result['issued_end_exclusive']==end+3,'handoff clocks')

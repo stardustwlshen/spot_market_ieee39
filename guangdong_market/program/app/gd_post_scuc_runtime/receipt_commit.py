@@ -31,14 +31,16 @@ def commit(c,p,actual,decision,nxt,*,grant):
  gate=getattr(h,'before_handoff_gate',None)
  need(gate is not None and gate.host is h and gate.last==decision,'same complete handoff gate required')
  need(decision.get('carry_advance_allowed') is True and decision.get('branch_id')==h.branch_id and decision.get('window')==h.window,'gate did not select current candidate')
- need(gate.counterfactual is True or decision.get('safety_release') is True,'no explicit selection authority')
+ dc_selected=(getattr(gate,'model_scope',None)=='active_power_dc' and decision.get('model_scope')=='active_power_dc' and decision.get('status')=='DC_VERIFIED_PAIR_SELECTED' and decision.get('ac_assessment')=='not_in_model_scope')
+ need(dc_selected or gate.counterfactual is True or decision.get('safety_release') is True,'no explicit selection authority')
  carry=Path(nxt['carry_path']).resolve()
  need(h.hooks.carries.get(str(carry))==nxt['carry_sha256']==sha(carry),'handoff carry not registered')
  need(nxt['ledger_id'] in h.hooks.ledgers,'handoff ledger absent')
  need(read(Path(actual)/'ACCEPTED_PAIR.json').get('status')=='accepted_research_pair','complete numerical pair missing')
  z=consumers.verified_state(entry['record'])
  need(entry['record'] is consumers.lookup(phase.p,phase.p.parent/'actual'),'candidate registration changed')
- selection=dict(schema='gd.agc.handoff_selection.v1',handoff_complete=True,kind='explicit_counterfactual_research' if gate.counterfactual else 'gate_selected_research',before_handoff=deepcopy(decision),carry_path=str(carry),carry_sha256=sha(carry),candidate_sha256=entry['evidence_sha256'],safety_release=False,formal=False)
+ selection=dict(schema='gd.agc.handoff_selection.v1',handoff_complete=True,kind='dc_model_simulation'if dc_selected else'explicit_counterfactual_research' if gate.counterfactual else 'gate_selected_research',before_handoff=deepcopy(decision),carry_path=str(carry),carry_sha256=sha(carry),candidate_sha256=entry['evidence_sha256'],safety_release=False,formal=False)
+ if dc_selected:selection.update(model_scope='active_power_dc',ac_assessment='not_in_model_scope',reactive_power_modeled=False,execution_allowed=True,execution_scope='model simulation only',publication_allowed=False)
  from .receipt_output import persist
  persist(c,phase,z,selection=selection) # exclusive durable write must succeed first
  c.accepted[hour]=entry['record']

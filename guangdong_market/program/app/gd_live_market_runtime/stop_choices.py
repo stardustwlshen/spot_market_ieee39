@@ -7,7 +7,12 @@ from v6_host import INSTALL
 def inspect(session,*,windows=4):
  from hour_scope import plan
  plan(windows)
- session.verify_sources();da=Path(session.context['selected_DA']);validator=INSTALL/'guangdong_rt_price_program_v22_20261112/gd_price/source_contracts.py'
+ session.verify_sources()
+ if session.context.get('schema')=='gd.provincial.short.context.v1':
+  from gd_provincial_da_contract import verify,read as read_da
+  mp=Path(session.context['provincial_DA_manifest']);verify(mp,require_price=True);m=read_da(mp)
+  return dict(selected_DA=session.context['selected_DA'],as_of_tick=read(session.run/'INITIAL_CARRY.json')['cutoff_tick'],events=[],selectable_count=0,source_pins={str(mp):sha(mp),**m['source_pins']},official_import_supported=False,automatic_authorization=False,default_native_calls=0,policy='thermal combination inherited from new DA; RT stop override disabled')
+ da=Path(session.context['selected_DA']);validator=INSTALL/'guangdong_rt_price_program_v22_20261112/gd_price/source_contracts.py'
  spec=importlib.util.spec_from_file_location('_stop_ui_source_validator',validator);m=importlib.util.module_from_spec(spec);spec.loader.exec_module(m);pins=m.selected_da(da)
  ar=read(da/'ARTIFACTS.json');casefile=da/ar['inputs']['case']['path'];e.need(sha(casefile)==session.registry['case_identity'],'selected DA and host seed case mismatch')
  case=session.program.engine.loads(casefile.read_bytes());n=read(da/'da_sced/full_names.json')['variables'];x=dict(zip(n,read(da/'da_sced/expanded_response.json')['primal']));agc=read(session.run/'seed/agc.json');clock=read(session.run/'INITIAL_CARRY.json')['cutoff_tick'];events=[]

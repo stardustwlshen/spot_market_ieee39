@@ -4,6 +4,7 @@ import sys,subprocess,time,os,json,argparse
 from domain import read,write,sha,need
 from evidence import optimal
 from scoped_kkt import metrics
+from review import nodal_prices
 B=Path(__file__).resolve().parent
 
 def run(prepared,execute=False):
@@ -24,7 +25,7 @@ def run(prepared,execute=False):
  need(rc==0 and (out/'response.json').exists(),'native failed; no retry');r=read(out/'response.json');write(out/'COMPLETED.json',dict(returncode=rc,response_sha256=sha(out/'response.json')))
  ctx=read(p/'CONTEXT.json');z=dict(context=ctx,raw_prices=None,formal_bill=None,payable=False,safety_release=False,native_calls=1,native_status=r.get('native_status'),source_pins={str(f):sha(f) for f in [p/'READY.json',p/'names.json',p/'CONTEXT.json',out/'request.json',out/'response.json',out/'IDENTITY.json',out/'COMPLETED.json',Path(__file__),worker]})
  if r.get('native_status')=='Optimal':
-  names=read(p/'names.json');optimal(q,r,names);need(r.get('optimize_calls')==1,'one native optimize');z['KKT']=metrics(q,r,names,angle_tolerance=1e-8);z['raw_prices']={s.split('[',1)[1].split(',')[0].strip("'"):y/.25 for s,y in zip(names['constraints'],r['dual']) if s.startswith('balance[') and s.endswith(',0]')};need(len(z['raw_prices'])==39,'all39 actual prices');z['slacks']={s:v for s,v in zip(names['variables'],r['primal']) if s.startswith('PRICE_')};z['objective']=r['objective']
+  names=read(p/'names.json');optimal(q,r,names);need(r.get('optimize_calls')==1,'one native optimize');z['KKT']=metrics(q,r,names,angle_tolerance=1e-8);z['raw_prices'],z['price_sensitivity']=nodal_prices(q,r,names);need(len(z['raw_prices'])==39,'all39 actual prices');z['slacks']={s:v for s,v in zip(names['variables'],r['primal']) if s.startswith('PRICE_')};z['objective']=r['objective']
  write(p/'PRICE_RESULT.json',z);return dict(native_status=z['native_status'],native_calls=1,priced=z['raw_prices'] is not None)
 if __name__=='__main__':
  a=argparse.ArgumentParser();a.add_argument('--prepared',required=True);a.add_argument('--execute-native',action='store_true');args=a.parse_args();print(json.dumps(run(args.prepared,args.execute_native)))

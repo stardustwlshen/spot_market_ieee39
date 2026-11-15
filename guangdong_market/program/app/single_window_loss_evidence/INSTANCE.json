@@ -1,0 +1,15 @@
+{
+  "schema": "gd.research.initialization_instance.v1",
+  "initialization_instance_id": "research-init-7f69a974d9df454aa74165c740732a65",
+  "base_run": "/workspace/scratch/42c5fe32dad0/economics_ui_followup_20261114/ACTUAL_NEW_FACTORY_UI_SPLIT/base",
+  "program_root": "/workspace/scratch/42c5fe32dad0/economics_ui_followup_20261114/app_copy",
+  "scenario_run_id": "independent-rt-recommit-de9b8d3978e41e65",
+  "selected_DA": "/workspace/scratch/42c5fe32dad0/guangdong_pipeline_20261112/pure_fresh_run_v1",
+  "context_sha256": "82272b2d874f1bd9fdea1388c1d762c0c4a21df37016ab0a1cf5f89f20c47618",
+  "carry_sha256": "aa5e45342e9af0bd73db00f72f6c61979abcf8436a250c22eaa237541db2d01a",
+  "actual_executed_end": 0,
+  "hypothetical_issued_end": 3,
+  "old_execution_progress_imported": false,
+  "native_calls": 0,
+  "formal": false
+}

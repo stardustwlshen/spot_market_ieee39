@@ -41,7 +41,7 @@ DIFF_SCALE = "RdBu_r"                               # 差值（以 0 为中心�
 TYPE_SYMBOL = {"coal": "square", "gas_ccgt": "diamond", "gas_gt": "diamond-open", "hydro": "hexagon", "wind": "triangle-up",
                "pv": "star", "tie": "pentagon", "storage": "cross",
                "pumped": "hourglass"}
-PAGES = [("主页.py", "广东省内工作台", "⚡", "新引擎：5分钟执行、独立定价与明确安全状态"),
+PAGES = [("主页.py", "广东省内工作台", "⚡", "新引擎：15分钟执行、独立定价与明确安全状态"),
          ("pages/6_旧版参考.py", "旧版参考首页", "📚", "历史川甘参考模型，不是广东新引擎"),
          ("pages/1_边界条件.py", "旧版边界条件", "🧩", "原场景编辑器，尚未映射广东输入"),
          ("pages/2_运行.py", "旧版运行", "▶️", "仅启动原历史引擎"),
@@ -143,7 +143,7 @@ def show_fig(fig, key=None):
 def sidebar_nav():
     with st.sidebar:
         st.markdown('<div class="smm-brand">⚡ IEEE39 现货市场出清仿真</div>', unsafe_allow_html=True)
-        st.caption("广东：5分钟调度、15分钟独立定价。旧版页面单独保留；研究结果不是安全放行或正式账单。")
+        st.caption("广东：15分钟调度、15分钟独立定价。旧版页面单独保留；研究结果不是安全放行或正式账单。")
         for path, label, icon, helptext in PAGES:
             try:
                 st.page_link(path, label=label, icon=icon, help=helptext)
@@ -229,21 +229,20 @@ def scen_config(name: str):
 # ----------------------------------------------------------------------------- 运行管理
 def start_run(scenario: str, mode: str, bid_version: int | None, periods: int | None, bids=None, regulation=None) -> Path:
     """Serialize UI launches and freeze inputs before spawning a worker."""
-    import fcntl
+    from gd_process_guard import acquire, process_namespace
     from datetime import datetime
     from smm.live_runner import atomic_json, freeze_inputs
     requested=load_config(root=sc.scenario_path(scenario))
     if requested.mode.get("regulation",{}).get("enabled",False) or (regulation or {}).get("enabled",False):
         raise ValueError("当前仅支持纯电能量现货正常运行；调频场景仅作历史归档，不启动。")
     sc.RUNS_DIR.mkdir(parents=True, exist_ok=True)
-    with open(sc.RUNS_DIR / ".launch.lock", "a") as lock:
-        fcntl.flock(lock, fcntl.LOCK_EX)
+    with acquire(sc.RUNS_DIR / ".launch.lock") as lock:
         if any(run_status(m) in ("running", "starting", "cancelling") for m in sc.list_runs()):
             raise RuntimeError("已有运行或取消请求正在处理；请等待完成，避免重复求解。")
         d = sc.new_run_dir(scenario, mode)
         meta = dict(scenario=scenario, mode=mode, bid_version=bid_version, periods=periods,
                     status="starting", stage="冻结输入", started=datetime.now().isoformat(timespec="seconds"),
-                    pid_namespace=os.readlink("/proc/self/ns/pid"))
+                    pid_namespace=process_namespace())
         atomic_json(d / "meta.json", meta)
         try:
             freeze_inputs(sc.scenario_path(scenario), d, bids=bids, regulation=regulation)
@@ -262,27 +261,19 @@ def start_run(scenario: str, mode: str, bid_version: int | None, periods: int | 
 
 
 def pid_alive(pid) -> bool:
-    if not pid:
-        return False
-    try:
-        os.kill(int(pid), 0)
-    except OSError:
-        return False
-    try:   # 已结束但未回收的僵尸进程
-        stat = Path(f"/proc/{int(pid)}/stat").read_text()
-        return stat.split()[2] != "Z"
-    except OSError:
-        return True
+    from gd_process_guard import pid_alive as check
+    return check(pid)
 
 
 def run_status(m: dict) -> str:
+    from gd_process_guard import process_namespace
     s = m.get("status", "running")
     d=Path(m["dir"])
     pid=m.get("pid")
     if not pid and (d/"worker.pid").exists():
         pid=int((d/"worker.pid").read_text())
     if (s in ("running", "starting") and pid
-            and m.get("pid_namespace") == os.readlink("/proc/self/ns/pid") and not pid_alive(pid)):
+            and m.get("pid_namespace") == process_namespace() and not pid_alive(pid)):
         from smm.live_runner import atomic_json
         meta_p=d/"meta.json";cur=json.loads(meta_p.read_text(encoding="utf-8"))
         s=cur.get("status","running")

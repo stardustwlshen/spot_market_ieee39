@@ -9,11 +9,16 @@ def need(ok,msg):
  if not ok: raise ValueError(msg)
 class BlockedBeforeHandoff(ValueError): pass
 class BeforeHandoffGate:
- def __init__(self,host,*,counterfactual_research=False):
-  self.host=host;self.counterfactual=counterfactual_research is True
+ def __init__(self,host,*,counterfactual_research=False,model_scope="legacy_ac_research"):
+  need(model_scope in ("legacy_ac_research","active_power_dc"),"unsupported model scope")
+  need(model_scope!="active_power_dc" or not counterfactual_research,"DC scope needs no counterfactual safety override")
+  self.model_scope=model_scope;self.host=host;self.counterfactual=counterfactual_research is True
   self._record=None;self.last=None;self._handle=None
-  import candidate_safety
-  for f in (Path(__file__).resolve(),Path(candidate_safety.__file__).resolve()):
+  files=[Path(__file__).resolve()]
+  if model_scope!="active_power_dc":
+   import candidate_safety
+   files.append(Path(candidate_safety.__file__).resolve())
+  for f in files:
    host.session.registry['source_pins'][str(f)]=sha(f)
  def _generated_after_verified_pair(self,p,a,proof):
   h=self.host
@@ -34,6 +39,10 @@ class BeforeHandoffGate:
   need(h.window==r[3] and h.cp==r[4] and h.lid==r[5] and h.pending==p,'clock/carry changed')
   h.session.verify_sources()
   for f,d in r[6].items():need(sha(f)==d,'candidate raw source drift')
+  if self.model_scope=='active_power_dc':
+   self.last=dict(status='DC_VERIFIED_PAIR_SELECTED',model_scope='active_power_dc',ac_assessment='not_in_model_scope',reactive_power_modeled=False,branch_id=h.branch_id,window=h.window,source_pins=r[6],candidate_registered_in_memory=True,safety_release=False,publication_allowed=False,dispatch_authorized=False,formal=False,carry_advance_allowed=True,execution_allowed=True,execution_scope='model simulation only',basis='same-host verified numerical pair; retained DC/energy/thermal/storage/reserve/AGC/source checks')
+   (p.parent/'BEFORE_HANDOFF.json').write_text(json.dumps(self.last,indent=2));self._record=None
+   return dict(self.last)
   status='BLOCKED_MISSING_CANDIDATE_AC'
   safety=getattr(h,'candidate_safety',None)
   if safety is not None and getattr(h,'candidate_ac_once',False) and not hasattr(safety,'_candidate_ac_receipt'):

@@ -1,0 +1,183 @@
+{
+  "boundary_at": "2026-11-11T00:15:00+08:00",
+  "cutoff": "2026-11-11T00:00:00+08:00",
+  "cutoff_tick": 0,
+  "delivery_tick": 3,
+  "executed_end_exclusive": 0,
+  "formal": false,
+  "issued_end_exclusive": 3,
+  "mode": "counterfactual_no_deviation",
+  "notice_requirements": [],
+  "notice_values": {
+    "C1": {},
+    "C2": {},
+    "C3": {},
+    "CCGT": {},
+    "GT": {}
+  },
+  "origin": "2026-11-11T00:00:00+08:00",
+  "predicted_issued_prefix": true,
+  "safety_release": false,
+  "schema": "gd.short.carry.research.v2",
+  "storage": {
+    "ES1": {
+      "cycle_budget": {
+        "2026-11-11": {
+          "limit_cycles": 1.0,
+          "used_internal_mwh": 6.476447698654921
+        },
+        "2026-11-12": {
+          "limit_cycles": 1.0,
+          "used_internal_mwh": 0.0
+        }
+      },
+      "initial_energy_mwh": 93.52355230134508,
+      "initial_hour_direction": 1,
+      "initial_mode": "discharge",
+      "initial_mode_age_h": 0.25,
+      "initial_power_mw": 33.333
+    },
+    "ES2": {
+      "cycle_budget": {
+        "2026-11-11": {
+          "limit_cycles": 1.0,
+          "used_internal_mwh": 11.695964912280703
+        },
+        "2026-11-12": {
+          "limit_cycles": 1.0,
+          "used_internal_mwh": 0.0
+        }
+      },
+      "initial_energy_mwh": 188.30403508771929,
+      "initial_hour_direction": 1,
+      "initial_mode": "discharge",
+      "initial_mode_age_h": 0.25,
+      "initial_power_mw": 66.667
+    },
+    "ES3": {
+      "cycle_budget": {
+        "2026-11-11": {
+          "limit_cycles": 1.0,
+          "used_internal_mwh": 7.194434029853706
+        },
+        "2026-11-12": {
+          "limit_cycles": 1.0,
+          "used_internal_mwh": 0.0
+        }
+      },
+      "initial_energy_mwh": 92.80556597014629,
+      "initial_hour_direction": 1,
+      "initial_mode": "discharge",
+      "initial_mode_age_h": 0.25,
+      "initial_power_mw": 33.333
+    },
+    "ES4": {
+      "cycle_budget": {
+        "2026-11-11": {
+          "limit_cycles": 1.0,
+          "used_internal_mwh": 13.157894736842106
+        },
+        "2026-11-12": {
+          "limit_cycles": 1.0,
+          "used_internal_mwh": 0.0
+        }
+      },
+      "initial_energy_mwh": 286.84210526315786,
+      "initial_hour_direction": 1,
+      "initial_mode": "discharge",
+      "initial_mode_age_h": 0.25,
+      "initial_power_mw": 50.0
+    },
+    "ES5": {
+      "cycle_budget": {
+        "2026-11-11": {
+          "limit_cycles": 1.0,
+          "used_internal_mwh": 8.771929824561404
+        },
+        "2026-11-12": {
+          "limit_cycles": 1.0,
+          "used_internal_mwh": 0.0
+        }
+      },
+      "initial_energy_mwh": 291.2280701754386,
+      "initial_hour_direction": 1,
+      "initial_mode": "discharge",
+      "initial_mode_age_h": 0.25,
+      "initial_power_mw": 50.0
+    }
+  },
+  "thermal": {
+    "C1": {
+      "available_at": "2026-11-11T00:00:00+08:00",
+      "end_power_mw": 636.0,
+      "event_elapsed_ticks": 0,
+      "event_id": null,
+      "min_down_basis": "shutdown_end",
+      "min_up_basis": "startup_begin",
+      "phase": "stable",
+      "remaining_curve": [],
+      "residual_down_ticks": 0,
+      "residual_up_ticks": 0,
+      "source": "chosen accepted DA first3 issued hypothetical no-deviation replay; not measured"
+    },
+    "C2": {
+      "available_at": "2026-11-11T00:00:00+08:00",
+      "end_power_mw": 643.8144595889985,
+      "event_elapsed_ticks": 0,
+      "event_id": null,
+      "min_down_basis": "shutdown_end",
+      "min_up_basis": "startup_begin",
+      "phase": "stable",
+      "remaining_curve": [],
+      "residual_down_ticks": 0,
+      "residual_up_ticks": 0,
+      "source": "chosen accepted DA first3 issued hypothetical no-deviation replay; not measured"
+    },
+    "C3": {
+      "available_at": "2026-11-11T00:00:00+08:00",
+      "end_power_mw": 655.6036953118341,
+      "event_elapsed_ticks": 0,
+      "event_id": null,
+      "min_down_basis": "shutdown_end",
+      "min_up_basis": "startup_begin",
+      "phase": "stable",
+      "remaining_curve": [],
+      "residual_down_ticks": 0,
+      "residual_up_ticks": 0,
+      "source": "chosen accepted DA first3 issued hypothetical no-deviation replay; not measured"
+    },
+    "CCGT": {
+      "available_at": "2026-11-11T00:00:00+08:00",
+      "end_power_mw": 320.0,
+      "event_elapsed_ticks": 0,
+      "event_id": null,
+      "min_down_basis": "shutdown_end",
+      "min_up_basis": "startup_begin",
+      "phase": "stable",
+      "remaining_curve": [],
+      "residual_down_ticks": 0,
+      "residual_up_ticks": 0,
+      "source": "chosen accepted DA first3 issued hypothetical no-deviation replay; not measured"
+    },
+    "GT": {
+      "available_at": "2026-11-11T00:00:00+08:00",
+      "end_power_mw": 85.0,
+      "event_elapsed_ticks": 0,
+      "event_id": null,
+      "min_down_basis": "shutdown_end",
+      "min_up_basis": "startup_begin",
+      "phase": "stable",
+      "remaining_curve": [],
+      "residual_down_ticks": 0,
+      "residual_up_ticks": 0,
+      "source": "chosen accepted DA first3 issued hypothetical no-deviation replay; not measured"
+    }
+  },
+  "thermal_age_h": {
+    "C1": 48.5,
+    "C2": 48.5,
+    "C3": 48.5,
+    "CCGT": 8.5,
+    "GT": 8.5
+  }
+}

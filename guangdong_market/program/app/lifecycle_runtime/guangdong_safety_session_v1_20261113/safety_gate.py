@@ -1,7 +1,7 @@
 from pathlib import Path
 import hashlib,json
 B=Path(__file__).resolve().parent
-EXPECTED='f70a54823b354f71bd5f50d18eec2464d24b74ac1200a85b343519b7b4f04f74'
+EXPECTED='3fdfa53f205bda16622132814739f4de4d5daaa2393cebefc1a18cdfae744d78'
 def verify_package():
  f=B/'SOURCE_MANIFEST.json'
  if hashlib.sha256(f.read_bytes()).hexdigest()!=EXPECTED:raise ValueError('safety source manifest changed')

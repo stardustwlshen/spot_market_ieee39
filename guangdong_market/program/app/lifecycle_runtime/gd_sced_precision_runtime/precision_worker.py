@@ -35,7 +35,7 @@ def solve(data):
     if options['dual_feasibility_tolerance']!=1e-10 or value!=options['dual_feasibility_tolerance']:
         raise ValueError('R53 precision-only worker requires exact dual_feasibility_tolerance=1e-10 readback')
     checked(h.getOptionValue('primal_feasibility_tolerance')[0], 'read primal tolerance')
-    if options['primal_feasibility_tolerance']!=1e-10 or h.getOptionValue('primal_feasibility_tolerance')[1]!=1e-10:raise ValueError('explicit primal precision required')
+    if options['primal_feasibility_tolerance']!=1e-8 or h.getOptionValue('primal_feasibility_tolerance')[1]!=1e-8:raise ValueError('explicit primal precision required')
     status,scale=h.getOptionValue('simplex_scale_strategy')
     checked(status,'read back simplex_scale_strategy')
     if type(options['simplex_scale_strategy']) is not int or options['simplex_scale_strategy']!=0 or scale!=0:

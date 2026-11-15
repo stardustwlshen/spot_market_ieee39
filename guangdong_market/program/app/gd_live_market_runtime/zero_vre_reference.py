@@ -13,8 +13,8 @@ def read(p):return json.load(gzip.open(p,'rt'))if str(p).endswith('.gz')else jso
 def canonicalize(z,case):
  x=z['values'];first=z['request']['delivery_tick'];changes=[]
  for b in case['energy_inputs']['buses']:
-  for j in range(8):
-   ts=list(range(first+3*j,first+3*j+3));vs=[x[f"renewable_power['{b}',{t}]"]for t in ts]
+  for j in range(min(8,96-first)):
+   ts=list(range(first+j,first+j+1));vs=[x[f"renewable_power['{b}',{t}]"]for t in ts]
    need(all(math.isfinite(v)for v in vs),'nonfinite VRE reference')
    if any(v<0 for v in vs):changes.append((b,ts,vs))
  if not changes:return x,dict(schema='gd.zero_vre.reference.v1',changes=[],source_values_unchanged=True)

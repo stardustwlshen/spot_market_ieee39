@@ -5,7 +5,7 @@ import hashlib,json
 from thermal_tail_reader import derive
 
 
-def derive_prefix(case,incoming_boundary,names,primal,executed_cells=3):
+def derive_prefix(case,incoming_boundary,names,primal,executed_cells=1):
     """Requires caller-accepted SCED primal. Does not prove dispatch/telemetry or source identity.
     incoming_boundary is BOUNDARY wrapper {thermal:...,issued_notices:...}, or thermal mapping.
     returned boundary_states can be passed to build_free_scuc after input P/status updates.
@@ -16,7 +16,7 @@ def derive_prefix(case,incoming_boundary,names,primal,executed_cells=3):
     short=deepcopy(case);short['energy_inputs']['horizon']['periods']=short['energy_inputs']['horizon']['periods'][:executed_cells]
     tail=derive(short,incoming,names,primal)
     digest=hashlib.sha256(json.dumps(dict(names=names,primal=primal),sort_keys=True,separators=(',',':'),allow_nan=False).encode()).hexdigest()
-    start=datetime.fromisoformat(case['contract']['domain_start']);origin=datetime.fromisoformat(case['contract']['origin']);offset=int((start-origin).total_seconds()/300)
+    start=datetime.fromisoformat(case['contract']['domain_start']);origin=datetime.fromisoformat(case['contract']['origin']);offset=int((start-origin).total_seconds()/900)
     cutoff=case['contract']['cutoff'];vals=dict(zip(names['variables'],primal));states={};notices={};future={}
     for g,z in tail['thermal'].items():
         old=incoming['thermal'][g];pending=z['pending_curves'];event_id=None;elapsed=0;remaining=[]
@@ -34,7 +34,7 @@ def derive_prefix(case,incoming_boundary,names,primal,executed_cells=3):
                 x=vals[f'{stem}[{g},{t}]'];assert abs(x-round(x))<=1e-6 and round(x)in(0,1)
                 if round(x):
                     q=dict(phase=phase,target_tick=offset+t,executed=False,issued=False,receipt=None)
-                    if phase=='startup':q['required_notice_tick']=offset+t-round(case['curves'][g]['notice_h']*12)
+                    if phase=='startup':q['required_notice_tick']=offset+t-round(case['curves'][g]['notice_h']*4)
                     plans.append(q)
         future[g]=plans
     return dict(schema='gd.short.thermal.prefix.counterfactual.v1',boundary_states=states,boundary_at=tail['boundary_at'],executed_cells=executed_cells,notice_requirements=notices,future_unexecuted_plan=future,primal_sha256=digest,source_kind='counterfactual_no_deviation',native_calls=0,formal=False,full_primal_verified_here=False,actual_execution_claimed=False,notice_issuance_authorized=False)

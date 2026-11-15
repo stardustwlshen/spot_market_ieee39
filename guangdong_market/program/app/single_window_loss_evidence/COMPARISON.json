@@ -1,0 +1,37 @@
+{
+  "AC": {
+    "kind": "near24_far24_prediction_static_AC",
+    "coverage": 48,
+    "new_HiGHS": 0,
+    "new_PRICE": 0,
+    "new_AC": 48,
+    "elapsed_seconds": 11.88950375100103,
+    "converged": 48,
+    "safe": 0,
+    "unsupported": 0,
+    "execution_advancement": 0,
+    "release": false,
+    "N_1": false,
+    "dynamic": false,
+    "actual_clocks_unknown": true,
+    "source_binding_sha256": "f2b0de3466c5a535299b4124b607c768f09ed666814958fe00b154ff5ee5e870"
+  },
+  "counts": {
+    "BUS_VOLTAGE_LIMIT": 369
+  },
+  "AGC_preserved": 21,
+  "C1_AC_range": [
+    632.8862627011451,
+    637.9095265728681
+  ],
+  "loss_error_range": [
+    -3.1137372988548577,
+    1.909526572868117
+  ],
+  "native_wall": [
+    0.7130753169985837,
+    0.7692027470038738,
+    0.5581636299975798,
+    0.37127917099860497
+  ]
+}

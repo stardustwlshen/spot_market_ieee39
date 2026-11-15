@@ -29,7 +29,7 @@ def accepted_price(q):
 def load(root):
  root=Path(root)
  if (root/'DISPLAY_MANIFEST.json').is_file():return portable(root)
- p=price_root(root);pins={};errors=[];run_id=None;origin=None;seen=set();hours=[];executions=[];qpaths={}
+ p=price_root(root);pins={};errors=[];run_id=None;origin=None;seen=set();hours=[];executions=[];qpaths={};event_summaries=[];service_rows=[];agc_estimate_sources=[]
  def verify(path,expected=None):
   path=Path(path);digest=sha(path)
   if expected is not None and digest!=expected:raise ValueError('source changed: '+str(path))
@@ -43,14 +43,15 @@ def load(root):
  for hp in sorted(p.glob('HOUR[0-9]*.json'),key=lambda x:int(x.stem[4:])):
   try:
    h=verify(hp)
-   if h.get('schema')!='gd.live_host.PRICE.hour.v3' or h.get('executed_cells')!=12:raise ValueError('unrecognized complete hour')
+   if h.get('schema')!='gd.live_host.PRICE.hour.v3':raise ValueError('unrecognized complete hour')
    checked_sources(h);idx=int(hp.stem[4:]);binding=h['input_binding']
    if binding['hour']!=idx:raise ValueError('hour index mismatch')
    ep=[Path(x)for x,v in h['source_pins'].items()if Path(x).name==f'EXECUTION_H{idx}.json' and v==binding['execution_sha256']]
    if len(ep)!=1:raise ValueError('missing unique bound execution')
    e=verify(ep[0],binding['execution_sha256'])
-   from gd_unit_economics import executed_events
-   executed_events(h,e) # validates run, exact hour, contiguous executed cells, no issued overlap
+   from gd_unit_economics import executed_events,execution_grid_minutes
+   step=execution_grid_minutes(h,e)
+   event_summary=executed_events(h,e) # validates run, exact hour, contiguous executed cells, no issued overlap
    if run_id is not None and (h['run_id']!=run_id or e['origin']!=origin):raise ValueError('mixed run/origin')
    if set(e['cells']) & seen:raise ValueError('duplicate executed cells')
    if sum((Decimal(r['energy_amount_CNY'])for r in h['rows']),Decimal(0))!=Decimal(h['total_energy_component_CNY']):raise ValueError('hour monetary sum mismatch')
@@ -66,10 +67,15 @@ def load(root):
     q=verify(qp,digest);checked_sources(q);ctx=q['context']
     if not accepted_price(q) or ctx['run_id']!=h['run_id'] or ctx['day_quarter']!=quarter or ctx.get('RT_dual_used') is not False or q['KKT'].get('passed')is not True:raise ValueError('hour price source/acceptance mismatch')
    # No partial hour append before every binding check succeeds.
-   run_id=h['run_id'];origin=e['origin'];seen.update(e['cells']);hours.extend(h['rows']);executions.append(e);qpaths.update(local_q)
+   run_id=h['run_id'];origin=e['origin'];seen.update(e['cells']);hours.extend(h['rows']);executions.append(e);qpaths.update(local_q);event_summaries.append(dict(event_summary,source_path=str(ep[0].resolve()),source_sha256=binding['execution_sha256']))
+   service_rows.extend(bound_service_rows(h,hp,ep[0],pins))
+   from gd_service_estimates import collect
+   try:agc_estimate_sources.extend(collect(h,e,pins))
+   except (OSError,ValueError,KeyError,TypeError) as exc:errors.append({'file':hp.name,'reason':'AGC estimate unavailable: '+str(exc)})
   except (OSError,ValueError,KeyError,TypeError) as exc:errors.append({'file':hp.name,'reason':str(exc)})
  units=[];storage=[];vre=[];prices=[]
  for e in executions:
+  step=15 if e.get('rt_clock_mode')=='provincial_15min_execution' else 5
   origin_dt=datetime.fromisoformat(e['origin']);cells=set(e['cells']);groups={}
   for key,value in e['values'].items():
    m=re.fullmatch(r'([^\[]+)\[([^,]+),(\d+)\]',key)
@@ -78,8 +84,8 @@ def load(root):
    if not math.isfinite(n):raise ValueError('nonfinite execution value')
    groups.setdefault((res,tick),{})[kind]=n
   for (res,tick),v in groups.items():
-   start=(origin_dt+timedelta(minutes=5*tick)).isoformat();end=(origin_dt+timedelta(minutes=5*(tick+1))).isoformat()
-   if 'power'in v:units.append(dict(start=start,end=end,resource=res,P_mw=v['power'],kind='simulated_5min_execution'))
+   start=(origin_dt+timedelta(minutes=step*tick)).isoformat();end=(origin_dt+timedelta(minutes=step*(tick+1))).isoformat()
+   if 'power'in v:units.append(dict(start=start,end=end,resource=res,P_mw=v['power'],kind=f'simulated_{step}min_execution',grid_minutes=step))
    if any(k.startswith('battery.') for k in v):
     storage.append(dict(start=start,end=end,resource=res,charge_mw=v.get('battery.charge'),discharge_mw=v.get('battery.discharge'),SOC_MWh=v.get('battery.energy')))
    if 'renewable_power'in v or 'renewable_curtailment'in v:
@@ -101,7 +107,13 @@ def load(root):
   try:
    checkpoint=verify(cp);progress_record=checkpoint.get('persistence_progress')or{}
   except (OSError,ValueError,KeyError,TypeError)as exc:errors.append({'file':'CHECKPOINT.json','reason':str(exc)})
- view=dict(progress_record=progress_record,progress_scope='read-time saved checkpoint record; not a new restore test',schema='gd.live.display_view.v1',run_id=run_id,execution_receipt=dict(executed=len(seen),executed_ticks=sorted(seen),origin=origin,complete_hours=len(executions),scope='only complete bound hours; partial next hour not represented',restore_checkpoint=False),issued_not_verified_executed=[],executed_5min=units,storage_5min=storage,VRE_5min=vre,independent_PRICE_15min=prices,settlement_hour_rows=hours,display_errors=errors,source_manifest=pins,formal_bill=None,safety_release=False,native_calls=0)
+ view=dict(agc_estimate_sources=agc_estimate_sources,bound_service_rows=service_rows,execution_event_summaries=event_summaries,progress_record=progress_record,progress_scope='read-time saved checkpoint record; not a new restore test',schema='gd.live.display_view.v1',run_id=run_id,execution_receipt=dict(executed=len(seen),executed_ticks=sorted(seen),origin=origin,complete_hours=len(executions),scope='only complete bound hours; partial next hour not represented',restore_checkpoint=False),issued_not_verified_executed=[],executed_5min=units,storage_5min=storage,VRE_5min=vre,independent_PRICE_15min=prices,settlement_hour_rows=hours,display_errors=errors,source_manifest=pins,formal_bill=None,safety_release=False,native_calls=0)
+ plan_path=root/'PLAN.json'
+ if plan_path.is_file():
+  plan=verify(plan_path)
+  if plan.get('output')==str(root.resolve()) and plan.get('model_scope')=='active_power_dc':
+   view.update(model_scope='active_power_dc',ac_assessment='not_in_model_scope',reactive_power_modeled=False)
+ view.update(executed=units,storage=storage,renewables=vre,grid_minutes=(15 if executions and executions[0].get('rt_clock_mode')=='provincial_15min_execution' else 5),legacy_series_keys_are_aliases=True)
  attach_persistence(view,root)
  return view
 
@@ -115,7 +127,7 @@ def save_display(view,directory):
 
 def status(root):
  z=load(root)
- return dict(ac={'status':'not_verified'},run_id=z['run_id'],execution_receipt=z['execution_receipt'],persistence_progress=z.get('progress_record',{}),display_errors=z.get('display_errors',[]),scope='source-bound display only; not new mathematical acceptance',native_calls=0)
+ return dict(model_scope=z.get('model_scope','historical_unspecified'),ac_assessment=z.get('ac_assessment','historical_unspecified'),reactive_power_modeled=z.get('reactive_power_modeled'),ac={'status':z.get('ac_assessment','historical_unspecified')},run_id=z['run_id'],execution_receipt=z['execution_receipt'],persistence_progress=z.get('progress_record',{}),display_errors=z.get('display_errors',[]),scope='source-bound display only; not new mathematical acceptance',native_calls=0)
 
 
 def attach_persistence(view,root):
@@ -142,3 +154,31 @@ def attach_persistence(view,root):
    old=prior.get(key);prior[key]=max(old,latest)if type(old)is int else latest
   view['progress_record']=prior;view['progress_scope']='read-time validated upload AND actual downloaded archive; original checkpoint and EXIT retained separately; not a restore execution test'
  return view
+
+
+def bound_service_rows(hour,hour_path,execution_path,pins):
+ """Import only already-computed amounts with exact hour/run binding and resource ID."""
+ idx=hour['input_binding']['hour'];seen={};out=[]
+ for parent in (Path(hour_path).parent,Path(execution_path).parent):
+  f=parent/f'SETTLEMENT_H{idx}.json'
+  if not f.is_file():continue
+  z=read(f);digest=sha(f);period={(r['start'],r['end'])for r in hour['rows']}
+  if len(period)!=1:continue
+  start,end=next(iter(period))
+  component_results=[('agc',v) for v in z.get('agc_by_resource',{}).values()]
+  component_results.extend((name,z.get(name,{}))for name in ('agc','reserve'))
+  for name,result in component_results:
+   if result.get('binding',{}).get('run_id')!=hour['run_id'] or result.get('binding',{}).get('hour_sha256')!=sha(hour_path):continue
+   component=result.get('component',{})
+   rows=component.get('rows',[])if name=='reserve' else ([{'resource':component['resource'],'amount_CNY':component.get('reconciled_research_yuan')}]if component.get('resource')else[])
+   for row in rows:
+    resource=row.get('resource');amount=row.get('amount_CNY');key=(resource,name)
+    if amount is None or resource not in {r['resource']for r in hour['rows']}:continue
+    value=str(Decimal(str(amount)))
+    if not Decimal(value).is_finite():raise ValueError('nonfinite service amount')
+    if key in seen:
+     if seen[key]!=value:raise ValueError('conflicting bound service amounts')
+     continue
+    seen[key]=value;pins[str(f.resolve())]=digest
+    out.append(dict(run_id=hour['run_id'],start=start,end=end,resource=resource,service=name,amount_CNY=value,source_path=str(f.resolve()),source_sha256=digest))
+ return out

@@ -1,0 +1,15 @@
+{
+  "schema": "gd.ac.diagnostic.bundle.v1",
+  "files": {
+    "PAYLOAD.json": "01a37c89cdba75fe9963020010035147f98967f41edf0057cb4f92823a2c47ab",
+    "MAPPING.json": "005726eef6c86d529084868444a66f5bf9271b4282715519078f2416d832a0a4",
+    "SOURCE.json": "f3a49b52aeac0ba84f59efb58c1d513b93d527cd3e95e2734eb213a6d494bfe1",
+    "AC_STARTED.json": "55aa2ac7a261cb87c64d9166d3e7f24371939a409b3379bd21fc822a461f5283",
+    "AC_RESULT.json": "c149b3e08736dd0a4c1d221d2b376fdbb6d08b2b33502d9725e6aaf5f42680e2",
+    "ACTUAL_DIAGNOSTIC.json": "c37473a6ac6353f1b17bdb4b5308d3b50ade4b2b51defce7dfcdf4c7a2d39231",
+    "prepare_actual_point.py": "a10bfd1a930794fa8a05a339637c8e0ebb760c9c57364785d9d06809abfb5eaa",
+    "run_one_ac.py": "fbe5f3951cc800e7e28b1bd1468a121c26eca52aafe5ff9a32d7de58664a4958",
+    "INTERPRETATION.json": "7930709e4ce0d0749d0692351d1a0b9e4ed588b6ce51a351e9be2c8c08607deb"
+  },
+  "live_authority": false
+}

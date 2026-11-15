@@ -1,0 +1,67 @@
+{
+  "run_id": "unified-first-hour-b76a73dcfc41476593796b3ab61d730b",
+  "executed_tick": 285,
+  "coverage": {
+    "checked": 1,
+    "executed": 288
+  },
+  "elapsed_s": 3.8693867640031385,
+  "new_AC_calls": 1,
+  "new_native_calls": 0,
+  "status": "ac_snapshot_unsafe",
+  "ac_snapshot_safe": false,
+  "violations": [
+    {
+      "kind": "GENERATOR_P_LIMIT",
+      "element": "C1",
+      "value": 669.148216334018,
+      "lower": 290.0,
+      "upper": 646.0
+    },
+    {
+      "kind": "BUS_VOLTAGE_LIMIT",
+      "element": "0",
+      "value": 1.062751386181849,
+      "lower": 0.94,
+      "upper": 1.06
+    },
+    {
+      "kind": "BUS_VOLTAGE_LIMIT",
+      "element": "8",
+      "value": 1.0637464311891678,
+      "lower": 0.94,
+      "upper": 1.06
+    },
+    {
+      "kind": "BUS_VOLTAGE_LIMIT",
+      "element": "19",
+      "value": 0.9330036877731118,
+      "lower": 0.94,
+      "upper": 1.06
+    },
+    {
+      "kind": "BUS_VOLTAGE_LIMIT",
+      "element": "32",
+      "value": 0.938842119423472,
+      "lower": 0.94,
+      "upper": 1.06
+    },
+    {
+      "kind": "BUS_VOLTAGE_LIMIT",
+      "element": "33",
+      "value": 0.9246815537890112,
+      "lower": 0.94,
+      "upper": 1.06
+    },
+    {
+      "kind": "BUS_VOLTAGE_LIMIT",
+      "element": "35",
+      "value": 1.0636,
+      "lower": 0.94,
+      "upper": 1.06
+    }
+  ],
+  "safety_release": false,
+  "dispatch_authorized": false,
+  "posthoc_not_live_safety_receipt": true
+}

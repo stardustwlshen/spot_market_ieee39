@@ -16,10 +16,11 @@ def verify(sidecar):
         d=z[name];need(sha(d['path'])==d['sha256'],'verification evidence changed: '+name)
         objects[name]=read(d['path'])
     report,ready,ledger,plan,config=(objects[n]for n in ('report','checkpoint_ready','checkpoint_ledger','continuation_plan','continuation_config'))
-    need(report['schema']=='gd.independent_restore.two_executed_steps.v1','unsupported actual verification report')
-    for key in ('physical_and_no_double_count_checks_passed','two_steps_fixed_issued_prefixes_consumed_once','thermal_power_storage_energy_age_cycles_match_previous_issued_end','source_model_unchanged_between_steps'):
+    need(ready.get('rt_clock_mode')=='provincial_15min_execution' and ready.get('grid_minutes')==15,'old grid recovery proof cannot validate new province checkpoint')
+    need(report['schema']=='gd.independent_restore.provincial15.two_executed_steps.v1','unsupported actual verification report')
+    for key in ('physical_and_no_double_count_checks_passed','two_first_cells_executed_once','thermal_power_storage_energy_age_cycles_match_previous_executed_end','source_model_unchanged_between_steps'):
         need(report.get(key) is True,'independent continuation checks not passed: '+key)
-    need(report.get('all_prior_112_reoptimized') is False,'prior results were reoptimized')
+    need(report.get('prior_windows_reoptimized') is False,'prior results were reoptimized')
     need(ready['checkpoint_kind']=='quarter' and ready['window']==ledger['window'],'source checkpoint identity differs')
     need(ready['executed_end_exclusive']==ledger['next_execute_tick'],'source boundary differs')
     need(plan['source_output']==ready['output'],'continuation did not use this source output')

@@ -8,6 +8,8 @@ class ThermalReferencePolicy:
     fixed_reference: str = 'current_final_SCED_explicit_interpretation'
     current_DA_physical_bounds_tolerance: float = 1e-8
 
+RT_POLICY = ThermalReferencePolicy(pricing_reference='same_period_RT_SCED_user_selected', fixed_reference='same_period_RT_SCED_fixed_integer_state')
+
 def thermal_bounds(*, status, current_sced, da_sced, current_min, current_max,
                    da_min, da_max, delta, policy=ThermalReferencePolicy()):
     """Only pricing-stable reference switches to DA. Other physical rows untouched.
@@ -16,7 +18,7 @@ def thermal_bounds(*, status, current_sced, da_sced, current_min, current_max,
     with a diagnostic rather than silently relax security or replace capacities.
     Nonpricing uses current SCED by an explicit interpretation, not text certification.
     """
-    if policy != ThermalReferencePolicy():
+    if policy not in (ThermalReferencePolicy(), RT_POLICY):
         raise ValueError('unsupported policy; do not silently select another reference')
     vals=(current_sced,da_sced,current_min,current_max,da_min,da_max,delta)
     if not all(isinstance(x,(int,float)) and isfinite(x) for x in vals):
@@ -30,6 +32,11 @@ def thermal_bounds(*, status, current_sced, da_sced, current_min, current_max,
         if not current_min<=current_sced<=current_max: raise ValueError('current fixed SCED beyond physical bounds')
         return (current_sced,current_sced)
     if status!='pricing_stable': raise ValueError('unsupported or unknown eligibility')
+    if policy == RT_POLICY:
+        lo=max(current_min,(1-delta)*current_sced);hi=min(current_max,(1+delta)*current_sced)
+        if lo>hi or not lo-1e-8<=current_sced<=hi+1e-8:
+            raise ValueError('same-period RT SCED reference outside current capability')
+        return lo,hi
     if max(abs(current_min-da_min),abs(current_max-da_max))>policy.current_DA_physical_bounds_tolerance:
         raise ValueError('DA/current physical bounds differ: minimal reference-only patch requires explicit broader constraint decision')
     lo=max(da_min,(1-delta)*da_sced);hi=min(da_max,(1+delta)*da_sced)

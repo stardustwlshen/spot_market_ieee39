@@ -15,7 +15,7 @@ def read(p):
  p=Path(p);return json.loads(gzip.decompress(p.read_bytes())if p.suffix=='.gz'else p.read_bytes())
 def stamp(s):
  x=datetime.fromisoformat(s);need(x.utcoffset()==timedelta(hours=8),'explicit +08 clock');return x
-def tick(s,origin):return aligned_tick((stamp(s)-stamp(origin)).total_seconds()/300,'clock')
+def tick(s,origin):return aligned_tick((stamp(s)-stamp(origin)).total_seconds()/900,'clock')
 def pack(x):
  if isinstance(x,bytes):return {'__bytes__':base64.b64encode(x).decode()}
  if isinstance(x,dict):return {'__map__':[[pack(k),pack(v)]for k,v in x.items()]}
@@ -62,7 +62,7 @@ def export_plan(bundle,*,expected_bundle_sha256):
  units=case['energy_inputs']['thermal'];count=len(case['energy_inputs']['horizon']['periods']);values=dict(zip(n['variables'],e['primal']));events={}
  for g in units:
   cv=case['curves'][g];need(cv.get('basis','research')=='research'and not cv.get('classes'),'fixed curve only; no invented typed mapping')
-  lead=aligned_tick(cv['notice_h']*12,'notice lead');need(lead>=0,'negative lead')
+  lead=aligned_tick(cv['notice_h']*4,'notice lead');need(lead>=0,'negative lead')
   for j in range(count):
    for phase,stem in [('startup','start'),('shutdown','stop')]:
     value=values[f'{stem}[{g},{j}]'];need(abs(value-round(value))<=1e-6,'binary event')
@@ -115,7 +115,7 @@ def build_candidate(bundle,ledger,*,expected_bundle_sha256,expected_ledger_sha25
   nonlocal added
   q['rows'].append(dict(lb=v,ub=v,terms=[[ix[f'{f}[{g},{j}]'],1.]]));n['constraints'].append(f'fixed_ledger[{label},{g},{j},{f}]');added+=1
  for g,cv in case['curves'].items():
-  lead=aligned_tick(cv['notice_h']*12,'notice lead')
+  lead=aligned_tick(cv['notice_h']*4,'notice lead')
   for j in range(count):
    nt=start+j-lead
    if nt<=cut:
@@ -127,29 +127,29 @@ def build_candidate(bundle,ledger,*,expected_bundle_sha256,expected_ledger_sha25
     for f,v in dict(online=1,start=int(k==0 and r['phase']=='startup'),stop=int(k==0 and r['phase']=='shutdown'),power=row['mean']).items():fix(r['unit'],j,f,v,r['event_id'])
  return dict(template=q,names=n,ledger_sha256=ledger['ledger_sha256'],added_rows=added,original_policy_and_AGC_preserved=True,formal=False,native_calls=0)
 
-def carry_candidate(bundle,ledger,*,expected_bundle_sha256,expected_ledger_sha256,executed_cells=3):
- case,plan=consume(bundle,ledger,expected_bundle_sha256,expected_ledger_sha256);need(executed_cells==3,'current storage/issued-prefix contract exactly3 cells')
- result=derive(case,unpack(bundle['boundary']),bundle['names'],bundle['SCED_response']['primal'],executed_cells=3,receipts=list(ledger['receipts'].values()))
+def carry_candidate(bundle,ledger,*,expected_bundle_sha256,expected_ledger_sha256,executed_cells=1):
+ case,plan=consume(bundle,ledger,expected_bundle_sha256,expected_ledger_sha256);need(executed_cells==1,'provincial execution contract exactly one 15-minute cell')
+ result=derive(case,unpack(bundle['boundary']),bundle['names'],bundle['SCED_response']['primal'],executed_cells=1,receipts=list(ledger['receipts'].values()))
  result['storage'],result['power_normalization'],result['energy_normalization']=storage_carry(bundle)
  begin=stamp(case['contract']['domain_start']);origin=case['contract']['origin'];cut=tick(begin.isoformat(),origin)
- result.update(cutoff=begin.isoformat(),boundary_at=(begin+timedelta(minutes=15)).isoformat(),executed_end_exclusive=cut,issued_end_exclusive=cut+3,predicted_issued_prefix=True)
+ result.update(cutoff=begin.isoformat(),boundary_at=(begin+timedelta(minutes=15)).isoformat(),executed_end_exclusive=cut,issued_end_exclusive=cut+1,predicted_issued_prefix=True)
  result['ledger_sha256']=ledger['ledger_sha256'];result['notice_values']={g:{str(r['notice_tick']):1 for r in ledger['receipts'].values()if r['unit']==g and r['phase']=='startup'}for g in case['curves']};result['case_identity']=plan['case_identity'];result['run_id']=plan['run_id']
  result['builder_boundary']=dict(thermal=deepcopy(result['boundary_states']),thermal_age_h=deepcopy(result['thermal_age_h']),storage=deepcopy(result['storage']),notice_values=deepcopy(result['notice_values']),boundary_at=result['boundary_at'],cutoff=result['cutoff'],ledger_sha256=ledger['ledger_sha256'],formal=False,safety_release=False)
  return result
 
 def storage_carry(bundle):
- """Original3-cell storage/cycle replay; no new physics/default data."""
+ """Provincial one-cell storage/cycle replay; no new physics/default data."""
  case=unpack(bundle['case']);v=dict(zip(bundle['names']['variables'],bundle['SCED_response']['primal']));storage={};corrections=[];energy_corrections=[]
  begin=stamp(case['contract']['domain_start']);delivery=begin+timedelta(minutes=15)
  for u,b in case.get('batteries',{}).items():
   E=b['initial_energy_mwh'];eta=math.sqrt(b['roundtrip_efficiency']);mode=b['initial_mode'];age=b['initial_mode_age_h'];ledger=deepcopy(b['cycle_budget'])
-  for i in range(3):
-   ch=v[f'battery.charge[{u},{i}]'];dis=v[f'battery.discharge[{u},{i}]'];new='charge'if v[f'battery.charge_mode[{u},{i}]']>.5 else'discharge'if v[f'battery.discharge_mode[{u},{i}]']>.5 else'idle';age=age+1/12 if new==mode else 1/12;mode=new;E+=(eta*ch-dis/eta)/12;need(abs(E-v[f'battery.energy[{u},{i}]'])<=1e-7,'SOC replay');date=(begin+timedelta(minutes=5*i)).date().isoformat();ledger[date]['used_internal_mwh']+=(eta*ch+dis/eta)/12
-  oldhour=(delivery-timedelta(minutes=5)).replace(minute=0,second=0,microsecond=0);hour=delivery.replace(minute=0,second=0,microsecond=0);keys=[k for k in v if k.startswith('battery.hour_direction['+u+',')and oldhour.isoformat()in k];need(len(keys)==1,'hour direction')
+  for i in range(1):
+   ch=v[f'battery.charge[{u},{i}]'];dis=v[f'battery.discharge[{u},{i}]'];new='charge'if v[f'battery.charge_mode[{u},{i}]']>.5 else'discharge'if v[f'battery.discharge_mode[{u},{i}]']>.5 else'idle';age=age+1/4 if new==mode else 1/4;mode=new;E+=(eta*ch-dis/eta)/4;need(abs(E-v[f'battery.energy[{u},{i}]'])<=1e-7,'SOC replay');date=(begin+timedelta(minutes=15*i)).date().isoformat();ledger[date]['used_internal_mwh']+=(eta*ch+dis/eta)/4
+  oldhour=(delivery-timedelta(minutes=15)).replace(minute=0,second=0,microsecond=0);hour=delivery.replace(minute=0,second=0,microsecond=0);keys=[k for k in v if k.startswith('battery.hour_direction['+u+',')and oldhour.isoformat()in k];need(len(keys)==1,'hour direction')
   power=dis-ch;wrong=(power!=0 if mode=='idle'else power>0 if mode=='charge'else power<0)
   if wrong:need(abs(power)<=1e-10,'material power contradiction');corrections.append({'unit':u,'raw':power,'canonical':0.});power=0.
   if not b['energy_min_mwh']<=E<=b['energy_max_mwh']:
-   bound=b['energy_min_mwh']if E<b['energy_min_mwh']else b['energy_max_mwh'];native=v[f'battery.energy[{u},2]'];need(abs(E-bound)<=1e-10 and abs(native-bound)<=1e-10,'material SOC violation');canonical=native if b['energy_min_mwh']<=native<=b['energy_max_mwh']else bound;energy_corrections.append({'unit':u,'raw':E,'canonical':canonical});E=canonical
+   bound=b['energy_min_mwh']if E<b['energy_min_mwh']else b['energy_max_mwh'];native=v[f'battery.energy[{u},0]'];need(abs(E-bound)<=1e-10 and abs(native-bound)<=1e-10,'material SOC violation');canonical=native if b['energy_min_mwh']<=native<=b['energy_max_mwh']else bound;energy_corrections.append({'unit':u,'raw':E,'canonical':canonical});E=canonical
   storage[u]=dict(initial_energy_mwh=E,initial_power_mw=power,initial_mode=mode,initial_mode_age_h=age,cycle_budget=ledger,initial_hour_direction=(1 if v[keys[0]]>.5 else-1)if oldhour==hour else 0)
  return storage,corrections,energy_corrections
 

@@ -35,7 +35,7 @@ def validate_network(ac):
   seen.add(u);stack.extend(adj[u]-seen)
  need(seen==set(buses),'islanded network requires explicit separate adapter')
 
-def map_candidate(payload,acceptance,source_root):
+def map_candidate(payload,acceptance,source_root,*,reactive_source_root=None):
  """Acceptance is an explicit caller-supplied evidence binding, not a verifier of SCED KKT.
  Generic schema accepts stable thermal mean-P snapshots only. Nonstable phases fail closed.
  """
@@ -119,7 +119,21 @@ def map_candidate(payload,acceptance,source_root):
  # No implicit conversion between external bus numbers and AC IDs.
  need(len({g['bus']for g in ac['generators']})==len(gens),'multiple thermal at bus requires allocation')
  need(sum(b['type']=='SLACK'for b in ac['buses'])==1,'exactly one slack')
- return {'ac_input':ac,'source_payload_sha256':digest(payload),'source_evidence':deepcopy(acceptance),
+ reactive=None
+ if 'reactive_assets' in d:
+  import importlib.util
+  reactive_path=Path(__file__).resolve().with_name('reactive_assets.py')
+  reactive_spec=importlib.util.spec_from_file_location('_source_bound_reactive_assets',reactive_path)
+  reactive_module=importlib.util.module_from_spec(reactive_spec);reactive_spec.loader.exec_module(reactive_module)
+  reactive=reactive_module.compile_reactive_assets(ac,d['reactive_assets'],source_root=source_root if reactive_source_root is None else reactive_source_root,start=d['start'],end=d['end'],information_cutoff=d['information_cutoff'])
+  ac=reactive['ac_input'];validate_network(ac)
+  close(math.fsum(g['pg_mw']for g in ac['generators'])-math.fsum(b['pd_mw']for b in ac['buses']),d['loss_proxy_mw'],'reactive device loss double-count/energy mismatch')
+ result={'ac_input':ac,'source_payload_sha256':digest(payload),'source_evidence':deepcopy(acceptance),
          'start':d['start'],'end':d['end'],'ledger':ledger,'precheck':{'positive_mw':positive,'accident_mw':accident,'net_generation_minus_physical_load_mw':physical_net},
          'capability_mode':d['capability']['mode'],'AC_executed':False,'research_safety_passed':False,'formal_release':False,'security_release':False,'PRICE_pending':True,
          'limitations':['mean-P balanced snapshot only, not endpoint or dynamic proof','SCED acceptance and full-domain SOC/phase/cycle evidence remains caller responsibility','no N-1/AVC dynamics or new reactive optimization performed','slack actual P/current/voltage/line must be independently AC-checked']}
+
+ if reactive is not None:
+  result['reactive_assets']={k:v for k,v in reactive.items() if k!='ac_input'}
+  result['reactive_normal_use_blocked']=bool(reactive['gates']['block_normal_price'])
+ return result

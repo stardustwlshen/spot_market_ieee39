@@ -1,0 +1,28 @@
+{
+  "public_summary_note": "Derived review summary, private locations omitted; not a recovery checkpoint.",
+  "evidence": {
+    "status": "recovered_exact_UI_real_24h_replay_passed",
+    "hours": 24,
+    "network_violations": 15,
+    "es1": {
+      "机组": "ES1",
+      "时刻": "2026-11-12T00:00:00+08:00",
+      "日末目标（MWh）": 120.0,
+      "实际日末电量（MWh）": 24.0,
+      "目标差值（MWh）": -96.0,
+      "允许下界（MWh）": 115.2,
+      "允许上界（MWh）": 124.8,
+      "低于软下界（MWh）": 91.2,
+      "高于软上界（MWh）": 0.0
+    },
+    "warning_count": 2,
+    "native_solves": 0,
+    "source": "Library source archive + Git blobs/hash-constrained reconstruction; not unverified text recreation",
+    "files": {
+      "app/gd_execution_alerts.py": "337e6b317ab5ad20df96c6213c5c2051fe9e6f29ada4e57bc641adc3816e4e29",
+      "app/gd_full_day_ui.py": "20c297d24e3e1f928b52c1cbb71d4a02c56b3aa67d38e90519cb1e9de9762bce",
+      "app/gd_resource_add_editor.py": "b0a01b11b666d8c91375d35ef69e6110b4ccce381cd9369b2c43c33e0748758f",
+      "QUICKSTART.md": "007cb1ca5322d23dd50caf5b79987eda229d115cae0cedacc9d1075d2953fc87"
+    }
+  }
+}

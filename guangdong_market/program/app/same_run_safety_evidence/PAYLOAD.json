@@ -1,0 +1,1690 @@
+{
+  "schema": "gd.explicit_sced_ac_candidate.v1",
+  "start": "2026-11-11T23:45:00+08:00",
+  "end": "2026-11-11T23:50:00+08:00",
+  "information_cutoff": "2026-11-11T23:30:00+08:00",
+  "data_available_at": "2026-11-11T23:30:00+08:00",
+  "power_semantics": "interval_mean_research_snapshot",
+  "physical_load_excludes_loss_proxy": true,
+  "network": {
+    "schema": "r30.ac_snapshot.v1",
+    "base_mva": 100.0,
+    "frequency_hz": 60.0,
+    "provenance": "Same original IEEE39 benchmark AC; original VG including known GT1.0636 conflict; physical gross Q/P proportional research proxy, VRE/BESS Q0; new accepted midnight short SCED mean point; not telemetry",
+    "operating_point_kind": "research_snapshot",
+    "buses": [
+      {
+        "id": "0",
+        "type": "PQ",
+        "pd_mw": 97.60000000000001,
+        "qd_mvar": 44.2,
+        "gs_mw": 0.0,
+        "bs_mvar": 0.0,
+        "vm_pu": 1.0,
+        "va_degree": 0.0,
+        "base_kv": 345.0,
+        "vmax_pu": 1.06,
+        "vmin_pu": 0.94
+      },
+      {
+        "id": "1",
+        "type": "PQ",
+        "pd_mw": 0.0,
+        "qd_mvar": 0.0,
+        "gs_mw": 0.0,
+        "bs_mvar": 0.0,
+        "vm_pu": 1.0,
+        "va_degree": 0.0,
+        "base_kv": 345.0,
+        "vmax_pu": 1.06,
+        "vmin_pu": 0.94
+      },
+      {
+        "id": "2",
+        "type": "PQ",
+        "pd_mw": 322.0,
+        "qd_mvar": 2.3999999999999986,
+        "gs_mw": 0.0,
+        "bs_mvar": 0.0,
+        "vm_pu": 1.0,
+        "va_degree": 0.0,
+        "base_kv": 345.0,
+        "vmax_pu": 1.06,
+        "vmin_pu": 0.94
+      },
+      {
+        "id": "3",
+        "type": "PQ",
+        "pd_mw": 500.0,
+        "qd_mvar": 184.0,
+        "gs_mw": 0.0,
+        "bs_mvar": 0.0,
+        "vm_pu": 1.0,
+        "va_degree": 0.0,
+        "base_kv": 345.0,
+        "vmax_pu": 1.06,
+        "vmin_pu": 0.94
+      },
+      {
+        "id": "4",
+        "type": "PQ",
+        "pd_mw": 0.0,
+        "qd_mvar": 0.0,
+        "gs_mw": 0.0,
+        "bs_mvar": 0.0,
+        "vm_pu": 1.0,
+        "va_degree": 0.0,
+        "base_kv": 345.0,
+        "vmax_pu": 1.06,
+        "vmin_pu": 0.94
+      },
+      {
+        "id": "5",
+        "type": "PQ",
+        "pd_mw": 0.0,
+        "qd_mvar": 0.0,
+        "gs_mw": 0.0,
+        "bs_mvar": 0.0,
+        "vm_pu": 1.0,
+        "va_degree": 0.0,
+        "base_kv": 345.0,
+        "vmax_pu": 1.06,
+        "vmin_pu": 0.94
+      },
+      {
+        "id": "6",
+        "type": "PQ",
+        "pd_mw": 233.80000000000007,
+        "qd_mvar": 84.00000000000003,
+        "gs_mw": 0.0,
+        "bs_mvar": 0.0,
+        "vm_pu": 1.0,
+        "va_degree": 0.0,
+        "base_kv": 345.0,
+        "vmax_pu": 1.06,
+        "vmin_pu": 0.94
+      },
+      {
+        "id": "7",
+        "type": "PQ",
+        "pd_mw": 522.0,
+        "qd_mvar": 176.60000000000002,
+        "gs_mw": 0.0,
+        "bs_mvar": 0.0,
+        "vm_pu": 1.0,
+        "va_degree": 0.0,
+        "base_kv": 345.0,
+        "vmax_pu": 1.06,
+        "vmin_pu": 0.94
+      },
+      {
+        "id": "8",
+        "type": "PQ",
+        "pd_mw": 6.5,
+        "qd_mvar": -66.60000000000002,
+        "gs_mw": 0.0,
+        "bs_mvar": 0.0,
+        "vm_pu": 1.0,
+        "va_degree": 0.0,
+        "base_kv": 345.0,
+        "vmax_pu": 1.06,
+        "vmin_pu": 0.94
+      },
+      {
+        "id": "9",
+        "type": "PQ",
+        "pd_mw": 0.0,
+        "qd_mvar": 0.0,
+        "gs_mw": 0.0,
+        "bs_mvar": 0.0,
+        "vm_pu": 1.0,
+        "va_degree": 0.0,
+        "base_kv": 345.0,
+        "vmax_pu": 1.06,
+        "vmin_pu": 0.94
+      },
+      {
+        "id": "10",
+        "type": "PQ",
+        "pd_mw": 0.0,
+        "qd_mvar": 0.0,
+        "gs_mw": 0.0,
+        "bs_mvar": 0.0,
+        "vm_pu": 1.0,
+        "va_degree": 0.0,
+        "base_kv": 345.0,
+        "vmax_pu": 1.06,
+        "vmin_pu": 0.94
+      },
+      {
+        "id": "11",
+        "type": "PQ",
+        "pd_mw": 8.529999999999973,
+        "qd_mvar": 88.0,
+        "gs_mw": 0.0,
+        "bs_mvar": 0.0,
+        "vm_pu": 1.0,
+        "va_degree": 0.0,
+        "base_kv": 345.0,
+        "vmax_pu": 1.06,
+        "vmin_pu": 0.94
+      },
+      {
+        "id": "12",
+        "type": "PQ",
+        "pd_mw": 0.0,
+        "qd_mvar": 0.0,
+        "gs_mw": 0.0,
+        "bs_mvar": 0.0,
+        "vm_pu": 1.0,
+        "va_degree": 0.0,
+        "base_kv": 345.0,
+        "vmax_pu": 1.06,
+        "vmin_pu": 0.94
+      },
+      {
+        "id": "13",
+        "type": "PQ",
+        "pd_mw": 0.0,
+        "qd_mvar": 0.0,
+        "gs_mw": 0.0,
+        "bs_mvar": 0.0,
+        "vm_pu": 1.0,
+        "va_degree": 0.0,
+        "base_kv": 345.0,
+        "vmax_pu": 1.06,
+        "vmin_pu": 0.94
+      },
+      {
+        "id": "14",
+        "type": "PQ",
+        "pd_mw": 320.0,
+        "qd_mvar": 153.0,
+        "gs_mw": 0.0,
+        "bs_mvar": 0.0,
+        "vm_pu": 1.0,
+        "va_degree": 0.0,
+        "base_kv": 345.0,
+        "vmax_pu": 1.06,
+        "vmin_pu": 0.94
+      },
+      {
+        "id": "15",
+        "type": "PQ",
+        "pd_mw": 329.0000000000002,
+        "qd_mvar": 32.299999999999955,
+        "gs_mw": 0.0,
+        "bs_mvar": 0.0,
+        "vm_pu": 1.0,
+        "va_degree": 0.0,
+        "base_kv": 345.0,
+        "vmax_pu": 1.06,
+        "vmin_pu": 0.94
+      },
+      {
+        "id": "16",
+        "type": "PQ",
+        "pd_mw": 0.0,
+        "qd_mvar": 0.0,
+        "gs_mw": 0.0,
+        "bs_mvar": 0.0,
+        "vm_pu": 1.0,
+        "va_degree": 0.0,
+        "base_kv": 345.0,
+        "vmax_pu": 1.06,
+        "vmin_pu": 0.94
+      },
+      {
+        "id": "17",
+        "type": "PQ",
+        "pd_mw": 158.0,
+        "qd_mvar": 30.0,
+        "gs_mw": 0.0,
+        "bs_mvar": 0.0,
+        "vm_pu": 1.0,
+        "va_degree": 0.0,
+        "base_kv": 345.0,
+        "vmax_pu": 1.06,
+        "vmin_pu": 0.94
+      },
+      {
+        "id": "18",
+        "type": "PQ",
+        "pd_mw": 0.0,
+        "qd_mvar": 0.0,
+        "gs_mw": 0.0,
+        "bs_mvar": 0.0,
+        "vm_pu": 1.0,
+        "va_degree": 0.0,
+        "base_kv": 345.0,
+        "vmax_pu": 1.06,
+        "vmin_pu": 0.94
+      },
+      {
+        "id": "19",
+        "type": "PQ",
+        "pd_mw": 680.0,
+        "qd_mvar": 103.0,
+        "gs_mw": 0.0,
+        "bs_mvar": 0.0,
+        "vm_pu": 1.0,
+        "va_degree": 0.0,
+        "base_kv": 345.0,
+        "vmax_pu": 1.06,
+        "vmin_pu": 0.94
+      },
+      {
+        "id": "20",
+        "type": "PQ",
+        "pd_mw": 274.0,
+        "qd_mvar": 115.0,
+        "gs_mw": 0.0,
+        "bs_mvar": 0.0,
+        "vm_pu": 1.0,
+        "va_degree": 0.0,
+        "base_kv": 345.0,
+        "vmax_pu": 1.06,
+        "vmin_pu": 0.94
+      },
+      {
+        "id": "21",
+        "type": "PQ",
+        "pd_mw": 0.0,
+        "qd_mvar": 0.0,
+        "gs_mw": 0.0,
+        "bs_mvar": 0.0,
+        "vm_pu": 1.0,
+        "va_degree": 0.0,
+        "base_kv": 345.0,
+        "vmax_pu": 1.06,
+        "vmin_pu": 0.94
+      },
+      {
+        "id": "22",
+        "type": "PQ",
+        "pd_mw": 247.5,
+        "qd_mvar": 84.60000000000002,
+        "gs_mw": 0.0,
+        "bs_mvar": 0.0,
+        "vm_pu": 1.0,
+        "va_degree": 0.0,
+        "base_kv": 345.0,
+        "vmax_pu": 1.06,
+        "vmin_pu": 0.94
+      },
+      {
+        "id": "23",
+        "type": "PQ",
+        "pd_mw": 308.5999999999999,
+        "qd_mvar": -92.20000000000005,
+        "gs_mw": 0.0,
+        "bs_mvar": 0.0,
+        "vm_pu": 1.0,
+        "va_degree": 0.0,
+        "base_kv": 345.0,
+        "vmax_pu": 1.06,
+        "vmin_pu": 0.94
+      },
+      {
+        "id": "24",
+        "type": "PQ",
+        "pd_mw": 224.00000000000045,
+        "qd_mvar": 47.200000000000045,
+        "gs_mw": 0.0,
+        "bs_mvar": 0.0,
+        "vm_pu": 1.0,
+        "va_degree": 0.0,
+        "base_kv": 345.0,
+        "vmax_pu": 1.06,
+        "vmin_pu": 0.94
+      },
+      {
+        "id": "25",
+        "type": "PQ",
+        "pd_mw": 139.0,
+        "qd_mvar": 17.0,
+        "gs_mw": 0.0,
+        "bs_mvar": 0.0,
+        "vm_pu": 1.0,
+        "va_degree": 0.0,
+        "base_kv": 345.0,
+        "vmax_pu": 1.06,
+        "vmin_pu": 0.94
+      },
+      {
+        "id": "26",
+        "type": "PQ",
+        "pd_mw": 281.0,
+        "qd_mvar": 75.5,
+        "gs_mw": 0.0,
+        "bs_mvar": 0.0,
+        "vm_pu": 1.0,
+        "va_degree": 0.0,
+        "base_kv": 345.0,
+        "vmax_pu": 1.06,
+        "vmin_pu": 0.94
+      },
+      {
+        "id": "27",
+        "type": "PQ",
+        "pd_mw": 206.0,
+        "qd_mvar": 27.59999999999991,
+        "gs_mw": 0.0,
+        "bs_mvar": 0.0,
+        "vm_pu": 1.0,
+        "va_degree": 0.0,
+        "base_kv": 345.0,
+        "vmax_pu": 1.06,
+        "vmin_pu": 0.94
+      },
+      {
+        "id": "28",
+        "type": "PQ",
+        "pd_mw": 283.5,
+        "qd_mvar": 26.90000000000009,
+        "gs_mw": 0.0,
+        "bs_mvar": 0.0,
+        "vm_pu": 1.0,
+        "va_degree": 0.0,
+        "base_kv": 345.0,
+        "vmax_pu": 1.06,
+        "vmin_pu": 0.94
+      },
+      {
+        "id": "29",
+        "type": "PV",
+        "pd_mw": 0.0,
+        "qd_mvar": 0.0,
+        "gs_mw": 0.0,
+        "bs_mvar": 0.0,
+        "vm_pu": 1.0499,
+        "va_degree": 0.0,
+        "base_kv": 345.0,
+        "vmax_pu": 1.06,
+        "vmin_pu": 0.94
+      },
+      {
+        "id": "30",
+        "type": "SLACK",
+        "pd_mw": 9.199999999999818,
+        "qd_mvar": 4.599999999999909,
+        "gs_mw": 0.0,
+        "bs_mvar": 0.0,
+        "vm_pu": 0.982,
+        "va_degree": 0.0,
+        "base_kv": 345.0,
+        "vmax_pu": 1.06,
+        "vmin_pu": 0.94
+      },
+      {
+        "id": "31",
+        "type": "PV",
+        "pd_mw": 0.0,
+        "qd_mvar": 0.0,
+        "gs_mw": 0.0,
+        "bs_mvar": 0.0,
+        "vm_pu": 0.9841,
+        "va_degree": 0.0,
+        "base_kv": 345.0,
+        "vmax_pu": 1.06,
+        "vmin_pu": 0.94
+      },
+      {
+        "id": "32",
+        "type": "PV",
+        "pd_mw": 0.0,
+        "qd_mvar": 0.0,
+        "gs_mw": 0.0,
+        "bs_mvar": 0.0,
+        "vm_pu": 0.9972,
+        "va_degree": 0.0,
+        "base_kv": 345.0,
+        "vmax_pu": 1.06,
+        "vmin_pu": 0.94
+      },
+      {
+        "id": "33",
+        "type": "PV",
+        "pd_mw": 0.0,
+        "qd_mvar": 0.0,
+        "gs_mw": 0.0,
+        "bs_mvar": 0.0,
+        "vm_pu": 1.0123,
+        "va_degree": 0.0,
+        "base_kv": 345.0,
+        "vmax_pu": 1.06,
+        "vmin_pu": 0.94
+      },
+      {
+        "id": "34",
+        "type": "PV",
+        "pd_mw": 0.0,
+        "qd_mvar": 0.0,
+        "gs_mw": 0.0,
+        "bs_mvar": 0.0,
+        "vm_pu": 1.0494,
+        "va_degree": 0.0,
+        "base_kv": 345.0,
+        "vmax_pu": 1.06,
+        "vmin_pu": 0.94
+      },
+      {
+        "id": "35",
+        "type": "PV",
+        "pd_mw": 0.0,
+        "qd_mvar": 0.0,
+        "gs_mw": 0.0,
+        "bs_mvar": 0.0,
+        "vm_pu": 1.0636,
+        "va_degree": 0.0,
+        "base_kv": 345.0,
+        "vmax_pu": 1.06,
+        "vmin_pu": 0.94
+      },
+      {
+        "id": "36",
+        "type": "PV",
+        "pd_mw": 0.0,
+        "qd_mvar": 0.0,
+        "gs_mw": 0.0,
+        "bs_mvar": 0.0,
+        "vm_pu": 1.0275,
+        "va_degree": 0.0,
+        "base_kv": 345.0,
+        "vmax_pu": 1.06,
+        "vmin_pu": 0.94
+      },
+      {
+        "id": "37",
+        "type": "PV",
+        "pd_mw": 0.0,
+        "qd_mvar": 0.0,
+        "gs_mw": 0.0,
+        "bs_mvar": 0.0,
+        "vm_pu": 1.0265,
+        "va_degree": 0.0,
+        "base_kv": 345.0,
+        "vmax_pu": 1.06,
+        "vmin_pu": 0.94
+      },
+      {
+        "id": "38",
+        "type": "PV",
+        "pd_mw": 1104.0,
+        "qd_mvar": 250.0,
+        "gs_mw": 0.0,
+        "bs_mvar": 0.0,
+        "vm_pu": 1.03,
+        "va_degree": 0.0,
+        "base_kv": 345.0,
+        "vmax_pu": 1.06,
+        "vmin_pu": 0.94
+      }
+    ],
+    "generators": [
+      {
+        "id": "C1",
+        "bus": "30",
+        "pg_mw": 636.0,
+        "qg_mvar": 0.0,
+        "qmax_mvar": 300.0,
+        "qmin_mvar": -100.0,
+        "vg_pu": 0.982,
+        "pmax_mw": 646.0,
+        "pmin_mw": 290.0
+      },
+      {
+        "id": "C2",
+        "bus": "31",
+        "pg_mw": 668.5844168330001,
+        "qg_mvar": 0.0,
+        "qmax_mvar": 300.0,
+        "qmin_mvar": 150.0,
+        "vg_pu": 0.9841,
+        "pmax_mw": 725.0,
+        "pmin_mw": 325.0
+      },
+      {
+        "id": "C3",
+        "bus": "37",
+        "pg_mw": 675.0,
+        "qg_mvar": 0.0,
+        "qmax_mvar": 300.0,
+        "qmin_mvar": -150.0,
+        "vg_pu": 1.0265,
+        "pmax_mw": 865.0,
+        "pmin_mw": 390.0
+      },
+      {
+        "id": "CCGT",
+        "bus": "34",
+        "pg_mw": 320.0,
+        "qg_mvar": 0.0,
+        "qmax_mvar": 300.0,
+        "qmin_mvar": -100.0,
+        "vg_pu": 1.0494,
+        "pmax_mw": 687.0,
+        "pmin_mw": 310.0
+      },
+      {
+        "id": "GT",
+        "bus": "35",
+        "pg_mw": 85.0,
+        "qg_mvar": 0.0,
+        "qmax_mvar": 240.0,
+        "qmin_mvar": 0.0,
+        "vg_pu": 1.0636,
+        "pmax_mw": 300.0,
+        "pmin_mw": 75.0
+      }
+    ],
+    "branches": [
+      {
+        "id": "B0",
+        "from_bus": "0",
+        "to_bus": "1",
+        "r_pu": 0.0034999999999999996,
+        "x_pu": 0.0411,
+        "b_pu": 0.6987000000000001,
+        "rate_mva": 600.0,
+        "tap": 1.0,
+        "shift_degree": 0.0,
+        "status": 1
+      },
+      {
+        "id": "B1",
+        "from_bus": "0",
+        "to_bus": "38",
+        "r_pu": 0.001,
+        "x_pu": 0.025,
+        "b_pu": 0.7500000000000001,
+        "rate_mva": 1000.0,
+        "tap": 1.0,
+        "shift_degree": 0.0,
+        "status": 1
+      },
+      {
+        "id": "B2",
+        "from_bus": "1",
+        "to_bus": "2",
+        "r_pu": 0.0013000000000000002,
+        "x_pu": 0.015099999999999999,
+        "b_pu": 0.25720000000000004,
+        "rate_mva": 500.000000000003,
+        "tap": 1.0,
+        "shift_degree": 0.0,
+        "status": 1
+      },
+      {
+        "id": "B3",
+        "from_bus": "1",
+        "to_bus": "24",
+        "r_pu": 0.006999999999999999,
+        "x_pu": 0.0086,
+        "b_pu": 0.146,
+        "rate_mva": 500.000000000003,
+        "tap": 1.0,
+        "shift_degree": 0.0,
+        "status": 1
+      },
+      {
+        "id": "B4",
+        "from_bus": "2",
+        "to_bus": "3",
+        "r_pu": 0.0013000000000000002,
+        "x_pu": 0.0213,
+        "b_pu": 0.22140000000000004,
+        "rate_mva": 500.000000000003,
+        "tap": 1.0,
+        "shift_degree": 0.0,
+        "status": 1
+      },
+      {
+        "id": "B5",
+        "from_bus": "2",
+        "to_bus": "17",
+        "r_pu": 0.0011,
+        "x_pu": 0.0133,
+        "b_pu": 0.2138,
+        "rate_mva": 500.000000000003,
+        "tap": 1.0,
+        "shift_degree": 0.0,
+        "status": 1
+      },
+      {
+        "id": "B6",
+        "from_bus": "3",
+        "to_bus": "4",
+        "r_pu": 0.0008,
+        "x_pu": 0.0128,
+        "b_pu": 0.13420000000000004,
+        "rate_mva": 600.0,
+        "tap": 1.0,
+        "shift_degree": 0.0,
+        "status": 1
+      },
+      {
+        "id": "B7",
+        "from_bus": "3",
+        "to_bus": "13",
+        "r_pu": 0.0008,
+        "x_pu": 0.0129,
+        "b_pu": 0.1382,
+        "rate_mva": 500.000000000003,
+        "tap": 1.0,
+        "shift_degree": 0.0,
+        "status": 1
+      },
+      {
+        "id": "B8",
+        "from_bus": "4",
+        "to_bus": "5",
+        "r_pu": 0.0002,
+        "x_pu": 0.0026000000000000003,
+        "b_pu": 0.043399999999999994,
+        "rate_mva": 1200.0,
+        "tap": 1.0,
+        "shift_degree": 0.0,
+        "status": 1
+      },
+      {
+        "id": "B9",
+        "from_bus": "4",
+        "to_bus": "7",
+        "r_pu": 0.0008,
+        "x_pu": 0.0112,
+        "b_pu": 0.1476,
+        "rate_mva": 900.0000000000031,
+        "tap": 1.0,
+        "shift_degree": 0.0,
+        "status": 1
+      },
+      {
+        "id": "B10",
+        "from_bus": "5",
+        "to_bus": "6",
+        "r_pu": 0.0006,
+        "x_pu": 0.0092,
+        "b_pu": 0.11299999999999999,
+        "rate_mva": 900.0000000000031,
+        "tap": 1.0,
+        "shift_degree": 0.0,
+        "status": 1
+      },
+      {
+        "id": "B11",
+        "from_bus": "5",
+        "to_bus": "10",
+        "r_pu": 0.0007,
+        "x_pu": 0.008199999999999999,
+        "b_pu": 0.1389,
+        "rate_mva": 480.00000000000125,
+        "tap": 1.0,
+        "shift_degree": 0.0,
+        "status": 1
+      },
+      {
+        "id": "B12",
+        "from_bus": "6",
+        "to_bus": "7",
+        "r_pu": 0.0004,
+        "x_pu": 0.0046,
+        "b_pu": 0.078,
+        "rate_mva": 900.0000000000031,
+        "tap": 1.0,
+        "shift_degree": 0.0,
+        "status": 1
+      },
+      {
+        "id": "B13",
+        "from_bus": "7",
+        "to_bus": "8",
+        "r_pu": 0.0023,
+        "x_pu": 0.0363,
+        "b_pu": 0.38040000000000007,
+        "rate_mva": 900.0000000000031,
+        "tap": 1.0,
+        "shift_degree": 0.0,
+        "status": 1
+      },
+      {
+        "id": "B14",
+        "from_bus": "8",
+        "to_bus": "38",
+        "r_pu": 0.001,
+        "x_pu": 0.025,
+        "b_pu": 1.2,
+        "rate_mva": 900.0000000000031,
+        "tap": 1.0,
+        "shift_degree": 0.0,
+        "status": 1
+      },
+      {
+        "id": "B15",
+        "from_bus": "9",
+        "to_bus": "10",
+        "r_pu": 0.0004,
+        "x_pu": 0.0043,
+        "b_pu": 0.07290000000000002,
+        "rate_mva": 600.0,
+        "tap": 1.0,
+        "shift_degree": 0.0,
+        "status": 1
+      },
+      {
+        "id": "B16",
+        "from_bus": "9",
+        "to_bus": "12",
+        "r_pu": 0.0004,
+        "x_pu": 0.0043,
+        "b_pu": 0.07290000000000002,
+        "rate_mva": 600.0,
+        "tap": 1.0,
+        "shift_degree": 0.0,
+        "status": 1
+      },
+      {
+        "id": "B17",
+        "from_bus": "12",
+        "to_bus": "13",
+        "r_pu": 0.0009000000000000001,
+        "x_pu": 0.0101,
+        "b_pu": 0.17230000000000004,
+        "rate_mva": 600.0,
+        "tap": 1.0,
+        "shift_degree": 0.0,
+        "status": 1
+      },
+      {
+        "id": "B18",
+        "from_bus": "13",
+        "to_bus": "14",
+        "r_pu": 0.0018000000000000002,
+        "x_pu": 0.0217,
+        "b_pu": 0.3660000000000001,
+        "rate_mva": 600.0,
+        "tap": 1.0,
+        "shift_degree": 0.0,
+        "status": 1
+      },
+      {
+        "id": "B19",
+        "from_bus": "14",
+        "to_bus": "15",
+        "r_pu": 0.0009000000000000001,
+        "x_pu": 0.0094,
+        "b_pu": 0.171,
+        "rate_mva": 600.0,
+        "tap": 1.0,
+        "shift_degree": 0.0,
+        "status": 1
+      },
+      {
+        "id": "B20",
+        "from_bus": "15",
+        "to_bus": "16",
+        "r_pu": 0.0007,
+        "x_pu": 0.0089,
+        "b_pu": 0.13420000000000004,
+        "rate_mva": 600.0,
+        "tap": 1.0,
+        "shift_degree": 0.0,
+        "status": 1
+      },
+      {
+        "id": "B21",
+        "from_bus": "15",
+        "to_bus": "18",
+        "r_pu": 0.0016,
+        "x_pu": 0.0195,
+        "b_pu": 0.304,
+        "rate_mva": 600.0,
+        "tap": 1.0,
+        "shift_degree": 0.0,
+        "status": 1
+      },
+      {
+        "id": "B22",
+        "from_bus": "15",
+        "to_bus": "20",
+        "r_pu": 0.0008,
+        "x_pu": 0.0135,
+        "b_pu": 0.2548,
+        "rate_mva": 600.0,
+        "tap": 1.0,
+        "shift_degree": 0.0,
+        "status": 1
+      },
+      {
+        "id": "B23",
+        "from_bus": "15",
+        "to_bus": "23",
+        "r_pu": 0.0003,
+        "x_pu": 0.0059,
+        "b_pu": 0.068,
+        "rate_mva": 600.0,
+        "tap": 1.0,
+        "shift_degree": 0.0,
+        "status": 1
+      },
+      {
+        "id": "B24",
+        "from_bus": "16",
+        "to_bus": "17",
+        "r_pu": 0.0007,
+        "x_pu": 0.008199999999999999,
+        "b_pu": 0.13189999999999996,
+        "rate_mva": 600.0,
+        "tap": 1.0,
+        "shift_degree": 0.0,
+        "status": 1
+      },
+      {
+        "id": "B25",
+        "from_bus": "16",
+        "to_bus": "26",
+        "r_pu": 0.0013000000000000002,
+        "x_pu": 0.0173,
+        "b_pu": 0.32160000000000005,
+        "rate_mva": 600.0,
+        "tap": 1.0,
+        "shift_degree": 0.0,
+        "status": 1
+      },
+      {
+        "id": "B26",
+        "from_bus": "20",
+        "to_bus": "21",
+        "r_pu": 0.0008,
+        "x_pu": 0.013999999999999999,
+        "b_pu": 0.2565,
+        "rate_mva": 900.0000000000031,
+        "tap": 1.0,
+        "shift_degree": 0.0,
+        "status": 1
+      },
+      {
+        "id": "B27",
+        "from_bus": "21",
+        "to_bus": "22",
+        "r_pu": 0.0006,
+        "x_pu": 0.0096,
+        "b_pu": 0.18460000000000001,
+        "rate_mva": 600.0,
+        "tap": 1.0,
+        "shift_degree": 0.0,
+        "status": 1
+      },
+      {
+        "id": "B28",
+        "from_bus": "22",
+        "to_bus": "23",
+        "r_pu": 0.0022,
+        "x_pu": 0.034999999999999996,
+        "b_pu": 0.36100000000000004,
+        "rate_mva": 600.0,
+        "tap": 1.0,
+        "shift_degree": 0.0,
+        "status": 1
+      },
+      {
+        "id": "B29",
+        "from_bus": "22",
+        "to_bus": "35",
+        "r_pu": 0.0005,
+        "x_pu": 0.027200000000000002,
+        "b_pu": 0.0,
+        "rate_mva": 900.0000000000031,
+        "tap": 1.0,
+        "shift_degree": 0.0,
+        "status": 1
+      },
+      {
+        "id": "B30",
+        "from_bus": "24",
+        "to_bus": "25",
+        "r_pu": 0.0032,
+        "x_pu": 0.0323,
+        "b_pu": 0.531,
+        "rate_mva": 600.0,
+        "tap": 1.0,
+        "shift_degree": 0.0,
+        "status": 1
+      },
+      {
+        "id": "B31",
+        "from_bus": "25",
+        "to_bus": "26",
+        "r_pu": 0.0014,
+        "x_pu": 0.0147,
+        "b_pu": 0.2396,
+        "rate_mva": 600.0,
+        "tap": 1.0,
+        "shift_degree": 0.0,
+        "status": 1
+      },
+      {
+        "id": "B32",
+        "from_bus": "25",
+        "to_bus": "27",
+        "r_pu": 0.0043,
+        "x_pu": 0.04739999999999999,
+        "b_pu": 0.7802000000000001,
+        "rate_mva": 600.0,
+        "tap": 1.0,
+        "shift_degree": 0.0,
+        "status": 1
+      },
+      {
+        "id": "B33",
+        "from_bus": "25",
+        "to_bus": "28",
+        "r_pu": 0.005699999999999999,
+        "x_pu": 0.0625,
+        "b_pu": 1.029,
+        "rate_mva": 600.0,
+        "tap": 1.0,
+        "shift_degree": 0.0,
+        "status": 1
+      },
+      {
+        "id": "B34",
+        "from_bus": "27",
+        "to_bus": "28",
+        "r_pu": 0.0014,
+        "x_pu": 0.015099999999999999,
+        "b_pu": 0.249,
+        "rate_mva": 600.0,
+        "tap": 1.0,
+        "shift_degree": 0.0,
+        "status": 1
+      },
+      {
+        "id": "B35",
+        "from_bus": "1",
+        "to_bus": "29",
+        "r_pu": 0.0,
+        "x_pu": 0.018099999999999998,
+        "b_pu": -0.0,
+        "rate_mva": 900.0,
+        "tap": 1.025,
+        "shift_degree": 0.0,
+        "status": 1
+      },
+      {
+        "id": "B36",
+        "from_bus": "5",
+        "to_bus": "30",
+        "r_pu": 0.0,
+        "x_pu": 0.025,
+        "b_pu": -0.0,
+        "rate_mva": 1800.0,
+        "tap": 1.07,
+        "shift_degree": 0.0,
+        "status": 1
+      },
+      {
+        "id": "B37",
+        "from_bus": "9",
+        "to_bus": "31",
+        "r_pu": 0.0,
+        "x_pu": 0.019999999999999997,
+        "b_pu": -0.0,
+        "rate_mva": 900.0,
+        "tap": 1.07,
+        "shift_degree": 0.0,
+        "status": 1
+      },
+      {
+        "id": "B38",
+        "from_bus": "11",
+        "to_bus": "10",
+        "r_pu": 0.0015999999999999999,
+        "x_pu": 0.04350000000000001,
+        "b_pu": -0.0,
+        "rate_mva": 500.0,
+        "tap": 1.006,
+        "shift_degree": 0.0,
+        "status": 1
+      },
+      {
+        "id": "B39",
+        "from_bus": "11",
+        "to_bus": "12",
+        "r_pu": 0.0015999999999999999,
+        "x_pu": 0.04350000000000001,
+        "b_pu": -0.0,
+        "rate_mva": 500.0,
+        "tap": 1.006,
+        "shift_degree": 0.0,
+        "status": 1
+      },
+      {
+        "id": "B40",
+        "from_bus": "18",
+        "to_bus": "19",
+        "r_pu": 0.0007,
+        "x_pu": 0.013800000000000005,
+        "b_pu": -0.0,
+        "rate_mva": 900.0,
+        "tap": 1.06,
+        "shift_degree": 0.0,
+        "status": 1
+      },
+      {
+        "id": "B41",
+        "from_bus": "18",
+        "to_bus": "32",
+        "r_pu": 0.0007,
+        "x_pu": 0.014199999999999997,
+        "b_pu": -0.0,
+        "rate_mva": 900.0,
+        "tap": 1.07,
+        "shift_degree": 0.0,
+        "status": 1
+      },
+      {
+        "id": "B42",
+        "from_bus": "19",
+        "to_bus": "33",
+        "r_pu": 0.0009000000000000002,
+        "x_pu": 0.018000000000000002,
+        "b_pu": -0.0,
+        "rate_mva": 900.0,
+        "tap": 1.009,
+        "shift_degree": 0.0,
+        "status": 1
+      },
+      {
+        "id": "B43",
+        "from_bus": "21",
+        "to_bus": "34",
+        "r_pu": 0.0,
+        "x_pu": 0.014299999999999998,
+        "b_pu": -0.0,
+        "rate_mva": 900.0,
+        "tap": 1.025,
+        "shift_degree": 0.0,
+        "status": 1
+      },
+      {
+        "id": "B44",
+        "from_bus": "24",
+        "to_bus": "36",
+        "r_pu": 0.0006000000000000001,
+        "x_pu": 0.023200000000000002,
+        "b_pu": -0.0,
+        "rate_mva": 900.0,
+        "tap": 1.025,
+        "shift_degree": 0.0,
+        "status": 1
+      },
+      {
+        "id": "B45",
+        "from_bus": "28",
+        "to_bus": "37",
+        "r_pu": 0.0007999999999999999,
+        "x_pu": 0.0156,
+        "b_pu": -0.0,
+        "rate_mva": 1200.0,
+        "tap": 1.025,
+        "shift_degree": 0.0,
+        "status": 1
+      }
+    ]
+  },
+  "resources": [
+    {
+      "id": "C1",
+      "bus": "30",
+      "kind": "thermal",
+      "online": true,
+      "phase": "stable",
+      "agc_up_mw": 10.0,
+      "agc_down_mw": 10.0,
+      "ramp_up_mw_per_h": 582.0,
+      "ramp_down_mw_per_h": 582.0,
+      "previous_endpoint_mw": 636.0,
+      "endpoint_semantics": "explicit_stable_piecewise_constant",
+      "reserve_eligible": true,
+      "positive_cap_mw": 336.0,
+      "accident_cap_mw": 97.0
+    },
+    {
+      "id": "C2",
+      "bus": "31",
+      "kind": "thermal",
+      "online": true,
+      "phase": "stable",
+      "agc_up_mw": 10.0,
+      "agc_down_mw": 10.0,
+      "ramp_up_mw_per_h": 654.0,
+      "ramp_down_mw_per_h": 654.0,
+      "previous_endpoint_mw": 676.9625498989999,
+      "endpoint_semantics": "explicit_stable_piecewise_constant",
+      "reserve_eligible": true,
+      "positive_cap_mw": 380.0,
+      "accident_cap_mw": 109.0
+    },
+    {
+      "id": "C3",
+      "bus": "37",
+      "kind": "thermal",
+      "online": true,
+      "phase": "stable",
+      "agc_up_mw": 10.0,
+      "agc_down_mw": 10.0,
+      "ramp_up_mw_per_h": 780.0,
+      "ramp_down_mw_per_h": 780.0,
+      "previous_endpoint_mw": 675.0,
+      "endpoint_semantics": "explicit_stable_piecewise_constant",
+      "reserve_eligible": true,
+      "positive_cap_mw": 455.0,
+      "accident_cap_mw": 130.0
+    },
+    {
+      "id": "CCGT",
+      "bus": "34",
+      "kind": "thermal",
+      "online": true,
+      "phase": "stable",
+      "agc_up_mw": 10.0,
+      "agc_down_mw": 10.0,
+      "ramp_up_mw_per_h": 1650.0,
+      "ramp_down_mw_per_h": 1650.0,
+      "previous_endpoint_mw": 320.0,
+      "endpoint_semantics": "explicit_stable_piecewise_constant",
+      "reserve_eligible": true,
+      "positive_cap_mw": 357.0,
+      "accident_cap_mw": 275.0
+    },
+    {
+      "id": "GT",
+      "bus": "35",
+      "kind": "thermal",
+      "online": true,
+      "phase": "stable",
+      "agc_up_mw": 10.0,
+      "agc_down_mw": 10.0,
+      "ramp_up_mw_per_h": 1620.0,
+      "ramp_down_mw_per_h": 1620.0,
+      "previous_endpoint_mw": 85.0,
+      "endpoint_semantics": "explicit_stable_piecewise_constant",
+      "reserve_eligible": true,
+      "positive_cap_mw": 205.0,
+      "accident_cap_mw": 270.0
+    },
+    {
+      "id": "W1",
+      "bus": "29",
+      "kind": "wind",
+      "online": true,
+      "reserve_eligible": false
+    },
+    {
+      "id": "W2",
+      "bus": "36",
+      "kind": "wind",
+      "online": true,
+      "reserve_eligible": false
+    },
+    {
+      "id": "PV1",
+      "bus": "32",
+      "kind": "pv",
+      "online": true,
+      "reserve_eligible": false
+    },
+    {
+      "id": "PV2",
+      "bus": "3",
+      "kind": "pv",
+      "online": true,
+      "reserve_eligible": false
+    },
+    {
+      "id": "PV3",
+      "bus": "7",
+      "kind": "pv",
+      "online": true,
+      "reserve_eligible": false
+    },
+    {
+      "id": "ES1",
+      "bus": "18",
+      "kind": "battery",
+      "online": true,
+      "reserve_eligible": false,
+      "soc": {
+        "previous_end_at": "2026-11-11T23:45:00+08:00",
+        "start_mwh": 100.0,
+        "previous_end_mwh": 100.0,
+        "end_mwh": 100.0,
+        "min_mwh": 20.0,
+        "max_mwh": 180.0,
+        "eta_charge": 0.95,
+        "eta_discharge": 0.95,
+        "charge_max_mw": 100.0,
+        "discharge_max_mw": 100.0
+      }
+    },
+    {
+      "id": "ES2",
+      "bus": "15",
+      "kind": "battery",
+      "online": true,
+      "reserve_eligible": false,
+      "soc": {
+        "previous_end_at": "2026-11-11T23:45:00+08:00",
+        "start_mwh": 200.0,
+        "previous_end_mwh": 200.0,
+        "end_mwh": 200.0,
+        "min_mwh": 40.0,
+        "max_mwh": 360.0,
+        "eta_charge": 0.95,
+        "eta_discharge": 0.95,
+        "charge_max_mw": 200.0,
+        "discharge_max_mw": 200.0
+      }
+    },
+    {
+      "id": "ES3",
+      "bus": "24",
+      "kind": "battery",
+      "online": true,
+      "reserve_eligible": false,
+      "soc": {
+        "previous_end_at": "2026-11-11T23:45:00+08:00",
+        "start_mwh": 100.0,
+        "previous_end_mwh": 100.0,
+        "end_mwh": 100.0,
+        "min_mwh": 20.0,
+        "max_mwh": 180.0,
+        "eta_charge": 0.95,
+        "eta_discharge": 0.95,
+        "charge_max_mw": 100.0,
+        "discharge_max_mw": 100.0
+      }
+    },
+    {
+      "id": "ES4",
+      "bus": "3",
+      "kind": "battery",
+      "online": true,
+      "reserve_eligible": false,
+      "soc": {
+        "previous_end_at": "2026-11-11T23:45:00+08:00",
+        "start_mwh": 300.0,
+        "previous_end_mwh": 300.0,
+        "end_mwh": 300.0,
+        "min_mwh": 60.0,
+        "max_mwh": 540.0,
+        "eta_charge": 0.95,
+        "eta_discharge": 0.95,
+        "charge_max_mw": 150.0,
+        "discharge_max_mw": 150.0
+      }
+    },
+    {
+      "id": "ES5",
+      "bus": "7",
+      "kind": "battery",
+      "online": true,
+      "reserve_eligible": false,
+      "soc": {
+        "previous_end_at": "2026-11-11T23:45:00+08:00",
+        "start_mwh": 300.0,
+        "previous_end_mwh": 300.0,
+        "end_mwh": 300.0,
+        "min_mwh": 60.0,
+        "max_mwh": 540.0,
+        "eta_charge": 0.95,
+        "eta_discharge": 0.95,
+        "charge_max_mw": 150.0,
+        "discharge_max_mw": 150.0
+      }
+    }
+  ],
+  "plan": {
+    "C1": {
+      "p_mean_mw": 636.0,
+      "p_endpoint_mw": 636.0,
+      "interval_start_seconds": 1794411900.0,
+      "interval_end_seconds": 1794412200.0
+    },
+    "C2": {
+      "p_mean_mw": 668.5844168330001,
+      "p_endpoint_mw": 668.5844168330001,
+      "interval_start_seconds": 1794411900.0,
+      "interval_end_seconds": 1794412200.0
+    },
+    "C3": {
+      "p_mean_mw": 675.0,
+      "p_endpoint_mw": 675.0,
+      "interval_start_seconds": 1794411900.0,
+      "interval_end_seconds": 1794412200.0
+    },
+    "CCGT": {
+      "p_mean_mw": 320.0,
+      "p_endpoint_mw": 320.0,
+      "interval_start_seconds": 1794411900.0,
+      "interval_end_seconds": 1794412200.0
+    },
+    "GT": {
+      "p_mean_mw": 85.0,
+      "p_endpoint_mw": 85.0,
+      "interval_start_seconds": 1794411900.0,
+      "interval_end_seconds": 1794412200.0
+    },
+    "W1": {
+      "p_mean_mw": 444.346882634,
+      "p_endpoint_mw": 444.346882634,
+      "interval_start_seconds": 1794411900.0,
+      "interval_end_seconds": 1794412200.0
+    },
+    "W2": {
+      "p_mean_mw": 258.3933992385,
+      "p_endpoint_mw": 258.3933992385,
+      "interval_start_seconds": 1794411900.0,
+      "interval_end_seconds": 1794412200.0
+    },
+    "PV1": {
+      "p_mean_mw": 0.0,
+      "p_endpoint_mw": 0.0,
+      "interval_start_seconds": 1794411900.0,
+      "interval_end_seconds": 1794412200.0
+    },
+    "PV2": {
+      "p_mean_mw": 0.0,
+      "p_endpoint_mw": 0.0,
+      "interval_start_seconds": 1794411900.0,
+      "interval_end_seconds": 1794412200.0
+    },
+    "PV3": {
+      "p_mean_mw": 0.0,
+      "p_endpoint_mw": 0.0,
+      "interval_start_seconds": 1794411900.0,
+      "interval_end_seconds": 1794412200.0
+    },
+    "ES1": {
+      "p_mean_mw": 0.0,
+      "p_endpoint_mw": 0.0,
+      "interval_start_seconds": 1794411900.0,
+      "interval_end_seconds": 1794412200.0,
+      "charge_mw": -0.0,
+      "discharge_mw": 0.0
+    },
+    "ES2": {
+      "p_mean_mw": 0.0,
+      "p_endpoint_mw": 0.0,
+      "interval_start_seconds": 1794411900.0,
+      "interval_end_seconds": 1794412200.0,
+      "charge_mw": -0.0,
+      "discharge_mw": 0.0
+    },
+    "ES3": {
+      "p_mean_mw": 0.0,
+      "p_endpoint_mw": 0.0,
+      "interval_start_seconds": 1794411900.0,
+      "interval_end_seconds": 1794412200.0,
+      "charge_mw": 0.0,
+      "discharge_mw": 0.0
+    },
+    "ES4": {
+      "p_mean_mw": 0.0,
+      "p_endpoint_mw": 0.0,
+      "interval_start_seconds": 1794411900.0,
+      "interval_end_seconds": 1794412200.0,
+      "charge_mw": -0.0,
+      "discharge_mw": 0.0
+    },
+    "ES5": {
+      "p_mean_mw": 0.0,
+      "p_endpoint_mw": 0.0,
+      "interval_start_seconds": 1794411900.0,
+      "interval_end_seconds": 1794412200.0,
+      "charge_mw": -0.0,
+      "discharge_mw": 0.0
+    }
+  },
+  "controls": {
+    "C1": {
+      "mode": "VG",
+      "vg_pu": 0.982
+    },
+    "C2": {
+      "mode": "VG",
+      "vg_pu": 0.9841
+    },
+    "C3": {
+      "mode": "VG",
+      "vg_pu": 1.0265
+    },
+    "CCGT": {
+      "mode": "VG",
+      "vg_pu": 1.0494
+    },
+    "GT": {
+      "mode": "VG",
+      "vg_pu": 1.0636
+    },
+    "W1": {
+      "mode": "PQ",
+      "q_mvar": 0.0
+    },
+    "W2": {
+      "mode": "PQ",
+      "q_mvar": 0.0
+    },
+    "PV1": {
+      "mode": "PQ",
+      "q_mvar": 0.0
+    },
+    "PV2": {
+      "mode": "PQ",
+      "q_mvar": 0.0
+    },
+    "PV3": {
+      "mode": "PQ",
+      "q_mvar": 0.0
+    },
+    "ES1": {
+      "mode": "PQ",
+      "q_mvar": 0.0
+    },
+    "ES2": {
+      "mode": "PQ",
+      "q_mvar": 0.0
+    },
+    "ES3": {
+      "mode": "PQ",
+      "q_mvar": 0.0
+    },
+    "ES4": {
+      "mode": "PQ",
+      "q_mvar": 0.0
+    },
+    "ES5": {
+      "mode": "PQ",
+      "q_mvar": 0.0
+    }
+  },
+  "gross_load": {
+    "0": {
+      "p_mw": 62.306107681499995,
+      "q_mvar": 28.216495486908812
+    },
+    "1": {
+      "p_mw": 0.0,
+      "q_mvar": 0.0
+    },
+    "2": {
+      "p_mw": 196.70137560983332,
+      "q_mvar": 1.4660972095142848
+    },
+    "3": {
+      "p_mw": 309.578827267,
+      "q_mvar": 113.925008434256
+    },
+    "4": {
+      "p_mw": 0.0,
+      "q_mvar": 0.0
+    },
+    "5": {
+      "p_mw": 0.0,
+      "q_mvar": 0.0
+    },
+    "6": {
+      "p_mw": 148.32842169683332,
+      "q_mvar": 53.291648513832335
+    },
+    "7": {
+      "p_mw": 317.85394957249997,
+      "q_mvar": 107.53449711590709
+    },
+    "8": {
+      "p_mw": 4.173235682,
+      "q_mvar": -42.759614834030785
+    },
+    "9": {
+      "p_mw": 0.0,
+      "q_mvar": 0.0
+    },
+    "10": {
+      "p_mw": 0.0,
+      "q_mvar": 0.0
+    },
+    "11": {
+      "p_mw": 5.263782484833333,
+      "q_mvar": 54.303969362876295
+    },
+    "12": {
+      "p_mw": 0.0,
+      "q_mvar": 0.0
+    },
+    "13": {
+      "p_mw": 0.0,
+      "q_mvar": 0.0
+    },
+    "14": {
+      "p_mw": 205.5413898635,
+      "q_mvar": 98.27447702848593
+    },
+    "15": {
+      "p_mw": 206.66475869083334,
+      "q_mvar": 20.289579652625843
+    },
+    "16": {
+      "p_mw": 0.0,
+      "q_mvar": 0.0
+    },
+    "17": {
+      "p_mw": 96.43035353666667,
+      "q_mvar": 18.309560798101266
+    },
+    "18": {
+      "p_mw": 0.0,
+      "q_mvar": 0.0
+    },
+    "19": {
+      "p_mw": 423.23099510533336,
+      "q_mvar": 64.10704778801373
+    },
+    "20": {
+      "p_mw": 172.51904770366667,
+      "q_mvar": 72.40762951066301
+    },
+    "21": {
+      "p_mw": 0.0,
+      "q_mvar": 0.0
+    },
+    "22": {
+      "p_mw": 157.3611481885,
+      "q_mvar": 53.78890156261456
+    },
+    "23": {
+      "p_mw": 187.91864252833332,
+      "q_mvar": -56.144195855840394
+    },
+    "24": {
+      "p_mw": 137.15579802233333,
+      "q_mvar": 28.900686011848777
+    },
+    "25": {
+      "p_mw": 85.29107064300001,
+      "q_mvar": 10.431282021086332
+    },
+    "26": {
+      "p_mw": 178.68373610433335,
+      "q_mvar": 48.009331230879596
+    },
+    "27": {
+      "p_mw": 130.37445054333335,
+      "q_mvar": 17.467644830077614
+    },
+    "28": {
+      "p_mw": 176.11923270483334,
+      "q_mvar": 16.71113707146396
+    },
+    "29": {
+      "p_mw": 0.0,
+      "q_mvar": 0.0
+    },
+    "30": {
+      "p_mw": 5.846188890166667,
+      "q_mvar": 2.9230944450833336
+    },
+    "31": {
+      "p_mw": 0.0,
+      "q_mvar": 0.0
+    },
+    "32": {
+      "p_mw": 0.0,
+      "q_mvar": 0.0
+    },
+    "33": {
+      "p_mw": 0.0,
+      "q_mvar": 0.0
+    },
+    "34": {
+      "p_mw": 0.0,
+      "q_mvar": 0.0
+    },
+    "35": {
+      "p_mw": 0.0,
+      "q_mvar": 0.0
+    },
+    "36": {
+      "p_mw": 0.0,
+      "q_mvar": 0.0
+    },
+    "37": {
+      "p_mw": 0.0,
+      "q_mvar": 0.0
+    },
+    "38": {
+      "p_mw": 705.5213040731667,
+      "q_mvar": 159.7647880600468
+    }
+  },
+  "fixed_injections": [
+    {
+      "id": "fixed:39",
+      "bus": "38",
+      "p_mw": 825.539117887,
+      "q_mvar": 0.0
+    }
+  ],
+  "slack_resource": "C1",
+  "reserve_requirements": {
+    "positive_mw": 400.0,
+    "accident_mw": 400.0
+  },
+  "loss_proxy_mw": 0.0,
+  "allow_original_VG_diagnostic": true,
+  "capability": {
+    "mode": "original_Q0",
+    "qualification_changed": false,
+    "source_statement": "original inverter Q0, no new design invoked"
+  }
+}

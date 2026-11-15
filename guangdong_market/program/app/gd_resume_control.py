@@ -7,12 +7,8 @@ sha=lambda p:hashlib.sha256(Path(p).read_bytes()).hexdigest()
 def need(v,m):
  if not v:raise ValueError(m)
 def acquire(source):
- need(os.name=='posix','当前平台暂不支持安全持久接续锁；原正常入口仍可使用，不自动重启')
- import fcntl
- p=Path(source)/'PROCESS.guard';f=p.open('a+')
- try:fcntl.flock(f.fileno(),fcntl.LOCK_EX|fcntl.LOCK_NB)
- except BlockingIOError:f.close();raise ValueError('仍有计算进程持有运行锁；不能重复接续')
- return f
+ from gd_process_guard import acquire as guarded
+ return guarded(Path(source)/'PROCESS.guard')
 
 def plan(source,*,prior_process_ended=False,expected=None,target_plan=None,checkpoint_config=None,recovery_manifest=None,solver_policy_manifest=None):
  from gd_live_control import sources
@@ -20,7 +16,10 @@ def plan(source,*,prior_process_ended=False,expected=None,target_plan=None,check
  from gd_resume_runtime.solver_policy_compat import load as policy_load,permits
  policy=policy_load(solver_policy_manifest)if solver_policy_manifest else None
  sources();source=Path(source).resolve();inventory=scan(source,expected=expected);p=read(source/'PLAN.json');errors=list(inventory['errors'])
- if os.name!='posix':errors.append(dict(stage='platform',error='此平台暂不支持已验证的持久接续锁；未宣称Windows接续可用'))
+ if p.get('rt_clock_mode')!='provincial_15min_execution':errors.append(dict(stage='clock_mode',error='旧5分钟检查点禁止接入省级15分钟模型；请保留旧任务独立恢复'))
+ if p.get('single_day_scope')!='truncate_at_24h':errors.append(dict(stage='day_scope',error='新单日末窗模型不能复用未绑定截日范围的旧检查点'))
+ if p.get('model_scope')!='active_power_dc':errors.append(dict(stage='model_scope',error='历史运行不自动迁移为DC范围；保留原结果，新建当前DC任务'))
+ if os.name not in ('posix','nt'):errors.append(dict(stage='platform',error='不支持此平台的安全接续锁'))
  prior_native_fenced=False
  if p.get('post_scuc_day') and not(source/'pipeline/POST_D1_REFERENCE/ACCEPTED_REFERENCE.json').exists():
   try:
@@ -29,7 +28,13 @@ def plan(source,*,prior_process_ended=False,expected=None,target_plan=None,check
   except (OSError,ValueError,KeyError,TypeError):pass
  if not prior_process_ended and not(source/'EXIT.json').is_file() and not prior_native_fenced:errors.append(dict(stage='process',error='旧执行未记录退出且无明确未启动取消栅栏；不能凭缺心跳重启'))
  if inventory['unknown_native_occurrences']:errors.append(dict(stage='native',error='原生启动结果未知，必须先核明，不可重启'))
- if p.get('research_event_simulation')or p.get('stop_request')or p.get('candidate_loss_once'):errors.append(dict(stage='scope',error='当前接续暂不支持启停变更、未来交互声明或损耗纠正；保留原失败'))
+ empty_event_scope=None
+ if p.get('research_event_simulation'):
+  try:
+   from gd_resume_runtime.empty_events import validate as validate_empty_events
+   empty_event_scope=validate_empty_events(source)
+  except (OSError,ValueError,KeyError,TypeError)as exc:errors.append(dict(stage='events',error='事件模拟接续须证明历史及未来均无事件：'+str(exc)))
+ if p.get('stop_request')or p.get('candidate_loss_once'):errors.append(dict(stage='scope',error='当前接续暂不支持未来交互声明或损耗纠正；保留原失败'))
  if p.get('reference_revision'):errors.append(dict(stage='reference',error='当前接续支持post-SCUC日计划参考，不支持旧版独立参考修订模式'))
  if p.get('ac_once'):errors.append(dict(stage='AC',error='已有AC调用的私有安全凭证不可由JSON恢复；需独立安全处理，不能自动重跑AC'))
  if list((source/'pipeline').glob('**/FUTURE_CAP/STATE.json')):errors.append(dict(stage='interactive',error='未来交互声明不可自动接续'))
@@ -55,11 +60,14 @@ def plan(source,*,prior_process_ended=False,expected=None,target_plan=None,check
   for k in PARAMS:
    if k!='nextday_selection':need(p.get(k)==target_plan.get(k),'同模式接续不能改变参数：'+k)
   need(p['da']==target_plan['da'],'日前来源改变')
-  params={('event_simulation'if k=='research_event_simulation'else k):target_plan[k]for k in PARAMS if k in target_plan}
+  params={('event_simulation'if k=='research_event_simulation'else k):target_plan[k]for k in PARAMS if k in target_plan and k!='rt_clock_mode'}
   need(normal_plan(target_plan['da'],target_plan['run'],Path(target_plan['output']).name,**params)==target_plan,'新上下文计划需正常复核')
   context_binding=compare(p['run'],target_plan['run'],solver_policy=policy)
   if p.get('nextday_selection'):d1_binding=d1(p['nextday_selection'],target_plan['nextday_selection'],p['run'],target_plan['run'])
  for r in inventory['windows']:
+  folder=source/'pipeline/dispatch'/('W'+str(r['window']))
+  if r['SCUC']['state']!='absent' and not all((folder/f).is_file() for f in ('RESULT.json','EXACT_CARRY.json','actual/ACCEPTED_PAIR.json')):
+   errors.append(dict(stage='W'+str(r['window']),error='省级15分钟恢复仅接受完整已执行检查点；部分求解需独立只读核验，不复用旧5分钟阶段恢复器'))
   if r['SCUC']['state']=='completed' and not r.get('math_accepted') and r['SCED']['state']not in ('absent','completed'):errors.append(dict(stage='W'+str(r['window']),error='已有原生结果尚无完整数学接受记录；先补只读验收，不重新求解'))
  if p.get('post_scuc_day') and inventory['windows'][94].get('receipt_selected') and not(source/'pipeline/POST_D1_REFERENCE/ACCEPTED_REFERENCE.json').is_file():
   try:
@@ -74,6 +82,7 @@ def plan(source,*,prior_process_ended=False,expected=None,target_plan=None,check
   inventory['confirmed_completed_native_calls']=chain['completed_native'];inventory['remaining_native_upper_bound']=max(0,inventory['maximum_authorized_native_calls']-chain['completed_native'])
   errors.append(dict(stage='completed_chain',error='已登记显式接续已完成原12次；不能再补旧目录显示的3次。首小时到全天需新的明确扩域计划及模型等价证明'))
  pins={str(source/'PLAN.json'):sha(source/'PLAN.json'),**oldpins,**inventory['native_evidence']}
+ if empty_event_scope:pins.update(empty_event_scope['source_pins'])
  for f in (source/'pipeline/dispatch').glob('W*/*.json'):pins[str(f)]=sha(f)
  for f in (source/'pipeline/dispatch').glob('W*/prepared/*.json'):pins[str(f)]=sha(f)
  for f in (source/'pipeline/dispatch').glob('W*/actual/ACCEPTED_PAIR.json'):pins[str(f)]=sha(f)
@@ -100,7 +109,7 @@ def plan(source,*,prior_process_ended=False,expected=None,target_plan=None,check
   durable=dict(config_path=str(config_path),config_sha256=cfg_hash,policy=cfg['policy'],cadence=cfg.get('cadence','hour'),timeout_s=1800)
   pins[str(config_path)]=cfg_hash;pins[str(Path(cfg['baseline_manifest']).resolve())]=cfg['baseline_manifest_sha256']
  else:ident='resume-'+uuid.uuid4().hex
- return dict(solver_policy_transition=policy,recovery_overrides=recovery,durable_checkpoint=durable,branch_recovery=branch_index,schema='gd.resume.review.v1',target_plan=target_plan,context_relocation=context_binding,D1_relocation=d1_binding,source_output=str(source),execution_attempt_id=ident,output=str(source/'resume_attempts'/ident),completed_native=inventory['confirmed_completed_native_calls'],remaining_native=inventory['remaining_native_upper_bound'],prior_process_ended=bool(prior_process_ended),prior_native_fenced=prior_native_fenced,prior_native_fence_meaning='old reference O_EXCL barrier; not an EXIT assertion'if prior_native_fenced else None,identity=inventory['identity'],source_pins=pins,inventory=inventory,completed_chain=chain,errors=errors,can_start=not errors,new_AC_budget=0,formal=False,safety_release=False)
+ return dict(empty_event_scope=empty_event_scope,solver_policy_transition=policy,recovery_overrides=recovery,durable_checkpoint=durable,branch_recovery=branch_index,schema='gd.resume.review.v1',target_plan=target_plan,context_relocation=context_binding,D1_relocation=d1_binding,source_output=str(source),execution_attempt_id=ident,output=str(source/'resume_attempts'/ident),completed_native=inventory['confirmed_completed_native_calls'],remaining_native=inventory['remaining_native_upper_bound'],prior_process_ended=bool(prior_process_ended),prior_native_fenced=prior_native_fenced,prior_native_fence_meaning='old reference O_EXCL barrier; not an EXIT assertion'if prior_native_fenced else None,identity=inventory['identity'],source_pins=pins,inventory=inventory,completed_chain=chain,errors=errors,can_start=not errors,new_AC_budget=0,formal=False,safety_release=False)
 
 def start(review,*,confirmed=False):
  need(confirmed is True,'必须明确授权所示剩余预算');need(review.get('can_start') is True,'接续计划被阻断')
@@ -111,14 +120,19 @@ def start(review,*,confirmed=False):
  need(fresh.get('solver_policy_transition')==review.get('solver_policy_transition'),'solver-policy transition changed')
  need(fresh.get('recovery_overrides')==review.get('recovery_overrides'),'新恢复来源改变')
  need(fresh.get('durable_checkpoint')==review.get('durable_checkpoint'),'持久检查点配置或策略改变')
- source=Path(review['source_output']);lock=acquire(source)
+ source=Path(review['source_output']);lock=acquire(source) if os.name=='posix' else None
  try:
   out=Path(review['output']);need(out.parent==source/'resume_attempts'and out.name==review['execution_attempt_id'],'接续目标不匹配');out.mkdir(parents=True,exist_ok=False)
   with(out/'RESUME_PLAN.json').open('x')as f:json.dump(review,f,indent=2)
   with(out/'stdout.log').open('ab')as log:
-   proc=subprocess.Popen([sys.executable,'-B',str(B/'gd_resume_worker.py'),str(out)],stdout=log,stderr=subprocess.STDOUT,start_new_session=True,pass_fds=(lock.fileno(),),env={**os.environ,'GD_RESUME_LOCK_FD':str(lock.fileno()),'PYTHONDONTWRITEBYTECODE':'1'})
+   if os.name=='nt':
+    from gd_process_guard import launch_windows
+    proc=launch_windows([sys.executable,'-B',str(B/'gd_resume_worker.py'),str(out)],out,source/'PROCESS.guard',log,env={'PYTHONDONTWRITEBYTECODE':'1'})
+   else:
+    proc=subprocess.Popen([sys.executable,'-B',str(B/'gd_resume_worker.py'),str(out)],stdout=log,stderr=subprocess.STDOUT,start_new_session=True,pass_fds=(lock.fileno(),),env={**os.environ,'GD_RESUME_LOCK_FD':str(lock.fileno()),'PYTHONDONTWRITEBYTECODE':'1'})
   with(out/'PID.json').open('x')as f:json.dump(dict(pid=proc.pid,execution_attempt_id=review['execution_attempt_id']),f)
- finally:lock.close()
+ finally:
+  if lock:lock.close()
  return dict(status='new_execution_attempt_started',output=str(out),remaining_native_budget=review['remaining_native'],old_completed_native=review['completed_native'],publication_allowed=False)
 
 def status(output):
@@ -137,12 +151,13 @@ def status(output):
  return dict(persistence_progress=progress(out),display_errors=display_errors,execution_attempt_id=p['execution_attempt_id'],source_output=p['source_output'],checkpoint=z,quarters=prices,hours=hours,exit=read(out/'EXIT.json')if(out/'EXIT.json').exists()else None,original_results_unchanged=True,publication_allowed=False)
 
 def extension_plan(source,target_plan,comparison_manifest,*,prior_process_ended=False):
- """Separately reviewed 4→96 research extension; pure owned-prefix gate precedes 277."""
+ """Legacy extension is not a provincial-grid migration."""
+ raise ValueError("旧网格扩域证明不适用于省级15分钟；需新网格独立运行")
  from gd_resume_chain import registered
  from gd_resume_runtime.engine import verify,PARAMS
  from gd_live_control import sources
  sources();need(os.name=='posix','此平台暂不支持安全持久接续');source=Path(source).resolve();chain=registered(source);need(chain is not None and chain['completed_native']==12,'需要已登记的旧12次完整来源链')
- old=read(source/'PLAN.json');need(prior_process_ended or(source/'EXIT.json').exists(),'须先确认原执行结束')
+ old=read(source/'PLAN.json');need(old.get('model_scope')=='active_power_dc' and target_plan.get('model_scope')=='active_power_dc','不得将旧范围结果扩域改标为DC运行');need(prior_process_ended or(source/'EXIT.json').exists(),'须先确认原执行结束')
  need(old['windows']==4 and old.get('finite_h1') and target_plan['windows']==96 and target_plan.get('finite_hourly') and target_plan.get('post_scuc_day'),'仅明确首小时至逐小时全天扩域')
  need(not target_plan.get('finite_h1') and not target_plan.get('post_scuc_planning') and not target_plan.get('reference_revision'),'扩域模式互斥')
  need(target_plan['maximum_native_calls']==289 and target_plan['AC_actual_calls']==0,'全天预算必须289且AC0')
@@ -151,7 +166,7 @@ def extension_plan(source,target_plan,comparison_manifest,*,prior_process_ended=
  need(target_plan.get('nextday_explicit') is True and target_plan.get('nextday_selection'),'必须显式D1来源')
  verify(target_plan['source_pins'])
  from gd_live_control import plan as normal_plan
- control_params={('event_simulation'if k=='research_event_simulation'else k):target_plan[k]for k in PARAMS if k in target_plan}
+ control_params={('event_simulation'if k=='research_event_simulation'else k):target_plan[k]for k in PARAMS if k in target_plan and k!='rt_clock_mode'}
  fresh=normal_plan(target_plan['da'],target_plan['run'],Path(target_plan['output']).name,**control_params)
  need(fresh==target_plan,'新的全天计划必须通过当前正常入口完整复核')
  mf=Path(comparison_manifest).resolve();proof=read(mf);verify(proof['source_pins'])

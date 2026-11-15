@@ -28,6 +28,9 @@ def end_power(case,values,g,t):
  return values[f'power[{g},{t}]']-mean+end
 
 def build(seed, carry, out, agc_projection=None):
+ if read(carry).get('rt_clock_mode')=='provincial_15min_execution':
+  from gd_provincial15_model.compiler import build as provincial_build
+  return provincial_build(seed,carry,out,agc_projection=agc_projection)
  from thermal_physical import build_free_scuc
  seed=Path(seed).resolve();out=Path(out).resolve();c=read(carry)
  for f,h in c['source_pins'].items():assert sha(f)==h,('carry source drift',f)
@@ -36,7 +39,8 @@ def build(seed, carry, out, agc_projection=None):
  declaration=read(c['day_declaration_path']);assert sha(c['day_declaration_path'])==c['day_declaration_sha256'];original,dayproof=apply(original,c,declaration)
  assert c['seed_case_sha256']==sha(seed/'case.json') and c['seed_request_sha256']==sha(seed/'request.json')
  start=c['delivery_tick'];n=48;origin=datetime.fromisoformat(r['origin']);begin=origin+timedelta(minutes=5*start);end=begin+timedelta(minutes=5*n)
- assert start==c['cutoff_tick']+3 and c['boundary_at']==begin.isoformat() and start>=3 and start+n<=len(original['energy_inputs']['load_mw'])//len(original['energy_inputs']['buses'])
+ zero=c.get('rt_clock_mode')=='same_period_execution'
+ assert start==c['cutoff_tick']+(0 if zero else 3) and c['boundary_at']==begin.isoformat() and start>=(0 if zero else 3) and start+n<=len(original['energy_inputs']['load_mw'])//len(original['energy_inputs']['buses'])
  case=slice_time(original,start,n);e=case['energy_inputs'];e['horizon']=EnergyHorizon(tuple(EnergyPeriod(t,1/12,1/12,'delivery',t<3)for t in range(n)),'component','explicit joint48 delivery anchor research');e['renewable_mode']='dispatchable_bus_aggregate'
  bs=c['thermal'];assert set(bs)==set(e['thermal']) and set(c['storage'])==set(case['batteries'])
  for g,d in e['thermal'].items():
@@ -45,7 +49,7 @@ def build(seed, carry, out, agc_projection=None):
   z.update(c['storage'][u])
  bc=case['battery_contract'];bc.update(schema='gd.short.battery.research.v1',boundary_at=begin.isoformat(),cutoff=c['cutoff'],terminal_policy='exact_declared_target_if_present_else_necessary_reachability_envelope; residual_mode_exported')
  sid=bc['storage']['battery_parameters_source_id'];artifact=json.dumps(dict(batteries=case['batteries'],pumped_storage=bc['storage']['pumped_storage']),sort_keys=True,allow_nan=False);bc['sources'][sid].update(artifact=artifact,sha256=hashlib.sha256(artifact.encode()).hexdigest(),available_at=c['cutoff'])
- case['contract']=dict(schema='gd.short.physical.contract.v1',mode='research',origin=r['origin'],cutoff=c['cutoff'],domain_start=begin.isoformat(),publication_at=original['contract']['publication_at'],clock_interpretation_source='explicit research delivery anchor; official near/far zero-hour interpretation unresolved',near_far_mode='joint48_equal_energy_research')
+ case['contract']=dict(schema='gd.short.physical.contract.v1',mode='research',origin=r['origin'],cutoff=c['cutoff'],domain_start=begin.isoformat(),publication_at=original['contract']['publication_at'],clock_interpretation_source='explicit research delivery anchor; official near/far zero-hour interpretation unresolved',near_far_mode='joint48_equal_energy_research',rt_clock_mode=c.get('rt_clock_mode','issued_prefix_15min'))
  agc=slice_time({g:{**z,'up_mw':{int(t):v for t,v in z['up_mw'].items()},'down_mw':{int(t):v for t,v in z['down_mw'].items()}}for g,z in read(seed/'agc.json').items()},start,n);policy=read(seed/'policy.json')
  binding=None
  if agc_projection is not None:

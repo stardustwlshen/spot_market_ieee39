@@ -1,0 +1,201 @@
+{
+  "schema": "gd.predicted.far_stage.accepted.v1",
+  "stage": {
+    "block": "far",
+    "count": 24,
+    "start_tick": 27,
+    "near_start_tick": 3,
+    "anchor_ticks": 3,
+    "initial_kind": "near_predicted_end23",
+    "carry_sha256": "bf28d3ee922d7e010561ffbeaf89dc88fc70d0618e046abe6991f19727f9f754",
+    "near_boundary_proof": {
+      "end_tick": 27,
+      "SCED_raw_sha256": "0e035b5e1b66f3f47046ce0d94b92e2ca406dbb570b3c332885888ab493cf837",
+      "carry_sha256": "bf28d3ee922d7e010561ffbeaf89dc88fc70d0618e046abe6991f19727f9f754"
+    }
+  },
+  "prediction": {
+    "path": "/workspace/scratch/42c5fe32dad0/single_window_loss_actual_20261114/candidate/far_window/PREDICTED.json",
+    "sha256": "345db42315b5461fbebef8154c140fbe3d1c070afa89e4f2b1786193f32ce0b6",
+    "kind": "prediction_only",
+    "execution_allowed": false
+  },
+  "SCUC": {
+    "variables": 10887,
+    "rows": 10419,
+    "integer_count": 650,
+    "max_primal_violation": 2.5920599000528455e-11,
+    "max_integer_violation": 3.031649005909761e-15,
+    "objective": 728177.151696504
+  },
+  "SCED": {
+    "variables": 10887,
+    "rows": 10419,
+    "integer_count": 0,
+    "max_primal_violation": 3.524291969370097e-12,
+    "max_integer_violation": 0.0,
+    "objective": 728177.1516965046,
+    "KKT": {
+      "primal_objective": 728177.1516965046,
+      "dual_objective": 728177.1516965046,
+      "max_primal_violation": 3.524291969370097e-12,
+      "max_complementarity": 3.740794340956199e-11,
+      "max_dual_sign_violation": 2.985474443634582e-10,
+      "max_non_angle_dual_sign_violation": 2.985474443634582e-10,
+      "max_free_angle_stationarity": 0.0,
+      "worst_free_angle": null,
+      "scoped_angle_columns": [],
+      "allowed_angle_column_names": [
+        "angle['6',206]",
+        "angle['6',253]",
+        "angle['6',254]",
+        "angle['6',255]",
+        "angle['6',259]"
+      ],
+      "absolute_gap": 0.0,
+      "objective_complementarity_tolerance": 0.0007381771516965047,
+      "angle_stationarity_tolerance": 1e-08,
+      "strict_legacy_1e_8_pass": true,
+      "raw_witness_unchanged": true,
+      "variables": 10887,
+      "rows": 10419,
+      "checks": "all rows and columns with fsum accumulation",
+      "passed": true
+    }
+  },
+  "verification": {
+    "SCUC": {
+      "variables": 10887,
+      "rows": 10419,
+      "integer_count": 650,
+      "max_primal_violation": 2.5920599000528455e-11,
+      "max_integer_violation": 3.031649005909761e-15,
+      "objective": 728177.151696504
+    },
+    "SCED_KKT": {
+      "primal_objective": 728177.1516965046,
+      "dual_objective": 728177.1516965046,
+      "max_primal_violation": 3.524291969370097e-12,
+      "max_complementarity": 3.740794340956199e-11,
+      "max_dual_sign_violation": 2.985474443634582e-10,
+      "max_non_angle_dual_sign_violation": 2.985474443634582e-10,
+      "max_free_angle_stationarity": 0.0,
+      "worst_free_angle": null,
+      "scoped_angle_columns": [],
+      "allowed_angle_column_names": [
+        "angle['6',206]",
+        "angle['6',253]",
+        "angle['6',254]",
+        "angle['6',255]",
+        "angle['6',259]"
+      ],
+      "absolute_gap": 0.0,
+      "objective_complementarity_tolerance": 0.0007381771516965047,
+      "angle_stationarity_tolerance": 1e-08,
+      "strict_legacy_1e_8_pass": true,
+      "raw_witness_unchanged": true,
+      "variables": 10887,
+      "rows": 10419,
+      "checks": "all rows and columns with fsum accumulation",
+      "passed": true
+    },
+    "SCED_response_kind": "native_strict_certificate",
+    "dual_certificate": {
+      "schema": "gd.network_dual_certificate.v1",
+      "algorithm": "zero_rhs_reference_and_incidence_tree_decimal80_v1",
+      "source_hashes": {
+        "network_certificate.py": "4ff2840918661d06df266c19640c91f4b0400189c25e53192cc9a52f10227316",
+        "strict_kkt.py": "20c3f3c7ffb9863b24c89706e510d6e2bd5594f29946abbc3a7358d7ee4004c8"
+      },
+      "binding": {
+        "model_sha256": "f263593e7725837e3bb0bdcaffdd72f66db9239b242362ace5a92ebc97849582",
+        "names_sha256": "1938cbf484e4a0b19140cbf7e96f6a2d912b5df79b372d6281a8b11767bed149",
+        "native_response_sha256": "700a1eaeec12b3f99c3aacdc5628800e61b9993309c0e4045db5aab58a4f654d"
+      },
+      "native_calls": 0,
+      "native_KKT": {
+        "primal_objective": 728177.1516965046,
+        "dual_objective": 728177.1516965046,
+        "max_primal_violation": 3.524291969370097e-12,
+        "max_complementarity": 3.740794340956199e-11,
+        "max_dual_sign_violation": 2.985474443634582e-10,
+        "max_non_angle_dual_sign_violation": 2.985474443634582e-10,
+        "max_free_angle_stationarity": 0.0,
+        "worst_free_angle": null,
+        "scoped_angle_columns": [],
+        "allowed_angle_column_names": [
+          "angle['6',206]",
+          "angle['6',253]",
+          "angle['6',254]",
+          "angle['6',255]",
+          "angle['6',259]"
+        ],
+        "absolute_gap": 0.0,
+        "objective_complementarity_tolerance": 0.0007381771516965047,
+        "angle_stationarity_tolerance": 1e-08,
+        "strict_legacy_1e_8_pass": true,
+        "raw_witness_unchanged": true,
+        "variables": 10887,
+        "rows": 10419,
+        "checks": "all rows and columns with fsum accumulation",
+        "passed": true
+      },
+      "raw_KKT": {
+        "primal_objective": 728177.1516965046,
+        "dual_objective": 728177.1516965046,
+        "max_primal_violation": 3.524291969370097e-12,
+        "max_complementarity": 3.740794340956199e-11,
+        "max_dual_sign_violation": 2.985474443634582e-10,
+        "max_non_angle_dual_sign_violation": 2.985474443634582e-10,
+        "max_free_angle_stationarity": 0.0,
+        "worst_free_angle": null,
+        "scoped_angle_columns": [],
+        "allowed_angle_column_names": [
+          "angle['6',206]",
+          "angle['6',253]",
+          "angle['6',254]",
+          "angle['6',255]",
+          "angle['6',259]"
+        ],
+        "absolute_gap": 0.0,
+        "objective_complementarity_tolerance": 0.0007381771516965047,
+        "angle_stationarity_tolerance": 1e-08,
+        "strict_legacy_1e_8_pass": true,
+        "raw_witness_unchanged": true,
+        "variables": 10887,
+        "rows": 10419,
+        "checks": "all rows and columns with fsum accumulation",
+        "passed": true
+      },
+      "model_unchanged": true,
+      "thresholds_unchanged": true,
+      "formal": false,
+      "kind": "native_strict_certificate",
+      "derived_response_sha256": null,
+      "changes": [],
+      "derived_KKT": null
+    },
+    "dual_certificate_sha256": "7dbd6a2f8d555be7a172f26289786086329d9b37db843715ba1f744780c9d21e",
+    "native_dual_passed": true
+  },
+  "pins": {
+    "/workspace/scratch/42c5fe32dad0/single_window_loss_actual_20261114/candidate/far_window/far/prepared/template.json": "6b003c4464ac1d99f785f8ccc8365e3a98bcf2765a0f8e679103d20ab24373ef",
+    "/workspace/scratch/42c5fe32dad0/single_window_loss_actual_20261114/candidate/far_window/far/prepared/names.json": "fc0e5172d7c34130c15a42b16e5481f58f2fc0814cea5d4351d129eb49104a39",
+    "/workspace/scratch/42c5fe32dad0/single_window_loss_actual_20261114/candidate/far_window/far/prepared/derived_case.json": "56962dc45548b21154345897fd7a929668a8a4009414b6bbb191fb086426feb7",
+    "/workspace/scratch/42c5fe32dad0/single_window_loss_actual_20261114/candidate/far_window/far/prepared/LOSS_PROFILE.json": "2df10e33a9e523e03eae3cdc41e4dc732197016ccb64232e4245974833188992",
+    "/workspace/scratch/42c5fe32dad0/single_window_loss_actual_20261114/candidate/far_window/far/prepared/LOSS_OVERLAY.json": "4d2e4a409d569f8ed4b24664314419b7e3f11b36151adb526005c5ab011fd44f",
+    "/workspace/scratch/42c5fe32dad0/single_window_loss_actual_20261114/candidate/far_window/AGC_CANDIDATES.json": "b531f1b666814cb18b23b3e59d327e4d9005fb8650c26d72712be57fffc140ad",
+    "/workspace/scratch/42c5fe32dad0/single_window_loss_actual_20261114/candidate/far_window/far/actual/SCUC/JOB.json": "2be07cbc2703d38dbfa16f77d0da1111996dad395cc4725a21a5e9602e4a88da",
+    "/workspace/scratch/42c5fe32dad0/single_window_loss_actual_20261114/candidate/far_window/far/actual/SCUC/COMPLETED.json": "b2751a3589f33b7a6324c9e3bcdeee11ea1be3398b690aba5dc7bdc3cbfe622f",
+    "/workspace/scratch/42c5fe32dad0/single_window_loss_actual_20261114/candidate/far_window/far/actual/SCUC/request.json.gz": "690fa175d11593d8c39891967367f43769e10e547b9072f5f8a6028d2bc39a60",
+    "/workspace/scratch/42c5fe32dad0/single_window_loss_actual_20261114/candidate/far_window/far/actual/SCUC/response.json.gz": "df85f2968e23ee0f292496e1a0a8a1fcc196fefe000a5851d6b69d72273681a4",
+    "/workspace/scratch/42c5fe32dad0/single_window_loss_actual_20261114/candidate/far_window/far/actual/SCED/JOB.json": "24ef21df76403982997ba2cf98204d0a0c50c149777bf6ab3ad7082172292931",
+    "/workspace/scratch/42c5fe32dad0/single_window_loss_actual_20261114/candidate/far_window/far/actual/SCED/COMPLETED.json": "802efab5794e23831583ec8d56e5436c8796a7995830f679dcaa30efdf9310bf",
+    "/workspace/scratch/42c5fe32dad0/single_window_loss_actual_20261114/candidate/far_window/far/actual/SCED/request.json.gz": "3630a1d4aafc6259a28f589f3affeeb645de6bbc5f29550fe0d1eb6d92e03725",
+    "/workspace/scratch/42c5fe32dad0/single_window_loss_actual_20261114/candidate/far_window/far/actual/SCED/response.json.gz": "0d37bee8b4899817b0d36f18f0889b4a0a35e1069eb6c88c7430bfd3efa2b395"
+  },
+  "native_calls": 2,
+  "execution_allowed": false,
+  "publication": false,
+  "accounting": false
+}

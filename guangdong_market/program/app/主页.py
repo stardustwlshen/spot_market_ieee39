@@ -1,4 +1,3 @@
-"""默认广东省内入口；旧主页与场景完整保留在旧版参考页。"""
-from common import sidebar_nav
-from gd_ui_page import render
-render(navigation=sidebar_nav)
+"""默认省级单日入口；历史研究入口不作为默认。"""
+from gd_provincial_page import render
+render(standalone=True)

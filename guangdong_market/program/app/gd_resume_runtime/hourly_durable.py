@@ -149,7 +149,7 @@ def validate_hour(output, hour):
         occurrences.add(key)
         pinned(d / 'response.json', read(d / 'COMPLETED.json')['response_sha256'])
     h = read(output / 'pipeline/price' / ('HOUR' + str(hour) + '.json'))
-    need(h['input_binding']['hour'] == hour and h['executed_cells'] == 12 and
+    need(h['input_binding']['hour'] == hour and h['executed_cells'] == 4 and
          h.get('payable') is False and h.get('safety_release') is False,
          'hour missing or claims formal/safe payment')
     if read(output / 'PLAN.json').get('finite_hourly'):
@@ -253,17 +253,17 @@ def _seal_selected(output, config_path, expected_config_sha256, config, roots, e
     z = dict(schema='gd.durable.hour.v1' if checkpoint_kind=='hour' else 'gd.durable.quarter.v1',
              checkpoint_kind=checkpoint_kind, output=str(output), execution_attempt_id=attempt, **fields,
              files=files, library_dependencies=dependencies,
-             config_sha256=expected_config_sha256, native_calls=0,
+             config_sha256=expected_config_sha256, require_download_ack=config.get('require_download_ack',False), native_calls=0,
              policy=config['policy'], safety_release=False, formal_bill=None,
              status='awaiting_cloud_persistence' if config['policy']=='cloud_required' else 'local_not_cloud_persisted')
     atomic(directory / 'READY.json', z)
     return directory
 
 def execution_ledger(output, window, fields, config, directory):
-    state=read(fields['executed_projection']);end=3*(window+1);hours=[];components={};pins={}
+    state=read(fields['executed_projection']);end=window+1;hours=[];components={};pins={}
     for h in range((window+1)//4):
         f=output/'pipeline/price'/('HOUR'+str(h)+'.json');z=read(f)
-        need(z['input_binding']['hour']==h and z['executed_cells']==12 and z['payable']is False and
+        need(z['input_binding']['hour']==h and z['executed_cells']==4 and z['payable']is False and
              z['formal_bill']is None and z['safety_release']is False,'invalid cumulative research hour')
         subtotal=Decimal(0)
         for row in z['rows']:
@@ -284,29 +284,32 @@ def execution_ledger(output, window, fields, config, directory):
     else:need(fields['retrospective']or window==0,'continuation requires externally persisted previous execution ledger')
     if previous_ledger_path:
         prior_ledger=read(previous_ledger_path)
+        need(prior_ledger.get('rt_clock_mode')=='provincial_15min_execution' and prior_ledger.get('grid_minutes')==15,'old grid accounting ledger cannot be resumed')
         need(prior_ledger['branch_id']==state['branch_id']and prior_ledger['window']==window-1 and
-             prior_ledger['next_execute_tick']==window*3,'previous executed interval cannot be repeated or skipped')
+             prior_ledger['next_execute_tick']==window,'previous executed interval cannot be repeated or skipped')
         current_by_hour={h['hour']:h for h in hours}
         for old in prior_ledger['settled_hours']:
             need(old['hour']in current_by_hour and old['sha256']==current_by_hour[old['hour']]['sha256'],
                  'previous settled research hour changed or removed')
         pins[str(previous_ledger_path)]=previous_ledger_hash
     return dict(prefix_basis=prefix_basis,previous_execution_ledger_path=str(previous_ledger_path)if previous_ledger_path else None,
-                previous_execution_ledger_sha256=previous_ledger_hash,schema='gd.executed_quarter.accounting_commit.v1',branch_id=state['branch_id'],window=window,
+                previous_execution_ledger_sha256=previous_ledger_hash,schema='gd.executed_quarter.accounting_commit.v1',rt_clock_mode='provincial_15min_execution',grid_minutes=15,branch_id=state['branch_id'],window=window,
                 commit_key=state['idempotency_key'],included_ticks=state['executed_cells'],next_execute_tick=end,
                 previous_checkpoint_sha256=sha(previous)if previous else None,
                 initial_external_baseline_sha256=config['baseline_manifest_sha256']if previous is None else None,
                 settled_hour_ids=[h['hour']for h in hours],settled_hours=hours,
-                settled_end_exclusive=12*len(hours),unsettled_executed_ticks=list(range(12*len(hours),end)),
+                settled_end_exclusive=4*len(hours),unsettled_executed_ticks=list(range(4*len(hours),end)),
                 research_energy_components_CNY={k:str(v)for k,v in components.items()},
                 research_energy_total_CNY=str(sum((Decimal(h['energy_component_CNY'])for h in hours),Decimal(0))),
-                cumulative_complete=False if end%12 else True,
+                cumulative_complete=False if end%4 else True,
                 accumulation='absolute sum of unique source-bound research HOUR records; not repeated delta application',
                 missing_formal_inputs_not_zero=True,formal_bill=None,payable=False,safety_release=False,
                 source_pins=pins,native_calls=0)
 
 
 def validate_executed_projection(state, output, window, folder, incoming, carry):
+    from .same_period import enabled,validate as validate_same_period
+    if enabled(read(output/'PLAN.json')):return validate_same_period(state,output,window)
     need(state.get('schema')=='gd.executed_quarter.readonly_evidence.v1', 'explicit executed-state schema required')
     need(state['window']==window and state['new_native_calls']==0 and state['KKT_replayed']is False and
          state['safety_release']is False and state['formal_bill']is None,'invalid execution projection scope')
@@ -388,12 +391,14 @@ def seal_quarter(output, window, config_path, expected_config_sha256, *, execute
     pair=read(folder/'actual/ACCEPTED_PAIR.json');result=read(folder/'RESULT.json')
     need(pair['status']=='accepted_research_pair'and pair.get('safety_release')is False,
          'quarter lacks accepted research pair')
-    need(result['window']==window and result['executed_end_exclusive']==3*(window+1)and
-         result['issued_end_exclusive']==3*(window+2),'executed/issued clocks differ')
+    from .same_period import enabled
+    same_period=enabled(plan);need(same_period,'provincial checkpoint rejects old grid');offset=0
+    need(result['window']==window and result['executed_end_exclusive']==(window+1)and
+         result['issued_end_exclusive']==(window+1+offset),'executed/issued clocks differ')
     carry=read(folder/'EXACT_CARRY.json');incoming=read(folder/'prepared/CARRY.json')
-    need(carry['delivery_tick']==3*(window+2)and carry['executed_end_exclusive']==3*(window+1),
+    need(carry['delivery_tick']==(window+1+offset)and carry['executed_end_exclusive']==(window+1),
          'issued carry clock mismatch')
-    need(incoming['delivery_tick']==3*(window+1),'incoming boundary does not end executed quarter')
+    need(incoming['delivery_tick']==(window+offset),'incoming boundary does not end executed quarter')
     pinned(folder/'EXACT_CARRY.json',result['handoff']['carry_sha256'])
     need(Path(result['handoff']['carry_path']).resolve()==(folder/'EXACT_CARRY.json').resolve(),
          'carry identity differs')
@@ -415,7 +420,8 @@ def seal_quarter(output, window, config_path, expected_config_sha256, *, execute
     snapshot=Path(executed_state_path).resolve();state=read(snapshot)
     # Exact schema validation is shared with the independent execution projection.
     validate_executed_projection(state, output, window, folder, incoming, carry)
-    if window:expected_price_source=read(output/'pipeline/dispatch'/('W'+str(window-1))/'actual/SCED/COMPLETED.json')['response']['raw_sha256']
+    if same_period:expected_price_source=read(folder/'actual/SCED/COMPLETED.json')['response']['raw_sha256']
+    elif window:expected_price_source=read(output/'pipeline/dispatch'/('W'+str(window-1))/'actual/SCED/COMPLETED.json')['response']['raw_sha256']
     else:expected_price_source=read(Path(plan['run'])/'seed/WARMSTART_SOURCE.json')['response_sha256']
     need(accepted['context']['SCED_response_sha256']==expected_price_source,'quarter price not bound to executed physical source')
     roots=[folder,price]
@@ -449,8 +455,8 @@ def seal_quarter(output, window, config_path, expected_config_sha256, *, execute
         future_price=dict(quarter=window+1,accepted_path=str(next_price/'ACCEPTED.json'),accepted_sha256=sha(next_price/'ACCEPTED.json'),request_path=str(n/'request.json'),request_sha256=sha(n/'request.json'),response_path=str(n/'response.json'),response_sha256=sha(n/'response.json'),counts_as_executed=False)
     fields=dict(hour=window//4,window=window,last_window=window,next_price_quarter=window+1,
                 resume_contract=state.get('resume_contract'),already_solved_future_price=future_price,
-                executed_cells=list(range(3*window,3*(window+1))),
-                executed_end_exclusive=3*(window+1),issued_end_exclusive=3*(window+2),
+                executed_cells=list(range(window,(window+1))),
+                executed_end_exclusive=(window+1),issued_end_exclusive=(window+1+offset),rt_clock_mode=plan.get('rt_clock_mode','legacy_issued_prefix'),grid_minutes=15,
                 executed_projection=str(snapshot),executed_projection_sha256=sha(snapshot),
                 retrospective=retrospective,snapshot_operation='read_only_retrospective'if retrospective else'live_pre_next_native_barrier',prefetched_next_price_preserved=prefetched,
                 prefetched_next_price_counted_as_executed=False,
@@ -523,7 +529,7 @@ def acknowledge(directory, library_file_id, *, archive_sha256, archive_bytes, up
              native_calls=0, safety_release=False)
     atomic(directory / 'UPLOADED.json', z); return z
 
-def validate_receipt(directory, *, local_archive=True):
+def validate_receipt(directory, *, local_archive=True, require_readback=None):
     directory = Path(directory); r = read(directory / 'UPLOADED.json'); a = read(directory / 'ARCHIVE.json')
     need(r['schema'] == 'gd.durable.upload_receipt.v1' and r['library_file_id'].startswith('libfile_'),
          'unsupported upload receipt')
@@ -539,14 +545,62 @@ def validate_receipt(directory, *, local_archive=True):
                                   'execution_attempt_id', 'hour')),
          'upload receipt mismatch')
     if local_archive: pinned(a['path'], r['archive_sha256'])
+    if require_readback is True or(require_readback is None and z.get('require_download_ack')):
+        check_download_ack(directory,r)
     return r
+
+def acknowledge_download(directory,downloaded_archive,*,library_file_id,materialization_evidence):
+    """After a real Library materialization: stream-check every downloaded member.
+    The evidence is the coordinator's sanitized tool receipt, not credentials.
+    Local archive duplication is not an authorized call to this function.
+    """
+    d=Path(directory);r=validate_receipt(d,require_readback=False);p=Path(downloaded_archive).resolve()
+    need(library_file_id==r['library_file_id'],'downloaded Library identity mismatch')
+    original=Path(read(d/'ARCHIVE.json')['path']).resolve()
+    need(p!=original and p.stat().st_ino!=original.stat().st_ino,'readback must use independently materialized bytes, not the original archive')
+    evidence=read(materialization_evidence)
+    need(evidence.get('tool')=='library.prepare_materialize' and evidence.get('library_file_id')==library_file_id
+         and Path(evidence['materialized_path']).resolve()==p and evidence.get('tool_completed') is True,
+         'actual successful Library materialization receipt required')
+    need(p.stat().st_size==r['archive_bytes'],'downloaded archive size mismatch');pinned(p,r['archive_sha256'])
+    with tarfile.open(p,'r:*') as tf:
+        ready=tf.extractfile('READY.json').read();need(hashlib.sha256(ready).hexdigest()==r['manifest_sha256'],'downloaded checkpoint manifest mismatch')
+        manifest=json.loads(ready);expected={'READY.json',*[v['member']for v in manifest['files']]}
+        need(len(tf.getmembers())==len(expected) and {v.name for v in tf.getmembers()}==expected,'unexpected/duplicate archive members')
+        for item in manifest['files']:
+            member=tf.getmember(item['member']);need(member.isfile() and member.size==item['size'],'downloaded payload metadata mismatch')
+            stream=tf.extractfile(member);h=hashlib.sha256()
+            for block in iter(lambda:stream.read(1024*1024),b''):h.update(block)
+            need(h.hexdigest()==item['sha256'],'downloaded payload checksum mismatch')
+    atomic(d/'MATERIALIZATION_TOOL_RESULT.json',evidence)
+    proof=dict(schema='gd.durable.download_verified.v1',library_file_id=library_file_id,
+               archive_sha256=r['archive_sha256'],archive_bytes=r['archive_bytes'],manifest_sha256=r['manifest_sha256'],
+               payload_files=len(manifest['files']),upload_receipt_sha256=sha(d/'UPLOADED.json'),
+               materialization_receipt_sha256=sha(d/'MATERIALIZATION_TOOL_RESULT.json'),
+               downloaded_path=str(p),meaning='independently materialized archive and all payload hashes verified; not continuation tested',
+               restore_continuation_verified=False,native_calls=0)
+    atomic(d/'DOWNLOAD_VERIFIED.json',proof);return proof
+
+
+def check_download_ack(directory,upload):
+    d=Path(directory);proof=read(d/'DOWNLOAD_VERIFIED.json')
+    need(proof.get('schema')=='gd.durable.download_verified.v1','unsupported readback ACK')
+    for key in ('library_file_id','archive_sha256','archive_bytes','manifest_sha256'):
+        need(proof.get(key)==upload[key],'download ACK belongs to another archive')
+    pinned(d/'UPLOADED.json',proof['upload_receipt_sha256'])
+    pinned(d/'MATERIALIZATION_TOOL_RESULT.json',proof['materialization_receipt_sha256'])
+    need(proof['payload_files']==len(read(d/'READY.json')['files']),'download ACK incomplete')
+    return proof
+
 
 def wait_for_upload(directory, timeout_s=1800, poll_s=1):
     directory = Path(directory); deadline = time.monotonic() + timeout_s
     need(read(directory / 'READY.json')['policy'] == 'cloud_required', 'cloud wait requires explicit policy')
     while True:
         if (directory / 'STOP_REQUESTED').exists(): raise RuntimeError('checkpoint paused by operator; no retry')
-        if (directory / 'UPLOADED.json').exists(): return validate_receipt(directory)
+        if (directory / 'UPLOADED.json').exists():
+            if not read(directory/'READY.json').get('require_download_ack') or(directory/'DOWNLOAD_VERIFIED.json').exists():
+                return validate_receipt(directory)
         if time.monotonic() >= deadline: raise TimeoutError('checkpoint not persisted; next native call blocked')
         time.sleep(min(poll_s, max(0, deadline-time.monotonic())))
 
@@ -576,7 +630,10 @@ def status(output):
         state = 'ready_to_pack'
         if (d / 'ARCHIVE.json').exists(): state = 'ready_to_upload'
         if (d / 'UPLOAD_ATTEMPT.json').exists(): state = 'upload_outcome_unknown_do_not_retry'
-        if (d / 'UPLOADED.json').exists(): validate_receipt(d, local_archive=False); state = 'cloud_persisted'
+        if (d / 'UPLOADED.json').exists():
+            validate_receipt(d, local_archive=False,require_readback=False);state='uploaded_waiting_readback'
+            if not z.get('require_download_ack') or(d/'DOWNLOAD_VERIFIED.json').exists():
+                validate_receipt(d,local_archive=False);state='cloud_persisted'
         if z['policy'] == 'local_only': state = 'local_not_cloud_persisted'
         proof, proof_error = _restore_status(d / 'RESTORE_VERIFICATION.json')
         if proof and proof['checkpoint_manifest_sha256'] != sha(ready):

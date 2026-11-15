@@ -1,7 +1,7 @@
 from pathlib import Path
 import hashlib,json
 ROOT=Path(__file__).resolve().parent
-EXPECTED='28fc42686df276d883b64d1c7f53852821a4b712cf9f026e851e4b2508bbbc86'
+EXPECTED='7474a5ef0c635a347ed985fca7a1448050ab583d641d9c8e18b44d8af86554c2'
 def verify():
  p=ROOT/'PORTABLE_MANIFEST.json'
  if hashlib.sha256(p.read_bytes()).hexdigest()!=EXPECTED:raise ValueError('portable manifest drift')

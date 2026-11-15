@@ -10,7 +10,7 @@ def time(value):
  return x
 
 def evaluate(accepted,*,source_sha256=None):
- ctx=accepted.get('context',{});raw=ctx.get('post_reference_pricing_availability')
+ ctx=accepted.get('context',{});raw=ctx.get('pricing_information_clock') or ctx.get('post_reference_pricing_availability')
  result=dict(schema='gd.price.information_time.v1',run_id=ctx.get('run_id'),quarter=ctx.get('day_quarter'),source_sha256=source_sha256,status='not_declared',SCUC_data_cutoff=None,pricing_input_available_at=None,label='未声明独立输入可用时标；不能推定因果可用',formal_use_allowed=False,preclear_use_allowed=False)
  if raw is None:return result
  if not isinstance(raw,dict):return dict(result,status='unknown')
@@ -18,6 +18,12 @@ def evaluate(accepted,*,source_sha256=None):
  try:cutoff=time(result['SCUC_data_cutoff']);available=time(result['pricing_input_available_at'])
  except (ValueError,TypeError):return result
  if raw.get('not_retroactively_available') is not True:return result
+ if raw.get('schema')=='gd.price.input_availability.v1':
+  if raw.get('status') not in ('declared_research_clock','retrospective_research') or raw.get('run_id')!=ctx.get('run_id') or raw.get('quarter')!=ctx.get('day_quarter'):return result
+  try:
+   if time(raw.get('pricing_as_of'))<available:return result
+  except (ValueError,TypeError):return result
+  result.update(pricing_as_of=raw['pricing_as_of'],declaration_sha256=raw.get('declaration_sha256'),availability_scope='declared research assumptions or receipts; not official certification')
  if available>cutoff:
   result.update(status='retrospective_research',label='相对'+cutoff.strftime('%H:%M')+'截止的事后研究价，最早'+available.strftime('%H:%M'))
  else:result.update(status='declared_research_clock',label='已声明研究输入可用时标；不等于正式出清许可')

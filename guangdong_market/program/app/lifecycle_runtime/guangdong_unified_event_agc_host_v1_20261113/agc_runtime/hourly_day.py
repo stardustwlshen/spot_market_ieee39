@@ -18,7 +18,8 @@ def produce(plan,data,*,expected_plan_sha256,branch_id,seed_case_sha256):
  need((plan.get('source_kind')=='DA_SCED' and plan['audit'].get('DA_SCED_accepted') and plan['audit'].get('full_physical') and plan['audit'].get('SCED_full_KKT')) or (plan.get('source_kind','RT')=='RT' and plan['audit'].get('SCUC_accepted') and plan['audit'].get('SCED_full_KKT')),'verified accepted typed plan required')
  start=stamp(data['hour_start']);end=start+timedelta(hours=1);cut=stamp(data['as_of']);begin=stamp(plan['domain_start'])
  need(cut<=start-timedelta(minutes=30),'T-30 deadline');need(stamp(plan['cutoff'])<cut and stamp(plan['available_at'])<=cut,'same/future cutoff plan not available')
- ticks=[t for t in range(plan['cells'])if start<=begin+timedelta(minutes=5*t)<end];need(len(ticks)==12,'whole target hour unavailable')
+ step=plan.get('step_minutes',5);need(step in (5,15),'unsupported AGC plan grid')
+ ticks=[t for t in range(plan['cells'])if start<=begin+timedelta(minutes=step*t)<end];need(len(ticks)==60//step,'whole target hour unavailable')
  x=deepcopy(data);reviews={}
  for u in x['units']:
   if u.get('participant_type')=='third_party' and u.get('submitted') is False:continue
@@ -44,15 +45,18 @@ def project(receipt,consumer,base_agc,*,already_applied=()):
  need(not any(x['consumer_identity']==consumer_identity and x['hour_start']==c['hour_start'] and x['branch_id']==c['branch_id'] for x in already_applied),'duplicate receipt/hour in same consumer; explicit reallocation unsupported')
  need(consumer['branch_id']==c['branch_id'] and consumer['seed_case_sha256']==c['seed_case_sha256'],'wrong consumer branch/seed')
  cut=stamp(consumer['cutoff']);delivery=stamp(consumer['delivery']);begin=stamp(consumer['domain_start'])
- need(cut>=stamp(c['as_of']) and delivery==cut+timedelta(minutes=15) and begin>=delivery,'future publication or locked prefix')
+ mode=consumer.get('rt_clock_mode','legacy_issued_prefix')
+ need(mode in ('provincial_15min_execution','legacy_issued_prefix'),'unknown consumer RT clock mode')
+ lead=0 if mode=='provincial_15min_execution' else 15
+ need(cut>=stamp(c['as_of']) and delivery==cut+timedelta(minutes=lead) and begin>=delivery,'future publication or locked prefix')
  need(type(consumer['cells'])is int and consumer['cells']>0,'positive cell count');need(len(consumer['positive_reserve_mw'])==len(consumer['accident_reserve_mw'])==consumer['cells'],'complete reserve timeline')
  need(all(x==400 for x in consumer['positive_reserve_mw'])and all(x==400 for x in consumer['accident_reserve_mw']),'original400 required')
  need(r['unmet_requirement_mw']<=1e-9 and r['price']is not None,'unmet or unpriced award')
- need(consumer['zone']==c['zone'],'wrong zone');ticks=[t for t in range(consumer['cells'])if stamp(c['hour_start'])<=begin+timedelta(minutes=5*t)<stamp(c['hour_end'])];need(ticks,'no future overlap')
+ need(consumer['zone']==c['zone'],'wrong zone');ticks=[t for t in range(consumer['cells'])if stamp(c['hour_start'])<=begin+timedelta(minutes=15*t if mode=='provincial_15min_execution' else 5*t)<stamp(c['hour_end'])];need(ticks,'no future overlap')
  need(set(base_agc)==set(consumer['thermal']) and set(r['awards_mw'])<=set(base_agc),'resource inventory')
  out=deepcopy(base_agc)
  for g,a in out.items():
-  need(a['qualification']=='explicit_synthetic_qualified','unqualified consumer');need(all(set(a[side])=={str(t)for t in range(consumer['cells'])}for side in ('up_mw','down_mw')),'complete AGC timeline')
+  need(a['qualification']=='explicit_synthetic_qualified' or (a['qualification']=='no_award' and r['awards_mw'].get(g,0)==0 and all(v==0 for side in ('up_mw','down_mw')for v in a[side].values())),'unqualified consumer cannot receive AGC');need(all(set(a[side])=={str(t)for t in range(consumer['cells'])}for side in ('up_mw','down_mw')),'complete AGC timeline')
   v=r['awards_mw'].get(g,0)
   for t in ticks:
    need(consumer['thermal'][g]['maximum'][t]-consumer['thermal'][g]['minimum'][t]>=2*v,'award beyond stable range')

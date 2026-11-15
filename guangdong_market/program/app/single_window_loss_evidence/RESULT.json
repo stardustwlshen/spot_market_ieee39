@@ -1,0 +1,5681 @@
+{
+  "status": "blocked_unsafe",
+  "native_calls": 4,
+  "near": {
+    "schema": "gd.event.host.accepted_pair.v2",
+    "status": "accepted_research_pair",
+    "run_id": "independent-rt-recommit-de9b8d3978e41e65",
+    "prepared_sha256": "c8af74fd793e1c7badad49d8e668e2441419613c6fb7a0f613c38e2e32e2a4a9",
+    "ledger_id": "322637a10102413766ee945f0be40b9f332f368dec552046121e9e84a8418845",
+    "SCUC_response_sha256": "a0e6cf5bbba59705049ae1f07209b035693fb640232eb5afa279a52fb97b2eda",
+    "SCED_response_sha256": "8fd40eb8336b7d806c415e64643ae6e776159ffa74cfeecb6b60d8fabe6f69be",
+    "SCUC_gap": 0.00011325146597281256,
+    "SCUC_audit": {
+      "variables": 10887,
+      "rows": 10434,
+      "integer_count": 650,
+      "max_primal_violation": 6.181721801112872e-12,
+      "max_integer_violation": 0.0,
+      "objective": 857129.6523687772
+    },
+    "SCED_audit": {
+      "variables": 10887,
+      "rows": 10434,
+      "integer_count": 0,
+      "max_primal_violation": 4.870770453635487e-12,
+      "max_integer_violation": 0.0,
+      "objective": 857129.6523687773,
+      "KKT": {
+        "primal_objective": 857129.6523687773,
+        "dual_objective": 857129.6523687777,
+        "max_primal_violation": 4.870770453635487e-12,
+        "max_complementarity": 1.4206413823103534e-10,
+        "max_dual_sign_violation": 1.5055799562236028e-09,
+        "max_non_angle_dual_sign_violation": 1.5055799562236028e-09,
+        "max_free_angle_stationarity": 0.0,
+        "worst_free_angle": null,
+        "scoped_angle_columns": [],
+        "allowed_angle_column_names": [
+          "angle['6',206]",
+          "angle['6',253]",
+          "angle['6',254]",
+          "angle['6',255]",
+          "angle['6',259]"
+        ],
+        "absolute_gap": 3.4924596548080444e-10,
+        "objective_complementarity_tolerance": 0.0008671296523687774,
+        "angle_stationarity_tolerance": 1e-08,
+        "strict_legacy_1e_8_pass": true,
+        "raw_witness_unchanged": true,
+        "variables": 10887,
+        "rows": 10434,
+        "checks": "all rows and columns with fsum accumulation",
+        "passed": true
+      }
+    },
+    "native_calls": 2,
+    "formal": false,
+    "safety_release": false,
+    "SCED_response_kind": "native_strict_certificate",
+    "dual_certificate": {
+      "schema": "gd.network_dual_certificate.v1",
+      "algorithm": "zero_rhs_reference_and_incidence_tree_decimal80_v1",
+      "source_hashes": {
+        "network_certificate.py": "4ff2840918661d06df266c19640c91f4b0400189c25e53192cc9a52f10227316",
+        "strict_kkt.py": "20c3f3c7ffb9863b24c89706e510d6e2bd5594f29946abbc3a7358d7ee4004c8"
+      },
+      "binding": {
+        "model_sha256": "49f4796f333a553561cbd32c54fcc306e5fa812b29073616de6c0567b721b053",
+        "names_sha256": "7899f2d8b4fa64a5a29ed6b1f996bfce26439155f9abd23c505ce35bf2094b63",
+        "native_response_sha256": "0e035b5e1b66f3f47046ce0d94b92e2ca406dbb570b3c332885888ab493cf837"
+      },
+      "native_calls": 0,
+      "native_KKT": {
+        "primal_objective": 857129.6523687773,
+        "dual_objective": 857129.6523687777,
+        "max_primal_violation": 4.870770453635487e-12,
+        "max_complementarity": 1.4206413823103534e-10,
+        "max_dual_sign_violation": 1.5055799562236028e-09,
+        "max_non_angle_dual_sign_violation": 1.5055799562236028e-09,
+        "max_free_angle_stationarity": 0.0,
+        "worst_free_angle": null,
+        "scoped_angle_columns": [],
+        "allowed_angle_column_names": [
+          "angle['6',206]",
+          "angle['6',253]",
+          "angle['6',254]",
+          "angle['6',255]",
+          "angle['6',259]"
+        ],
+        "absolute_gap": 3.4924596548080444e-10,
+        "objective_complementarity_tolerance": 0.0008671296523687774,
+        "angle_stationarity_tolerance": 1e-08,
+        "strict_legacy_1e_8_pass": true,
+        "raw_witness_unchanged": true,
+        "variables": 10887,
+        "rows": 10434,
+        "checks": "all rows and columns with fsum accumulation",
+        "passed": true
+      },
+      "raw_KKT": {
+        "primal_objective": 857129.6523687773,
+        "dual_objective": 857129.6523687777,
+        "max_primal_violation": 4.870770453635487e-12,
+        "max_complementarity": 1.4206413823103534e-10,
+        "max_dual_sign_violation": 1.5055799562236028e-09,
+        "max_non_angle_dual_sign_violation": 1.5055799562236028e-09,
+        "max_free_angle_stationarity": 0.0,
+        "worst_free_angle": null,
+        "scoped_angle_columns": [],
+        "allowed_angle_column_names": [
+          "angle['6',206]",
+          "angle['6',253]",
+          "angle['6',254]",
+          "angle['6',255]",
+          "angle['6',259]"
+        ],
+        "absolute_gap": 3.4924596548080444e-10,
+        "objective_complementarity_tolerance": 0.0008671296523687774,
+        "angle_stationarity_tolerance": 1e-08,
+        "strict_legacy_1e_8_pass": true,
+        "raw_witness_unchanged": true,
+        "variables": 10887,
+        "rows": 10434,
+        "checks": "all rows and columns with fsum accumulation",
+        "passed": true
+      },
+      "model_unchanged": true,
+      "thresholds_unchanged": true,
+      "formal": false,
+      "kind": "native_strict_certificate",
+      "derived_response_sha256": null,
+      "changes": [],
+      "derived_KKT": null
+    },
+    "dual_certificate_sha256": "0f2e52bb85d7df1dad50cadb788cf6c9b2a72656166a78551aac9ede3522ebc2",
+    "native_dual_passed": true
+  },
+  "far": {
+    "status": "near_reused_far_pair_accepted",
+    "near_native_reused": 2,
+    "new_native_calls": 2,
+    "PRICE": false,
+    "far_accepted_sha256": "0855cc6cde78af34d2212d2c33c332cac0da35f66888014b826a45301460a5bc",
+    "actual_domain_unchanged": true,
+    "publication": false,
+    "execution": false,
+    "settlement": false
+  },
+  "safety": {
+    "status": "blocked_unsafe",
+    "coverage": 48,
+    "safe": 0,
+    "converged": 48,
+    "new_AC": 48,
+    "price_allowed": false,
+    "execution": false,
+    "publication": false,
+    "formal_security": false,
+    "feedback": [
+      {
+        "global_tick": 3,
+        "stage": "near",
+        "loss_mw": 30.785975348301026,
+        "violations": [
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "0",
+            "value": 1.0772395915871074,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "1",
+            "value": 1.0650244187203708,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "8",
+            "value": 1.0761851026538498,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "24",
+            "value": 1.0647875829075206,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "25",
+            "value": 1.063601277235175,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "27",
+            "value": 1.0608722279438512,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "33",
+            "value": 0.9352496028961977,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "35",
+            "value": 1.0635999999999997,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "38",
+            "value": 1.072039566570428,
+            "lower": 0.94,
+            "upper": 1.06
+          }
+        ],
+        "thermal_AGC": [
+          {
+            "unit": "C1",
+            "p_AC_mw": 634.9504605570695,
+            "scheduled_p_mw": 636.0,
+            "slack_loss_adjustment_mw": -1.0495394429304952,
+            "up_headroom_after_AGC_mw": 1.0495394429304952,
+            "down_headroom_after_AGC_mw": 334.9504605570695,
+            "positive_available_mw": 1.0495394429304952,
+            "accident_available_mw": 1.0495394429304952
+          },
+          {
+            "unit": "C2",
+            "p_AC_mw": 698.3144595889985,
+            "scheduled_p_mw": 698.3144595889985,
+            "slack_loss_adjustment_mw": 0.0,
+            "up_headroom_after_AGC_mw": 16.68554041100151,
+            "down_headroom_after_AGC_mw": 363.3144595889985,
+            "positive_available_mw": 16.68554041100151,
+            "accident_available_mw": 16.68554041100151
+          },
+          {
+            "unit": "C3",
+            "p_AC_mw": 720.6036953118355,
+            "scheduled_p_mw": 720.6036953118355,
+            "slack_loss_adjustment_mw": 0.0,
+            "up_headroom_after_AGC_mw": 134.3963046881645,
+            "down_headroom_after_AGC_mw": 320.6036953118355,
+            "positive_available_mw": 134.3963046881645,
+            "accident_available_mw": 130.0
+          },
+          {
+            "unit": "CCGT",
+            "p_AC_mw": 385.4,
+            "scheduled_p_mw": 385.4,
+            "slack_loss_adjustment_mw": 0.0,
+            "up_headroom_after_AGC_mw": 291.6,
+            "down_headroom_after_AGC_mw": 65.39999999999998,
+            "positive_available_mw": 291.6,
+            "accident_available_mw": 275.0
+          },
+          {
+            "unit": "GT",
+            "p_AC_mw": 85.0,
+            "scheduled_p_mw": 85.0,
+            "slack_loss_adjustment_mw": 0.0,
+            "up_headroom_after_AGC_mw": 205.0,
+            "down_headroom_after_AGC_mw": 0.0,
+            "positive_available_mw": 205.0,
+            "accident_available_mw": 205.0
+          }
+        ],
+        "error": null,
+        "safe": false
+      },
+      {
+        "global_tick": 4,
+        "stage": "near",
+        "loss_mw": 34.581452768419695,
+        "violations": [
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "0",
+            "value": 1.0703860573820976,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "8",
+            "value": 1.0701406898050847,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "19",
+            "value": 0.9379965059883709,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "33",
+            "value": 0.9296298374513091,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "35",
+            "value": 1.0636,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "38",
+            "value": 1.0654683264811875,
+            "lower": 0.94,
+            "upper": 1.06
+          }
+        ],
+        "thermal_AGC": [
+          {
+            "unit": "C1",
+            "p_AC_mw": 634.9477000189886,
+            "scheduled_p_mw": 636.0,
+            "slack_loss_adjustment_mw": -1.0522999810114015,
+            "up_headroom_after_AGC_mw": 1.0522999810114015,
+            "down_headroom_after_AGC_mw": 334.9477000189886,
+            "positive_available_mw": 1.0522999810114015,
+            "accident_available_mw": 1.0522999810114015
+          },
+          {
+            "unit": "C2",
+            "p_AC_mw": 714.9999999999989,
+            "scheduled_p_mw": 714.9999999999989,
+            "slack_loss_adjustment_mw": 0.0,
+            "up_headroom_after_AGC_mw": 1.1368683772161603e-12,
+            "down_headroom_after_AGC_mw": 379.99999999999886,
+            "positive_available_mw": 1.1368683772161603e-12,
+            "accident_available_mw": 1.1368683772161603e-12
+          },
+          {
+            "unit": "C3",
+            "p_AC_mw": 785.603695311834,
+            "scheduled_p_mw": 785.603695311834,
+            "slack_loss_adjustment_mw": 0.0,
+            "up_headroom_after_AGC_mw": 69.39630468816597,
+            "down_headroom_after_AGC_mw": 385.60369531183403,
+            "positive_available_mw": 69.39630468816597,
+            "accident_available_mw": 69.39630468816597
+          },
+          {
+            "unit": "CCGT",
+            "p_AC_mw": 365.47529496960397,
+            "scheduled_p_mw": 365.47529496960397,
+            "slack_loss_adjustment_mw": 0.0,
+            "up_headroom_after_AGC_mw": 311.52470503039603,
+            "down_headroom_after_AGC_mw": 45.475294969603965,
+            "positive_available_mw": 311.52470503039603,
+            "accident_available_mw": 275.0
+          },
+          {
+            "unit": "GT",
+            "p_AC_mw": 85.0,
+            "scheduled_p_mw": 85.0,
+            "slack_loss_adjustment_mw": 0.0,
+            "up_headroom_after_AGC_mw": 205.0,
+            "down_headroom_after_AGC_mw": 0.0,
+            "positive_available_mw": 205.0,
+            "accident_available_mw": 205.0
+          }
+        ],
+        "error": null,
+        "safe": false
+      },
+      {
+        "global_tick": 5,
+        "stage": "near",
+        "loss_mw": 36.965699463024336,
+        "violations": [
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "0",
+            "value": 1.0669943966752942,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "8",
+            "value": 1.067292611912577,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "19",
+            "value": 0.9353855309719995,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "33",
+            "value": 0.9270421516075318,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "35",
+            "value": 1.0635999999999999,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "38",
+            "value": 1.0623203679433733,
+            "lower": 0.94,
+            "upper": 1.06
+          }
+        ],
+        "thermal_AGC": [
+          {
+            "unit": "C1",
+            "p_AC_mw": 637.2209483511956,
+            "scheduled_p_mw": 636.0,
+            "slack_loss_adjustment_mw": 1.2209483511956023,
+            "up_headroom_after_AGC_mw": -1.2209483511956023,
+            "down_headroom_after_AGC_mw": 337.2209483511956,
+            "positive_available_mw": 0.0,
+            "accident_available_mw": 0.0
+          },
+          {
+            "unit": "C2",
+            "p_AC_mw": 714.9999999999964,
+            "scheduled_p_mw": 714.9999999999964,
+            "slack_loss_adjustment_mw": 0.0,
+            "up_headroom_after_AGC_mw": 3.637978807091713e-12,
+            "down_headroom_after_AGC_mw": 379.99999999999636,
+            "positive_available_mw": 3.637978807091713e-12,
+            "accident_available_mw": 3.637978807091713e-12
+          },
+          {
+            "unit": "C3",
+            "p_AC_mw": 819.9920584565092,
+            "scheduled_p_mw": 819.9920584565092,
+            "slack_loss_adjustment_mw": 0.0,
+            "up_headroom_after_AGC_mw": 35.0079415434908,
+            "down_headroom_after_AGC_mw": 419.9920584565092,
+            "positive_available_mw": 35.0079415434908,
+            "accident_available_mw": 35.0079415434908
+          },
+          {
+            "unit": "CCGT",
+            "p_AC_mw": 320.0,
+            "scheduled_p_mw": 320.0,
+            "slack_loss_adjustment_mw": 0.0,
+            "up_headroom_after_AGC_mw": 357.0,
+            "down_headroom_after_AGC_mw": 0.0,
+            "positive_available_mw": 357.0,
+            "accident_available_mw": 275.0
+          },
+          {
+            "unit": "GT",
+            "p_AC_mw": 85.0,
+            "scheduled_p_mw": 85.0,
+            "slack_loss_adjustment_mw": 0.0,
+            "up_headroom_after_AGC_mw": 205.0,
+            "down_headroom_after_AGC_mw": 0.0,
+            "positive_available_mw": 205.0,
+            "accident_available_mw": 205.0
+          }
+        ],
+        "error": null,
+        "safe": false
+      },
+      {
+        "global_tick": 6,
+        "stage": "near",
+        "loss_mw": 36.40168307106637,
+        "violations": [
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "0",
+            "value": 1.068218602074029,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "8",
+            "value": 1.0683405034625997,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "19",
+            "value": 0.9361874922979047,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "33",
+            "value": 0.9278369596609559,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "35",
+            "value": 1.0636,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "38",
+            "value": 1.0635537068237875,
+            "lower": 0.94,
+            "upper": 1.06
+          }
+        ],
+        "thermal_AGC": [
+          {
+            "unit": "C1",
+            "p_AC_mw": 637.15361978238,
+            "scheduled_p_mw": 636.0000000000003,
+            "slack_loss_adjustment_mw": 1.1536197823796783,
+            "up_headroom_after_AGC_mw": -1.1536197823800194,
+            "down_headroom_after_AGC_mw": 337.15361978238,
+            "positive_available_mw": 0.0,
+            "accident_available_mw": 0.0
+          },
+          {
+            "unit": "C2",
+            "p_AC_mw": 714.9999999999997,
+            "scheduled_p_mw": 714.9999999999997,
+            "slack_loss_adjustment_mw": 0.0,
+            "up_headroom_after_AGC_mw": 3.410605131648481e-13,
+            "down_headroom_after_AGC_mw": 379.99999999999966,
+            "positive_available_mw": 3.410605131648481e-13,
+            "accident_available_mw": 3.410605131648481e-13
+          },
+          {
+            "unit": "C3",
+            "p_AC_mw": 808.3171694451835,
+            "scheduled_p_mw": 808.3171694451835,
+            "slack_loss_adjustment_mw": 0.0,
+            "up_headroom_after_AGC_mw": 46.68283055481652,
+            "down_headroom_after_AGC_mw": 408.3171694451835,
+            "positive_available_mw": 46.68283055481652,
+            "accident_available_mw": 46.68283055481652
+          },
+          {
+            "unit": "CCGT",
+            "p_AC_mw": 320.0,
+            "scheduled_p_mw": 320.0,
+            "slack_loss_adjustment_mw": 0.0,
+            "up_headroom_after_AGC_mw": 357.0,
+            "down_headroom_after_AGC_mw": 0.0,
+            "positive_available_mw": 357.0,
+            "accident_available_mw": 275.0
+          },
+          {
+            "unit": "GT",
+            "p_AC_mw": 85.0,
+            "scheduled_p_mw": 85.0,
+            "slack_loss_adjustment_mw": 0.0,
+            "up_headroom_after_AGC_mw": 205.0,
+            "down_headroom_after_AGC_mw": 0.0,
+            "positive_available_mw": 205.0,
+            "accident_available_mw": 205.0
+          }
+        ],
+        "error": null,
+        "safe": false
+      },
+      {
+        "global_tick": 7,
+        "stage": "near",
+        "loss_mw": 35.85501732230385,
+        "violations": [
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "0",
+            "value": 1.0694182929292202,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "8",
+            "value": 1.0693672053728458,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "19",
+            "value": 0.9369738729119567,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "33",
+            "value": 0.928616325978153,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "35",
+            "value": 1.0636,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "38",
+            "value": 1.064763877106272,
+            "lower": 0.94,
+            "upper": 1.06
+          }
+        ],
+        "thermal_AGC": [
+          {
+            "unit": "C1",
+            "p_AC_mw": 637.088658026832,
+            "scheduled_p_mw": 636.0,
+            "slack_loss_adjustment_mw": 1.0886580268320358,
+            "up_headroom_after_AGC_mw": -1.0886580268320358,
+            "down_headroom_after_AGC_mw": 337.08865802683204,
+            "positive_available_mw": 0.0,
+            "accident_available_mw": 0.0
+          },
+          {
+            "unit": "C2",
+            "p_AC_mw": 715.0,
+            "scheduled_p_mw": 715.0,
+            "slack_loss_adjustment_mw": 0.0,
+            "up_headroom_after_AGC_mw": 0.0,
+            "down_headroom_after_AGC_mw": 380.0,
+            "positive_available_mw": 0.0,
+            "accident_available_mw": 0.0
+          },
+          {
+            "unit": "C3",
+            "p_AC_mw": 796.6769932629704,
+            "scheduled_p_mw": 796.6769932629704,
+            "slack_loss_adjustment_mw": 0.0,
+            "up_headroom_after_AGC_mw": 58.32300673702957,
+            "down_headroom_after_AGC_mw": 396.6769932629704,
+            "positive_available_mw": 58.32300673702957,
+            "accident_available_mw": 58.32300673702957
+          },
+          {
+            "unit": "CCGT",
+            "p_AC_mw": 320.00000000000034,
+            "scheduled_p_mw": 320.00000000000034,
+            "slack_loss_adjustment_mw": 0.0,
+            "up_headroom_after_AGC_mw": 356.99999999999966,
+            "down_headroom_after_AGC_mw": 3.410605131648481e-13,
+            "positive_available_mw": 356.99999999999966,
+            "accident_available_mw": 275.0
+          },
+          {
+            "unit": "GT",
+            "p_AC_mw": 85.0,
+            "scheduled_p_mw": 85.0,
+            "slack_loss_adjustment_mw": 0.0,
+            "up_headroom_after_AGC_mw": 205.0,
+            "down_headroom_after_AGC_mw": 0.0,
+            "positive_available_mw": 205.0,
+            "accident_available_mw": 205.0
+          }
+        ],
+        "error": null,
+        "safe": false
+      },
+      {
+        "global_tick": 8,
+        "stage": "near",
+        "loss_mw": 35.32510621379267,
+        "violations": [
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "0",
+            "value": 1.0705934774802481,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "8",
+            "value": 1.0703735454078431,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "19",
+            "value": 0.9377435407188539,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "33",
+            "value": 0.9293791285617979,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "35",
+            "value": 1.0635999999999997,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "38",
+            "value": 1.0659507307507077,
+            "lower": 0.94,
+            "upper": 1.06
+          }
+        ],
+        "thermal_AGC": [
+          {
+            "unit": "C1",
+            "p_AC_mw": 637.0259177648343,
+            "scheduled_p_mw": 636.0000000000005,
+            "slack_loss_adjustment_mw": 1.025917764833821,
+            "up_headroom_after_AGC_mw": -1.0259177648342757,
+            "down_headroom_after_AGC_mw": 337.0259177648343,
+            "positive_available_mw": 0.0,
+            "accident_available_mw": 0.0
+          },
+          {
+            "unit": "C2",
+            "p_AC_mw": 715.0,
+            "scheduled_p_mw": 715.0,
+            "slack_loss_adjustment_mw": 0.0,
+            "up_headroom_after_AGC_mw": 0.0,
+            "down_headroom_after_AGC_mw": 380.0,
+            "positive_available_mw": 0.0,
+            "accident_available_mw": 0.0
+          },
+          {
+            "unit": "C3",
+            "p_AC_mw": 785.0513502274529,
+            "scheduled_p_mw": 785.0513502274529,
+            "slack_loss_adjustment_mw": 0.0,
+            "up_headroom_after_AGC_mw": 69.94864977254713,
+            "down_headroom_after_AGC_mw": 385.0513502274529,
+            "positive_available_mw": 69.94864977254713,
+            "accident_available_mw": 69.94864977254713
+          },
+          {
+            "unit": "CCGT",
+            "p_AC_mw": 320.0,
+            "scheduled_p_mw": 320.0,
+            "slack_loss_adjustment_mw": 0.0,
+            "up_headroom_after_AGC_mw": 357.0,
+            "down_headroom_after_AGC_mw": 0.0,
+            "positive_available_mw": 357.0,
+            "accident_available_mw": 275.0
+          },
+          {
+            "unit": "GT",
+            "p_AC_mw": 85.0,
+            "scheduled_p_mw": 85.0,
+            "slack_loss_adjustment_mw": 0.0,
+            "up_headroom_after_AGC_mw": 205.0,
+            "down_headroom_after_AGC_mw": 0.0,
+            "positive_available_mw": 205.0,
+            "accident_available_mw": 205.0
+          }
+        ],
+        "error": null,
+        "safe": false
+      },
+      {
+        "global_tick": 9,
+        "stage": "near",
+        "loss_mw": 34.8158602859424,
+        "violations": [
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "0",
+            "value": 1.0717402108109586,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "8",
+            "value": 1.0713555558019012,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "19",
+            "value": 0.938495933982125,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "33",
+            "value": 0.9301248106859517,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "35",
+            "value": 1.0636,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "38",
+            "value": 1.067110504374454,
+            "lower": 0.94,
+            "upper": 1.06
+          }
+        ],
+        "thermal_AGC": [
+          {
+            "unit": "C1",
+            "p_AC_mw": 636.96585724615,
+            "scheduled_p_mw": 636.0,
+            "slack_loss_adjustment_mw": 0.9658572461499944,
+            "up_headroom_after_AGC_mw": -0.9658572461499944,
+            "down_headroom_after_AGC_mw": 336.96585724615,
+            "positive_available_mw": 0.0,
+            "accident_available_mw": 0.0
+          },
+          {
+            "unit": "C2",
+            "p_AC_mw": 715.0000000000011,
+            "scheduled_p_mw": 715.0000000000011,
+            "slack_loss_adjustment_mw": 0.0,
+            "up_headroom_after_AGC_mw": -1.1368683772161603e-12,
+            "down_headroom_after_AGC_mw": 380.00000000000114,
+            "positive_available_mw": 0.0,
+            "accident_available_mw": 0.0
+          },
+          {
+            "unit": "C3",
+            "p_AC_mw": 773.5662160859574,
+            "scheduled_p_mw": 773.5662160859574,
+            "slack_loss_adjustment_mw": 0.0,
+            "up_headroom_after_AGC_mw": 81.43378391404258,
+            "down_headroom_after_AGC_mw": 373.5662160859574,
+            "positive_available_mw": 81.43378391404258,
+            "accident_available_mw": 81.43378391404258
+          },
+          {
+            "unit": "CCGT",
+            "p_AC_mw": 320.0,
+            "scheduled_p_mw": 320.0,
+            "slack_loss_adjustment_mw": 0.0,
+            "up_headroom_after_AGC_mw": 357.0,
+            "down_headroom_after_AGC_mw": 0.0,
+            "positive_available_mw": 357.0,
+            "accident_available_mw": 275.0
+          },
+          {
+            "unit": "GT",
+            "p_AC_mw": 85.0,
+            "scheduled_p_mw": 85.0,
+            "slack_loss_adjustment_mw": 0.0,
+            "up_headroom_after_AGC_mw": 205.0,
+            "down_headroom_after_AGC_mw": 0.0,
+            "positive_available_mw": 205.0,
+            "accident_available_mw": 205.0
+          }
+        ],
+        "error": null,
+        "safe": false
+      },
+      {
+        "global_tick": 10,
+        "stage": "near",
+        "loss_mw": 34.326583874345985,
+        "violations": [
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "0",
+            "value": 1.0728596015581295,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "8",
+            "value": 1.0723141625011297,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "19",
+            "value": 0.9392318052861046,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "24",
+            "value": 1.0603451321356216,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "33",
+            "value": 0.930854118222106,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "35",
+            "value": 1.0636,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "38",
+            "value": 1.0682442538040033,
+            "lower": 0.94,
+            "upper": 1.06
+          }
+        ],
+        "thermal_AGC": [
+          {
+            "unit": "C1",
+            "p_AC_mw": 636.9083242881129,
+            "scheduled_p_mw": 636.0,
+            "slack_loss_adjustment_mw": 0.9083242881129081,
+            "up_headroom_after_AGC_mw": -0.9083242881129081,
+            "down_headroom_after_AGC_mw": 336.9083242881129,
+            "positive_available_mw": 0.0,
+            "accident_available_mw": 0.0
+          },
+          {
+            "unit": "C2",
+            "p_AC_mw": 715.0,
+            "scheduled_p_mw": 715.0,
+            "slack_loss_adjustment_mw": 0.0,
+            "up_headroom_after_AGC_mw": 0.0,
+            "down_headroom_after_AGC_mw": 380.0,
+            "positive_available_mw": 0.0,
+            "accident_available_mw": 0.0
+          },
+          {
+            "unit": "C3",
+            "p_AC_mw": 762.2210473567336,
+            "scheduled_p_mw": 762.2210473567336,
+            "slack_loss_adjustment_mw": 0.0,
+            "up_headroom_after_AGC_mw": 92.7789526432664,
+            "down_headroom_after_AGC_mw": 362.2210473567336,
+            "positive_available_mw": 92.7789526432664,
+            "accident_available_mw": 92.7789526432664
+          },
+          {
+            "unit": "CCGT",
+            "p_AC_mw": 320.0,
+            "scheduled_p_mw": 320.0,
+            "slack_loss_adjustment_mw": 0.0,
+            "up_headroom_after_AGC_mw": 357.0,
+            "down_headroom_after_AGC_mw": 0.0,
+            "positive_available_mw": 357.0,
+            "accident_available_mw": 275.0
+          },
+          {
+            "unit": "GT",
+            "p_AC_mw": 85.0,
+            "scheduled_p_mw": 85.0,
+            "slack_loss_adjustment_mw": 0.0,
+            "up_headroom_after_AGC_mw": 205.0,
+            "down_headroom_after_AGC_mw": 0.0,
+            "positive_available_mw": 205.0,
+            "accident_available_mw": 205.0
+          }
+        ],
+        "error": null,
+        "safe": false
+      },
+      {
+        "global_tick": 11,
+        "stage": "near",
+        "loss_mw": 33.85276227834823,
+        "violations": [
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "0",
+            "value": 1.0739566143585542,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "1",
+            "value": 1.060576349519447,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "8",
+            "value": 1.0732541935580464,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "19",
+            "value": 0.9399524354096951,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "24",
+            "value": 1.061175332947123,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "33",
+            "value": 0.9315683205249705,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "35",
+            "value": 1.0636000000000005,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "38",
+            "value": 1.0693567248081224,
+            "lower": 0.94,
+            "upper": 1.06
+          }
+        ],
+        "thermal_AGC": [
+          {
+            "unit": "C1",
+            "p_AC_mw": 636.8526492803212,
+            "scheduled_p_mw": 636.0,
+            "slack_loss_adjustment_mw": 0.8526492803212022,
+            "up_headroom_after_AGC_mw": -0.8526492803212022,
+            "down_headroom_after_AGC_mw": 336.8526492803212,
+            "positive_available_mw": 0.0,
+            "accident_available_mw": 0.0
+          },
+          {
+            "unit": "C2",
+            "p_AC_mw": 715.0,
+            "scheduled_p_mw": 715.0,
+            "slack_loss_adjustment_mw": 0.0,
+            "up_headroom_after_AGC_mw": 0.0,
+            "down_headroom_after_AGC_mw": 380.0,
+            "positive_available_mw": 0.0,
+            "accident_available_mw": 0.0
+          },
+          {
+            "unit": "C3",
+            "p_AC_mw": 750.8894754928622,
+            "scheduled_p_mw": 750.8894754928622,
+            "slack_loss_adjustment_mw": 0.0,
+            "up_headroom_after_AGC_mw": 104.11052450713782,
+            "down_headroom_after_AGC_mw": 350.8894754928622,
+            "positive_available_mw": 104.11052450713782,
+            "accident_available_mw": 104.11052450713782
+          },
+          {
+            "unit": "CCGT",
+            "p_AC_mw": 320.0,
+            "scheduled_p_mw": 320.0,
+            "slack_loss_adjustment_mw": 0.0,
+            "up_headroom_after_AGC_mw": 357.0,
+            "down_headroom_after_AGC_mw": 0.0,
+            "positive_available_mw": 357.0,
+            "accident_available_mw": 275.0
+          },
+          {
+            "unit": "GT",
+            "p_AC_mw": 85.0,
+            "scheduled_p_mw": 85.0,
+            "slack_loss_adjustment_mw": 0.0,
+            "up_headroom_after_AGC_mw": 205.0,
+            "down_headroom_after_AGC_mw": 0.0,
+            "positive_available_mw": 205.0,
+            "accident_available_mw": 205.0
+          }
+        ],
+        "error": null,
+        "safe": false
+      },
+      {
+        "global_tick": 12,
+        "stage": "near",
+        "loss_mw": 34.67143033540359,
+        "violations": [
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "0",
+            "value": 1.073327437889912,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "8",
+            "value": 1.0728077727076275,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "19",
+            "value": 0.9394985975945089,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "33",
+            "value": 0.9311185308171548,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "35",
+            "value": 1.0636,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "38",
+            "value": 1.0688655249617702,
+            "lower": 0.94,
+            "upper": 1.06
+          }
+        ],
+        "thermal_AGC": [
+          {
+            "unit": "C1",
+            "p_AC_mw": 635.8067709818667,
+            "scheduled_p_mw": 636.0,
+            "slack_loss_adjustment_mw": -0.19322901813325188,
+            "up_headroom_after_AGC_mw": 0.19322901813325188,
+            "down_headroom_after_AGC_mw": 335.80677098186675,
+            "positive_available_mw": 0.19322901813325188,
+            "accident_available_mw": 0.19322901813325188
+          },
+          {
+            "unit": "C2",
+            "p_AC_mw": 715.0000000000014,
+            "scheduled_p_mw": 715.0000000000014,
+            "slack_loss_adjustment_mw": 0.0,
+            "up_headroom_after_AGC_mw": -1.3642420526593924e-12,
+            "down_headroom_after_AGC_mw": 380.00000000000136,
+            "positive_available_mw": 0.0,
+            "accident_available_mw": 0.0
+          },
+          {
+            "unit": "C3",
+            "p_AC_mw": 775.3875444470359,
+            "scheduled_p_mw": 775.3875444470359,
+            "slack_loss_adjustment_mw": 0.0,
+            "up_headroom_after_AGC_mw": 79.6124555529641,
+            "down_headroom_after_AGC_mw": 375.3875444470359,
+            "positive_available_mw": 79.6124555529641,
+            "accident_available_mw": 79.6124555529641
+          },
+          {
+            "unit": "CCGT",
+            "p_AC_mw": 320.0,
+            "scheduled_p_mw": 320.0,
+            "slack_loss_adjustment_mw": 0.0,
+            "up_headroom_after_AGC_mw": 357.0,
+            "down_headroom_after_AGC_mw": 0.0,
+            "positive_available_mw": 357.0,
+            "accident_available_mw": 275.0
+          },
+          {
+            "unit": "GT",
+            "p_AC_mw": 85.0,
+            "scheduled_p_mw": 85.0,
+            "slack_loss_adjustment_mw": 0.0,
+            "up_headroom_after_AGC_mw": 205.0,
+            "down_headroom_after_AGC_mw": 0.0,
+            "positive_available_mw": 205.0,
+            "accident_available_mw": 205.0
+          }
+        ],
+        "error": null,
+        "safe": false
+      },
+      {
+        "global_tick": 13,
+        "stage": "near",
+        "loss_mw": 34.62892164644433,
+        "violations": [
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "0",
+            "value": 1.0737068582765878,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "8",
+            "value": 1.073126102974112,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "19",
+            "value": 0.9394224753976445,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "33",
+            "value": 0.9310430876091621,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "35",
+            "value": 1.0636,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "38",
+            "value": 1.0692888475202826,
+            "lower": 0.94,
+            "upper": 1.06
+          }
+        ],
+        "thermal_AGC": [
+          {
+            "unit": "C1",
+            "p_AC_mw": 636.0088772913398,
+            "scheduled_p_mw": 636.0,
+            "slack_loss_adjustment_mw": 0.008877291339786098,
+            "up_headroom_after_AGC_mw": -0.008877291339786098,
+            "down_headroom_after_AGC_mw": 336.0088772913398,
+            "positive_available_mw": 0.0,
+            "accident_available_mw": 0.0
+          },
+          {
+            "unit": "C2",
+            "p_AC_mw": 715.0,
+            "scheduled_p_mw": 715.0,
+            "slack_loss_adjustment_mw": 0.0,
+            "up_headroom_after_AGC_mw": 0.0,
+            "down_headroom_after_AGC_mw": 380.0,
+            "positive_available_mw": 0.0,
+            "accident_available_mw": 0.0
+          },
+          {
+            "unit": "C3",
+            "p_AC_mw": 770.0,
+            "scheduled_p_mw": 770.0,
+            "slack_loss_adjustment_mw": 0.0,
+            "up_headroom_after_AGC_mw": 85.0,
+            "down_headroom_after_AGC_mw": 370.0,
+            "positive_available_mw": 85.0,
+            "accident_available_mw": 85.0
+          },
+          {
+            "unit": "CCGT",
+            "p_AC_mw": 320.0,
+            "scheduled_p_mw": 320.0,
+            "slack_loss_adjustment_mw": 0.0,
+            "up_headroom_after_AGC_mw": 357.0,
+            "down_headroom_after_AGC_mw": 0.0,
+            "positive_available_mw": 357.0,
+            "accident_available_mw": 275.0
+          },
+          {
+            "unit": "GT",
+            "p_AC_mw": 85.0,
+            "scheduled_p_mw": 85.0,
+            "slack_loss_adjustment_mw": 0.0,
+            "up_headroom_after_AGC_mw": 205.0,
+            "down_headroom_after_AGC_mw": 0.0,
+            "positive_available_mw": 205.0,
+            "accident_available_mw": 205.0
+          }
+        ],
+        "error": null,
+        "safe": false
+      },
+      {
+        "global_tick": 14,
+        "stage": "near",
+        "loss_mw": 33.80417003838858,
+        "violations": [
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "0",
+            "value": 1.075481042088197,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "1",
+            "value": 1.0616043620179394,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "8",
+            "value": 1.0746785883135357,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "24",
+            "value": 1.0609627240395803,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "33",
+            "value": 0.93253813196804,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "35",
+            "value": 1.0636000000000005,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "38",
+            "value": 1.0710647188545857,
+            "lower": 0.94,
+            "upper": 1.06
+          }
+        ],
+        "thermal_AGC": [
+          {
+            "unit": "C1",
+            "p_AC_mw": 633.8092166517007,
+            "scheduled_p_mw": 636.0,
+            "slack_loss_adjustment_mw": -2.1907833482993055,
+            "up_headroom_after_AGC_mw": 2.1907833482993055,
+            "down_headroom_after_AGC_mw": 333.8092166517007,
+            "positive_available_mw": 2.1907833482993055,
+            "accident_available_mw": 2.1907833482993055
+          },
+          {
+            "unit": "C2",
+            "p_AC_mw": 715.0000000000014,
+            "scheduled_p_mw": 715.0000000000014,
+            "slack_loss_adjustment_mw": 0.0,
+            "up_headroom_after_AGC_mw": -1.3642420526593924e-12,
+            "down_headroom_after_AGC_mw": 380.00000000000136,
+            "positive_available_mw": 0.0,
+            "accident_available_mw": 0.0
+          },
+          {
+            "unit": "C3",
+            "p_AC_mw": 755.5467794261835,
+            "scheduled_p_mw": 755.5467794261835,
+            "slack_loss_adjustment_mw": 0.0,
+            "up_headroom_after_AGC_mw": 99.45322057381645,
+            "down_headroom_after_AGC_mw": 355.54677942618355,
+            "positive_available_mw": 99.45322057381645,
+            "accident_available_mw": 99.45322057381645
+          },
+          {
+            "unit": "CCGT",
+            "p_AC_mw": 320.0,
+            "scheduled_p_mw": 320.0,
+            "slack_loss_adjustment_mw": 0.0,
+            "up_headroom_after_AGC_mw": 357.0,
+            "down_headroom_after_AGC_mw": 0.0,
+            "positive_available_mw": 357.0,
+            "accident_available_mw": 275.0
+          },
+          {
+            "unit": "GT",
+            "p_AC_mw": 85.0,
+            "scheduled_p_mw": 85.0,
+            "slack_loss_adjustment_mw": 0.0,
+            "up_headroom_after_AGC_mw": 205.0,
+            "down_headroom_after_AGC_mw": 0.0,
+            "positive_available_mw": 205.0,
+            "accident_available_mw": 205.0
+          }
+        ],
+        "error": null,
+        "safe": false
+      },
+      {
+        "global_tick": 15,
+        "stage": "near",
+        "loss_mw": 33.33813351385425,
+        "violations": [
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "0",
+            "value": 1.0765366301432133,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "1",
+            "value": 1.0625627778189932,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "8",
+            "value": 1.0755650567517803,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "24",
+            "value": 1.061752683283168,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "25",
+            "value": 1.0607078110954826,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "33",
+            "value": 0.9332315366197651,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "35",
+            "value": 1.0636,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "38",
+            "value": 1.0721271403492172,
+            "lower": 0.94,
+            "upper": 1.06
+          }
+        ],
+        "thermal_AGC": [
+          {
+            "unit": "C1",
+            "p_AC_mw": 634.9737585319715,
+            "scheduled_p_mw": 636.0,
+            "slack_loss_adjustment_mw": -1.026241468028502,
+            "up_headroom_after_AGC_mw": 1.026241468028502,
+            "down_headroom_after_AGC_mw": 334.9737585319715,
+            "positive_available_mw": 1.026241468028502,
+            "accident_available_mw": 1.026241468028502
+          },
+          {
+            "unit": "C2",
+            "p_AC_mw": 714.9999999999989,
+            "scheduled_p_mw": 714.9999999999989,
+            "slack_loss_adjustment_mw": 0.0,
+            "up_headroom_after_AGC_mw": 1.1368683772161603e-12,
+            "down_headroom_after_AGC_mw": 379.99999999999886,
+            "positive_available_mw": 1.1368683772161603e-12,
+            "accident_available_mw": 1.1368683772161603e-12
+          },
+          {
+            "unit": "C3",
+            "p_AC_mw": 743.7208138243968,
+            "scheduled_p_mw": 743.7208138243968,
+            "slack_loss_adjustment_mw": 0.0,
+            "up_headroom_after_AGC_mw": 111.27918617560317,
+            "down_headroom_after_AGC_mw": 343.7208138243968,
+            "positive_available_mw": 111.27918617560317,
+            "accident_available_mw": 111.27918617560317
+          },
+          {
+            "unit": "CCGT",
+            "p_AC_mw": 320.0,
+            "scheduled_p_mw": 320.0,
+            "slack_loss_adjustment_mw": 0.0,
+            "up_headroom_after_AGC_mw": 357.0,
+            "down_headroom_after_AGC_mw": 0.0,
+            "positive_available_mw": 357.0,
+            "accident_available_mw": 275.0
+          },
+          {
+            "unit": "GT",
+            "p_AC_mw": 85.0,
+            "scheduled_p_mw": 85.0,
+            "slack_loss_adjustment_mw": 0.0,
+            "up_headroom_after_AGC_mw": 205.0,
+            "down_headroom_after_AGC_mw": 0.0,
+            "positive_available_mw": 205.0,
+            "accident_available_mw": 205.0
+          }
+        ],
+        "error": null,
+        "safe": false
+      },
+      {
+        "global_tick": 16,
+        "stage": "near",
+        "loss_mw": 32.96522398616797,
+        "violations": [
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "0",
+            "value": 1.0775430943211946,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "1",
+            "value": 1.0634401890588052,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "8",
+            "value": 1.0764471176133907,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "24",
+            "value": 1.0625062183301883,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "25",
+            "value": 1.0615349967577328,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "33",
+            "value": 0.9339025455874206,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "35",
+            "value": 1.0636,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "38",
+            "value": 1.0731621817713968,
+            "lower": 0.94,
+            "upper": 1.06
+          }
+        ],
+        "thermal_AGC": [
+          {
+            "unit": "C1",
+            "p_AC_mw": 633.5484454892458,
+            "scheduled_p_mw": 636.0,
+            "slack_loss_adjustment_mw": -2.4515545107542493,
+            "up_headroom_after_AGC_mw": 2.4515545107542493,
+            "down_headroom_after_AGC_mw": 333.54844548924575,
+            "positive_available_mw": 2.4515545107542493,
+            "accident_available_mw": 2.4515545107542493
+          },
+          {
+            "unit": "C2",
+            "p_AC_mw": 715.0,
+            "scheduled_p_mw": 715.0,
+            "slack_loss_adjustment_mw": 0.0,
+            "up_headroom_after_AGC_mw": 0.0,
+            "down_headroom_after_AGC_mw": 380.0,
+            "positive_available_mw": 0.0,
+            "accident_available_mw": 0.0
+          },
+          {
+            "unit": "C3",
+            "p_AC_mw": 734.8679724724301,
+            "scheduled_p_mw": 734.8679724724301,
+            "slack_loss_adjustment_mw": 0.0,
+            "up_headroom_after_AGC_mw": 120.1320275275699,
+            "down_headroom_after_AGC_mw": 334.8679724724301,
+            "positive_available_mw": 120.1320275275699,
+            "accident_available_mw": 120.1320275275699
+          },
+          {
+            "unit": "CCGT",
+            "p_AC_mw": 320.0,
+            "scheduled_p_mw": 320.0,
+            "slack_loss_adjustment_mw": 0.0,
+            "up_headroom_after_AGC_mw": 357.0,
+            "down_headroom_after_AGC_mw": 0.0,
+            "positive_available_mw": 357.0,
+            "accident_available_mw": 275.0
+          },
+          {
+            "unit": "GT",
+            "p_AC_mw": 85.0,
+            "scheduled_p_mw": 85.0,
+            "slack_loss_adjustment_mw": 0.0,
+            "up_headroom_after_AGC_mw": 205.0,
+            "down_headroom_after_AGC_mw": 0.0,
+            "positive_available_mw": 205.0,
+            "accident_available_mw": 205.0
+          }
+        ],
+        "error": null,
+        "safe": false
+      },
+      {
+        "global_tick": 17,
+        "stage": "near",
+        "loss_mw": 33.82987399821461,
+        "violations": [
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "0",
+            "value": 1.076447672405599,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "1",
+            "value": 1.0621639774884677,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "8",
+            "value": 1.0755093512718819,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "24",
+            "value": 1.0613651018283565,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "25",
+            "value": 1.060321286584421,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "33",
+            "value": 0.9322082171568532,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "35",
+            "value": 1.0636000000000003,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "38",
+            "value": 1.0721804477781143,
+            "lower": 0.94,
+            "upper": 1.06
+          }
+        ],
+        "thermal_AGC": [
+          {
+            "unit": "C1",
+            "p_AC_mw": 632.8862627011451,
+            "scheduled_p_mw": 636.0,
+            "slack_loss_adjustment_mw": -3.1137372988548577,
+            "up_headroom_after_AGC_mw": 3.1137372988548577,
+            "down_headroom_after_AGC_mw": 332.88626270114514,
+            "positive_available_mw": 3.1137372988548577,
+            "accident_available_mw": 3.1137372988548577
+          },
+          {
+            "unit": "C2",
+            "p_AC_mw": 715.0000000000014,
+            "scheduled_p_mw": 715.0000000000014,
+            "slack_loss_adjustment_mw": 0.0,
+            "up_headroom_after_AGC_mw": -1.3642420526593924e-12,
+            "down_headroom_after_AGC_mw": 380.00000000000136,
+            "positive_available_mw": 0.0,
+            "accident_available_mw": 0.0
+          },
+          {
+            "unit": "C3",
+            "p_AC_mw": 742.7366339145775,
+            "scheduled_p_mw": 742.7366339145775,
+            "slack_loss_adjustment_mw": 0.0,
+            "up_headroom_after_AGC_mw": 112.26336608542249,
+            "down_headroom_after_AGC_mw": 342.7366339145775,
+            "positive_available_mw": 112.26336608542249,
+            "accident_available_mw": 112.26336608542249
+          },
+          {
+            "unit": "CCGT",
+            "p_AC_mw": 320.0,
+            "scheduled_p_mw": 320.0,
+            "slack_loss_adjustment_mw": 0.0,
+            "up_headroom_after_AGC_mw": 357.0,
+            "down_headroom_after_AGC_mw": 0.0,
+            "positive_available_mw": 357.0,
+            "accident_available_mw": 275.0
+          },
+          {
+            "unit": "GT",
+            "p_AC_mw": 85.0,
+            "scheduled_p_mw": 85.0,
+            "slack_loss_adjustment_mw": 0.0,
+            "up_headroom_after_AGC_mw": 205.0,
+            "down_headroom_after_AGC_mw": 0.0,
+            "positive_available_mw": 205.0,
+            "accident_available_mw": 205.0
+          }
+        ],
+        "error": null,
+        "safe": false
+      },
+      {
+        "global_tick": 18,
+        "stage": "near",
+        "loss_mw": 35.54674164303003,
+        "violations": [
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "0",
+            "value": 1.0737714919372046,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "8",
+            "value": 1.0732254789138933,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "19",
+            "value": 0.9389906182366999,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "33",
+            "value": 0.930615082494252,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "35",
+            "value": 1.0636000000000003,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "38",
+            "value": 1.0696929937639672,
+            "lower": 0.94,
+            "upper": 1.06
+          }
+        ],
+        "thermal_AGC": [
+          {
+            "unit": "C1",
+            "p_AC_mw": 636.2118095049923,
+            "scheduled_p_mw": 636.0,
+            "slack_loss_adjustment_mw": 0.21180950499228857,
+            "up_headroom_after_AGC_mw": -0.21180950499228857,
+            "down_headroom_after_AGC_mw": 336.2118095049923,
+            "positive_available_mw": 0.0,
+            "accident_available_mw": 0.0
+          },
+          {
+            "unit": "C2",
+            "p_AC_mw": 715.0,
+            "scheduled_p_mw": 715.0,
+            "slack_loss_adjustment_mw": 0.0,
+            "up_headroom_after_AGC_mw": 0.0,
+            "down_headroom_after_AGC_mw": 380.0,
+            "positive_available_mw": 0.0,
+            "accident_available_mw": 0.0
+          },
+          {
+            "unit": "C3",
+            "p_AC_mw": 770.0,
+            "scheduled_p_mw": 770.0,
+            "slack_loss_adjustment_mw": 0.0,
+            "up_headroom_after_AGC_mw": 85.0,
+            "down_headroom_after_AGC_mw": 370.0,
+            "positive_available_mw": 85.0,
+            "accident_available_mw": 85.0
+          },
+          {
+            "unit": "CCGT",
+            "p_AC_mw": 320.0,
+            "scheduled_p_mw": 320.0,
+            "slack_loss_adjustment_mw": 0.0,
+            "up_headroom_after_AGC_mw": 357.0,
+            "down_headroom_after_AGC_mw": 0.0,
+            "positive_available_mw": 357.0,
+            "accident_available_mw": 275.0
+          },
+          {
+            "unit": "GT",
+            "p_AC_mw": 85.0,
+            "scheduled_p_mw": 85.0,
+            "slack_loss_adjustment_mw": 0.0,
+            "up_headroom_after_AGC_mw": 205.0,
+            "down_headroom_after_AGC_mw": 0.0,
+            "positive_available_mw": 205.0,
+            "accident_available_mw": 205.0
+          }
+        ],
+        "error": null,
+        "safe": false
+      },
+      {
+        "global_tick": 19,
+        "stage": "near",
+        "loss_mw": 33.74736707191384,
+        "violations": [
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "0",
+            "value": 1.07715765594911,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "1",
+            "value": 1.0625195672407415,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "8",
+            "value": 1.0762319145628318,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "24",
+            "value": 1.0621572739832548,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "25",
+            "value": 1.0605390642349524,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "33",
+            "value": 0.9338983275707061,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "35",
+            "value": 1.0636,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "38",
+            "value": 1.0730474703812505,
+            "lower": 0.94,
+            "upper": 1.06
+          }
+        ],
+        "thermal_AGC": [
+          {
+            "unit": "C1",
+            "p_AC_mw": 633.5124476927687,
+            "scheduled_p_mw": 636.0,
+            "slack_loss_adjustment_mw": -2.48755230723134,
+            "up_headroom_after_AGC_mw": 2.48755230723134,
+            "down_headroom_after_AGC_mw": 333.51244769276866,
+            "positive_available_mw": 2.48755230723134,
+            "accident_available_mw": 2.48755230723134
+          },
+          {
+            "unit": "C2",
+            "p_AC_mw": 715.0000000000023,
+            "scheduled_p_mw": 715.0000000000023,
+            "slack_loss_adjustment_mw": 0.0,
+            "up_headroom_after_AGC_mw": -2.2737367544323206e-12,
+            "down_headroom_after_AGC_mw": 380.0000000000023,
+            "positive_available_mw": 0.0,
+            "accident_available_mw": 0.0
+          },
+          {
+            "unit": "C3",
+            "p_AC_mw": 757.0145939151488,
+            "scheduled_p_mw": 757.0145939151488,
+            "slack_loss_adjustment_mw": 0.0,
+            "up_headroom_after_AGC_mw": 97.9854060848512,
+            "down_headroom_after_AGC_mw": 357.0145939151488,
+            "positive_available_mw": 97.9854060848512,
+            "accident_available_mw": 97.9854060848512
+          },
+          {
+            "unit": "CCGT",
+            "p_AC_mw": 320.0,
+            "scheduled_p_mw": 320.0,
+            "slack_loss_adjustment_mw": 0.0,
+            "up_headroom_after_AGC_mw": 357.0,
+            "down_headroom_after_AGC_mw": 0.0,
+            "positive_available_mw": 357.0,
+            "accident_available_mw": 275.0
+          },
+          {
+            "unit": "GT",
+            "p_AC_mw": 85.0,
+            "scheduled_p_mw": 85.0,
+            "slack_loss_adjustment_mw": 0.0,
+            "up_headroom_after_AGC_mw": 205.0,
+            "down_headroom_after_AGC_mw": 0.0,
+            "positive_available_mw": 205.0,
+            "accident_available_mw": 205.0
+          }
+        ],
+        "error": null,
+        "safe": false
+      },
+      {
+        "global_tick": 20,
+        "stage": "near",
+        "loss_mw": 36.1667609780116,
+        "violations": [
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "0",
+            "value": 1.0733968734167054,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "8",
+            "value": 1.0728947390860517,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "19",
+            "value": 0.9376830093887021,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "33",
+            "value": 0.9293191371543134,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "35",
+            "value": 1.0636000000000005,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "38",
+            "value": 1.069455262874661,
+            "lower": 0.94,
+            "upper": 1.06
+          }
+        ],
+        "thermal_AGC": [
+          {
+            "unit": "C1",
+            "p_AC_mw": 635.9920061321701,
+            "scheduled_p_mw": 636.0,
+            "slack_loss_adjustment_mw": -0.007993867829895862,
+            "up_headroom_after_AGC_mw": 0.007993867829895862,
+            "down_headroom_after_AGC_mw": 335.9920061321701,
+            "positive_available_mw": 0.007993867829895862,
+            "accident_available_mw": 0.007993867829895862
+          },
+          {
+            "unit": "C2",
+            "p_AC_mw": 715.0,
+            "scheduled_p_mw": 715.0,
+            "slack_loss_adjustment_mw": 0.0,
+            "up_headroom_after_AGC_mw": 0.0,
+            "down_headroom_after_AGC_mw": 380.0,
+            "positive_available_mw": 0.0,
+            "accident_available_mw": 0.0
+          },
+          {
+            "unit": "C3",
+            "p_AC_mw": 770.0,
+            "scheduled_p_mw": 770.0,
+            "slack_loss_adjustment_mw": 0.0,
+            "up_headroom_after_AGC_mw": 85.0,
+            "down_headroom_after_AGC_mw": 370.0,
+            "positive_available_mw": 85.0,
+            "accident_available_mw": 85.0
+          },
+          {
+            "unit": "CCGT",
+            "p_AC_mw": 320.0,
+            "scheduled_p_mw": 320.0,
+            "slack_loss_adjustment_mw": 0.0,
+            "up_headroom_after_AGC_mw": 357.0,
+            "down_headroom_after_AGC_mw": 0.0,
+            "positive_available_mw": 357.0,
+            "accident_available_mw": 275.0
+          },
+          {
+            "unit": "GT",
+            "p_AC_mw": 85.0,
+            "scheduled_p_mw": 85.0,
+            "slack_loss_adjustment_mw": 0.0,
+            "up_headroom_after_AGC_mw": 205.0,
+            "down_headroom_after_AGC_mw": 0.0,
+            "positive_available_mw": 205.0,
+            "accident_available_mw": 205.0
+          }
+        ],
+        "error": null,
+        "safe": false
+      },
+      {
+        "global_tick": 21,
+        "stage": "near",
+        "loss_mw": 35.13273237396854,
+        "violations": [
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "0",
+            "value": 1.0754944637486041,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "1",
+            "value": 1.0605847194302618,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "8",
+            "value": 1.0747255631659154,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "33",
+            "value": 0.9316276491585865,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "35",
+            "value": 1.0636000000000003,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "38",
+            "value": 1.0715369733143423,
+            "lower": 0.94,
+            "upper": 1.06
+          }
+        ],
+        "thermal_AGC": [
+          {
+            "unit": "C1",
+            "p_AC_mw": 634.98378779251,
+            "scheduled_p_mw": 636.0,
+            "slack_loss_adjustment_mw": -1.016212207489957,
+            "up_headroom_after_AGC_mw": 1.016212207489957,
+            "down_headroom_after_AGC_mw": 334.98378779251004,
+            "positive_available_mw": 1.016212207489957,
+            "accident_available_mw": 1.016212207489957
+          },
+          {
+            "unit": "C2",
+            "p_AC_mw": 715.0,
+            "scheduled_p_mw": 715.0,
+            "slack_loss_adjustment_mw": 0.0,
+            "up_headroom_after_AGC_mw": 0.0,
+            "down_headroom_after_AGC_mw": 380.0,
+            "positive_available_mw": 0.0,
+            "accident_available_mw": 0.0
+          },
+          {
+            "unit": "C3",
+            "p_AC_mw": 755.563092161302,
+            "scheduled_p_mw": 755.563092161302,
+            "slack_loss_adjustment_mw": 0.0,
+            "up_headroom_after_AGC_mw": 99.43690783869795,
+            "down_headroom_after_AGC_mw": 355.56309216130205,
+            "positive_available_mw": 99.43690783869795,
+            "accident_available_mw": 99.43690783869795
+          },
+          {
+            "unit": "CCGT",
+            "p_AC_mw": 320.0,
+            "scheduled_p_mw": 320.0,
+            "slack_loss_adjustment_mw": 0.0,
+            "up_headroom_after_AGC_mw": 357.0,
+            "down_headroom_after_AGC_mw": 0.0,
+            "positive_available_mw": 357.0,
+            "accident_available_mw": 275.0
+          },
+          {
+            "unit": "GT",
+            "p_AC_mw": 85.0,
+            "scheduled_p_mw": 85.0,
+            "slack_loss_adjustment_mw": 0.0,
+            "up_headroom_after_AGC_mw": 205.0,
+            "down_headroom_after_AGC_mw": 0.0,
+            "positive_available_mw": 205.0,
+            "accident_available_mw": 205.0
+          }
+        ],
+        "error": null,
+        "safe": false
+      },
+      {
+        "global_tick": 22,
+        "stage": "near",
+        "loss_mw": 34.04070068798365,
+        "violations": [
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "0",
+            "value": 1.0775813332052167,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "1",
+            "value": 1.0625751390546918,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "8",
+            "value": 1.0765709520666815,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "24",
+            "value": 1.0625889246382725,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "25",
+            "value": 1.060411875593956,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "33",
+            "value": 0.9345322026551347,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "35",
+            "value": 1.0635999999999999,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "38",
+            "value": 1.0736302326607654,
+            "lower": 0.94,
+            "upper": 1.06
+          }
+        ],
+        "thermal_AGC": [
+          {
+            "unit": "C1",
+            "p_AC_mw": 636.7338070002721,
+            "scheduled_p_mw": 636.0,
+            "slack_loss_adjustment_mw": 0.7338070002721224,
+            "up_headroom_after_AGC_mw": -0.7338070002721224,
+            "down_headroom_after_AGC_mw": 336.7338070002721,
+            "positive_available_mw": 0.0,
+            "accident_available_mw": 0.0
+          },
+          {
+            "unit": "C2",
+            "p_AC_mw": 715.0,
+            "scheduled_p_mw": 715.0,
+            "slack_loss_adjustment_mw": 0.0,
+            "up_headroom_after_AGC_mw": 0.0,
+            "down_headroom_after_AGC_mw": 380.0,
+            "positive_available_mw": 0.0,
+            "accident_available_mw": 0.0
+          },
+          {
+            "unit": "C3",
+            "p_AC_mw": 770.0,
+            "scheduled_p_mw": 770.0,
+            "slack_loss_adjustment_mw": 0.0,
+            "up_headroom_after_AGC_mw": 85.0,
+            "down_headroom_after_AGC_mw": 370.0,
+            "positive_available_mw": 85.0,
+            "accident_available_mw": 85.0
+          },
+          {
+            "unit": "CCGT",
+            "p_AC_mw": 320.0,
+            "scheduled_p_mw": 320.0,
+            "slack_loss_adjustment_mw": 0.0,
+            "up_headroom_after_AGC_mw": 357.0,
+            "down_headroom_after_AGC_mw": 0.0,
+            "positive_available_mw": 357.0,
+            "accident_available_mw": 275.0
+          },
+          {
+            "unit": "GT",
+            "p_AC_mw": 85.0,
+            "scheduled_p_mw": 85.0,
+            "slack_loss_adjustment_mw": 0.0,
+            "up_headroom_after_AGC_mw": 205.0,
+            "down_headroom_after_AGC_mw": 0.0,
+            "positive_available_mw": 205.0,
+            "accident_available_mw": 205.0
+          }
+        ],
+        "error": null,
+        "safe": false
+      },
+      {
+        "global_tick": 23,
+        "stage": "near",
+        "loss_mw": 35.486976514777105,
+        "violations": [
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "0",
+            "value": 1.075628826302068,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "1",
+            "value": 1.0604338448627453,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "8",
+            "value": 1.074865558920639,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "24",
+            "value": 1.0601601081538052,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "33",
+            "value": 0.9319895633184807,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "35",
+            "value": 1.0635999999999999,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "38",
+            "value": 1.07180540556469,
+            "lower": 0.94,
+            "upper": 1.06
+          }
+        ],
+        "thermal_AGC": [
+          {
+            "unit": "C1",
+            "p_AC_mw": 634.9867317316612,
+            "scheduled_p_mw": 636.0,
+            "slack_loss_adjustment_mw": -1.0132682683388339,
+            "up_headroom_after_AGC_mw": 1.0132682683388339,
+            "down_headroom_after_AGC_mw": 334.98673173166117,
+            "positive_available_mw": 1.0132682683388339,
+            "accident_available_mw": 1.0132682683388339
+          },
+          {
+            "unit": "C2",
+            "p_AC_mw": 715.0,
+            "scheduled_p_mw": 715.0,
+            "slack_loss_adjustment_mw": 0.0,
+            "up_headroom_after_AGC_mw": 0.0,
+            "down_headroom_after_AGC_mw": 380.0,
+            "positive_available_mw": 0.0,
+            "accident_available_mw": 0.0
+          },
+          {
+            "unit": "C3",
+            "p_AC_mw": 770.0,
+            "scheduled_p_mw": 770.0,
+            "slack_loss_adjustment_mw": 0.0,
+            "up_headroom_after_AGC_mw": 85.0,
+            "down_headroom_after_AGC_mw": 370.0,
+            "positive_available_mw": 85.0,
+            "accident_available_mw": 85.0
+          },
+          {
+            "unit": "CCGT",
+            "p_AC_mw": 320.0,
+            "scheduled_p_mw": 320.0,
+            "slack_loss_adjustment_mw": 0.0,
+            "up_headroom_after_AGC_mw": 357.0,
+            "down_headroom_after_AGC_mw": 0.0,
+            "positive_available_mw": 357.0,
+            "accident_available_mw": 275.0
+          },
+          {
+            "unit": "GT",
+            "p_AC_mw": 85.0,
+            "scheduled_p_mw": 85.0,
+            "slack_loss_adjustment_mw": 0.0,
+            "up_headroom_after_AGC_mw": 205.0,
+            "down_headroom_after_AGC_mw": 0.0,
+            "positive_available_mw": 205.0,
+            "accident_available_mw": 205.0
+          }
+        ],
+        "error": null,
+        "safe": false
+      },
+      {
+        "global_tick": 24,
+        "stage": "near",
+        "loss_mw": 34.02808941865516,
+        "violations": [
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "0",
+            "value": 1.0783616005785621,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "1",
+            "value": 1.0631384111242705,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "8",
+            "value": 1.0771808053162992,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "24",
+            "value": 1.0621245217353459,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "25",
+            "value": 1.0611126921013414,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "33",
+            "value": 0.9336030729521838,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "35",
+            "value": 1.0636,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "38",
+            "value": 1.0744531458895135,
+            "lower": 0.94,
+            "upper": 1.06
+          }
+        ],
+        "thermal_AGC": [
+          {
+            "unit": "C1",
+            "p_AC_mw": 635.0029852784189,
+            "scheduled_p_mw": 636.0,
+            "slack_loss_adjustment_mw": -0.9970147215810812,
+            "up_headroom_after_AGC_mw": 0.9970147215810812,
+            "down_headroom_after_AGC_mw": 335.0029852784189,
+            "positive_available_mw": 0.9970147215810812,
+            "accident_available_mw": 0.9970147215810812
+          },
+          {
+            "unit": "C2",
+            "p_AC_mw": 714.9999999999968,
+            "scheduled_p_mw": 714.9999999999968,
+            "slack_loss_adjustment_mw": 0.0,
+            "up_headroom_after_AGC_mw": 3.183231456205249e-12,
+            "down_headroom_after_AGC_mw": 379.9999999999968,
+            "positive_available_mw": 3.183231456205249e-12,
+            "accident_available_mw": 3.183231456205249e-12
+          },
+          {
+            "unit": "C3",
+            "p_AC_mw": 729.5279730062526,
+            "scheduled_p_mw": 729.5279730062526,
+            "slack_loss_adjustment_mw": 0.0,
+            "up_headroom_after_AGC_mw": 125.47202699374736,
+            "down_headroom_after_AGC_mw": 329.52797300625264,
+            "positive_available_mw": 125.47202699374736,
+            "accident_available_mw": 125.47202699374736
+          },
+          {
+            "unit": "CCGT",
+            "p_AC_mw": 320.0,
+            "scheduled_p_mw": 320.0,
+            "slack_loss_adjustment_mw": 0.0,
+            "up_headroom_after_AGC_mw": 357.0,
+            "down_headroom_after_AGC_mw": 0.0,
+            "positive_available_mw": 357.0,
+            "accident_available_mw": 275.0
+          },
+          {
+            "unit": "GT",
+            "p_AC_mw": 85.0,
+            "scheduled_p_mw": 85.0,
+            "slack_loss_adjustment_mw": 0.0,
+            "up_headroom_after_AGC_mw": 205.0,
+            "down_headroom_after_AGC_mw": 0.0,
+            "positive_available_mw": 205.0,
+            "accident_available_mw": 205.0
+          }
+        ],
+        "error": null,
+        "safe": false
+      },
+      {
+        "global_tick": 25,
+        "stage": "near",
+        "loss_mw": 34.48296983198453,
+        "violations": [
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "0",
+            "value": 1.0778696265612293,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "1",
+            "value": 1.0624745798142916,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "8",
+            "value": 1.0768132407656605,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "24",
+            "value": 1.0625251261037512,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "25",
+            "value": 1.0602510905574833,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "33",
+            "value": 0.9339277737863187,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "35",
+            "value": 1.0635999999999997,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "38",
+            "value": 1.0740814555323697,
+            "lower": 0.94,
+            "upper": 1.06
+          }
+        ],
+        "thermal_AGC": [
+          {
+            "unit": "C1",
+            "p_AC_mw": 636.4711917208491,
+            "scheduled_p_mw": 636.0,
+            "slack_loss_adjustment_mw": 0.4711917208491059,
+            "up_headroom_after_AGC_mw": -0.4711917208491059,
+            "down_headroom_after_AGC_mw": 336.4711917208491,
+            "positive_available_mw": 0.0,
+            "accident_available_mw": 0.0
+          },
+          {
+            "unit": "C2",
+            "p_AC_mw": 714.999999999999,
+            "scheduled_p_mw": 714.999999999999,
+            "slack_loss_adjustment_mw": 0.0,
+            "up_headroom_after_AGC_mw": 1.0231815394945443e-12,
+            "down_headroom_after_AGC_mw": 379.999999999999,
+            "positive_available_mw": 1.0231815394945443e-12,
+            "accident_available_mw": 1.0231815394945443e-12
+          },
+          {
+            "unit": "C3",
+            "p_AC_mw": 770.0,
+            "scheduled_p_mw": 770.0,
+            "slack_loss_adjustment_mw": 0.0,
+            "up_headroom_after_AGC_mw": 85.0,
+            "down_headroom_after_AGC_mw": 370.0,
+            "positive_available_mw": 85.0,
+            "accident_available_mw": 85.0
+          },
+          {
+            "unit": "CCGT",
+            "p_AC_mw": 320.0,
+            "scheduled_p_mw": 320.0,
+            "slack_loss_adjustment_mw": 0.0,
+            "up_headroom_after_AGC_mw": 357.0,
+            "down_headroom_after_AGC_mw": 0.0,
+            "positive_available_mw": 357.0,
+            "accident_available_mw": 275.0
+          },
+          {
+            "unit": "GT",
+            "p_AC_mw": 85.0,
+            "scheduled_p_mw": 85.0,
+            "slack_loss_adjustment_mw": 0.0,
+            "up_headroom_after_AGC_mw": 205.0,
+            "down_headroom_after_AGC_mw": 0.0,
+            "positive_available_mw": 205.0,
+            "accident_available_mw": 205.0
+          }
+        ],
+        "error": null,
+        "safe": false
+      },
+      {
+        "global_tick": 26,
+        "stage": "near",
+        "loss_mw": 35.37644255549758,
+        "violations": [
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "0",
+            "value": 1.0767337359953326,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "1",
+            "value": 1.0610937047364561,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "8",
+            "value": 1.075905019325706,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "24",
+            "value": 1.0608434194756886,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "33",
+            "value": 0.9328251538793809,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "35",
+            "value": 1.0635999999999999,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "38",
+            "value": 1.0730818455285969,
+            "lower": 0.94,
+            "upper": 1.06
+          }
+        ],
+        "thermal_AGC": [
+          {
+            "unit": "C1",
+            "p_AC_mw": 634.7556081644352,
+            "scheduled_p_mw": 636.0,
+            "slack_loss_adjustment_mw": -1.2443918355647838,
+            "up_headroom_after_AGC_mw": 1.2443918355647838,
+            "down_headroom_after_AGC_mw": 334.7556081644352,
+            "positive_available_mw": 1.2443918355647838,
+            "accident_available_mw": 1.2443918355647838
+          },
+          {
+            "unit": "C2",
+            "p_AC_mw": 715.0,
+            "scheduled_p_mw": 715.0,
+            "slack_loss_adjustment_mw": 0.0,
+            "up_headroom_after_AGC_mw": 0.0,
+            "down_headroom_after_AGC_mw": 380.0,
+            "positive_available_mw": 0.0,
+            "accident_available_mw": 0.0
+          },
+          {
+            "unit": "C3",
+            "p_AC_mw": 765.8560847450589,
+            "scheduled_p_mw": 765.8560847450589,
+            "slack_loss_adjustment_mw": 0.0,
+            "up_headroom_after_AGC_mw": 89.14391525494113,
+            "down_headroom_after_AGC_mw": 365.85608474505887,
+            "positive_available_mw": 89.14391525494113,
+            "accident_available_mw": 89.14391525494113
+          },
+          {
+            "unit": "CCGT",
+            "p_AC_mw": 320.0,
+            "scheduled_p_mw": 320.0,
+            "slack_loss_adjustment_mw": 0.0,
+            "up_headroom_after_AGC_mw": 357.0,
+            "down_headroom_after_AGC_mw": 0.0,
+            "positive_available_mw": 357.0,
+            "accident_available_mw": 275.0
+          },
+          {
+            "unit": "GT",
+            "p_AC_mw": 85.0,
+            "scheduled_p_mw": 85.0,
+            "slack_loss_adjustment_mw": 0.0,
+            "up_headroom_after_AGC_mw": 205.0,
+            "down_headroom_after_AGC_mw": 0.0,
+            "positive_available_mw": 205.0,
+            "accident_available_mw": 205.0
+          }
+        ],
+        "error": null,
+        "safe": false
+      },
+      {
+        "global_tick": 27,
+        "stage": "far",
+        "loss_mw": 35.70204670734129,
+        "violations": [
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "0",
+            "value": 1.0762063055039714,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "1",
+            "value": 1.0605259483045362,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "8",
+            "value": 1.0753636535060849,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "24",
+            "value": 1.0619268246629467,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "33",
+            "value": 0.9320475181796665,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "35",
+            "value": 1.0636,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "38",
+            "value": 1.0725969996481284,
+            "lower": 0.94,
+            "upper": 1.06
+          }
+        ],
+        "thermal_AGC": [
+          {
+            "unit": "C1",
+            "p_AC_mw": 634.9261107690927,
+            "scheduled_p_mw": 636.0,
+            "slack_loss_adjustment_mw": -1.073889230907298,
+            "up_headroom_after_AGC_mw": 1.073889230907298,
+            "down_headroom_after_AGC_mw": 334.9261107690927,
+            "positive_available_mw": 1.073889230907298,
+            "accident_available_mw": 1.073889230907298
+          },
+          {
+            "unit": "C2",
+            "p_AC_mw": 715.0,
+            "scheduled_p_mw": 715.0,
+            "slack_loss_adjustment_mw": 0.0,
+            "up_headroom_after_AGC_mw": 0.0,
+            "down_headroom_after_AGC_mw": 380.0,
+            "positive_available_mw": 0.0,
+            "accident_available_mw": 0.0
+          },
+          {
+            "unit": "C3",
+            "p_AC_mw": 770.0,
+            "scheduled_p_mw": 770.0,
+            "slack_loss_adjustment_mw": 0.0,
+            "up_headroom_after_AGC_mw": 85.0,
+            "down_headroom_after_AGC_mw": 370.0,
+            "positive_available_mw": 85.0,
+            "accident_available_mw": 85.0
+          },
+          {
+            "unit": "CCGT",
+            "p_AC_mw": 320.0,
+            "scheduled_p_mw": 320.0,
+            "slack_loss_adjustment_mw": 0.0,
+            "up_headroom_after_AGC_mw": 357.0,
+            "down_headroom_after_AGC_mw": 0.0,
+            "positive_available_mw": 357.0,
+            "accident_available_mw": 275.0
+          },
+          {
+            "unit": "GT",
+            "p_AC_mw": 85.0,
+            "scheduled_p_mw": 85.0,
+            "slack_loss_adjustment_mw": 0.0,
+            "up_headroom_after_AGC_mw": 205.0,
+            "down_headroom_after_AGC_mw": 0.0,
+            "positive_available_mw": 205.0,
+            "accident_available_mw": 205.0
+          }
+        ],
+        "error": null,
+        "safe": false
+      },
+      {
+        "global_tick": 28,
+        "stage": "far",
+        "loss_mw": 35.82641910779898,
+        "violations": [
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "0",
+            "value": 1.0763327899112813,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "1",
+            "value": 1.0605279693616259,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "8",
+            "value": 1.07547436902529,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "24",
+            "value": 1.0619232382290222,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "33",
+            "value": 0.932050970021503,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "35",
+            "value": 1.0636,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "38",
+            "value": 1.0727740875730643,
+            "lower": 0.94,
+            "upper": 1.06
+          }
+        ],
+        "thermal_AGC": [
+          {
+            "unit": "C1",
+            "p_AC_mw": 635.1198648176525,
+            "scheduled_p_mw": 636.0,
+            "slack_loss_adjustment_mw": -0.8801351823475443,
+            "up_headroom_after_AGC_mw": 0.8801351823475443,
+            "down_headroom_after_AGC_mw": 335.11986481765246,
+            "positive_available_mw": 0.8801351823475443,
+            "accident_available_mw": 0.8801351823475443
+          },
+          {
+            "unit": "C2",
+            "p_AC_mw": 715.0,
+            "scheduled_p_mw": 715.0,
+            "slack_loss_adjustment_mw": 0.0,
+            "up_headroom_after_AGC_mw": 0.0,
+            "down_headroom_after_AGC_mw": 380.0,
+            "positive_available_mw": 0.0,
+            "accident_available_mw": 0.0
+          },
+          {
+            "unit": "C3",
+            "p_AC_mw": 770.0,
+            "scheduled_p_mw": 770.0,
+            "slack_loss_adjustment_mw": 0.0,
+            "up_headroom_after_AGC_mw": 85.0,
+            "down_headroom_after_AGC_mw": 370.0,
+            "positive_available_mw": 85.0,
+            "accident_available_mw": 85.0
+          },
+          {
+            "unit": "CCGT",
+            "p_AC_mw": 320.0,
+            "scheduled_p_mw": 320.0,
+            "slack_loss_adjustment_mw": 0.0,
+            "up_headroom_after_AGC_mw": 357.0,
+            "down_headroom_after_AGC_mw": 0.0,
+            "positive_available_mw": 357.0,
+            "accident_available_mw": 275.0
+          },
+          {
+            "unit": "GT",
+            "p_AC_mw": 85.0,
+            "scheduled_p_mw": 85.0,
+            "slack_loss_adjustment_mw": 0.0,
+            "up_headroom_after_AGC_mw": 205.0,
+            "down_headroom_after_AGC_mw": 0.0,
+            "positive_available_mw": 205.0,
+            "accident_available_mw": 205.0
+          }
+        ],
+        "error": null,
+        "safe": false
+      },
+      {
+        "global_tick": 29,
+        "stage": "far",
+        "loss_mw": 35.95143223441121,
+        "violations": [
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "0",
+            "value": 1.0764577237535795,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "1",
+            "value": 1.060528548639531,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "8",
+            "value": 1.0755836925036018,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "24",
+            "value": 1.0619182802133322,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "33",
+            "value": 0.9320532629720888,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "35",
+            "value": 1.0636000000000003,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "38",
+            "value": 1.0729496324329042,
+            "lower": 0.94,
+            "upper": 1.06
+          }
+        ],
+        "thermal_AGC": [
+          {
+            "unit": "C1",
+            "p_AC_mw": 635.3113877024542,
+            "scheduled_p_mw": 636.0,
+            "slack_loss_adjustment_mw": -0.6886122975457738,
+            "up_headroom_after_AGC_mw": 0.6886122975457738,
+            "down_headroom_after_AGC_mw": 335.3113877024542,
+            "positive_available_mw": 0.6886122975457738,
+            "accident_available_mw": 0.6886122975457738
+          },
+          {
+            "unit": "C2",
+            "p_AC_mw": 715.0,
+            "scheduled_p_mw": 715.0,
+            "slack_loss_adjustment_mw": 0.0,
+            "up_headroom_after_AGC_mw": 0.0,
+            "down_headroom_after_AGC_mw": 380.0,
+            "positive_available_mw": 0.0,
+            "accident_available_mw": 0.0
+          },
+          {
+            "unit": "C3",
+            "p_AC_mw": 770.0,
+            "scheduled_p_mw": 770.0,
+            "slack_loss_adjustment_mw": 0.0,
+            "up_headroom_after_AGC_mw": 85.0,
+            "down_headroom_after_AGC_mw": 370.0,
+            "positive_available_mw": 85.0,
+            "accident_available_mw": 85.0
+          },
+          {
+            "unit": "CCGT",
+            "p_AC_mw": 320.0,
+            "scheduled_p_mw": 320.0,
+            "slack_loss_adjustment_mw": 0.0,
+            "up_headroom_after_AGC_mw": 357.0,
+            "down_headroom_after_AGC_mw": 0.0,
+            "positive_available_mw": 357.0,
+            "accident_available_mw": 275.0
+          },
+          {
+            "unit": "GT",
+            "p_AC_mw": 85.0,
+            "scheduled_p_mw": 85.0,
+            "slack_loss_adjustment_mw": 0.0,
+            "up_headroom_after_AGC_mw": 205.0,
+            "down_headroom_after_AGC_mw": 0.0,
+            "positive_available_mw": 205.0,
+            "accident_available_mw": 205.0
+          }
+        ],
+        "error": null,
+        "safe": false
+      },
+      {
+        "global_tick": 30,
+        "stage": "far",
+        "loss_mw": 35.08236548870144,
+        "violations": [
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "0",
+            "value": 1.078644970988491,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "1",
+            "value": 1.0626034391382233,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "8",
+            "value": 1.0775209533114511,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "24",
+            "value": 1.0626347937223068,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "25",
+            "value": 1.0601826345949146,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "33",
+            "value": 0.9338739948549377,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "35",
+            "value": 1.0636,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "38",
+            "value": 1.0751220080449841,
+            "lower": 0.94,
+            "upper": 1.06
+          }
+        ],
+        "thermal_AGC": [
+          {
+            "unit": "C1",
+            "p_AC_mw": 634.7263770259709,
+            "scheduled_p_mw": 636.0,
+            "slack_loss_adjustment_mw": -1.273622974029081,
+            "up_headroom_after_AGC_mw": 1.273622974029081,
+            "down_headroom_after_AGC_mw": 334.7263770259709,
+            "positive_available_mw": 1.273622974029081,
+            "accident_available_mw": 1.273622974029081
+          },
+          {
+            "unit": "C2",
+            "p_AC_mw": 715.0,
+            "scheduled_p_mw": 715.0,
+            "slack_loss_adjustment_mw": 0.0,
+            "up_headroom_after_AGC_mw": 0.0,
+            "down_headroom_after_AGC_mw": 380.0,
+            "positive_available_mw": 0.0,
+            "accident_available_mw": 0.0
+          },
+          {
+            "unit": "C3",
+            "p_AC_mw": 770.0,
+            "scheduled_p_mw": 770.0,
+            "slack_loss_adjustment_mw": 0.0,
+            "up_headroom_after_AGC_mw": 85.0,
+            "down_headroom_after_AGC_mw": 370.0,
+            "positive_available_mw": 85.0,
+            "accident_available_mw": 85.0
+          },
+          {
+            "unit": "CCGT",
+            "p_AC_mw": 320.0,
+            "scheduled_p_mw": 320.0,
+            "slack_loss_adjustment_mw": 0.0,
+            "up_headroom_after_AGC_mw": 357.0,
+            "down_headroom_after_AGC_mw": 0.0,
+            "positive_available_mw": 357.0,
+            "accident_available_mw": 275.0
+          },
+          {
+            "unit": "GT",
+            "p_AC_mw": 85.0,
+            "scheduled_p_mw": 85.0,
+            "slack_loss_adjustment_mw": 0.0,
+            "up_headroom_after_AGC_mw": 205.0,
+            "down_headroom_after_AGC_mw": 0.0,
+            "positive_available_mw": 205.0,
+            "accident_available_mw": 205.0
+          }
+        ],
+        "error": null,
+        "safe": false
+      },
+      {
+        "global_tick": 31,
+        "stage": "far",
+        "loss_mw": 36.16952093210525,
+        "violations": [
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "0",
+            "value": 1.0767623757628617,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "1",
+            "value": 1.0605974894176955,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "8",
+            "value": 1.075850172040444,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "24",
+            "value": 1.0619765483970542,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "33",
+            "value": 0.9321265792077651,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "35",
+            "value": 1.0636,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "38",
+            "value": 1.0733483675453754,
+            "lower": 0.94,
+            "upper": 1.06
+          }
+        ],
+        "thermal_AGC": [
+          {
+            "unit": "C1",
+            "p_AC_mw": 635.6540388114489,
+            "scheduled_p_mw": 636.0,
+            "slack_loss_adjustment_mw": -0.3459611885510867,
+            "up_headroom_after_AGC_mw": 0.3459611885510867,
+            "down_headroom_after_AGC_mw": 335.6540388114489,
+            "positive_available_mw": 0.3459611885510867,
+            "accident_available_mw": 0.3459611885510867
+          },
+          {
+            "unit": "C2",
+            "p_AC_mw": 715.0,
+            "scheduled_p_mw": 715.0,
+            "slack_loss_adjustment_mw": 0.0,
+            "up_headroom_after_AGC_mw": 0.0,
+            "down_headroom_after_AGC_mw": 380.0,
+            "positive_available_mw": 0.0,
+            "accident_available_mw": 0.0
+          },
+          {
+            "unit": "C3",
+            "p_AC_mw": 770.0,
+            "scheduled_p_mw": 770.0,
+            "slack_loss_adjustment_mw": 0.0,
+            "up_headroom_after_AGC_mw": 85.0,
+            "down_headroom_after_AGC_mw": 370.0,
+            "positive_available_mw": 85.0,
+            "accident_available_mw": 85.0
+          },
+          {
+            "unit": "CCGT",
+            "p_AC_mw": 320.0,
+            "scheduled_p_mw": 320.0,
+            "slack_loss_adjustment_mw": 0.0,
+            "up_headroom_after_AGC_mw": 357.0,
+            "down_headroom_after_AGC_mw": 0.0,
+            "positive_available_mw": 357.0,
+            "accident_available_mw": 275.0
+          },
+          {
+            "unit": "GT",
+            "p_AC_mw": 85.0,
+            "scheduled_p_mw": 85.0,
+            "slack_loss_adjustment_mw": 0.0,
+            "up_headroom_after_AGC_mw": 205.0,
+            "down_headroom_after_AGC_mw": 0.0,
+            "positive_available_mw": 205.0,
+            "accident_available_mw": 205.0
+          }
+        ],
+        "error": null,
+        "safe": false
+      },
+      {
+        "global_tick": 32,
+        "stage": "far",
+        "loss_mw": 36.17062555910721,
+        "violations": [
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "0",
+            "value": 1.0771305392565897,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "1",
+            "value": 1.0608518039679367,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "8",
+            "value": 1.0761733693833981,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "24",
+            "value": 1.0620869697917172,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "33",
+            "value": 0.9323552867764632,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "35",
+            "value": 1.0636000000000003,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "38",
+            "value": 1.0737553292792463,
+            "lower": 0.94,
+            "upper": 1.06
+          }
+        ],
+        "thermal_AGC": [
+          {
+            "unit": "C1",
+            "p_AC_mw": 635.8480448461936,
+            "scheduled_p_mw": 636.0,
+            "slack_loss_adjustment_mw": -0.1519551538063979,
+            "up_headroom_after_AGC_mw": 0.1519551538063979,
+            "down_headroom_after_AGC_mw": 335.8480448461936,
+            "positive_available_mw": 0.1519551538063979,
+            "accident_available_mw": 0.1519551538063979
+          },
+          {
+            "unit": "C2",
+            "p_AC_mw": 715.0,
+            "scheduled_p_mw": 715.0,
+            "slack_loss_adjustment_mw": 0.0,
+            "up_headroom_after_AGC_mw": 0.0,
+            "down_headroom_after_AGC_mw": 380.0,
+            "positive_available_mw": 0.0,
+            "accident_available_mw": 0.0
+          },
+          {
+            "unit": "C3",
+            "p_AC_mw": 770.0,
+            "scheduled_p_mw": 770.0,
+            "slack_loss_adjustment_mw": 0.0,
+            "up_headroom_after_AGC_mw": 85.0,
+            "down_headroom_after_AGC_mw": 370.0,
+            "positive_available_mw": 85.0,
+            "accident_available_mw": 85.0
+          },
+          {
+            "unit": "CCGT",
+            "p_AC_mw": 320.0,
+            "scheduled_p_mw": 320.0,
+            "slack_loss_adjustment_mw": 0.0,
+            "up_headroom_after_AGC_mw": 357.0,
+            "down_headroom_after_AGC_mw": 0.0,
+            "positive_available_mw": 357.0,
+            "accident_available_mw": 275.0
+          },
+          {
+            "unit": "GT",
+            "p_AC_mw": 85.0,
+            "scheduled_p_mw": 85.0,
+            "slack_loss_adjustment_mw": 0.0,
+            "up_headroom_after_AGC_mw": 205.0,
+            "down_headroom_after_AGC_mw": 0.0,
+            "positive_available_mw": 205.0,
+            "accident_available_mw": 205.0
+          }
+        ],
+        "error": null,
+        "safe": false
+      },
+      {
+        "global_tick": 33,
+        "stage": "far",
+        "loss_mw": 36.047966038137005,
+        "violations": [
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "0",
+            "value": 1.0779912009864345,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "1",
+            "value": 1.061556256570765,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "8",
+            "value": 1.076973598880961,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "24",
+            "value": 1.0614601162974149,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "33",
+            "value": 0.9327321235424967,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "35",
+            "value": 1.0636000000000003,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "38",
+            "value": 1.0746548021938058,
+            "lower": 0.94,
+            "upper": 1.06
+          }
+        ],
+        "thermal_AGC": [
+          {
+            "unit": "C1",
+            "p_AC_mw": 635.9768088788877,
+            "scheduled_p_mw": 636.0,
+            "slack_loss_adjustment_mw": -0.023191121112290602,
+            "up_headroom_after_AGC_mw": 0.023191121112290602,
+            "down_headroom_after_AGC_mw": 335.9768088788877,
+            "positive_available_mw": 0.023191121112290602,
+            "accident_available_mw": 0.023191121112290602
+          },
+          {
+            "unit": "C2",
+            "p_AC_mw": 715.0,
+            "scheduled_p_mw": 715.0,
+            "slack_loss_adjustment_mw": 0.0,
+            "up_headroom_after_AGC_mw": 0.0,
+            "down_headroom_after_AGC_mw": 380.0,
+            "positive_available_mw": 0.0,
+            "accident_available_mw": 0.0
+          },
+          {
+            "unit": "C3",
+            "p_AC_mw": 770.0,
+            "scheduled_p_mw": 770.0,
+            "slack_loss_adjustment_mw": 0.0,
+            "up_headroom_after_AGC_mw": 85.0,
+            "down_headroom_after_AGC_mw": 370.0,
+            "positive_available_mw": 85.0,
+            "accident_available_mw": 85.0
+          },
+          {
+            "unit": "CCGT",
+            "p_AC_mw": 320.0,
+            "scheduled_p_mw": 320.0,
+            "slack_loss_adjustment_mw": 0.0,
+            "up_headroom_after_AGC_mw": 357.0,
+            "down_headroom_after_AGC_mw": 0.0,
+            "positive_available_mw": 357.0,
+            "accident_available_mw": 275.0
+          },
+          {
+            "unit": "GT",
+            "p_AC_mw": 85.0,
+            "scheduled_p_mw": 85.0,
+            "slack_loss_adjustment_mw": 0.0,
+            "up_headroom_after_AGC_mw": 205.0,
+            "down_headroom_after_AGC_mw": 0.0,
+            "positive_available_mw": 205.0,
+            "accident_available_mw": 205.0
+          }
+        ],
+        "error": null,
+        "safe": false
+      },
+      {
+        "global_tick": 34,
+        "stage": "far",
+        "loss_mw": 36.036539275503344,
+        "violations": [
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "0",
+            "value": 1.0781270946942694,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "1",
+            "value": 1.0616376363527633,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "8",
+            "value": 1.0770482720457233,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "24",
+            "value": 1.062431210224518,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "33",
+            "value": 0.9330645827681568,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "35",
+            "value": 1.0635999999999997,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "38",
+            "value": 1.0748143955245202,
+            "lower": 0.94,
+            "upper": 1.06
+          }
+        ],
+        "thermal_AGC": [
+          {
+            "unit": "C1",
+            "p_AC_mw": 636.3493313258131,
+            "scheduled_p_mw": 636.0,
+            "slack_loss_adjustment_mw": 0.34933132581306836,
+            "up_headroom_after_AGC_mw": -0.34933132581306836,
+            "down_headroom_after_AGC_mw": 336.34933132581307,
+            "positive_available_mw": 0.0,
+            "accident_available_mw": 0.0
+          },
+          {
+            "unit": "C2",
+            "p_AC_mw": 715.0,
+            "scheduled_p_mw": 715.0,
+            "slack_loss_adjustment_mw": 0.0,
+            "up_headroom_after_AGC_mw": 0.0,
+            "down_headroom_after_AGC_mw": 380.0,
+            "positive_available_mw": 0.0,
+            "accident_available_mw": 0.0
+          },
+          {
+            "unit": "C3",
+            "p_AC_mw": 770.0,
+            "scheduled_p_mw": 770.0,
+            "slack_loss_adjustment_mw": 0.0,
+            "up_headroom_after_AGC_mw": 85.0,
+            "down_headroom_after_AGC_mw": 370.0,
+            "positive_available_mw": 85.0,
+            "accident_available_mw": 85.0
+          },
+          {
+            "unit": "CCGT",
+            "p_AC_mw": 320.0,
+            "scheduled_p_mw": 320.0,
+            "slack_loss_adjustment_mw": 0.0,
+            "up_headroom_after_AGC_mw": 357.0,
+            "down_headroom_after_AGC_mw": 0.0,
+            "positive_available_mw": 357.0,
+            "accident_available_mw": 275.0
+          },
+          {
+            "unit": "GT",
+            "p_AC_mw": 85.0,
+            "scheduled_p_mw": 85.0,
+            "slack_loss_adjustment_mw": 0.0,
+            "up_headroom_after_AGC_mw": 205.0,
+            "down_headroom_after_AGC_mw": 0.0,
+            "positive_available_mw": 205.0,
+            "accident_available_mw": 205.0
+          }
+        ],
+        "error": null,
+        "safe": false
+      },
+      {
+        "global_tick": 35,
+        "stage": "far",
+        "loss_mw": 35.59146308101908,
+        "violations": [
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "0",
+            "value": 1.0794254740218312,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "1",
+            "value": 1.062834084339923,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "8",
+            "value": 1.0781993936539884,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "24",
+            "value": 1.0628988484519588,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "25",
+            "value": 1.0602396998388826,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "33",
+            "value": 0.9341286240199775,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "35",
+            "value": 1.0636,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "38",
+            "value": 1.0761203299417588,
+            "lower": 0.94,
+            "upper": 1.06
+          }
+        ],
+        "thermal_AGC": [
+          {
+            "unit": "C1",
+            "p_AC_mw": 635.988671056582,
+            "scheduled_p_mw": 636.0,
+            "slack_loss_adjustment_mw": -0.011328943417993287,
+            "up_headroom_after_AGC_mw": 0.011328943417993287,
+            "down_headroom_after_AGC_mw": 335.988671056582,
+            "positive_available_mw": 0.011328943417993287,
+            "accident_available_mw": 0.011328943417993287
+          },
+          {
+            "unit": "C2",
+            "p_AC_mw": 715.0,
+            "scheduled_p_mw": 715.0,
+            "slack_loss_adjustment_mw": 0.0,
+            "up_headroom_after_AGC_mw": 0.0,
+            "down_headroom_after_AGC_mw": 380.0,
+            "positive_available_mw": 0.0,
+            "accident_available_mw": 0.0
+          },
+          {
+            "unit": "C3",
+            "p_AC_mw": 770.0,
+            "scheduled_p_mw": 770.0,
+            "slack_loss_adjustment_mw": 0.0,
+            "up_headroom_after_AGC_mw": 85.0,
+            "down_headroom_after_AGC_mw": 370.0,
+            "positive_available_mw": 85.0,
+            "accident_available_mw": 85.0
+          },
+          {
+            "unit": "CCGT",
+            "p_AC_mw": 320.0,
+            "scheduled_p_mw": 320.0,
+            "slack_loss_adjustment_mw": 0.0,
+            "up_headroom_after_AGC_mw": 357.0,
+            "down_headroom_after_AGC_mw": 0.0,
+            "positive_available_mw": 357.0,
+            "accident_available_mw": 275.0
+          },
+          {
+            "unit": "GT",
+            "p_AC_mw": 85.0,
+            "scheduled_p_mw": 85.0,
+            "slack_loss_adjustment_mw": 0.0,
+            "up_headroom_after_AGC_mw": 205.0,
+            "down_headroom_after_AGC_mw": 0.0,
+            "positive_available_mw": 205.0,
+            "accident_available_mw": 205.0
+          }
+        ],
+        "error": null,
+        "safe": false
+      },
+      {
+        "global_tick": 36,
+        "stage": "far",
+        "loss_mw": 35.910958732061886,
+        "violations": [
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "0",
+            "value": 1.0791058756734249,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "1",
+            "value": 1.0624130425061462,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "8",
+            "value": 1.0779114735362547,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "24",
+            "value": 1.062807212370555,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "33",
+            "value": 0.9337758325697569,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "35",
+            "value": 1.0636,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "38",
+            "value": 1.0758540539606185,
+            "lower": 0.94,
+            "upper": 1.06
+          }
+        ],
+        "thermal_AGC": [
+          {
+            "unit": "C1",
+            "p_AC_mw": 636.527726308451,
+            "scheduled_p_mw": 636.0,
+            "slack_loss_adjustment_mw": 0.5277263084509514,
+            "up_headroom_after_AGC_mw": -0.5277263084509514,
+            "down_headroom_after_AGC_mw": 336.52772630845095,
+            "positive_available_mw": 0.0,
+            "accident_available_mw": 0.0
+          },
+          {
+            "unit": "C2",
+            "p_AC_mw": 715.0,
+            "scheduled_p_mw": 715.0,
+            "slack_loss_adjustment_mw": 0.0,
+            "up_headroom_after_AGC_mw": 0.0,
+            "down_headroom_after_AGC_mw": 380.0,
+            "positive_available_mw": 0.0,
+            "accident_available_mw": 0.0
+          },
+          {
+            "unit": "C3",
+            "p_AC_mw": 770.0,
+            "scheduled_p_mw": 770.0,
+            "slack_loss_adjustment_mw": 0.0,
+            "up_headroom_after_AGC_mw": 85.0,
+            "down_headroom_after_AGC_mw": 370.0,
+            "positive_available_mw": 85.0,
+            "accident_available_mw": 85.0
+          },
+          {
+            "unit": "CCGT",
+            "p_AC_mw": 320.0,
+            "scheduled_p_mw": 320.0,
+            "slack_loss_adjustment_mw": 0.0,
+            "up_headroom_after_AGC_mw": 357.0,
+            "down_headroom_after_AGC_mw": 0.0,
+            "positive_available_mw": 357.0,
+            "accident_available_mw": 275.0
+          },
+          {
+            "unit": "GT",
+            "p_AC_mw": 85.0,
+            "scheduled_p_mw": 85.0,
+            "slack_loss_adjustment_mw": 0.0,
+            "up_headroom_after_AGC_mw": 205.0,
+            "down_headroom_after_AGC_mw": 0.0,
+            "positive_available_mw": 205.0,
+            "accident_available_mw": 205.0
+          }
+        ],
+        "error": null,
+        "safe": false
+      },
+      {
+        "global_tick": 37,
+        "stage": "far",
+        "loss_mw": 35.852033631196115,
+        "violations": [
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "0",
+            "value": 1.0795747272995286,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "1",
+            "value": 1.0627880553119942,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "8",
+            "value": 1.0783246333630203,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "24",
+            "value": 1.0630000683598948,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "25",
+            "value": 1.0602010925308836,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "33",
+            "value": 0.93412650051906,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "35",
+            "value": 1.0636,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "38",
+            "value": 1.0763505723692341,
+            "lower": 0.94,
+            "upper": 1.06
+          }
+        ],
+        "thermal_AGC": [
+          {
+            "unit": "C1",
+            "p_AC_mw": 636.6756404435961,
+            "scheduled_p_mw": 636.0,
+            "slack_loss_adjustment_mw": 0.6756404435960803,
+            "up_headroom_after_AGC_mw": -0.6756404435960803,
+            "down_headroom_after_AGC_mw": 336.6756404435961,
+            "positive_available_mw": 0.0,
+            "accident_available_mw": 0.0
+          },
+          {
+            "unit": "C2",
+            "p_AC_mw": 715.0,
+            "scheduled_p_mw": 715.0,
+            "slack_loss_adjustment_mw": 0.0,
+            "up_headroom_after_AGC_mw": 0.0,
+            "down_headroom_after_AGC_mw": 380.0,
+            "positive_available_mw": 0.0,
+            "accident_available_mw": 0.0
+          },
+          {
+            "unit": "C3",
+            "p_AC_mw": 770.0,
+            "scheduled_p_mw": 770.0,
+            "slack_loss_adjustment_mw": 0.0,
+            "up_headroom_after_AGC_mw": 85.0,
+            "down_headroom_after_AGC_mw": 370.0,
+            "positive_available_mw": 85.0,
+            "accident_available_mw": 85.0
+          },
+          {
+            "unit": "CCGT",
+            "p_AC_mw": 320.0,
+            "scheduled_p_mw": 320.0,
+            "slack_loss_adjustment_mw": 0.0,
+            "up_headroom_after_AGC_mw": 357.0,
+            "down_headroom_after_AGC_mw": 0.0,
+            "positive_available_mw": 357.0,
+            "accident_available_mw": 275.0
+          },
+          {
+            "unit": "GT",
+            "p_AC_mw": 85.0,
+            "scheduled_p_mw": 85.0,
+            "slack_loss_adjustment_mw": 0.0,
+            "up_headroom_after_AGC_mw": 205.0,
+            "down_headroom_after_AGC_mw": 0.0,
+            "positive_available_mw": 205.0,
+            "accident_available_mw": 205.0
+          }
+        ],
+        "error": null,
+        "safe": false
+      },
+      {
+        "global_tick": 38,
+        "stage": "far",
+        "loss_mw": 35.78191506815944,
+        "violations": [
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "0",
+            "value": 1.080029196637887,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "1",
+            "value": 1.0631592018885878,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "8",
+            "value": 1.078712065227294,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "24",
+            "value": 1.0631553558603606,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "25",
+            "value": 1.0604198584374553,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "33",
+            "value": 0.9344635404715436,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "35",
+            "value": 1.0636,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "38",
+            "value": 1.0768262940622177,
+            "lower": 0.94,
+            "upper": 1.06
+          }
+        ],
+        "thermal_AGC": [
+          {
+            "unit": "C1",
+            "p_AC_mw": 637.9095265728681,
+            "scheduled_p_mw": 636.0,
+            "slack_loss_adjustment_mw": 1.909526572868117,
+            "up_headroom_after_AGC_mw": -1.909526572868117,
+            "down_headroom_after_AGC_mw": 337.9095265728681,
+            "positive_available_mw": 0.0,
+            "accident_available_mw": 0.0
+          },
+          {
+            "unit": "C2",
+            "p_AC_mw": 715.0,
+            "scheduled_p_mw": 715.0,
+            "slack_loss_adjustment_mw": 0.0,
+            "up_headroom_after_AGC_mw": 0.0,
+            "down_headroom_after_AGC_mw": 380.0,
+            "positive_available_mw": 0.0,
+            "accident_available_mw": 0.0
+          },
+          {
+            "unit": "C3",
+            "p_AC_mw": 769.5242908046046,
+            "scheduled_p_mw": 769.5242908046046,
+            "slack_loss_adjustment_mw": 0.0,
+            "up_headroom_after_AGC_mw": 85.47570919539544,
+            "down_headroom_after_AGC_mw": 369.52429080460456,
+            "positive_available_mw": 85.47570919539544,
+            "accident_available_mw": 85.47570919539544
+          },
+          {
+            "unit": "CCGT",
+            "p_AC_mw": 320.0,
+            "scheduled_p_mw": 320.0,
+            "slack_loss_adjustment_mw": 0.0,
+            "up_headroom_after_AGC_mw": 357.0,
+            "down_headroom_after_AGC_mw": 0.0,
+            "positive_available_mw": 357.0,
+            "accident_available_mw": 275.0
+          },
+          {
+            "unit": "GT",
+            "p_AC_mw": 85.0,
+            "scheduled_p_mw": 85.0,
+            "slack_loss_adjustment_mw": 0.0,
+            "up_headroom_after_AGC_mw": 205.0,
+            "down_headroom_after_AGC_mw": 0.0,
+            "positive_available_mw": 205.0,
+            "accident_available_mw": 205.0
+          }
+        ],
+        "error": null,
+        "safe": false
+      },
+      {
+        "global_tick": 39,
+        "stage": "far",
+        "loss_mw": 35.60254126533393,
+        "violations": [
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "0",
+            "value": 1.080681261698241,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "1",
+            "value": 1.0637254573509698,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "8",
+            "value": 1.0792884567759187,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "24",
+            "value": 1.0636796150988603,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "25",
+            "value": 1.0609172339607027,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "33",
+            "value": 0.9349503201488129,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "35",
+            "value": 1.0636,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "38",
+            "value": 1.0774986474500967,
+            "lower": 0.94,
+            "upper": 1.06
+          }
+        ],
+        "thermal_AGC": [
+          {
+            "unit": "C1",
+            "p_AC_mw": 636.8253865157594,
+            "scheduled_p_mw": 636.0,
+            "slack_loss_adjustment_mw": 0.8253865157594191,
+            "up_headroom_after_AGC_mw": -0.8253865157594191,
+            "down_headroom_after_AGC_mw": 336.8253865157594,
+            "positive_available_mw": 0.0,
+            "accident_available_mw": 0.0
+          },
+          {
+            "unit": "C2",
+            "p_AC_mw": 715.0,
+            "scheduled_p_mw": 715.0,
+            "slack_loss_adjustment_mw": 0.0,
+            "up_headroom_after_AGC_mw": 0.0,
+            "down_headroom_after_AGC_mw": 380.0,
+            "positive_available_mw": 0.0,
+            "accident_available_mw": 0.0
+          },
+          {
+            "unit": "C3",
+            "p_AC_mw": 766.3688541356973,
+            "scheduled_p_mw": 766.3688541356973,
+            "slack_loss_adjustment_mw": 0.0,
+            "up_headroom_after_AGC_mw": 88.63114586430265,
+            "down_headroom_after_AGC_mw": 366.36885413569735,
+            "positive_available_mw": 88.63114586430265,
+            "accident_available_mw": 88.63114586430265
+          },
+          {
+            "unit": "CCGT",
+            "p_AC_mw": 320.0,
+            "scheduled_p_mw": 320.0,
+            "slack_loss_adjustment_mw": 0.0,
+            "up_headroom_after_AGC_mw": 357.0,
+            "down_headroom_after_AGC_mw": 0.0,
+            "positive_available_mw": 357.0,
+            "accident_available_mw": 275.0
+          },
+          {
+            "unit": "GT",
+            "p_AC_mw": 85.0,
+            "scheduled_p_mw": 85.0,
+            "slack_loss_adjustment_mw": 0.0,
+            "up_headroom_after_AGC_mw": 205.0,
+            "down_headroom_after_AGC_mw": 0.0,
+            "positive_available_mw": 205.0,
+            "accident_available_mw": 205.0
+          }
+        ],
+        "error": null,
+        "safe": false
+      },
+      {
+        "global_tick": 40,
+        "stage": "far",
+        "loss_mw": 35.39831270666075,
+        "violations": [
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "0",
+            "value": 1.0813255063020473,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "1",
+            "value": 1.0643007487940306,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "8",
+            "value": 1.079843942061126,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "21",
+            "value": 1.0600370844897367,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "24",
+            "value": 1.0642006218069626,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "25",
+            "value": 1.0614418454248067,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "33",
+            "value": 0.9354338199000701,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "35",
+            "value": 1.0635999999999999,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "38",
+            "value": 1.078153747214184,
+            "lower": 0.94,
+            "upper": 1.06
+          }
+        ],
+        "thermal_AGC": [
+          {
+            "unit": "C1",
+            "p_AC_mw": 636.8060406908584,
+            "scheduled_p_mw": 636.0,
+            "slack_loss_adjustment_mw": 0.8060406908583673,
+            "up_headroom_after_AGC_mw": -0.8060406908583673,
+            "down_headroom_after_AGC_mw": 336.80604069085837,
+            "positive_available_mw": 0.0,
+            "accident_available_mw": 0.0
+          },
+          {
+            "unit": "C2",
+            "p_AC_mw": 715.0,
+            "scheduled_p_mw": 715.0,
+            "slack_loss_adjustment_mw": 0.0,
+            "up_headroom_after_AGC_mw": 0.0,
+            "down_headroom_after_AGC_mw": 380.0,
+            "positive_available_mw": 0.0,
+            "accident_available_mw": 0.0
+          },
+          {
+            "unit": "C3",
+            "p_AC_mw": 762.3461465900746,
+            "scheduled_p_mw": 762.3461465900746,
+            "slack_loss_adjustment_mw": 0.0,
+            "up_headroom_after_AGC_mw": 92.65385340992543,
+            "down_headroom_after_AGC_mw": 362.34614659007457,
+            "positive_available_mw": 92.65385340992543,
+            "accident_available_mw": 92.65385340992543
+          },
+          {
+            "unit": "CCGT",
+            "p_AC_mw": 320.0,
+            "scheduled_p_mw": 320.0,
+            "slack_loss_adjustment_mw": 0.0,
+            "up_headroom_after_AGC_mw": 357.0,
+            "down_headroom_after_AGC_mw": 0.0,
+            "positive_available_mw": 357.0,
+            "accident_available_mw": 275.0
+          },
+          {
+            "unit": "GT",
+            "p_AC_mw": 85.0,
+            "scheduled_p_mw": 85.0,
+            "slack_loss_adjustment_mw": 0.0,
+            "up_headroom_after_AGC_mw": 205.0,
+            "down_headroom_after_AGC_mw": 0.0,
+            "positive_available_mw": 205.0,
+            "accident_available_mw": 205.0
+          }
+        ],
+        "error": null,
+        "safe": false
+      },
+      {
+        "global_tick": 41,
+        "stage": "far",
+        "loss_mw": 35.19609411653017,
+        "violations": [
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "0",
+            "value": 1.0819664336750452,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "1",
+            "value": 1.064872740544916,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "8",
+            "value": 1.0803966229964332,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "21",
+            "value": 1.0602035841659763,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "24",
+            "value": 1.0647182620741047,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "25",
+            "value": 1.0619628662513991,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "33",
+            "value": 0.9359148617788842,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "35",
+            "value": 1.0636000000000003,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "38",
+            "value": 1.078805640266918,
+            "lower": 0.94,
+            "upper": 1.06
+          }
+        ],
+        "thermal_AGC": [
+          {
+            "unit": "C1",
+            "p_AC_mw": 636.7869580864747,
+            "scheduled_p_mw": 636.0,
+            "slack_loss_adjustment_mw": 0.7869580864746695,
+            "up_headroom_after_AGC_mw": -0.7869580864746695,
+            "down_headroom_after_AGC_mw": 336.78695808647467,
+            "positive_available_mw": 0.0,
+            "accident_available_mw": 0.0
+          },
+          {
+            "unit": "C2",
+            "p_AC_mw": 715.0,
+            "scheduled_p_mw": 715.0,
+            "slack_loss_adjustment_mw": 0.0,
+            "up_headroom_after_AGC_mw": 0.0,
+            "down_headroom_after_AGC_mw": 380.0,
+            "positive_available_mw": 0.0,
+            "accident_available_mw": 0.0
+          },
+          {
+            "unit": "C3",
+            "p_AC_mw": 758.3251523901291,
+            "scheduled_p_mw": 758.3251523901291,
+            "slack_loss_adjustment_mw": 0.0,
+            "up_headroom_after_AGC_mw": 96.67484760987088,
+            "down_headroom_after_AGC_mw": 358.3251523901291,
+            "positive_available_mw": 96.67484760987088,
+            "accident_available_mw": 96.67484760987088
+          },
+          {
+            "unit": "CCGT",
+            "p_AC_mw": 320.0,
+            "scheduled_p_mw": 320.0,
+            "slack_loss_adjustment_mw": 0.0,
+            "up_headroom_after_AGC_mw": 357.0,
+            "down_headroom_after_AGC_mw": 0.0,
+            "positive_available_mw": 357.0,
+            "accident_available_mw": 275.0
+          },
+          {
+            "unit": "GT",
+            "p_AC_mw": 85.0,
+            "scheduled_p_mw": 85.0,
+            "slack_loss_adjustment_mw": 0.0,
+            "up_headroom_after_AGC_mw": 205.0,
+            "down_headroom_after_AGC_mw": 0.0,
+            "positive_available_mw": 205.0,
+            "accident_available_mw": 205.0
+          }
+        ],
+        "error": null,
+        "safe": false
+      },
+      {
+        "global_tick": 42,
+        "stage": "far",
+        "loss_mw": 35.00206091715422,
+        "violations": [
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "0",
+            "value": 1.0825811318671394,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "1",
+            "value": 1.0654231817817588,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "8",
+            "value": 1.080927234717972,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "21",
+            "value": 1.060365014503336,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "24",
+            "value": 1.0652193131711765,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "25",
+            "value": 1.062465274611016,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "33",
+            "value": 0.9363836506449102,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "35",
+            "value": 1.0636,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "38",
+            "value": 1.0794301718836854,
+            "lower": 0.94,
+            "upper": 1.06
+          }
+        ],
+        "thermal_AGC": [
+          {
+            "unit": "C1",
+            "p_AC_mw": 636.7689595666623,
+            "scheduled_p_mw": 636.0,
+            "slack_loss_adjustment_mw": 0.7689595666622608,
+            "up_headroom_after_AGC_mw": -0.7689595666622608,
+            "down_headroom_after_AGC_mw": 336.76895956666226,
+            "positive_available_mw": 0.0,
+            "accident_available_mw": 0.0
+          },
+          {
+            "unit": "C2",
+            "p_AC_mw": 715.0,
+            "scheduled_p_mw": 715.0,
+            "slack_loss_adjustment_mw": 0.0,
+            "up_headroom_after_AGC_mw": 0.0,
+            "down_headroom_after_AGC_mw": 380.0,
+            "positive_available_mw": 0.0,
+            "accident_available_mw": 0.0
+          },
+          {
+            "unit": "C3",
+            "p_AC_mw": 754.4523823490392,
+            "scheduled_p_mw": 754.4523823490392,
+            "slack_loss_adjustment_mw": 0.0,
+            "up_headroom_after_AGC_mw": 100.54761765096077,
+            "down_headroom_after_AGC_mw": 354.4523823490392,
+            "positive_available_mw": 100.54761765096077,
+            "accident_available_mw": 100.54761765096077
+          },
+          {
+            "unit": "CCGT",
+            "p_AC_mw": 320.0,
+            "scheduled_p_mw": 320.0,
+            "slack_loss_adjustment_mw": 0.0,
+            "up_headroom_after_AGC_mw": 357.0,
+            "down_headroom_after_AGC_mw": 0.0,
+            "positive_available_mw": 357.0,
+            "accident_available_mw": 275.0
+          },
+          {
+            "unit": "GT",
+            "p_AC_mw": 85.0,
+            "scheduled_p_mw": 85.0,
+            "slack_loss_adjustment_mw": 0.0,
+            "up_headroom_after_AGC_mw": 205.0,
+            "down_headroom_after_AGC_mw": 0.0,
+            "positive_available_mw": 205.0,
+            "accident_available_mw": 205.0
+          }
+        ],
+        "error": null,
+        "safe": false
+      },
+      {
+        "global_tick": 43,
+        "stage": "far",
+        "loss_mw": 34.783724256519136,
+        "violations": [
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "0",
+            "value": 1.0831855913140964,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "1",
+            "value": 1.0659801492581595,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "8",
+            "value": 1.0814353819701403,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "21",
+            "value": 1.0605241493482698,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "24",
+            "value": 1.0657145231340641,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "25",
+            "value": 1.0629929862304293,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "27",
+            "value": 1.06023199031988,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "33",
+            "value": 0.9368474407456809,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "35",
+            "value": 1.0636,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "38",
+            "value": 1.0800352481380389,
+            "lower": 0.94,
+            "upper": 1.06
+          }
+        ],
+        "thermal_AGC": [
+          {
+            "unit": "C1",
+            "p_AC_mw": 637.7815936592756,
+            "scheduled_p_mw": 636.0,
+            "slack_loss_adjustment_mw": 1.781593659275586,
+            "up_headroom_after_AGC_mw": -1.781593659275586,
+            "down_headroom_after_AGC_mw": 337.7815936592756,
+            "positive_available_mw": 0.0,
+            "accident_available_mw": 0.0
+          },
+          {
+            "unit": "C2",
+            "p_AC_mw": 715.0,
+            "scheduled_p_mw": 715.0,
+            "slack_loss_adjustment_mw": 0.0,
+            "up_headroom_after_AGC_mw": 0.0,
+            "down_headroom_after_AGC_mw": 380.0,
+            "positive_available_mw": 0.0,
+            "accident_available_mw": 0.0
+          },
+          {
+            "unit": "C3",
+            "p_AC_mw": 749.6731419827463,
+            "scheduled_p_mw": 749.6731419827463,
+            "slack_loss_adjustment_mw": 0.0,
+            "up_headroom_after_AGC_mw": 105.3268580172537,
+            "down_headroom_after_AGC_mw": 349.6731419827463,
+            "positive_available_mw": 105.3268580172537,
+            "accident_available_mw": 105.3268580172537
+          },
+          {
+            "unit": "CCGT",
+            "p_AC_mw": 320.0,
+            "scheduled_p_mw": 320.0,
+            "slack_loss_adjustment_mw": 0.0,
+            "up_headroom_after_AGC_mw": 357.0,
+            "down_headroom_after_AGC_mw": 0.0,
+            "positive_available_mw": 357.0,
+            "accident_available_mw": 275.0
+          },
+          {
+            "unit": "GT",
+            "p_AC_mw": 85.0,
+            "scheduled_p_mw": 85.0,
+            "slack_loss_adjustment_mw": 0.0,
+            "up_headroom_after_AGC_mw": 205.0,
+            "down_headroom_after_AGC_mw": 0.0,
+            "positive_available_mw": 205.0,
+            "accident_available_mw": 205.0
+          }
+        ],
+        "error": null,
+        "safe": false
+      },
+      {
+        "global_tick": 44,
+        "stage": "far",
+        "loss_mw": 34.63008863252554,
+        "violations": [
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "0",
+            "value": 1.083756166217929,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "1",
+            "value": 1.0664797638648607,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "8",
+            "value": 1.081941818360372,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "21",
+            "value": 1.0606770850129732,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "24",
+            "value": 1.0661860116710349,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "25",
+            "value": 1.0634324667233093,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "27",
+            "value": 1.0605300180903516,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "33",
+            "value": 0.9372946210733271,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "35",
+            "value": 1.0636,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "38",
+            "value": 1.0806222111307433,
+            "lower": 0.94,
+            "upper": 1.06
+          }
+        ],
+        "thermal_AGC": [
+          {
+            "unit": "C1",
+            "p_AC_mw": 636.7987752461464,
+            "scheduled_p_mw": 636.0,
+            "slack_loss_adjustment_mw": 0.7987752461464197,
+            "up_headroom_after_AGC_mw": -0.7987752461464197,
+            "down_headroom_after_AGC_mw": 336.7987752461464,
+            "positive_available_mw": 0.0,
+            "accident_available_mw": 0.0
+          },
+          {
+            "unit": "C2",
+            "p_AC_mw": 715.0,
+            "scheduled_p_mw": 715.0,
+            "slack_loss_adjustment_mw": 0.0,
+            "up_headroom_after_AGC_mw": 0.0,
+            "down_headroom_after_AGC_mw": 380.0,
+            "positive_available_mw": 0.0,
+            "accident_available_mw": 0.0
+          },
+          {
+            "unit": "C3",
+            "p_AC_mw": 746.9458584026578,
+            "scheduled_p_mw": 746.9458584026578,
+            "slack_loss_adjustment_mw": 0.0,
+            "up_headroom_after_AGC_mw": 108.05414159734221,
+            "down_headroom_after_AGC_mw": 346.9458584026578,
+            "positive_available_mw": 108.05414159734221,
+            "accident_available_mw": 108.05414159734221
+          },
+          {
+            "unit": "CCGT",
+            "p_AC_mw": 320.0,
+            "scheduled_p_mw": 320.0,
+            "slack_loss_adjustment_mw": 0.0,
+            "up_headroom_after_AGC_mw": 357.0,
+            "down_headroom_after_AGC_mw": 0.0,
+            "positive_available_mw": 357.0,
+            "accident_available_mw": 275.0
+          },
+          {
+            "unit": "GT",
+            "p_AC_mw": 85.0,
+            "scheduled_p_mw": 85.0,
+            "slack_loss_adjustment_mw": 0.0,
+            "up_headroom_after_AGC_mw": 205.0,
+            "down_headroom_after_AGC_mw": 0.0,
+            "positive_available_mw": 205.0,
+            "accident_available_mw": 205.0
+          }
+        ],
+        "error": null,
+        "safe": false
+      },
+      {
+        "global_tick": 45,
+        "stage": "far",
+        "loss_mw": 34.419441365646264,
+        "violations": [
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "0",
+            "value": 1.0843316948953219,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "1",
+            "value": 1.0670129489795355,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "8",
+            "value": 1.0824254008141534,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "21",
+            "value": 1.0608303436892241,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "24",
+            "value": 1.0666614637924243,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "25",
+            "value": 1.063940584129013,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "27",
+            "value": 1.060911303051985,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "33",
+            "value": 0.9377436428332945,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "35",
+            "value": 1.0636,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "38",
+            "value": 1.081197077866654,
+            "lower": 0.94,
+            "upper": 1.06
+          }
+        ],
+        "thermal_AGC": [
+          {
+            "unit": "C1",
+            "p_AC_mw": 637.8224553271752,
+            "scheduled_p_mw": 636.0,
+            "slack_loss_adjustment_mw": 1.8224553271752484,
+            "up_headroom_after_AGC_mw": -1.8224553271752484,
+            "down_headroom_after_AGC_mw": 337.82245532717525,
+            "positive_available_mw": 0.0,
+            "accident_available_mw": 0.0
+          },
+          {
+            "unit": "C2",
+            "p_AC_mw": 715.0,
+            "scheduled_p_mw": 715.0,
+            "slack_loss_adjustment_mw": 0.0,
+            "up_headroom_after_AGC_mw": 0.0,
+            "down_headroom_after_AGC_mw": 380.0,
+            "positive_available_mw": 0.0,
+            "accident_available_mw": 0.0
+          },
+          {
+            "unit": "C3",
+            "p_AC_mw": 742.2308531483513,
+            "scheduled_p_mw": 742.2308531483513,
+            "slack_loss_adjustment_mw": 0.0,
+            "up_headroom_after_AGC_mw": 112.76914685164866,
+            "down_headroom_after_AGC_mw": 342.23085314835134,
+            "positive_available_mw": 112.76914685164866,
+            "accident_available_mw": 112.76914685164866
+          },
+          {
+            "unit": "CCGT",
+            "p_AC_mw": 320.0,
+            "scheduled_p_mw": 320.0,
+            "slack_loss_adjustment_mw": 0.0,
+            "up_headroom_after_AGC_mw": 357.0,
+            "down_headroom_after_AGC_mw": 0.0,
+            "positive_available_mw": 357.0,
+            "accident_available_mw": 275.0
+          },
+          {
+            "unit": "GT",
+            "p_AC_mw": 85.0,
+            "scheduled_p_mw": 85.0,
+            "slack_loss_adjustment_mw": 0.0,
+            "up_headroom_after_AGC_mw": 205.0,
+            "down_headroom_after_AGC_mw": 0.0,
+            "positive_available_mw": 205.0,
+            "accident_available_mw": 205.0
+          }
+        ],
+        "error": null,
+        "safe": false
+      },
+      {
+        "global_tick": 46,
+        "stage": "far",
+        "loss_mw": 34.27444397018319,
+        "violations": [
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "0",
+            "value": 1.0848546669491366,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "1",
+            "value": 1.0674754634923704,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "8",
+            "value": 1.082891284056499,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "21",
+            "value": 1.0609742046504789,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "24",
+            "value": 1.0671040582573212,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "25",
+            "value": 1.0643524843524008,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "27",
+            "value": 1.061190234994166,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "33",
+            "value": 0.9381689990177893,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "35",
+            "value": 1.0635999999999999,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "38",
+            "value": 1.0817334147798192,
+            "lower": 0.94,
+            "upper": 1.06
+          }
+        ],
+        "thermal_AGC": [
+          {
+            "unit": "C1",
+            "p_AC_mw": 636.8625522172042,
+            "scheduled_p_mw": 636.0,
+            "slack_loss_adjustment_mw": 0.862552217204211,
+            "up_headroom_after_AGC_mw": -0.862552217204211,
+            "down_headroom_after_AGC_mw": 336.8625522172042,
+            "positive_available_mw": 0.0,
+            "accident_available_mw": 0.0
+          },
+          {
+            "unit": "C2",
+            "p_AC_mw": 715.0,
+            "scheduled_p_mw": 715.0,
+            "slack_loss_adjustment_mw": 0.0,
+            "up_headroom_after_AGC_mw": 0.0,
+            "down_headroom_after_AGC_mw": 380.0,
+            "positive_available_mw": 0.0,
+            "accident_available_mw": 0.0
+          },
+          {
+            "unit": "C3",
+            "p_AC_mw": 739.6185059208505,
+            "scheduled_p_mw": 739.6185059208505,
+            "slack_loss_adjustment_mw": 0.0,
+            "up_headroom_after_AGC_mw": 115.38149407914955,
+            "down_headroom_after_AGC_mw": 339.61850592085045,
+            "positive_available_mw": 115.38149407914955,
+            "accident_available_mw": 115.38149407914955
+          },
+          {
+            "unit": "CCGT",
+            "p_AC_mw": 320.0,
+            "scheduled_p_mw": 320.0,
+            "slack_loss_adjustment_mw": 0.0,
+            "up_headroom_after_AGC_mw": 357.0,
+            "down_headroom_after_AGC_mw": 0.0,
+            "positive_available_mw": 357.0,
+            "accident_available_mw": 275.0
+          },
+          {
+            "unit": "GT",
+            "p_AC_mw": 85.0,
+            "scheduled_p_mw": 85.0,
+            "slack_loss_adjustment_mw": 0.0,
+            "up_headroom_after_AGC_mw": 205.0,
+            "down_headroom_after_AGC_mw": 0.0,
+            "positive_available_mw": 205.0,
+            "accident_available_mw": 205.0
+          }
+        ],
+        "error": null,
+        "safe": false
+      },
+      {
+        "global_tick": 47,
+        "stage": "far",
+        "loss_mw": 34.0640491393374,
+        "violations": [
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "0",
+            "value": 1.0854184799158326,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "1",
+            "value": 1.068001103202375,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "8",
+            "value": 1.0833668965057266,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "21",
+            "value": 1.0611274557307928,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "24",
+            "value": 1.0675758884937552,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "25",
+            "value": 1.0648543858174015,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "27",
+            "value": 1.0615648253498569,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "33",
+            "value": 0.9386232984799177,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "35",
+            "value": 1.0636000000000003,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "38",
+            "value": 1.0822954688699045,
+            "lower": 0.94,
+            "upper": 1.06
+          }
+        ],
+        "thermal_AGC": [
+          {
+            "unit": "C1",
+            "p_AC_mw": 637.7657024424635,
+            "scheduled_p_mw": 636.0,
+            "slack_loss_adjustment_mw": 1.765702442463521,
+            "up_headroom_after_AGC_mw": -1.765702442463521,
+            "down_headroom_after_AGC_mw": 337.7657024424635,
+            "positive_available_mw": 0.0,
+            "accident_available_mw": 0.0
+          },
+          {
+            "unit": "C2",
+            "p_AC_mw": 715.0,
+            "scheduled_p_mw": 715.0,
+            "slack_loss_adjustment_mw": 0.0,
+            "up_headroom_after_AGC_mw": 0.0,
+            "down_headroom_after_AGC_mw": 380.0,
+            "positive_available_mw": 0.0,
+            "accident_available_mw": 0.0
+          },
+          {
+            "unit": "C3",
+            "p_AC_mw": 734.9532944112073,
+            "scheduled_p_mw": 734.9532944112073,
+            "slack_loss_adjustment_mw": 0.0,
+            "up_headroom_after_AGC_mw": 120.04670558879275,
+            "down_headroom_after_AGC_mw": 334.95329441120725,
+            "positive_available_mw": 120.04670558879275,
+            "accident_available_mw": 120.04670558879275
+          },
+          {
+            "unit": "CCGT",
+            "p_AC_mw": 320.0,
+            "scheduled_p_mw": 320.0,
+            "slack_loss_adjustment_mw": 0.0,
+            "up_headroom_after_AGC_mw": 357.0,
+            "down_headroom_after_AGC_mw": 0.0,
+            "positive_available_mw": 357.0,
+            "accident_available_mw": 275.0
+          },
+          {
+            "unit": "GT",
+            "p_AC_mw": 85.0,
+            "scheduled_p_mw": 85.0,
+            "slack_loss_adjustment_mw": 0.0,
+            "up_headroom_after_AGC_mw": 205.0,
+            "down_headroom_after_AGC_mw": 0.0,
+            "positive_available_mw": 205.0,
+            "accident_available_mw": 205.0
+          }
+        ],
+        "error": null,
+        "safe": false
+      },
+      {
+        "global_tick": 48,
+        "stage": "far",
+        "loss_mw": 33.86714468731968,
+        "violations": [
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "0",
+            "value": 1.0860063088962806,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "1",
+            "value": 1.068537477510432,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "8",
+            "value": 1.0838881005946819,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "21",
+            "value": 1.0612956902266377,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "24",
+            "value": 1.0680834511337092,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "25",
+            "value": 1.065342421997965,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "27",
+            "value": 1.06190052682664,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "33",
+            "value": 0.9391358450886725,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "35",
+            "value": 1.0635999999999999,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "38",
+            "value": 1.0828906949817534,
+            "lower": 0.94,
+            "upper": 1.06
+          }
+        ],
+        "thermal_AGC": [
+          {
+            "unit": "C1",
+            "p_AC_mw": 636.8635483895542,
+            "scheduled_p_mw": 636.0,
+            "slack_loss_adjustment_mw": 0.8635483895542393,
+            "up_headroom_after_AGC_mw": -0.8635483895542393,
+            "down_headroom_after_AGC_mw": 336.86354838955424,
+            "positive_available_mw": 0.0,
+            "accident_available_mw": 0.0
+          },
+          {
+            "unit": "C2",
+            "p_AC_mw": 715.0,
+            "scheduled_p_mw": 715.0,
+            "slack_loss_adjustment_mw": 0.0,
+            "up_headroom_after_AGC_mw": 0.0,
+            "down_headroom_after_AGC_mw": 380.0,
+            "positive_available_mw": 0.0,
+            "accident_available_mw": 0.0
+          },
+          {
+            "unit": "C3",
+            "p_AC_mw": 731.5485133540924,
+            "scheduled_p_mw": 731.5485133540924,
+            "slack_loss_adjustment_mw": 0.0,
+            "up_headroom_after_AGC_mw": 123.45148664590761,
+            "down_headroom_after_AGC_mw": 331.5485133540924,
+            "positive_available_mw": 123.45148664590761,
+            "accident_available_mw": 123.45148664590761
+          },
+          {
+            "unit": "CCGT",
+            "p_AC_mw": 320.0,
+            "scheduled_p_mw": 320.0,
+            "slack_loss_adjustment_mw": 0.0,
+            "up_headroom_after_AGC_mw": 357.0,
+            "down_headroom_after_AGC_mw": 0.0,
+            "positive_available_mw": 357.0,
+            "accident_available_mw": 275.0
+          },
+          {
+            "unit": "GT",
+            "p_AC_mw": 85.0,
+            "scheduled_p_mw": 85.0,
+            "slack_loss_adjustment_mw": 0.0,
+            "up_headroom_after_AGC_mw": 205.0,
+            "down_headroom_after_AGC_mw": 0.0,
+            "positive_available_mw": 205.0,
+            "accident_available_mw": 205.0
+          }
+        ],
+        "error": null,
+        "safe": false
+      },
+      {
+        "global_tick": 49,
+        "stage": "far",
+        "loss_mw": 33.64666335953734,
+        "violations": [
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "0",
+            "value": 1.0865821789164594,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "1",
+            "value": 1.0690775912310877,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "8",
+            "value": 1.0843872701021953,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "21",
+            "value": 1.0614612999756452,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "24",
+            "value": 1.0685830326777266,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "25",
+            "value": 1.0658529664729217,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "27",
+            "value": 1.0622684979033654,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "33",
+            "value": 0.939642528298561,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "35",
+            "value": 1.0636000000000003,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "38",
+            "value": 1.0834655810642042,
+            "lower": 0.94,
+            "upper": 1.06
+          }
+        ],
+        "thermal_AGC": [
+          {
+            "unit": "C1",
+            "p_AC_mw": 636.8433198858334,
+            "scheduled_p_mw": 636.0,
+            "slack_loss_adjustment_mw": 0.8433198858333526,
+            "up_headroom_after_AGC_mw": -0.8433198858333526,
+            "down_headroom_after_AGC_mw": 336.84331988583335,
+            "positive_available_mw": 0.0,
+            "accident_available_mw": 0.0
+          },
+          {
+            "unit": "C2",
+            "p_AC_mw": 715.0,
+            "scheduled_p_mw": 715.0,
+            "slack_loss_adjustment_mw": 0.0,
+            "up_headroom_after_AGC_mw": 0.0,
+            "down_headroom_after_AGC_mw": 380.0,
+            "positive_available_mw": 0.0,
+            "accident_available_mw": 0.0
+          },
+          {
+            "unit": "C3",
+            "p_AC_mw": 727.2256022147054,
+            "scheduled_p_mw": 727.2256022147054,
+            "slack_loss_adjustment_mw": 0.0,
+            "up_headroom_after_AGC_mw": 127.77439778529458,
+            "down_headroom_after_AGC_mw": 327.2256022147054,
+            "positive_available_mw": 127.77439778529458,
+            "accident_available_mw": 127.77439778529458
+          },
+          {
+            "unit": "CCGT",
+            "p_AC_mw": 320.0,
+            "scheduled_p_mw": 320.0,
+            "slack_loss_adjustment_mw": 0.0,
+            "up_headroom_after_AGC_mw": 357.0,
+            "down_headroom_after_AGC_mw": 0.0,
+            "positive_available_mw": 357.0,
+            "accident_available_mw": 275.0
+          },
+          {
+            "unit": "GT",
+            "p_AC_mw": 85.0,
+            "scheduled_p_mw": 85.0,
+            "slack_loss_adjustment_mw": 0.0,
+            "up_headroom_after_AGC_mw": 205.0,
+            "down_headroom_after_AGC_mw": 0.0,
+            "positive_available_mw": 205.0,
+            "accident_available_mw": 205.0
+          }
+        ],
+        "error": null,
+        "safe": false
+      },
+      {
+        "global_tick": 50,
+        "stage": "far",
+        "loss_mw": 33.42508676036319,
+        "violations": [
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "0",
+            "value": 1.0871559161518585,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "1",
+            "value": 1.069616844868245,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "8",
+            "value": 1.0848830686832605,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "21",
+            "value": 1.0616261764978827,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "24",
+            "value": 1.0690796463173038,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "25",
+            "value": 1.0663638997176428,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "27",
+            "value": 1.0626384540981042,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "35",
+            "value": 1.0636,
+            "lower": 0.94,
+            "upper": 1.06
+          },
+          {
+            "kind": "BUS_VOLTAGE_LIMIT",
+            "element": "38",
+            "value": 1.084037589053661,
+            "lower": 0.94,
+            "upper": 1.06
+          }
+        ],
+        "thermal_AGC": [
+          {
+            "unit": "C1",
+            "p_AC_mw": 636.9389964669264,
+            "scheduled_p_mw": 636.0,
+            "slack_loss_adjustment_mw": 0.9389964669263691,
+            "up_headroom_after_AGC_mw": -0.9389964669263691,
+            "down_headroom_after_AGC_mw": 336.93899646692637,
+            "positive_available_mw": 0.0,
+            "accident_available_mw": 0.0
+          },
+          {
+            "unit": "C2",
+            "p_AC_mw": 715.0,
+            "scheduled_p_mw": 715.0,
+            "slack_loss_adjustment_mw": 0.0,
+            "up_headroom_after_AGC_mw": 0.0,
+            "down_headroom_after_AGC_mw": 380.0,
+            "positive_available_mw": 0.0,
+            "accident_available_mw": 0.0
+          },
+          {
+            "unit": "C3",
+            "p_AC_mw": 722.7856907191015,
+            "scheduled_p_mw": 722.7856907191015,
+            "slack_loss_adjustment_mw": 0.0,
+            "up_headroom_after_AGC_mw": 132.21430928089853,
+            "down_headroom_after_AGC_mw": 322.78569071910147,
+            "positive_available_mw": 132.21430928089853,
+            "accident_available_mw": 130.0
+          },
+          {
+            "unit": "CCGT",
+            "p_AC_mw": 320.0,
+            "scheduled_p_mw": 320.0,
+            "slack_loss_adjustment_mw": 0.0,
+            "up_headroom_after_AGC_mw": 357.0,
+            "down_headroom_after_AGC_mw": 0.0,
+            "positive_available_mw": 357.0,
+            "accident_available_mw": 275.0
+          },
+          {
+            "unit": "GT",
+            "p_AC_mw": 85.0,
+            "scheduled_p_mw": 85.0,
+            "slack_loss_adjustment_mw": 0.0,
+            "up_headroom_after_AGC_mw": 205.0,
+            "down_headroom_after_AGC_mw": 0.0,
+            "positive_available_mw": 205.0,
+            "accident_available_mw": 205.0
+          }
+        ],
+        "error": null,
+        "safe": false
+      }
+    ],
+    "unknown_clocks": true,
+    "reused": false,
+    "summary_path": "/workspace/scratch/42c5fe32dad0/single_window_loss_actual_20261114/candidate/AC48/SUMMARY.json"
+  },
+  "full_window_AC": true,
+  "PRICE": false,
+  "execution": false,
+  "publication": false,
+  "profile_path": "/workspace/scratch/42c5fe32dad0/single_window_loss_interface_20261114/PREPARED/LOSS_PROFILE.json"
+}

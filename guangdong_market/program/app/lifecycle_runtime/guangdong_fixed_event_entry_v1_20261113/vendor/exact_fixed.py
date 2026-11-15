@@ -7,11 +7,11 @@ sys.path.insert(0,str(Path(__file__).resolve().parent))
 from thermal_prefix_reader import derive_prefix
 
 def aligned_tick(value,label):
- assert type(value)in(int,float) and math.isfinite(value) and abs(value-round(value))<=1e-9,label+' must align5min'
+ assert type(value)in(int,float) and math.isfinite(value) and abs(value-round(value))<=1e-9,label+' must align15min'
  return round(value)
 
 def validate_receipts(case,receipts,cut):
- leads={g:aligned_tick(c['notice_h']*12,'notice lead')for g,c in case['curves'].items()}
+ leads={g:aligned_tick(c['notice_h']*4,'notice lead')for g,c in case['curves'].items()}
  assert all(v>=0 for v in leads.values()),'negative notice lead'
  seen=set()
  for r in receipts:
@@ -29,16 +29,16 @@ def validate_receipts(case,receipts,cut):
    if 'notice_tick'in r:assert type(r['notice_tick'])is int and r['notice_tick']==r['begin_tick']-leads[g] and r['issued_tick']<=r['notice_tick'],'notice target mismatch'
  return leads
 
-def derive(case,incoming,names,primal,*,executed_cells=3,receipts=()):
+def derive(case,incoming,names,primal,*,executed_cells=1,receipts=()):
  # Check all receipts identically before consuming new or inherited events.
- start=aligned_tick((datetime.fromisoformat(case['contract']['domain_start'])-datetime.fromisoformat(case['contract']['origin'])).total_seconds()/300,'domain clock')
- cut=aligned_tick((datetime.fromisoformat(case['contract']['cutoff'])-datetime.fromisoformat(case['contract']['origin'])).total_seconds()/300,'cutoff clock')
+ start=aligned_tick((datetime.fromisoformat(case['contract']['domain_start'])-datetime.fromisoformat(case['contract']['origin'])).total_seconds()/900,'domain clock')
+ cut=aligned_tick((datetime.fromisoformat(case['contract']['cutoff'])-datetime.fromisoformat(case['contract']['origin'])).total_seconds()/900,'cutoff clock')
  leads=validate_receipts(case,receipts,cut)
  z=derive_prefix(case,incoming,names,primal,executed_cells=executed_cells)
  vals=dict(zip(names['variables'],primal))
  ages={};states={};old=incoming['thermal']
  for g,d in case['energy_inputs']['thermal'].items():
-  age=d['initial_state_age_h']*12;assert abs(age-round(age))<1e-7,'declared age must align5min';anchor=start-round(age);phase=old[g]['phase'];disconnect=None
+  age=d['initial_state_age_h']*4;assert abs(age-round(age))<1e-7,'declared age must align15min';anchor=start-round(age);phase=old[g]['phase'];disconnect=None
   # No historic disconnect invented for a currently online unit.
   if phase=='off':disconnect=anchor
   scheduled=[]
@@ -63,7 +63,7 @@ def derive(case,incoming,names,primal,*,executed_cells=3,receipts=()):
      else:scheduled.append(at+len(expected))
    # connection changes to off only at shutdown completion, not stop initiation.
    if start+j+1 in scheduled:anchor=start+j+1;disconnect=anchor
-  end=start+executed_cells;ages[g]=(end-anchor)/12
+  end=start+executed_cells;ages[g]=(end-anchor)/4
   if z['boundary_states'][g]['phase']=='off':assert disconnect is not None
   states[g]=dict(boundary_tick=end,connection_anchor_tick=anchor,last_disconnect_tick=disconnect,connection_state_age_ticks=end-anchor,phase=z['boundary_states'][g]['phase'],event_id=z['boundary_states'][g]['event_id'],event_elapsed_ticks=z['boundary_states'][g]['event_elapsed_ticks'],remaining_curve=deepcopy(z['boundary_states'][g]['remaining_curve']),startup_class=None,startup_class_basis='not supplied: fixed single declared research curve only')
  z.update(thermal_age_h=ages,fixed_curve_state=states,typed_classification_supported=False,source_receipts_verified_by_caller=True)

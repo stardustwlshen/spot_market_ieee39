@@ -1,0 +1,12 @@
+{
+  "schema": "gd.bundled.research.scenario.v1",
+  "seed_pins": {
+    "seed/case.json": "e8831750eda81e1c181901f00320504f265e579d893cdfb7845d0b85cd8aebda",
+    "seed/agc.json": "7c2a809fae8fec6d135d3df1c9d91784a4d78e4b15b90460635ec895460eb816",
+    "seed/request.json": "fbda576bc1a56e188ab62ef45c15b3a09a4a1bd999b66f17f4c354f02db50cc4",
+    "INITIAL_CARRY.json": "a05fde9dd65b5ed6cae192384d7ab44bbc6a2f8e91ed3d138175e91f058a8b4f",
+    "seed/policy.json": "9527953e25337f7be4e9de37cce685e861e900af8b35f9530dc012e43e346262"
+  },
+  "formal": false,
+  "notice": "合成研究场景，只含输入，不含旧日前或实时出清结果。"
+}

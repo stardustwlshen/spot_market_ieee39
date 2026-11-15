@@ -4,7 +4,7 @@ Exact expected stage enumeration, no recursive native count or symlink double co
 from pathlib import Path
 import hashlib,json,gzip
 
-MODE_KEYS=('windows','finite_h1','finite_hourly','post_scuc_day','post_scuc_planning','reference_revision','counterfactual_continue','research_event_simulation','event_price_profile','selected_event_profile','ac_once','candidate_loss_once','threads','mip_gap','SCED_solver','profile','nextday_selection','nextday_explicit','post_declarations','stop_request')
+MODE_KEYS=('rt_clock_mode','grid_minutes','windows','finite_h1','finite_hourly','post_scuc_day','post_scuc_planning','reference_revision','counterfactual_continue','research_event_simulation','event_price_profile','selected_event_profile','ac_once','candidate_loss_once','threads','mip_gap','SCED_solver','profile','nextday_selection','nextday_explicit','post_declarations','stop_request')
 def sha(p):return hashlib.sha256(Path(p).read_bytes()).hexdigest()
 def read(p):return json.loads(Path(p).read_bytes())
 def need(v,m):
@@ -134,7 +134,8 @@ def scan(output,expected=None):
   rows.append(dict(window=w,SCUC=stages[0],SCED=stages[1],**z))
  for q in range(n):prices.append(dict(quarter=q,**checked(lambda q=q:_price(out/'pipeline/price'/f'q{q}'),f'q{q}/PRICE')))
  for w,z in enumerate(rows):
-  if z.get('receipt_selected')and w+1<n and not prices[w+1].get('math_accepted'):z['next_step']='selected_receipt_price_missing'
+  q=w if plan.get('rt_clock_mode')=='provincial_15min_execution' else w+1
+  if z.get('receipt_selected')and q<n and not prices[q].get('math_accepted'):z['next_step']='selected_receipt_price_missing'
  locks=[str(p)for p in (out/'RESUME.lock',out/'RESUME_LOCK.json')if p.exists()]
  maxcalls=plan.get('maximum_native_calls',3*n)
  references=[]

@@ -6,10 +6,12 @@ def render_charts(data):
  import pandas as pd
  import plotly.express as px
  tabs=st.tabs(['实际模拟执行出力','储能 SOC','风光可用/发电/弃电','独立15分钟研究价','小时模拟核算'])
- for tab,key,title,y in [(tabs[0],'executed_5min','热机实际模拟执行（5min均值）','P_mw'),(tabs[1],'storage_5min','储能实际模拟SOC（MWh）','SOC_MWh')]:
+ for tab,key,title,y,x in [(tabs[0],'executed_5min','热机实际模拟执行（5min均值）','P_mw','start'),(tabs[1],'storage_5min','储能时段末SOC（MWh）','SOC_MWh','end')]:
   with tab:
    rows=data.get(key,[])
-   if rows:st.plotly_chart(px.line(pd.DataFrame(rows),x='start',y=y,color='resource',title=title),width='stretch')
+   if rows:
+    if any(not row.get(x) for row in rows):st.warning('缺少时段时间字段，暂不绘制该曲线，不能将期末状态当作期初状态。')
+    else:st.plotly_chart(px.line(pd.DataFrame(rows).sort_values([x,'resource']),x=x,y=y,color='resource',title=title),width='stretch')
    else:st.info('暂无经执行回执确认的数据；已下发未执行不计入。')
  with tabs[2]:
   rows=data.get('VRE_5min',[])
@@ -32,13 +34,15 @@ def render_charts(data):
    f=pd.DataFrame(rows);plot=f.copy();plot['研究金额元']=pd.to_numeric(plot['energy_amount_CNY']);plot['账户']=plot['resource']+':'+plot['direction']
    st.plotly_chart(px.line(plot,x='start',y='研究金额元',color='账户'),width='stretch')
    st.dataframe(f,width='stretch')
+   from gd_economics_panel import render as render_economics
+   render_economics(data)
   else:st.info('完整执行和价格/明确合成合同条件未齐，不展示伪造账单。')
 def render_developer(navigation=None):
  st.set_page_config(page_title='广东研究市场',layout='wide')
  if navigation is not None:navigation()
  st.title('广东省内研究电能量链')
  st.warning('研究仿真，非正式市场/账单。上方4/96窗仍是旧日前固定组合，可提供所选日前来源；下方当前入口已修正日末SOC与剩余循环吞吐必要约束。首小时原12次求解仅经新约束兼容后沿用，不是v3新native或新全天完成。保守日前在线保护、近/远各24个五分钟联合优化均为明确研究解释。')
- st.caption('实时单窗、独立定价和完整小时核算已接原主页。另一个 17–18 点研究分支的 12 个基态 AC 点通过，不代表当前午夜链通过，也不是 N-1、动态安全或正式放行。')
+ st.caption('有功/DC线路约束市场仿真；未评估交流/无功。旧交流诊断仅历史元数据，不用于新范围放行。')
  st.caption('采用独立研究输入模板，400 MW 正备用及 400 MW 事故备用不变；求解参数以本次求解计划和回执为准。交易时区为 +08:00，后台日志 UTC；暂不支持安全取消，不强杀求解器。新场景/报价可在下方另存后运行；旧版 CSV 不兼容。')
  core=st.text_input('新引擎 market.py',str(api.DEFAULT_CORE));run=st.text_input('独立 run 目录',str(api.DEFAULT_RUNS/'new_research_run'))
  action=st.radio('操作',['run','resume'],horizontal=True);windows=st.selectbox('窗口数',[4,96]);settle=st.checkbox('明确采用合成参与和空合同假设做小时模拟核算（仅96窗）',disabled=windows!=96)
@@ -47,8 +51,7 @@ def render_developer(navigation=None):
  render_da_only(scenario)
  st.info('旧固定日前组合仅提供历史结果，不再启动或恢复旧求解。')
  st.subheader('只读状态与结果')
- acp=st.text_input('同 run AC PLAN（可选）','');acr=st.text_input('同 run AC RESULT（可选）','')
- render_saved_results(core,run,acp,acr)
+ render_saved_results(core,run)
 
  with st.expander('修正循环尾约束的研究开发入口（统一实时/定价/核算）',expanded=True):
   from gd_unified_page import render as render_unified
@@ -60,10 +63,6 @@ def render_developer(navigation=None):
  with st.expander('旧短域已执行出力、SOC与价格图表（只读历史）'):
   from gd_ui_short_results_panel import render as render_short_results
   render_short_results(parent_run=run)
-
- with st.expander('短域基准安全校核：真实拒绝分支'):
-  from gd_ui_short_safety_panel import render as render_short_safety
-  render_short_safety()
 
  with st.expander('历史48小时/三态研究分支（只读说明）'):
   st.caption('原源码、首窗和失败证据均保留；本主页不再提供旧域RT、三态或PRICE2.2的启动按钮，也不把旧域结果混成修正短域结果。下方保留安全与定价反馈的只读检查。')
@@ -83,10 +82,6 @@ def render_developer(navigation=None):
  with st.expander('历史实时 / 调频失败与安全反馈证据（只读）'):
   from gd_ui_rt_agc_panel import render as render_rt_agc
   render_rt_agc()
-
- with st.expander('独立17–18研究小时的交流基态结果（不代表午夜链）'):
-  from gd_ui_hour_ac_panel import render as render_hour_ac
-  render_hour_ac()
 
  from gd_ui_price_feedback_panel import render as render_price_feedback
  render_price_feedback()
@@ -114,9 +109,9 @@ def render_saved_results(core,run,acp='',acr=''):
   except Exception as e:st.error(str(e))
  snapshot=st.session_state.get('gd_results_snapshot')
  if snapshot:
-  safety=snapshot['status'].get('ac',{}).get('status','未提供')
-  if safety=='research_snapshot_unsafe':st.error('交流安全校核未通过；结果不能作为安全调度方案。')
-  else:st.warning('安全状态：'+safety+'。本页为研究结果，不是正式结算账单。')
+  scope=snapshot['status'].get('model_scope',snapshot['data'].get('model_scope'))
+  if scope=='active_power_dc':st.caption('有功/DC线路约束市场仿真；未评估交流/无功。')
+  else:st.caption('历史/未声明新范围的结果：保留原运行身份。旧AC状态仅历史元数据，不用于新DC范围放行。')
   if snapshot['data'].get('schema')=='gd.live.display_view.v1':
    from gd_resume_progress import period_end
    receipt=snapshot['data']['execution_receipt'];progress=snapshot['data'].get('progress_record',{})
@@ -137,7 +132,7 @@ def render(navigation=None):
   return
  st.set_page_config(page_title='广东市场模拟',layout='wide')
  st.title('广东市场模拟')
- st.warning('研究仿真：安全校核未通过时不得作为实际调度方案；当前金额不代表完整利润。')
+ st.warning('有功/DC线路约束市场仿真；未评估交流/无功。非实际调度方案，当前金额不代表完整利润。')
  from pathlib import Path
  core=str(api.DEFAULT_CORE)
  with st.expander('运行位置与已有结果'):
@@ -156,9 +151,12 @@ def render(navigation=None):
    try:
     accepted=verify_selection(selected)
     render_unified(parent_run=accepted,simple=True)
+
    except Exception as exc:
     st.session_state.pop('gd_selected_da',None);st.error('日前来源验证失败：'+str(exc))
   else:st.info('先完成日前计算，并点击“选此已接受DA”；结果目录不会自动当作日前来源。')
+  from gd_single_window_prepare import render as render_single_prepare
+  render_single_prepare(selected)
  with tabs[2]:render_saved_results(core,run)
 
 if __name__=='__main__':render()

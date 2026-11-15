@@ -688,8 +688,8 @@
     "bytes": 34219
   },
   "guangdong_rt_short_midnight_v1_20261112/short_support.py": {
-    "sha256": "ef2b529943b29fee7eb95305b4978eb6b4a67f1de94e4fa6b74f45a8a263f099",
-    "bytes": 1493
+    "sha256": "f9a974a7497e90b9076eeb8b065b5ff2b399684129170b06ba817b4dba0bc8d7",
+    "bytes": 1551
   },
   "guangdong_rt_short_midnight_v1_20261112/thermal_physical.py": {
     "sha256": "9d6512ad43e5feb109f68a16c0e8821d349e56de2e27115b850aeaac7c542039",
@@ -744,8 +744,8 @@
     "bytes": 1113
   },
   "guangdong_rt_short_user_cli_v5_20261112/builder_user_v2.py": {
-    "sha256": "e426f3aa1cc519d129d6a0011e20cc38cb588c511a6d753d4eda4848c9312c17",
-    "bytes": 9226
+    "sha256": "427b423c977f7c1abebe6e6ac65922f159f5392c22ecee32d13a83b90aecca3c",
+    "bytes": 9584
   },
   "guangdong_rt_short_user_cli_v5_20261112/cycle_tail_cut.py": {
     "sha256": "05743e0621a7fdb0bb0f4876ae5491a1745403b6aaa1de1d0ec8faf08ed42b53",
@@ -756,12 +756,12 @@
     "bytes": 6457
   },
   "guangdong_rt_short_user_cli_v5_20261112/program.py": {
-    "sha256": "7b5768cc124e4c79de9b769825155430dc21b40654ef23ce43162f1fde6e6523",
-    "bytes": 16654
+    "sha256": "ce80fbfcce2ca6932b2af9708a8472b9d59fec697261ddd7c69fcd61a657864c",
+    "bytes": 17047
   },
   "guangdong_rt_short_user_cli_v5_20261112/rolling_midnight.py": {
-    "sha256": "80bde494812864eed4134f8603721e106e452236720377ca468d7263c7af0753",
-    "bytes": 9513
+    "sha256": "8b0d52b2838d6924c3992b3dd2f8ee300098d69a406f2ed8388a39fa2070b990",
+    "bytes": 9672
   },
   "guangdong_rt_short_user_cli_v5_20261112/warm_hint.py": {
     "sha256": "0280696f78c267a2abb621e95e1a36394b93510ec1062a9d8c146f7ef3f1b9ed",

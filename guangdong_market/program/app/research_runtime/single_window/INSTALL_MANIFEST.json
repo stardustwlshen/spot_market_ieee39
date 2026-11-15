@@ -1,0 +1,102 @@
+{
+  "worker/new_worker.py": {
+    "source": "active_power_dc_scope_20261115",
+    "sha256": "dd57b1c34c338ad6796158fbdf57e6422152a6439a755e1cbead7d5145d0735b"
+  },
+  "stage/stage_api.py": {
+    "source": "guangdong_stage_single_window_20261114/stage_api.py",
+    "sha256": "0e72fdf33e71dc8d1514119364941fa1d39485cf1a4a3149f5381037fd819623"
+  },
+  "stage/builder.py": {
+    "source": "guangdong_stage_single_window_20261114/builder.py",
+    "sha256": "31f89ceb00de564a73f3a2bd7e5ea0919a0a5f31547537a19eff8c34127d5805"
+  },
+  "stage/stage_contract.py": {
+    "source": "guangdong_stage_single_window_20261114/stage_contract.py",
+    "sha256": "6a0ab690d5620649f7d1384c5dc114b8c6a083d9db944b18711e3446a0f069f9"
+  },
+  "stage/short_support.py": {
+    "source": "guangdong_stage_single_window_20261114/short_support.py",
+    "sha256": "3ed1052bcde9fbd1d11b2ab9821611d05f469dff94a37b1a77b079dfee943763"
+  },
+  "stage/day_contract.py": {
+    "source": "guangdong_stage_single_window_20261114/day_contract.py",
+    "sha256": "2f6bd2ec57bd2cc4b93208d3c23eaac3d387dbf8884abb459a897d741c51f322"
+  },
+  "stage/predicted_registry.py": {
+    "source": "guangdong_stage_single_window_20261114/predicted_registry.py",
+    "sha256": "b683f43bf8917e59bb89d3ec390dc16b046c73818ae94fda1a25d4e049a7a55a"
+  },
+  "stage/agc_near.py": {
+    "source": "guangdong_stage_single_window_20261114/agc_near.py",
+    "sha256": "6da3ba66614150ae62a6456b98fc6b7733c9fa2bf372f3a022d7674f7baf0c0f"
+  },
+  "stage/far_prepare.py": {
+    "source": "stage_correctness_delta_20261114/far_prepare.py",
+    "sha256": "e6951e8de9ee7f20279d64620a6950378125f8ba4faf55f77acf355777c98b89"
+  },
+  "stage/restore_source.py": {
+    "source": "guangdong_stage_single_window_20261114/restore_source.py",
+    "sha256": "41eac93efc1a1a7ee43560cd547d8524a825266496feae0dea0a344ab6bdbca5"
+  },
+  "price/single_price.py": {
+    "source": "price_correctness_delta_20261114/single_price.py",
+    "sha256": "e419d6f2872851c9603fcd19bbbaeaebb7ae21ad784b810270d4bc59a4f01915"
+  },
+  "price/domain_event.py": {
+    "source": "price_correctness_delta_20261114/domain_event.py",
+    "sha256": "bcd3035cb980e18c5a37051ff2e8f62d520a83157fa28b4c9a2ed10391b3cc2b"
+  },
+  "price/state_adapter.py": {
+    "source": "guangdong_eight_quarter_price_20261114/api_final/state_adapter.py",
+    "sha256": "d34b84b3635d5c772082d1b7eeebed2aa5726c3da37119d30cdd828d8ac98899"
+  },
+  "price/mapping_one.py": {
+    "source": "guangdong_eight_quarter_price_20261114/api_final/mapping_one.py",
+    "sha256": "33e47e6941716380ab186e1db6270b76d837806cc4d850f1dd1803ce8a6ae1b2"
+  },
+  "stage/price_api/window_api_corrected.py": {
+    "source": "stage_correctness_delta_20261114/window_api_corrected.py",
+    "sha256": "24191256dfdd75f65b97db500a8a2826b6f90959947e54038381c26ef60fb9c7"
+  },
+  "stage/price_api/single_window.py": {
+    "source": "guangdong_stage_single_window_20261114/price_api/single_window.py",
+    "sha256": "596eb8d7ce47f631b74da7cde6fb682018ab3e166d1d267b3412e14db3609a0e"
+  },
+  "worker/new_base.py": {
+    "source": "guangdong_new_base_factory_20261114/new_base.py",
+    "sha256": "4dba7e2299a0c37bce72b10c4f8387dfaddaea650afa276d40963254e9785e79"
+  },
+  "safety/curve.py": {
+    "source": "optional_reactive_interface_source_bound_research_20261114",
+    "sha256": "0357e6f25824bce3f1490baa2e4663d83fe1c6c751d0f7e80f23f84e773acb70"
+  },
+  "price/event_gate.py": {
+    "source": "guangdong_price_incoming_off_20261114 (pure arithmetic fixture verification)",
+    "sha256": "542085e44dbba3a80985add0f238b697fb82dfb6a8aee7e2eebb00aa1115d930"
+  },
+  "price/loss_price.py": {
+    "source": "installed loss-stage runtime",
+    "sha256": "c299919872fa9aea03a7bbbf1bb1aa99abbdbdf122c7db70ec3935f9b305e179"
+  },
+  "loss/loss_profile.py": {
+    "source": "installed loss-stage runtime",
+    "sha256": "1c97f91139530ba4d2adbbc92d553c7c1d4599048a3180e731ff9ac9b439e06d"
+  },
+  "loss/candidate.py": {
+    "source": "installed loss-stage runtime",
+    "sha256": "70ed121349de3603039b9e3bd24a8e007cb02d25c839c6a348b7a79394bab508"
+  },
+  "price/incoming_active.py": {
+    "source": "guangdong_price_active_delta_20261114/incoming_active.py",
+    "sha256": "8ef558dd301a1382bc5ada1358c441163e7cf554f91e96d150c2a0ee4c8addb5"
+  },
+  "stage/registered_near.py": {
+    "source": "stage_correctness_delta_20261114/registered_near.py",
+    "sha256": "211c44c7af667bd3437335af63597899364e5fdfc849064cf6ccc4c3af241a82"
+  },
+  "price/price_source_binding.py": {
+    "source": "price_correctness_delta_20261114/price_source_binding.py",
+    "sha256": "ccd79b52d6b8e0f1ebec47ab49a2f54be961304566e0a16049989e39c3f5af50"
+  }
+}

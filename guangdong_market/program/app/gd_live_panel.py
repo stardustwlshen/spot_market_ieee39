@@ -5,9 +5,10 @@ def render(da,run):
  from gd_post_scuc_panel import render as render_post_scope
  render_post_scope(run)
  with st.expander('同一新分支：实时 + 小时调频 + 独立定价/核算（默认4窗，可选96窗）',expanded=True):
-  st.warning('研究入口：固定五机各10MW资格、400/400MW保持；通用非零IEEE39启停和系统安全尚未实测放行。默认4窗；96窗尚未完整原生验证，非全天合规产品。')
-  st.caption('同一live session：seedPRICE → W0/W1/W2各SCUC+SCED+PRICE → W3交接 → H0。4窗最多12次、96窗最多288次HiGHS，SCED统一simplex，无自动回退。缺价不补0，额外已下发3格不计入小时；不混下方旧base结果。')
-  st.caption('本隔离候选：AC在候选完整数学验收后、handoff前执行；默认缺失或失败安全检查不推进状态。仅显式反事实研究可保留失败并继续模拟，非安全发布。')
+  st.warning('研究入口：固定五机各10MW资格、400/400MW保持；通用非零IEEE39启停尚未完整实测。默认4窗；96窗尚未完整原生验证，非全天合规产品。')
+  st.caption('同一live session：seedPRICE → W0/W1/W2各SCUC+SCED+PRICE → W3交接 → H0。4窗最多12次、96窗最多288次HiGHS，SCED采用计划中明确的IPM+crossover，无自动回退。缺价不补0，额外已下发3格不计入小时；不混下方旧base结果。')
+  st.warning('默认普通模式仅保存本机结果，不满足独立外存要求。每15分钟外存模式需已配置且在线的授权协调器；本机目录或上传成功不等于回读确认。无人值守独立外存尚未部署。')
+  st.caption('有功/DC线路约束市场仿真；未评估交流/无功。新运行不调用AC，也不以历史AC结果阻断市场链。')
   windows=st.selectbox('运行范围（不会自动扩大预算）',[4,96],format_func=lambda v:'首小时4窗/12调用'if v==4 else'研究全天96窗/288调用，未完整原生验证',key='live_windows')
   post_mode=st.checkbox('明确采用五个合资格独立厂站、总量50的饱和规划post-SCUC研究模式（仅4窗；规划不等于调频发布）',value=False,disabled=windows!=4,key='live_post_planning')
   if windows!=4:post_mode=False
@@ -44,11 +45,8 @@ def render(da,run):
   if finite_hourly:
    st.caption('仅在每小时申报到期时消费来源绑定的数据，不提前视为出清或安全发布。H2已单独验证；此UI完整96窗链尚未实跑，不支持任意资格库存。')
   event_sim=st.checkbox('明确允许本研究按已接受计划生成模拟启停指令（不是实际调度授权）',value=False,key='live_event_sim')
-  counter=st.checkbox('系统安全未验证或失败时仍允许继续反事实研究计算，保留blocked状态、不发布',value=False,key='live_counterfactual')
-  st.caption('两个选项独立，默认关闭。无模拟指令授权时不得生成启停回执；没有安全放行且未允许反事实继续时，接受当前数学结果后停止后续计算。')
-  ac_once=st.checkbox('额外运行本分支W0候选首5分钟点一次AC诊断（在handoff之前）（研究Q假设，不代表全小时/全天）',value=False,key='live_ac_once')
-  loss_once=st.checkbox('另行授权同一未下发候选一次同候选损耗纠正诊断：最多额外1次SCED和1次AC，仅原c10e/50/400研究条件；仍不安全则阻断',value=False,key='live_loss_once')
-  if loss_once and not ac_once:st.warning('损耗纠正必须同时明确选择首次AC诊断；默认不启用。')
+  counter=False;ac_once=False;loss_once=False  # Retained positional API slots, no AC/bypass permission.
+  st.caption('模拟启停仍需明确授权；市场数学、储能、备用、AGC及时标门禁保持。')
   event_price=st.checkbox('另行选用固定曲线/混合季度非定价研究映射：整季固定原3格均值，非广东正式实现认证；默认关闭，遇事件/停机不擅自套用',value=False,key='live_event_price')
   if st.session_state.get('stop_source_identity')!=(da,run,windows):
    st.session_state['stop_source_identity']=(da,run,windows);st.session_state.pop('stop_inventory',None);st.session_state['stop_independent_permission']=False
@@ -68,18 +66,25 @@ def render(da,run):
     allow_stop=st.checkbox('独立许可：仅此来源/时刻/曲线的研究停机DA保护覆盖，不是官方指令、不解除AGC或安全要求',value=False,key='stop_independent_permission')
     if allow_stop and title.strip():stop_request=dict(unit=event['unit'],absolute_tick=event['absolute_tick'],declaration_name=title,research_stop_override=True)
     st.caption('研究启停模拟选项只许可回执模拟，不等于上述DA保护覆盖；两项互不代替。官方指令导入不支持。')
-  name=st.text_input('新完整会话名','live_first_hour',key='live_name');identity=(da,run,name,event_sim,counter,ac_once,event_price,str(stop_request),windows,selection,nextday_explicit,revision,post_mode,post_day,loss_once,finite_h1,finite_hourly)
+  from gd_pricing_clock_panel import render as render_clock
+  pricing_clock_path=render_clock((da,run))
+  with st.expander('高级：定价参考带研究参数（可选）',expanded=False):
+   delta_percent=st.number_input('定价参考带 δ（%，研究假设）',min_value=0.0,max_value=100.0,value=10.0,step=1.0,key='live_pricing_delta_percent')
+   pricing_delta=float(delta_percent)/100.0
+   st.caption('默认10%仅为研究假设，尚未取得广东现行δ核定值；0–100%仅为本软件支持范围，不是官方允许区间。修改后须重新查看计划；不改变已有结果。')
+   st.caption('官方2026 V1.0细则3.4.4.5参考日前SCED；附录3负荷平衡罚因子区域默认1000元/MWh，不等于已核实当日广东运行参数。不得为消除缺额自动放宽参考带。')
+  name=st.text_input('新完整会话名','live_first_hour',key='live_name');identity=(da,run,name,event_sim,counter,ac_once,event_price,str(stop_request),windows,selection,nextday_explicit,revision,post_mode,post_day,loss_once,finite_h1,finite_hourly,pricing_clock_path,pricing_delta)
   if st.session_state.get('live_identity')!=identity:
    st.session_state['live_identity']=identity
    for k in ('live_plan','live_status'):st.session_state.pop(k,None)
    st.session_state['live_confirm']=False
   if st.button('查看完整预算/来源计划（0求解）',key='live_plan_button'):
    st.session_state.pop('live_plan',None);st.session_state['live_confirm']=False
-   try:st.session_state['live_plan']=ctl.plan(da,run,name,event_sim,counter,ac_once,event_price,stop_request,windows,selection,nextday_explicit,revision,post_mode,None,post_day,loss_once,finite_h1,finite_hourly)
+   try:st.session_state['live_plan']=ctl.plan(da,run,name,event_sim,counter,ac_once,event_price,stop_request,windows,selection,nextday_explicit,revision,post_mode,None,post_day,loss_once,finite_h1,finite_hourly,pricing_clock_path,pricing_delta=pricing_delta)
    except Exception as e:st.error(str(e))
   p=st.session_state.get('live_plan')
   if p:st.json(p)
-  yes=st.checkbox('明确采用研究边界与统一定价profile，授权上方本新分支完整列出的优化及AC预算（含所选额外纠正）及无偏差研究交接；不是实际调度或计量账单',key='live_confirm')
+  yes=st.checkbox('明确采用研究边界与统一定价profile，授权上方本新分支完整列出的有功/DC市场优化预算及无偏差研究交接；不是实际调度或计量账单',key='live_confirm')
   if st.button('启动同一新分支一次',key='live_start',disabled=not(p and yes)):
    try:st.session_state['live_status']=ctl.start(p,confirmed=True);st.session_state.pop('live_plan',None)
    except Exception as e:st.error(str(e))
@@ -94,11 +99,13 @@ def render(da,run):
     st.session_state['live_status']=registered_history(ctl.location(run,name))
    except Exception as exc:st.error(str(exc))
   if 'live_status'in st.session_state:
-   z=st.session_state['live_status'];st.error('正式发布始终未授权；模型KKT通过不等于系统安全通过。')
+   z=st.session_state['live_status']
+   if z.get('model_scope')=='active_power_dc':st.caption('有功/DC线路约束市场仿真；未评估交流/无功。模拟结果不是实际调度授权。')
+   else:st.caption('历史/未声明新范围的会话；保留原身份，旧AC元数据不作为新DC范围门禁。')
    for block in z.get('candidate_blocks',[]):
-    st.error('候选已通过数值验收，但状态衔接前安全隔离：'+block['status']+'。不是全小时完成或数学失败。')
-    st.write('已占用AC次数：'+str(block['AC_calls_consumed'])+'；handoff存在：'+str(block['handoff_exists']))
-    if block.get('loss_correction'):st.warning('同候选损耗纠正诊断：原候选和纠正候选分列保留；两轮AC不等于安全通过。纠正后仍阻断handoff及PRICE。')
+    st.caption('历史候选元数据：'+block['status']+'；不用于新DC范围放行或阻断。')
+    st.caption('以下保留历史记录原身份及诊断次数，不代表本次新运行。')
+    if block.get('loss_correction'):st.caption('旧损耗纠正仅历史元数据，不用于新DC市场门禁。')
     st.json(block)
    for numeric in z.get('numerical',[]):
     if numeric['SCED_response_kind']=='native_primal_independent_derived_dual':st.warning('窗'+str(numeric['window'])+'：原生 primal + 独立派生数值证书；原生dual未通过，完整派生KKT与系统安全仍须分开。')
@@ -107,7 +114,8 @@ def render(da,run):
     from gd_agc_results import render as render_agc
     render_agc(z['agc_results'])
    if z.get('events'):st.write('本分支启停事件及来源时钟');st.json(z['events'])
-   for safety in z.get('safety',[]):st.write('本分支安全检查（逐点、逐来源）');st.json(safety)
+   for safety in z.get('safety',[]):st.write('DC模型检查记录' if safety.get('model_scope')=='active_power_dc' else '历史安全诊断元数据（不用于新DC范围门禁）');st.json(safety)
+   if z.get('persistence'):st.json(z['persistence'])
    st.write('实时完成窗数：'+str(z.get('completed_windows',0)))
    for q in z.get('quarters',[]):
     st.write('季度 '+str(q['quarter']));st.dataframe([{'节点':n,'研究价 元/MWh':v}for n,v in q['raw_prices'].items()],hide_index=True)
@@ -126,34 +134,7 @@ def render(da,run):
    st.json({k:v for k,v in z.items()if k not in ('hour','quarters','events','safety')})
   st.caption('默认0调用。重复点击、失败或未知均不重启；可在下方按已保存来源核对接续；未知启动不能重试。关页面不停止后台。以上新分支卡与下方旧逐步/base入口分开，不能混作同一运行。')
 
-  # This form speaks only to a still-running worker. No host is reconstructed from JSON.
-  try:future=ctl.future_state(ctl.location(run,name))
-  except Exception as exc:future=None;st.error(str(exc))
-  if future:
-   st.warning('原安全阻断保留。未来功率基点上限不是技术降额，也不能修复历史失败点。默认只构模，另行明确确认最多2次求解；10分钟过期或进程退出不可恢复。')
-   st.json(future)
-   if future.get('interactive')and future['status']=='waiting_proposal':
-    desc=future['description'];unit=st.selectbox('未来首个5分钟格的热机',list(desc['units']),key='cap_unit')
-    bounds=desc['units'][unit];st.caption('允许上限范围 '+str(bounds)+'；不从AC诊断自动推导数值。')
-    cap=st.number_input('明确研究功率上限 MW',min_value=float(bounds['minimum_cap_mw']),max_value=float(bounds['maximum_cap_mw']),value=float(bounds['maximum_cap_mw']),key='cap_value_'+unit)
-    reason=st.text_input('声明理由',key='cap_reason');source=st.text_input('数据来源/明确研究假设',key='cap_source')
-    if st.button('发送声明以生成真实登记计划（0求解）',disabled=not(reason and source),key='cap_propose'):
-     try:st.json(ctl.future_command(ctl.location(run,name),'proposal',request=dict(unit=unit,maximum_power_mw=cap,reason=reason,source_statement=source)))
-     except Exception as exc:st.error(str(exc))
-   if future.get('interactive')and future['status']=='waiting_confirmation':
-    digest=future['registration_plan']['confirmation_digest']
-    yes_cap=st.checkbox('确认上面完整来源/未来时段/上限声明，仅登记并构模，不授权求解、不宣称安全修复',key='cap_confirm_'+digest)
-    if st.button('确认登记并构造未来候选（0求解）',disabled=not yes_cap,key='cap_register_'+digest):
-     try:st.json(ctl.future_command(ctl.location(run,name),'confirm',confirmation_digest=digest,confirmed=True))
-     except Exception as exc:st.error(str(exc))
-   st.caption('发送后点击上方读取进度刷新。仅一次声明及一次2调用确认；不运行额外AC/PRICE。进程退出后不可执行或持久恢复。')
-
-   if future.get('interactive')and future['status']=='waiting_execution_confirmation':
-    digest=future['registration_plan']['confirmation_digest'];st.json(future['budget'])
-    execute_yes=st.checkbox('单独授权以上已构造未来候选1次SCUC+1次SCED（每次求解3600秒、单线程、SCUC gap1%/SCED为LP无gap），无重试，无AC/定价，保留原安全失败',key='cap_execute_yes_'+digest)
-    if st.button('运行未来研究候选一次（2调用）',disabled=not execute_yes,key='cap_execute_'+digest):
-     try:st.json(ctl.future_command(ctl.location(run,name),'execute',confirmation_digest=digest,confirmed=True))
-     except Exception as exc:st.error(str(exc))
+  # Legacy AC-driven future-cap correction UI is intentionally not reachable.
  from gd_tail_panel import render as render_tail
  render_tail(da)
 

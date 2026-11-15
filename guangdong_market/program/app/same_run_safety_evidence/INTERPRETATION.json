@@ -1,0 +1,58 @@
+{
+  "C1_market_scheduled_MW": 636.0,
+  "C1_AC_slack_MW": 669.148216334018,
+  "AC_slack_increment_MW": 33.148216334018,
+  "AC_branch_loss_MW": 33.14821633401204,
+  "original_technical_Pmax_MW": 646,
+  "AGC_up_MW": 10,
+  "market_energy_upper_after_AGC_MW": 636,
+  "AC_excess_technical_MW": 23.148216334018002,
+  "AC_excess_AGC_energy_upper_MW": 33.148216334018,
+  "Pmax_source": "pinned W94 post_scuc_phase/full_build_2/derived_case.json thermal C1 max_mw[0], unchanged original technical bound; not a lowered AC invented cap",
+  "interpretation": "original lossless DC/SCED energy setpoint meets its model; AC slack adds physical losses and exceeds physical/AGC headroom, so lossless-to-AC safety remains unresolved, not evidence of falsely passing DC constraints",
+  "GT_fixed_VG": {
+    "command": 1.0636,
+    "upper": 1.06,
+    "AC": 1.0636,
+    "classification": "original fixed command already beyond voltage upper limit"
+  },
+  "other_voltage_violations": [
+    {
+      "kind": "BUS_VOLTAGE_LIMIT",
+      "element": "0",
+      "value": 1.062751386181849,
+      "lower": 0.94,
+      "upper": 1.06
+    },
+    {
+      "kind": "BUS_VOLTAGE_LIMIT",
+      "element": "8",
+      "value": 1.0637464311891678,
+      "lower": 0.94,
+      "upper": 1.06
+    },
+    {
+      "kind": "BUS_VOLTAGE_LIMIT",
+      "element": "19",
+      "value": 0.9330036877731118,
+      "lower": 0.94,
+      "upper": 1.06
+    },
+    {
+      "kind": "BUS_VOLTAGE_LIMIT",
+      "element": "32",
+      "value": 0.938842119423472,
+      "lower": 0.94,
+      "upper": 1.06
+    },
+    {
+      "kind": "BUS_VOLTAGE_LIMIT",
+      "element": "33",
+      "value": 0.9246815537890112,
+      "lower": 0.94,
+      "upper": 1.06
+    }
+  ],
+  "labels": "AC bus identifiers are zero-based; displayed market node is id+1",
+  "formal": false
+}

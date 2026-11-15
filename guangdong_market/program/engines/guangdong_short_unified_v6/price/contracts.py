@@ -27,7 +27,7 @@ def resolve(c,inventory,as_of):
  for k in ['case','DA','SCED','AGC']:source(c['sources'][k],at)
  need(c['sources']['case']['sha256']==identity['case_sha256'],'case identity')
  for k,key in [('DA','DA_acceptance_sha256'),('SCED','SCED_acceptance_sha256'),('AGC','AGC_award_sha256')]:need(c['sources'][k]['sha256']==identity[key],k+' source identity')
- need(c['time_mapping']['SCED_cells']==24 and c['time_mapping']['SCED_step_minutes']==5 and c['time_mapping']['PRICE_periods']==8 and c['time_mapping']['PRICE_step_minutes']==15,'separate24x5/8x15 domains')
+ n=c['time_mapping']['SCED_cells'];need(type(n)is int and 1<=n<=8 and c['time_mapping']['SCED_cells']==n and c['time_mapping']['SCED_step_minutes']==15 and c['time_mapping']['PRICE_periods']==n and c['time_mapping']['PRICE_step_minutes']==15,'provincial same-period8x15/8x15 domains')
  need(c['time_mapping']['anchor'] in ['cutoff_research','delivery_research'] and c['time_mapping']['publish_quarters']==1,'explicit anchor and single published quarter')
  delta=scalar(c['delta'],'dimensionless',at,0,1)
  need(c['domain'] in ['DA_reference_research','current_final_SCED_reference_research'],'explicit research domain')
@@ -39,7 +39,7 @@ def resolve(c,inventory,as_of):
  need(set(c['eligibility'])==set(inventory['thermal']),'complete thermal pricing eligibility inventory')
  eligibility={}
  for u,z in c['eligibility'].items():
-  source(z['source'],at);need(len(z['quarters'])==8,'eight explicit eligibility quarters')
+  source(z['source'],at);need(len(z['quarters'])==n,'eight explicit eligibility quarters')
   for e in z['quarters']:need(e in ['off','fixed_nonpricing','pricing_stable'],'unknown/transition eligibility unsupported: never silently pricing')
   eligibility[u]=z['quarters']
  need(set(c['constraints'])==CONSTRAINTS,'explicit missing-constraint inventory');missing=[]
@@ -50,7 +50,7 @@ def resolve(c,inventory,as_of):
   else:
    need(z.get('data')is not None,'required constraint data missing: '+k)
    if k in ['negative_reserve','primary_frequency_reserve']:
-    need(len(z['data']['requirement_MW'])==8 and all(type(v)in(int,float)and math.isfinite(v)and v>=0 for v in z['data']['requirement_MW']),'eight explicit reserve requirements')
+    need(len(z['data']['requirement_MW'])==n and all(type(v)in(int,float)and math.isfinite(v)and v>=0 for v in z['data']['requirement_MW']),'eight explicit reserve requirements')
     need(set(z['data']['qualified_resources']).issubset(set(inventory['thermal'])),'no invented reserve eligibility')
  need(c['constraints']['interregional_optimization']['status']=='inapplicable','user excludes interregional trading; fixed physical injection remains')
  safety=c['safety'];need(safety['kind']in['unchecked','fixed_witness_only','marginal_domain_candidate'],'safety kind')

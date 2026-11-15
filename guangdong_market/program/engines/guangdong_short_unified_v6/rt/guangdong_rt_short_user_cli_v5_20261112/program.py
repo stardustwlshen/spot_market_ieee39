@@ -15,6 +15,11 @@ def pins():
  return {str(f):sha(f)for f in files}
 def context(run):
  r=Path(run).resolve();c=read(r/'SHORT_CONTEXT.json');need(c['code_pins']==pins(),'short engine source changed')
+ if c.get('schema')=='gd.provincial.short.context.v1':
+  from gd_provincial_da_contract import verify
+  need(c.get('grid_minutes')==15 and c.get('rt_clock_mode')=='provincial_15min_execution','provincial base clock mismatch')
+  need(sha(c['provincial_DA_manifest'])==c['provincial_DA_manifest_sha256'],'provincial DA manifest changed')
+  verify(c['provincial_DA_manifest'],require_price=True)
  for p,h in c['seed_pins'].items():need(sha(p)==h,'seed changed')
  for p,h in c.get('recovery_import',{}).get('source_pins',{}).items():need(sha(p)==h,'explicit recovery source changed')
  return r,c

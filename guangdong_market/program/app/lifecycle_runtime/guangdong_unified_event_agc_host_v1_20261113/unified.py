@@ -18,7 +18,7 @@ class UnifiedSession(V6Session):
   return b,h
 
 class RollingHost:
- def __init__(self,run,output,*,mode='pure',research=False):
+ def __init__(self,run,output,*,mode='pure',research=False,same_period_execution=False):
   e.need(research is True,'explicit research switch');e.need(mode in ('pure','native'),'unknown mode')
   self.output=Path(output).resolve();e.need(not self.output.exists(),'durable restart unsupported; inspect existing evidence, never resume/retry')
   self.output.mkdir(parents=True);self.branch_id='unified-first-hour-'+uuid.uuid4().hex;self.mode=mode;self.session=UnifiedSession(run,research_fixed_curve_events=True);self.session.compatibility={};self.hooks=RuntimeHooks(self.session);self.accepted={};self.window=0;self.pending=None
@@ -27,8 +27,16 @@ class RollingHost:
   self.agc=AgcLifecycle(self.session.run,self.output/'agc',accepted_source=self.accepted_source)
   self.agc.produce(0,cutoff=(self.agc.origin-timedelta(minutes=30)).isoformat())
   cp=self.session.program.current_carry(self.session.run,self.session.context,0);c=read(cp)
-  e.need(c['cutoff_tick']==0 and c['delivery_tick']==3,'initial clock')
-  e.need(all(t['phase'] in ('stable','offline') and not t['remaining_curve'] for t in c['thermal'].values()),'initial active event requires verified incoming issued ledger adapter')
+  e.need(c['cutoff_tick']==0 and c['delivery_tick']==(0 if self.session.context.get('schema')=='gd.provincial.short.context.v1' else 3),'initial source clock')
+  self.same_period_execution=bool(same_period_execution)
+  self.rt_clock_mode='provincial_15min_execution' if self.same_period_execution else 'legacy_issued_prefix'
+  if self.same_period_execution and self.session.context.get('schema')!='gd.provincial.short.context.v1':
+   from gd_live_market_runtime.initial_state import from_declared
+   from smm.gd_october_job_codec import loads
+   c=from_declared(loads((self.session.run/'seed/case.json').read_bytes()),c)
+   cp=self.output/'INITIAL_RT_CARRY.json';write(cp,c)
+  self.initial_carry_path=cp
+  e.need(all(t['phase'] in ('stable','offline','off') and not t['remaining_curve'] for t in c['thermal'].values()),'initial active event requires verified incoming issued ledger adapter')
   e.need(not any(v for d in c['notice_values'].values()for v in d.values()),'initial issued notices require verified importer')
   l=dict(schema='gd.fixed.research_notice_ledger.v1',run_id=self.session.registry['run_id'],case_identity=self.session.registry['case_identity'],origin=c['origin'],cutoff_tick=0,receipts={},pending={},formal=False,actual_dispatch_authorized=False);l['ledger_sha256']=e.digest(l)
   self.hooks.carries[str(cp)]=sha(cp);self.hooks.ledgers[l['ledger_sha256']]=l;self.cp=cp;self.lid=l['ledger_sha256'];self.results=[]
@@ -40,7 +48,7 @@ class RollingHost:
  def prepare(self):
   e.need(self.pending is None,'pending window must be resolved without retry');e.need(self.window<4,'bounded first hour only')
   if self.window==2:self.agc.produce(1,cutoff=read(self.cp)['cutoff'])
-  import thermal_physical
+  from gd_provincial15_model import thermal_physical
   old=thermal_physical.build_free_scuc;bindings=[]
   def hook(**kw):
    _,binding=self.agc.apply_before_scuc(kw,read(self.cp));bindings.append(binding);return old(**kw)
@@ -85,10 +93,15 @@ class RollingHost:
   proof=dict(proof,before_handoff=decision)
   from safety_adapter import model_verified_safety
   safety=model_verified_safety(read(p/'names.json'),source_kind=proof.get('mode','new_accepted_raw_pair'));safety['numerical_pair_accepted']=True
-  z=dict(branch_id=self.branch_id,window=w,proof=proof,handoff=nxt,executed_end_exclusive=carry['executed_end_exclusive'],issued_end_exclusive=carry['issued_end_exclusive'],execution_basis='research exact no-deviation replay, not observed operation',safety=safety,formal=False,safety_release=False);self.results.append(z);write(p.parent/'RESULT.json',z);self.checkpoint('accepted');return z
+  z=dict(branch_id=self.branch_id,window=w,proof=proof,handoff=nxt,executed_end_exclusive=carry['executed_end_exclusive'],issued_end_exclusive=carry['issued_end_exclusive'],execution_basis='research exact no-deviation replay, not observed operation',safety=safety,formal=False,safety_release=False)
+  if decision.get('model_scope')=='active_power_dc':
+   safety.update(status='DC_MODEL_CHECKS_COMPLETE',model_scope='active_power_dc',ac_assessment='not_in_model_scope',reactive_power_modeled=False,execution_allowed=True,execution_scope='model simulation only')
+   safety['checks']['network_sections_ac']='not_in_model_scope'
+   z.update(model_scope='active_power_dc',ac_assessment='not_in_model_scope',reactive_power_modeled=False,execution_allowed=True,execution_scope='model simulation only',publication_allowed=False)
+  self.results.append(z);write(p.parent/'RESULT.json',z);self.checkpoint('accepted');return z
  def checkpoint(self,status):
   f=self.output/'RESULT.next.json';write(f,dict(self.read(),host_status=status));f.replace(self.output/'RESULT.json')
- def read(self):return dict(branch_id=self.branch_id,base_run=str(self.session.run),mode=self.mode,completed_windows=self.window,pending=str(self.pending)if self.pending else None,results=self.results,durable_restart_supported=False,safety_release=False,publication_allowed=False,dispatch_authorized=False,formal=False)
+ def read(self):return dict(rt_clock_mode=self.rt_clock_mode,branch_id=self.branch_id,base_run=str(self.session.run),mode=self.mode,completed_windows=self.window,pending=str(self.pending)if self.pending else None,results=self.results,durable_restart_supported=False,safety_release=False,publication_allowed=False,dispatch_authorized=False,formal=False)
 
 def plan():return dict(flow=['same accepted DA/H0','W0 prepare/pair/exact carry','W1 prepare/pair/exact carry','cutoff00:30 H1 from W1','W2 prepare/pair/exact carry','W3 prepare/pair/exact carry'],default_native_calls=0,proposed_native_calls=8,SCUC_seconds=3600,SCED_seconds=3600,SCED_solver='simplex',automatic_fallback=False,mip_gap=.01,threads=1,restart='blocked; inspect unknown occurrences',unchanged=['400 MW','50 MW AGC','qualification','DA protection','SOC/cycle'])
 if __name__=='__main__':

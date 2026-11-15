@@ -44,9 +44,9 @@ def soften(base,names,mapping,parameters,*,as_of):
    if w:r['terms'].extend([[plus,-w],[minus,w]])
  need(load_rows==set(mapping['balance_inventory'])=={v for v in names['constraints']if v.startswith('balance[')},'complete balance inventory mapping')
  need({z['period']for z in mapping['balance']}=={z['period']for z in mapping['accident']},'accident/balance period inventory')
- need({v for z in mapping['accident']for v in z['qualified_columns']}=={v for v in names['variables']if v.startswith('accident[')},'complete qualified accident column inventory')
+ need({v for z in mapping['accident']for v in z['qualified_columns']}=={v for v in names['variables']if v.startswith(('accident[','price_reserve.battery_up[','price_reserve.pumped_up['))},'complete qualified accident column inventory')
  for z in mapping['accident']:
-  r=row(z['row']);need(r['lb']==z['requirement_MW']==400. and r['ub']is None and all(c==1 for j,c in r['terms']),'unchanged400 accident row');need(set(j for j,c in r['terms'])=={vi[s]for s in z['qualified_columns']},'exact existing eligible reserve inventory')
+  r=row(z['row']);need(r['lb']==z['requirement_MW'] and z['requirement_MW']>=0 and r['ub']is None and all(c==1 for j,c in r['terms']),'source contingency requirement unchanged');need(set(j for j,c in r['terms'])=={vi[s]for s in z['qualified_columns']},'exact existing eligible reserve inventory')
   s=slack(f"PRICE_accident_shortfall[{z['period']}]",rates['accident'],z['duration_h']);r['terms'].append([s,1.])
  for family,key in [('line','lines'),('section','sections')]:
   for z in mapping[key]:
@@ -60,5 +60,5 @@ def soften(base,names,mapping,parameters,*,as_of):
  for name in mapping['positive_reserve_rows']:need(name in ri and q['rows'][ri[name]]==base['rows'][ri[name]],'positive reserve must stay hard/unchanged')
  modified={z['column']for z in edits}
  need(all(q['variables'][j]==v for j,v in enumerate(base['variables'])if j not in modified),'resource inventory/qualification bounds changed')
- trace=dict(schema='gd.PRICE.slack_mechanisms.v1',parameters_sha256=digest(parameters),mapping_sha256=digest(mapping),base_template_sha256=digest(base),slacks=slacks,removed_line_column_bounds=edits,original_resource_columns=len(base['variables']),new_columns=len(slacks),accident_requirement_MW=400.,positive_reserve_relaxed=False,no_new_qualification=True,PRICE_only=True,not_executable_dispatch=True,formal_market_complete=False,parameter_authenticity_not_established_by_code=True,storage_price_domain_unchanged=True,source_code_sha256=sha(__file__))
+ trace=dict(schema='gd.PRICE.slack_mechanisms.v1',parameters_sha256=digest(parameters),mapping_sha256=digest(mapping),base_template_sha256=digest(base),slacks=slacks,removed_line_column_bounds=edits,original_resource_columns=len(base['variables']),new_columns=len(slacks),accident_requirement_MW=[z['requirement_MW'] for z in mapping['accident']],positive_reserve_relaxed=False,no_new_qualification=True,PRICE_only=True,not_executable_dispatch=True,formal_market_complete=False,parameter_authenticity_not_established_by_code=True,storage_price_domain_unchanged=True,source_code_sha256=sha(__file__))
  return q,n,trace

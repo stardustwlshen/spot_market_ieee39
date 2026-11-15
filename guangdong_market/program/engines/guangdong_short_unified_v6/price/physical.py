@@ -32,7 +32,7 @@ def add_physical(m,P,thermal,periods,minimum,maximum,online,load,tie,spec):
     for g in U:
      cap=online[g,q]*maximum[g,q]
      b.rows.add(b.primary[g,q]<=cap-P[g,q]);b.rows.add(b.primary[g,q]<=cap*d['fraction'][g][q])
-    b.rows.add(sum(b.primary[g,q]for g in U)+b.zero>=d['requirement_MW'][q])
+    b.rows.add(sum(b.primary[g,q]for g in U)+(m.price_reserve.primary[q]if hasattr(m,'price_reserve')else 0)+b.zero>=d['requirement_MW'][q])
     trace['primary'].append(dict(q=q,requirement=d['requirement_MW'][q],qualified=U,auxiliary_zero_objective=True,interpretation='existence-equivalent sum(min(headroom,cap*alpha)) >= R; auxiliary need not equal min'))
  for key in ['group_power','group_energy']:
   z=spec[key]

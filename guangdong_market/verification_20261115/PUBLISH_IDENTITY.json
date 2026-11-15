@@ -1,0 +1,14 @@
+{
+  "mathematical_source_application_sha256": "6bba54597a2a62248b5d78d61ba5e94e9bca7328aa5ce7708e4eeaf2af595980",
+  "published_application_sha256": "c9c8253747002c7419cefedd5c10a9d02fab71a6140187a237c95a45253d0bc2",
+  "mathematical_code_changes_after_full_day": false,
+  "post_full_day_changes": [
+    "execution line and SOC deviation display",
+    "original-template cloning explanation"
+  ],
+  "new_UI_validation": "real 24-hour result replay; zero new optimization solves",
+  "formal_bill": false,
+  "platform_limits": "Windows/macOS full workflow not tested",
+  "cloned_resource_independent_editor": false,
+  "renewable_individual_addition": false
+}
