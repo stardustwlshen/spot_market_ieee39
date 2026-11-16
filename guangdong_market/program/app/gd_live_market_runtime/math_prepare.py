@@ -19,7 +19,7 @@ def verify_selected_da(da):
 
 def prepare(source,expected_sha,out,selected_profile=None):
  from information_clock import validate as validate_information_clock
- from branch_parameters import sample,resolved
+ from branch_parameters import _write_parameters,resolved
  from pricing_delta import from_source as delta_from_source
  from source_contracts import selected_da
  from domain_event import prepare as domain
@@ -36,7 +36,9 @@ def prepare(source,expected_sha,out,selected_profile=None):
  from zero_vre_reference import canonicalize
  x,zero_vre_proof=canonicalize(z,case)
  n=min(8,96-r['delivery_tick']);state=derive(case,x,r['delivery_tick'],quarters=n);need(selected_profile in (None,PROFILE),'unsupported selected PRICE profile');need(not state['affected_units']or selected_profile==PROFILE,'event/off PRICE state requires independent explicit research profile selection');policy=PROFILE if state['affected_units']else POLICY
- sample(da,base,w,params,'typed_event_branch_H0_'+str(w),'current_sced_research',verified_request=r)
+ # Reuse only the case already validated above against accepted SCED inputs.
+ # Independent domain reconstruction and final verify(pins) remain unchanged.
+ _write_parameters(case,da,base,w,params,'typed_event_branch_H0_'+str(w),'current_sced_research',verified_request=r)
  ps=read(params);ps['delta']=delta_selection['value'];ps['pricing_delta_selection']=delta_selection;ps['eligibility']=state['eligibility'];ps['selected_event_profile']=selected_profile;ps['derived_thermal_state']=state;params.write_text(json.dumps(ps));explicit,contract,pars,boundary=resolved(params,case,da,base,w,r)
  need(explicit['eligibility']==state['eligibility'],'derived eligibility contract mismatch')
  pair=da/read(da/'ARTIFACTS.json')['stages']['da_sced']['acceptance']['path']if w==-1 else sf

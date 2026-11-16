@@ -1975,8 +1975,8 @@
       "bytes": 2243
     },
     "app/gd_live_market_runtime/math_prepare.py": {
-      "sha256": "e78099977ef158d029542a21390032c09cfc5d78aba26d0d376469eda82022e9",
-      "bytes": 9256
+      "sha256": "158c0cb6dbffecbd2d71f9bb16007068aaa43a1919fee531b208cf8b2c096668",
+      "bytes": 9438
     },
     "app/gd_live_market_runtime/realtime_reference.py": {
       "sha256": "1ef0ea229ed86d33f696910b3d00c23697d5bd96f68830c6e7a5918f8a3fd006",
@@ -1987,8 +1987,8 @@
       "bytes": 3749
     },
     "app/gd_live_market_runtime/branch_parameters.py": {
-      "sha256": "a99e1776769c024f84c6f2d9f0a90a90dfe04bda74301a33223d5bb25b8d4697",
-      "bytes": 8314
+      "sha256": "84f60ccedcde143e9326b48f3a47a1c385b4ea64908f0b69e86b42484abcd18e",
+      "bytes": 9073
     },
     "app/gd_live_market_runtime/reference_clock.py": {
       "sha256": "c874d4c556fccf6e5680b9c59804e5ac6ff4a3983110cbed175993dca2e300be",
@@ -19807,8 +19807,12 @@
       "bytes": 3631
     },
     "docs/输入准备性能验证.md": {
-      "sha256": "82e631e6cbb4963fadf86cf85bcf12784ca7a6a374a23979e998116a0116b6e8",
-      "bytes": 2887
+      "sha256": "7b9a41c9910ce0cf96f4459d1d643bdbda73500bdc7a4a6fa6051b2e29933d4b",
+      "bytes": 3811
+    },
+    "tests/test_price_parameter_projection.py": {
+      "sha256": "f087adbcb175f9e0b75580f93c7027bead25953bbb70f855ef518812e0b3a3e6",
+      "bytes": 1920
     }
   }
 }

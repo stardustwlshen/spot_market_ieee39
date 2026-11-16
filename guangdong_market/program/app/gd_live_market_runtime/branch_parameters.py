@@ -9,9 +9,27 @@ NETWORK_DEFAULT_CNY_PER_MWH = 1000.
 NETWORK_DEFAULT_SOURCE = dict(document='南方区域电力现货市场实施细则（2026年V1.0版）',url='http://www.gzpec.cn/law/jygz/202611/P020261103633894465723.pdf',printed_page=180,pdf_page=183,item=18,pdf_sha256='978d7d7179e3629f8a86fb2d770470e1700b67c4bb867123b07a2d8f480c3caf',scope='regional_default_not_authenticated_Guangdong_override')
 CHOICES=dict(storage_reference='selected_domain_reference',storage_mode='selected_reference_cell_modes',storage_SOC_start='selected_reference_prefix_SOC',storage_terminal='declared_terminal_if_in_horizon',storage_cycle_sign='positive_charge_internal_throughput',charge_discharge_sign='net_discharge_positive',five_to_fifteen_power='arithmetic_three_mean_MW',ramp_mapping='quarter_min_ramp_from_current_previous_power')
 def sample(da,run,w,output,name,domain,*,verified_request=None):
- need(verified_request is not None,'live verified request required');da,run,r=Path(da).resolve(),Path(run).resolve(),verified_request;need(name and type(w)is int and -1<=w<=95,'named sample/window; negative seed is historical only');case=convert_full_case(loads((run/'seed/case.json').read_bytes()));e=case['energy_inputs'];first=r['delivery_tick'];n=min(8,96-first);need(type(first)is int and first>=0 and first+n<=96,'same-period PRICE input interval');out=Path(output).resolve();need(not out.exists(),'fresh parameters only');out.parent.mkdir(parents=True,exist_ok=True)
+ # Standalone callers retain the complete independent source reconstruction.
+ need(verified_request is not None,'live verified request required')
+ run=Path(run).resolve();case=convert_full_case(loads((run/'seed/case.json').read_bytes()))
  from gd_forecast_inputs import apply_forecast
- apply_forecast(case,run/'seed',first)
+ apply_forecast(case,run/'seed',verified_request['delivery_tick'])
+ return _write_parameters(case,da,run,w,output,name,domain,verified_request=verified_request)
+
+def _write_parameters(case,da,run,w,output,name,domain,*,verified_request):
+ """Internal read-only parameter projection, not an input verification endpoint.
+
+ The normal sample() above reconstructs its own case. math_prepare calls this
+ only after its existing accepted-source/forecast checks, and retains the
+ independent domain reconstruction and final complete source verification.
+ No caller-supplied case option is added to the standalone interface.
+ """
+ need(verified_request is not None,'live verified request required')
+ da,run,r=Path(da).resolve(),Path(run).resolve(),verified_request
+ need(name and type(w)is int and -1<=w<=95,'named sample/window; negative seed is historical only')
+ e=case['energy_inputs'];first=r['delivery_tick'];n=min(8,96-first)
+ need(type(first)is int and first>=0 and first+n<=96,'same-period PRICE input interval')
+ out=Path(output).resolve();need(not out.exists(),'fresh parameters only');out.parent.mkdir(parents=True,exist_ok=True)
  c=dict(schema='gd.short.PRICE.parameters.v1',name=name,mode='research',case_sha256=sha(run/'seed/case.json'),domain=domain,delta=.1,penalties_yuan_per_MWh=dict(load=1000.,accident=200.,network=NETWORK_DEFAULT_CNY_PER_MWH,renewable_curtailment=curtailment_value(case)),VRE_offers_yuan_per_MWh={b:v[0] for b,v in bid_window(e,first,n).items()},eligibility={g:['pricing_stable']*n for g in e['thermal']},interpretations=CHOICES,storage_bounds_formula='bounded_absolute_reference_intersection_RESEARCH_NOT_LITERAL',constraints={},safety=dict(kind='unchecked'),logical_available_at=(datetime.fromisoformat(r['origin'])-timedelta(minutes=15)).isoformat() if w==-1 else r['cutoff'],available_at_is_synthetic=True,valid_until=(datetime.fromisoformat(r['origin'])+timedelta(days=2)).isoformat(),balance_allocation=dict(node='39',basis='one system slack pair per quarter at node39; explicit research not official',officially_certified=False),formal=False)
  for key,casekey in [('negative_reserve','negative_mw'),('primary_frequency_reserve','primary_mw')]:
   d=dict(requirement_MW=[case['reserve'][casekey][first+q] for q in range(n)],qualified_resources=list(e['thermal']))
