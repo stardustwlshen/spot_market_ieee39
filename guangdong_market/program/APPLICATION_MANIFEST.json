@@ -107,8 +107,8 @@
       "bytes": 8650
     },
     "app/gd_service_estimates.py": {
-      "sha256": "9d7e643d102b193d9ec7dad6bfaad336765f87f2593c7431d4b99312426963c7",
-      "bytes": 4521
+      "sha256": "92c3f4e0a7fe61d3992991aa7fb90a948755fb9d71282bef4a370fe1024baefa",
+      "bytes": 6178
     },
     "app/gd_live_control.py": {
       "sha256": "ba349faa91a54bf5e6da463548600904d0442bd793db631f0c6a36a9385d01e3",
@@ -19797,6 +19797,10 @@
     "tests/test_backup_inspection.py": {
       "sha256": "ba942b63bde8d3d2f42b82ba72def297fed5f7614742016f1078882d6e0071b1",
       "bytes": 4783
+    },
+    "tests/test_gd_service_estimates_scope.py": {
+      "sha256": "8a806b45b97809b01ce8f205ef3cd94ac0d8c729e92afa1cf956d7b2726a3a08",
+      "bytes": 2468
     }
   }
 }

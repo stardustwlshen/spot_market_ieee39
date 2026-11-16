@@ -1,6 +1,6 @@
 """Source-bound AGC award -> explicit research mileage estimate, not a bill."""
 from pathlib import Path
-from datetime import datetime
+from datetime import datetime, timedelta
 from decimal import Decimal
 import json, hashlib
 
@@ -16,11 +16,28 @@ def collect(hour, execution, pins):
     periods={(r['start'],r['end']) for r in hour['rows']}
     if len(periods)!=1: raise ValueError('single hour required')
     start,end=next(iter(periods));found={}
+    same_period=execution.get('rt_clock_mode')=='provincial_15min_execution'
+    expected_starts={datetime.fromisoformat(start)+timedelta(minutes=15*i) for i in range(4)}
+    current_bindings={}
+    if same_period and datetime.fromisoformat(end)-datetime.fromisoformat(start)!=timedelta(hours=1):raise ValueError('exact current hour required')
     if execution['run_id']!=hour['run_id']:raise ValueError('execution run mismatch')
+    if same_period:
+        beginning=datetime.fromisoformat(start);ending=datetime.fromisoformat(end);origin=datetime.fromisoformat(execution['origin'])
+        if any(t.tzinfo is None for t in (beginning,ending,origin)):raise ValueError('timezone-aware hour required')
+        offset=(beginning-origin).total_seconds()/900
+        if offset<0 or not offset.is_integer() or int(offset)%4:raise ValueError('hour not on execution grid')
+        if execution['cells']!=list(range(int(offset),int(offset)+4)) or execution['hour']!=int(offset)//4:raise ValueError('executed cells mismatch current hour')
     for path,digest in execution.get('source_pins',{}).items():
         if Path(path).name!='AGC_BINDING.json':continue
         if sha(path)!=digest:raise ValueError('AGC binding changed')
         for binding in read(path):
+            if same_period:
+                stamp=datetime.fromisoformat(binding['domain_start'])
+                if stamp not in expected_starts:continue
+                if datetime.fromisoformat(binding['cutoff'])!=stamp:raise ValueError('current AGC binding clock mismatch')
+                if stamp in current_bindings:raise ValueError('duplicate current AGC binding')
+                current_bindings[stamp]=digest
+            applicable=False
             for receipt_path,receipt_sha in binding.get('receipt_files',{}).items():
                 original_receipt_path=receipt_path
                 if not Path(receipt_path).is_file():
@@ -42,7 +59,9 @@ def collect(hour, execution, pins):
                            source_binding_path=path,source_binding_sha256=digest)
                 key=(start,end)
                 if key in found and any(found[key][k]!=value[k] for k in ('awards_mw','price','performance')):raise ValueError('conflicting AGC receipts')
-                found[key]=value;pins[path]=digest;pins[receipt_path]=receipt_sha
+                found[key]=value;pins[path]=digest;pins[receipt_path]=receipt_sha;applicable=True
+            if same_period and not applicable:raise ValueError('current quarter has no applicable AGC receipt')
+    if same_period and set(current_bindings)!=expected_starts:raise ValueError('four current-quarter AGC bindings required')
     return list(found.values())
 
 def estimate(view, periods, resources, mileage_per_capacity_hour=10):
