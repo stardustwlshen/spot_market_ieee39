@@ -55,7 +55,7 @@
     "guangdong_unified_event_agc_host_v1_20261113/agc_runtime/batch_api.py": "ffd7b49f11283d5e75990f926b5af87caccd5760b6d699b055c69c2e9178617e",
     "guangdong_unified_event_agc_host_v1_20261113/agc_runtime/vendor/adapter.py": "8cad9f2ebeec94e3cc01cbb209be6dbe078bbf1908c4b283a6b1c105e7cb982c",
     "guangdong_unified_event_agc_host_v1_20261113/agc_runtime/vendor/projection.py": "a30a66793ea4e2c6763532ba0877273cf3801621c3dcf7ee2cdd3b25892af0cc",
-    "content_hash.py": "d0c23263e0aa6d4f08ce201ab3077482d672970e2723464d8a0d079c5656d6d6",
+    "content_hash.py": "088329f371597fbc63d26acd759093f5379b37266009db4ac84c95378c30bece",
     "worker_proof_memo.py": "cddbe81a6e18b0bd872a1d26df3925a84d2b059eef17e940938202b19fc99e7f",
     "gd_sced_precision_runtime/bridge.py": "79ebe7758855f4d71ab714ce7b8dcf5fc51eada26ac28e91fc861d841fefd8e9",
     "gd_sced_precision_runtime/__init__.py": "7ec4d7ed43ecaf9323d3f59a0764b5c89a82ebeb07401d72d62f7b9cefff1324",

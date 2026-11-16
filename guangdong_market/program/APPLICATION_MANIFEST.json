@@ -543,8 +543,8 @@
       "bytes": 444
     },
     "app/LIVE_MARKET_MANIFEST.json": {
-      "sha256": "54f9caf78a75c2ba04aaf9cfa009b76c1ff64fbdf2285fa3f80d9beccd904b9a",
-      "bytes": 46100
+      "sha256": "db639da05cd4970ce2e2d0788bc1d0551ea1a28a36c2a3dc4478fa6d6b5c5dc1",
+      "bytes": 46094
     },
     "app/gd_batch_control.py": {
       "sha256": "c7a01de45ca5d6242599cd21e63e646c50bbef0aad4401544649bc21f25e2b1d",
@@ -1883,11 +1883,11 @@
       "bytes": 6132
     },
     "app/lifecycle_runtime/portable_gate.py": {
-      "sha256": "99d1cf694a5ac069c30bead89b5141fafcbcc1f58c41767b19d7b819331b5a37",
+      "sha256": "cae01f25344511669ecc9efbf7c83df2902184d796b1316f0903e69d3153c479",
       "bytes": 525
     },
     "app/lifecycle_runtime/PORTABLE_MANIFEST.json": {
-      "sha256": "7474a5ef0c635a347ed985fca7a1448050ab583d641d9c8e18b44d8af86554c2",
+      "sha256": "70367ee21ac47e443d1b4879d256c23d69bae3b10f97632b64ea80c982bd68e4",
       "bytes": 8435
     },
     "app/lifecycle_runtime/content_hash.py": {
@@ -19737,6 +19737,10 @@
     "docs/AUDIT_CONTENT_HASH_20261116.md": {
       "sha256": "0f0dcc037c995c68d6f30033005de70e9ad1adde8d4dec41843bb22b7f450e94",
       "bytes": 956
+    },
+    "tests/audit_20261116/test_portable_binding.py": {
+      "sha256": "b361a6af80f9532178bc114f3cf8c1e6bc261d3fdfd98889c90995f30548dadf",
+      "bytes": 1557
     }
   }
 }
