@@ -16,7 +16,23 @@ def attach_initial(carry,da_case,manifest,out):
         d=declarations[s];d.update(stage='RT',band_m3=.02*z['parameters']['v_total']*10000,band_penalty_yuan_m3=1.0,rt_band_basis='research assumption: 2% total water, 1 yuan/m3 excess; editable, not official numeric parameter',da_upper_m3={t:row['pumped'][s]['upper_m3']for t,row in enumerate(physical['physical_cells'])},da_lower_m3={t:row['pumped'][s]['lower_m3']for t,row in enumerate(physical['physical_cells'])},DA_reference_source=ph)
         # t0 is declared actual boundary, NOT end of DA first or last interval.
         state[s]=dict(upper_m3=z['upper_m3'],lower_m3=z['lower_m3'],net_power_mw=z['net_power_mw'],units={u:dict(d['initial_units'][u],mode=mode)for u,mode in z['modes'].items()},boundary_day_tick=-1,initial_basis='declared_t0_not_DA_executed_state')
-        if any(mode!='off'for mode in z['modes'].values()):raise ValueError('nonidle initial station needs explicit per-unit initial power')
+        # DA already accepts sourced active initial modes. Preserve those exact
+        # t0 states, while rejecting missing/inconsistent per-unit power.
+        from .numeric_boundary import check_state
+        parameters=z['parameters'];net=0.
+        for u,mode in z['modes'].items():
+            if mode not in ('off','gen','pump'):
+                raise ValueError('unknown initial pumped mode')
+            unit=d['initial_units'][u]
+            for key,bounds,scale in (
+                ('gen_mw',(parameters['unit_gen_min'],parameters['unit_gen_max']) if mode=='gen' else (0.,0.),parameters['unit_gen_max']),
+                ('pump_mw',(parameters['unit_pump'],parameters['unit_pump']) if mode=='pump' else (0.,0.),parameters['unit_pump'])):
+                if key not in unit:raise ValueError('explicit per-unit initial pumped power required')
+                check_state(unit[key],lower=bounds[0],upper=bounds[1],capacity_scale=scale,unit='MW')
+            net+=unit['gen_mw']-unit['pump_mw']
+        declared_net=z['net_power_mw']
+        if not math.isfinite(declared_net) or abs(net-declared_net)>32*math.ulp(max(parameters['unit_gen_max'],parameters['unit_pump'])*parameters['n_units']):
+            raise ValueError('initial pumped net power disagrees with unit powers')
     target=out/'PUMPED_RT_DECLARATIONS.json'
     with target.open('x')as f:json.dump(declarations,f,indent=2)
     carry.update(pumped_storage=state,pumped_storage_declaration_path=str(target.resolve()),pumped_storage_declaration_sha256=sha(target));carry['source_pins'].update({str(target.resolve()):sha(target),str(src):sha(src),ph['path']:ph['sha256'],str(Path(__file__).resolve()):sha(__file__)})
@@ -48,3 +64,4 @@ def derive_pumped_carry(case,raw,names,first_tick=0):
         if abs(up-r['upper_m3']-delta)>1e-5 or abs(low-r['lower_m3']+delta)>1e-5:raise ValueError('first-step pumped water balance mismatch')
         out[s]=dict(upper_m3=up,lower_m3=low,net_power_mw=net,units=units,executed_local_tick=0,source='accepted_SCED_first_15min_only')
     return out
+

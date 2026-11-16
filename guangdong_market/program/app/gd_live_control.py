@@ -48,7 +48,8 @@ def start(p,confirmed=False):
   else:
    proc=subprocess.Popen([sys.executable,'-B',str(B/'gd_live_worker.py'),'run',str(out)],stdout=f,stderr=subprocess.STDOUT,start_new_session=True,pass_fds=(lock.fileno(),),env={**os.environ,'GD_PIPELINE_LOCK_FD':str(lock.fileno()),'PYTHONDONTWRITEBYTECODE':'1'})
  if lock:lock.close()
- write(out/'PID.json',dict(pid=proc.pid));return dict(status='started',output=str(out),publication_allowed=False)
+ from gd_process_guard import process_namespace
+ write(out/'PID.json',dict(pid=proc.pid,process_namespace=process_namespace()));return dict(status='started',output=str(out),publication_allowed=False)
 def status(out):
  out=Path(out)
  if not out.exists():return dict(status='not_started',native_calls=0)
@@ -61,6 +62,8 @@ def status(out):
   if f.exists():
    z=read(f);need(z['context']['short_run']==str((out/'pipeline/dispatch').resolve())and (z['context']['boundary_mode']==p['profile']or(p.get('event_price_profile')and z['context']['boundary_mode']==p['selected_event_profile']and z['context']['price_producer']=='gd.live_host.PRICE.v4_event')),'quarter from another branch/profile');prices.append(dict(quarter=q,price_quality=price_quality(f),raw_prices=z['raw_prices'],zero_vre_reference_normalization=z['context'].get('zero_vre_reference_normalization'),safety_release=False))
  end=read(out/'EXIT.json')if(out/'EXIT.json').exists()else None
+ from gd_process_guard import observe_run
+ worker_state=dict(state='exited') if end else observe_run(out)
  hour=read(out/'pipeline/price/HOUR0.json')if(out/'pipeline/price/HOUR0.json').exists()else None
  if hour:need(hour['branch']==str((out/'pipeline/dispatch').resolve()),'hour from another branch')
  hours=[read(f)for f in sorted((out/'pipeline/price').glob('HOUR*.json'),key=lambda p:int(p.stem[4:]))]
@@ -75,7 +78,7 @@ def status(out):
  candidate_blocks=read_blocks(out,dispatch) if dispatch else []
  from gd_live_market_runtime.durable_entry import progress as persistence_progress
  persistence=persistence_progress(out,p.get('durable_checkpoint'))
- return dict(persistence=persistence,model_scope=p.get('model_scope','historical_unspecified'),ac_assessment=p.get('ac_assessment','historical_unspecified'),reactive_power_modeled=p.get('reactive_power_modeled'),candidate_blocks=candidate_blocks,agc_results=agc_results,numerical=numerical,safety=safety,events=events,status='worker_exited'if end else'running_or_unknown',exit=end,completed_windows=dispatch.get('completed_windows',0),quarters=prices,hour=hour,hours=hours,hour_exports=[dict(path=str(f.resolve()),sha256=sha(f))for f in sorted((out/'pipeline/price').glob('HOUR*.json'),key=lambda p:int(p.stem[4:]))],verification_scope='same output branch/source-pinned live worker receipts; not a new independent raw/safety certification',publication_allowed=False,dispatch_authorized=False,durable_restart_supported=False)
+ return dict(worker_state=worker_state,persistence=persistence,model_scope=p.get('model_scope','historical_unspecified'),ac_assessment=p.get('ac_assessment','historical_unspecified'),reactive_power_modeled=p.get('reactive_power_modeled'),candidate_blocks=candidate_blocks,agc_results=agc_results,numerical=numerical,safety=safety,events=events,status='worker_exited' if end else ('worker_interrupted' if worker_state['state']=='interrupted' else 'running_or_unknown'),exit=end,completed_windows=dispatch.get('completed_windows',0),quarters=prices,hour=hour,hours=hours,hour_exports=[dict(path=str(f.resolve()),sha256=sha(f))for f in sorted((out/'pipeline/price').glob('HOUR*.json'),key=lambda p:int(p.stem[4:]))],verification_scope='same output branch/source-pinned live worker receipts; not a new independent raw/safety certification',publication_allowed=False,dispatch_authorized=False,durable_restart_supported=False)
 
 def future_state(out):
  import time
@@ -120,3 +123,4 @@ def create_nextday(da,run,name,available_at,*,confirmed=False):
  need(confirmed is True,'explicit independent D+1 declaration confirmation required');sources()
  p=subprocess.run([sys.executable,'-B',str(B/'gd_live_worker.py'),'declare_nextday',str(Path(run).resolve()),str(Path(da).resolve()),name,available_at,'--confirmed-research'],capture_output=True,text=True)
  need(p.returncode==0,p.stderr or p.stdout or 'declaration failed');return json.loads(p.stdout.strip().splitlines()[-1])
+

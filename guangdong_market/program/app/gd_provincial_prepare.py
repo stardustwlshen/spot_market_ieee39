@@ -1,6 +1,6 @@
 """Fresh DA98 -> independent LMP -> provincial RT base. Never reuse a fixed DA result."""
 from pathlib import Path
-import json,hashlib,subprocess,sys,os
+import json,hashlib,subprocess,sys,os,uuid
 APP=Path(__file__).resolve().parent
 
 def inputs_identity(source_base):
@@ -40,17 +40,39 @@ def prepare_fresh(source_base,output,*,confirmed=False,delta=.1,progress=None):
     pins=inputs_identity(source_base);out=Path(output).resolve()
     if out.exists():raise ValueError('运行目录已存在，请使用新运行名；不覆盖或自动重算')
     out.mkdir(parents=True)
-    def save(name,z):(out/name).write_text(json.dumps(z,ensure_ascii=False,indent=2,allow_nan=False))
+    def save(name,z):
+        target=out/name;temp=out/(name+'.'+uuid.uuid4().hex+'.tmp')
+        with temp.open('x',encoding='utf-8') as f:
+            f.write(json.dumps(z,ensure_ascii=False,indent=2,allow_nan=False));f.flush();os.fsync(f.fileno())
+        os.replace(temp,target)
     save('UI_INPUT.json',dict(source_base=str(Path(source_base).resolve()),source_pins=pins,pricing_delta=delta,formal=False,day_periods=98,settlement_periods=96,grid_minutes=15))
     labels=['日前机组组合及调度','日前节点电价','校验日前结果','准备实时初始状态']
     for i,(label,cmd) in enumerate(zip(labels,commands(source_base,out,delta))):
-        if inputs_identity(source_base)!=pins:raise ValueError('输入在计算期间发生变化，已停止；旧结果保留')
+        try:
+            if inputs_identity(source_base)!=pins:raise ValueError('输入在计算期间发生变化，已停止；旧结果保留')
+        except (ValueError,OSError) as exc:
+            save('PROGRESS.json',dict(stage=i,label=label,status='failed',error=str(exc)))
+            raise
         if progress:progress(i,label)
         save('PROGRESS.json',dict(stage=i,label=label,status='running'))
-        q=subprocess.run(cmd,capture_output=True,text=True,timeout=8000,env={**os.environ,'PYTHONDONTWRITEBYTECODE':'1','OMP_NUM_THREADS':'1'})
+        try:
+            q=subprocess.run(cmd,capture_output=True,text=True,timeout=8000,env={**os.environ,'PYTHONDONTWRITEBYTECODE':'1','OMP_NUM_THREADS':'1'})
+        except (subprocess.TimeoutExpired,OSError) as exc:
+            # Preserve partial logs even when run() never returns a CompletedProcess.
+            # Timeout means the wrapper stopped; native descendants may need checking.
+            def text(value):
+                return value.decode('utf-8',errors='replace') if isinstance(value,bytes) else (value or '')
+            timed_out=isinstance(exc,subprocess.TimeoutExpired)
+            save('STEP_'+str(i)+'.json',dict(command=cmd,returncode=None,
+                 stdout=text(getattr(exc,'stdout',None)),stderr=text(getattr(exc,'stderr',None)),
+                 error=str(exc),timed_out=timed_out,native_completion_unknown=timed_out))
+            save('PROGRESS.json',dict(stage=i,label=label,status='failed',
+                 error=str(exc),timed_out=timed_out,native_completion_unknown=timed_out))
+            raise ValueError(label+('超时，日志已保留；请检查是否仍有求解子进程后再重算' if timed_out else '无法启动，错误已保留：'+str(exc))) from exc
         save('STEP_'+str(i)+'.json',dict(command=cmd,returncode=q.returncode,stdout=q.stdout,stderr=q.stderr))
         if q.returncode:
             save('PROGRESS.json',dict(stage=i,label=label,status='failed'))
             raise ValueError(label+'失败，结果已保留：'+q.stderr[-1200:])
     save('PROGRESS.json',dict(status='ready',label='日前完成，可启动实时',stage=4))
     return dict(status='provincial_fresh_DA_ready',da=str(out/'da'),run=str(out/'rt'),formal=False,native_calls=3)
+

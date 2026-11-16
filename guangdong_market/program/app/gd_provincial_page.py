@@ -8,6 +8,14 @@ def render(parent_run='',standalone=False):
  import gd_live_control as ctl
  if standalone:st.set_page_config(page_title='单日市场模拟',layout='wide')
  st.title('单日市场模拟')
+ # The active execution is independent of the editable next-run draft.
+ tracked=st.session_state.get('prov_day')
+ tracked_status=None;tracking_error=None
+ if tracked:
+  try:tracked_status=ctl.status(tracked['output'])
+  except Exception as exc:tracking_error=str(exc)
+ busy=bool(tracked and (tracking_error or not (tracked_status or {}).get('exit')))
+ if busy:st.info('当前实时任务仍在运行或状态待核实。输入修改仅用于下一次计算，不会改变当前任务；结束前不能重复启动。')
  st.caption('日前 96 时段＋次日峰谷代表点；实时每 15 分钟。仅有功与直流网络。')
  configured=Path(__file__).with_name('PROVINCIAL_INPUT.json')
  cfg=json.loads(configured.read_text()) if configured.exists() else {}
@@ -71,9 +79,10 @@ def render(parent_run='',standalone=False):
  identity=(str(source),str(output),name,delta,json.dumps(pins,sort_keys=True),load_factor,json.dumps(bid_factors),json.dumps(ramp_factors),json.dumps(thermal_edits,sort_keys=True),json.dumps(resource_edits,sort_keys=True),json.dumps(additions,sort_keys=True),json.dumps(forecast_levels,sort_keys=True),json.dumps(renewable_bids,sort_keys=True))
  if st.session_state.get('prov_identity')!=identity:
   st.session_state['prov_identity']=identity
-  for key in ('prov_ready','prov_rt_plan','prov_status','prov_day'):st.session_state.pop(key,None)
- if st.button('计算日前并准备实时',disabled=pins is None,key='prov_prepare'):
+  for key in ('prov_ready','prov_rt_plan','prov_status'):st.session_state.pop(key,None)
+ if st.button('计算日前并准备实时',disabled=pins is None or busy,key='prov_prepare'):
   try:
+   st.session_state.pop('prov_ready',None)
    from gd_unified_backend import layout
    dest=Path(layout(output,name)['root'])
    if dest.exists() or Path(str(dest)+'_inputs').exists():
@@ -84,10 +93,16 @@ def render(parent_run='',standalone=False):
    edited=snapshot(source,str(dest)+'_inputs',load_factor=load_factor,thermal_bid_factors=bid_factors,thermal_ramp_factors=ramp_factors,thermal_edits=thermal_edits,resource_edits=resource_edits,forecast_levels=forecast_levels,additions=additions,renewable_bids=renewable_bids)
    result=prep.prepare_fresh(edited,dest,confirmed=True,delta=delta,progress=lambda i,label:bar.progress(i/4,text=label))
    bar.progress(1.,text='日前完成');st.session_state['prov_ready']=result
+   st.session_state.pop('prov_day',None)
+   tracked_status=None;tracking_error=None
   except Exception as exc:
    st.error(str(exc));st.info('未复用旧结果。可以调整输入后再次点击计算，每次尝试独立保存。')
  ready=st.session_state.get('prov_ready')
- if not ready:return
+ if not ready:
+  if st.session_state.get('prov_day'):
+   st.caption('下方为此前任务的结果，与当前修改中的输入分开。新输入需重新计算日前后再运行实时。')
+   _render_tracked_day(tracked_status,tracking_error)
+  return
  st.success('日前已完成，实时初态已建立。')
  network_file=Path(ready['da'])/'NETWORK_VIOLATIONS.json'
  if network_file.is_file():
@@ -115,13 +130,20 @@ def render(parent_run='',standalone=False):
     st.session_state['prov_day']=start_day(ready,clock,delta)
     st.rerun()
    except Exception as exc:st.error(str(exc))
- if st.session_state.get('prov_day'):
-  st.button('刷新运行状态／检查重试',key='prov_day_refresh')
-  @st.fragment(run_every=None if current and current.get('exit') else '5s')
-  def live_progress():
-   try:
-    observed=ctl.status(st.session_state['prov_day']['output'])
-    render_status(observed)
-    if observed.get('exit') and not (current and current.get('exit')):st.rerun()
-   except Exception as exc:st.error('结果读取失败：'+str(exc))
-  live_progress()
+ if st.session_state.get('prov_day'):_render_tracked_day(current)
+
+
+def _render_tracked_day(current=None,tracking_error=None):
+ import streamlit as st
+ import gd_live_control as ctl
+ from gd_full_day_ui import render_status
+ if tracking_error:st.error('当前任务状态读取失败：'+tracking_error+'；保留任务记录，不自动重新启动。')
+ st.button('刷新运行状态／检查重试',key='prov_day_refresh')
+ @st.fragment(run_every=None if current and current.get('exit') else '5s')
+ def live_progress():
+  try:
+   observed=ctl.status(st.session_state['prov_day']['output'])
+   render_status(observed)
+   if observed.get('exit') and not (current and current.get('exit')):st.rerun()
+  except Exception as exc:st.error('结果读取失败：'+str(exc))
+ live_progress()

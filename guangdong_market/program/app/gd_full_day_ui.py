@@ -29,7 +29,7 @@ def hour_pairs(status):
 def economic_total(pairs):
  from gd_settlement_bridge import components,from_export
  from decimal import Decimal
- totals={};fields=('energy_revenue_CNY','generation_cost_CNY','executed_startup_cost_CNY','simulated_reserve_gross_revenue_CNY','estimated_spot_margin_before_service_allocation_CNY')
+ totals={};fields=('energy_revenue_CNY','generation_cost_CNY','executed_startup_cost_CNY','simulated_reserve_gross_revenue_CNY','simulated_agc_gross_revenue_CNY','estimated_spot_margin_before_service_allocation_CNY')
  seen=set()
  for h,e in pairs:
   econ=components(from_export(e['path'],h['run_id'],e['sha256']))['unit_economics']
@@ -41,6 +41,8 @@ def economic_total(pairs):
    for f in fields:
     v=row.get(f);r[f]=None if v is None or r[f] is None else r[f]+Decimal(str(v))
    v=(row.get('agc_estimate')or{}).get('amount_CNY');old=r['agc_estimate']['amount_CNY'];r['agc_estimate']['amount_CNY']=None if v is None or old is None else old+Decimal(str(v))
+   basis=row.get('agc_revenue_basis','missing')
+   r['agc_revenue_basis']=basis if 'agc_revenue_basis' not in r else r['agc_revenue_basis'] if r['agc_revenue_basis']==basis else 'mixed'
  return list(totals.values())
 
 def render_status(status):
@@ -48,6 +50,7 @@ def render_status(status):
  p=progress(status)
  st.progress(p['fraction'],text=f"实时调度 {p['executed']}/96 时段；定价 {p['priced']}/96；结算 {p['hours']}/24 小时")
  if p['complete']:st.success('单日求解流程完成：96 时段调度和定价、24 小时结算齐全；是否存在越限及目标偏差请看下方异常。')
+ elif status.get('status')=='worker_interrupted':st.error('未检测到运行锁，也没有正常结束记录，不能确认计算仍在运行。已保存的结果保留；须核对检查点和未确认的求解调用后再恢复，不能视为完成。')
  elif p['failed']:st.error('实时计算停止：'+(p['message'] or '完成记录不齐全。请查看诊断。'))
  else:st.caption('已执行至 '+p['end_time']+'；后续时段尚未完成。')
  st.caption('结果和运行记录保存于本机。未配置独立存储，不代表已完成云端或其他电脑备份。失败重算从当日初态开始，不会把旧尝试的电量、费用再次计入。')
@@ -68,3 +71,4 @@ def render_status(status):
    st.caption('模拟收益为月度辅助服务分摊前估算，不是正式净利润。')
  with st.expander('运行诊断'):st.json(status)
  return p
+

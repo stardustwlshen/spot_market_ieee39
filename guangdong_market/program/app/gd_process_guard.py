@@ -132,3 +132,29 @@ def pid_alive(pid):
         return stat.read_text().rsplit(')', 1)[1].split()[0] != 'Z'
     except (OSError, IndexError):
         return True
+
+
+
+def observe_run(out):
+    """Non-destructive liveness evidence; never unlock/delete or authorize resume.
+
+    A PID alone cannot prove identity (reuse, copied results, another machine).
+    Only inspect a lock in the recorded launch namespace. Missing launch/namespace
+    information stays unknown; the recovery/native-call inventory remains separate.
+    """
+    out = Path(out)
+    try:
+        record = json.loads((out / 'PID.json').read_text())
+        if record.get('process_namespace') != process_namespace():
+            return dict(state='unknown', reason='launch_namespace_missing_or_different')
+        lock_path = out / 'PROCESS.guard'
+        if not lock_path.is_file():
+            return dict(state='unknown', reason='run_lock_missing')
+        try:
+            guard = acquire(lock_path)
+        except GuardBusy:
+            return dict(state='lock_held', reason='run_lock_owned')
+        guard.close()
+        return dict(state='interrupted', reason='run_lock_free_without_exit', restart_safe=False)
+    except (OSError, ValueError, RuntimeError):
+        return dict(state='unknown', reason='liveness_evidence_unavailable')

@@ -20,7 +20,13 @@ def storage_rows(rows):
 def simulation_rows(rows):
  """Display research income separately from unavailable formal settlement."""
  columns={'resource':'机组','energy_revenue_CNY':'电能量收入（元）','simulated_reserve_gross_revenue_CNY':'行政备用补偿估算（元）','generation_cost_CNY':'发电成本（元）','executed_startup_cost_CNY':'已执行启停成本（元）','estimated_spot_margin_before_service_allocation_CNY':'模拟收益（月度分摊前，元）'}
- return [{**{label:r.get(k) for k,label in columns.items()},'调频收入估算（元）':(r.get('agc_estimate') or {}).get('amount_CNY')} for r in rows]
+ def agc(r):
+  if 'simulated_agc_gross_revenue_CNY' in r:return r['simulated_agc_gross_revenue_CNY']
+  return r.get('agc_revenue_CNY') if r.get('agc_revenue_CNY') is not None else (r.get('agc_estimate') or {}).get('amount_CNY')
+ def basis(r):
+  key=r.get('agc_revenue_basis') or ('supplied_component' if r.get('agc_revenue_CNY') is not None else 'research_mileage_estimate' if agc(r) is not None else 'missing')
+  return {'supplied_component':'已提供的同源计算分项（非正式账单）','research_mileage_estimate':'模拟里程估算','mixed':'混合口径，详见各小时','missing':'缺失，未按零处理'}.get(key,key)
+ return [{**{label:r.get(k) for k,label in columns.items()},'调频收入（元）':agc(r),'调频数据来源':basis(r)} for r in rows]
 
 def render_energy_hour(result,export=None,economics_inputs=None,service_components=None):
  import streamlit as st
@@ -36,7 +42,7 @@ def render_energy_hour(result,export=None,economics_inputs=None,service_componen
   choice=st.selectbox('查看机组',['全部']+[r['resource'] for r in economics['rows']],key='economics_unit_'+result['run_id']+'_'+economics['start'])
   visible=[r for r in economics['rows'] if choice=='全部' or r['resource']==choice]
   st.dataframe(simulation_rows(visible),hide_index=True)
-  st.caption('模拟收益＝电能量收入＋调频估算＋行政备用补偿估算－发电及实际启停成本。未扣月度辅助服务分摊，不是正式净利润。')
+  st.caption('模拟收益＝电能量收入＋所列调频收入＋行政备用补偿估算－发电及实际启停成本。未扣月度辅助服务分摊，不是正式净利润。')
   with st.expander('估算依据与未核实项目'):
    st.caption('备用补偿池和补偿单价属于可配置研究假设；不等同实际备用交易收入。调频采用模拟里程，尚未核实实际里程及考核扣减。2025年规则来源不代表已认证2026年适用性。')
    st.dataframe([{'机组':r['resource'],'正式结算缺项':'；'.join(r.get('missing',[]))} for r in visible],hide_index=True)

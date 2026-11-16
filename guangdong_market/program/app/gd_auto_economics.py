@@ -67,6 +67,8 @@ def attach_estimates(economics,prepared):
         row['estimated_spot_margin_before_service_allocation_CNY']=None
         reserve_amount=row.get('reserve_revenue_CNY') if row.get('reserve_revenue_CNY') is not None else (r or {}).get('amount_CNY')
         agc_amount=row.get('agc_revenue_CNY') if row.get('agc_revenue_CNY') is not None else (row.get('agc_estimate') or {}).get('amount_CNY')
+        row['simulated_agc_gross_revenue_CNY']=agc_amount
+        row['agc_revenue_basis']=('supplied_component' if row.get('agc_revenue_CNY') is not None else 'research_mileage_estimate' if agc_amount is not None else 'missing')
         row['simulated_reserve_gross_revenue_CNY']=reserve_amount
         if reserve_amount is not None and agc_amount is not None and row.get('energy_contribution_CNY') is not None:
             row['estimated_spot_margin_before_service_allocation_CNY']=str(Decimal(str(row['energy_contribution_CNY']))+Decimal(str(agc_amount))+Decimal(str(reserve_amount)))

@@ -269,7 +269,11 @@ def build_energy_core(*, horizon, buses, thermal, load_mw, renewable_mw,
         _keys(series, bt, 'renewable_' + name)
         renewable_prices[name] = {k: _num(v, f'renewable_{name}[{k}]', minimum) for k, v in series.items()}
     numeric_state_audit = _state_boundary_audit()
-    if _trajectory_initial_units and (mode not in ('SCUC','SCED') or horizon.mode not in ('component','real_time_5min')):
+    # The provincial RT compiler uses 1..8 quarter-hour periods.
+    # horizon.validate() already enforces 15-minute duration and first-only settlement.
+    trajectory_domain = horizon.mode in ('component', 'real_time_5min') or (
+        horizon.mode == 'real_time' and 1 <= len(periods) <= 8)
+    if _trajectory_initial_units and (mode not in ('SCUC','SCED') or not trajectory_domain):
         raise EnergyInputError('trajectory initial extension requires explicit short-domain SCUC/SCED active-unit whitelist')
     thermal = _thermal_inputs(thermal, buses, periods, numeric_state_audit, _trajectory_initial_units)
     lines, sections = _network_inputs(lines, sections, buses, periods, reference_buses)
@@ -525,3 +529,4 @@ def terminal_thermal_state(model, *, through_period=None):
                      'initial_state_kind': 'stable', 'through_period': through_period,
                      'boundary_elapsed_h': end, 'feasibility_certified_by_this_function': False}
     return result
+
