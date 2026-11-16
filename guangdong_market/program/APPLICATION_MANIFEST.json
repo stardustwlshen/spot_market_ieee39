@@ -19813,6 +19813,70 @@
     "tests/test_price_parameter_projection.py": {
       "sha256": "f087adbcb175f9e0b75580f93c7027bead25953bbb70f855ef518812e0b3a3e6",
       "bytes": 1920
+    },
+    "tests/test_crosshour_replay_gates.py": {
+      "sha256": "8cb99ac82df93f961d91ddf6daa20e2021272a4d830a9753ff4a18168f65282a",
+      "bytes": 2535
+    },
+    "tests/test_crosshour_adversarial.py": {
+      "sha256": "c0e3fba6381a437c38e34158545e8d302519c2af6470fb1081aeb6dd9893e7ae",
+      "bytes": 3581
+    },
+    "tests/test_crosshour_accounting.py": {
+      "sha256": "40744a95cd516f44d9609fe5d8ac666a5b054a80febbb2c1b7e0210c37a06ba5",
+      "bytes": 3190
+    },
+    "app/gd_restore_crosshour_runtime/runner.py": {
+      "sha256": "9f0c3a64cb8a32334c6304bf5f7457ce9dfc6f1d956f3430efb3b89d38c97fbd",
+      "bytes": 11100
+    },
+    "app/gd_restore_crosshour_runtime/__init__.py": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    "app/gd_restore_crosshour_runtime/crosshour_accounting.py": {
+      "sha256": "e04ea3b0ea6686e79d7ee539de5985f18b2fb933971a3a1c1154c93b41a7e7df",
+      "bytes": 3315
+    },
+    "app/gd_restore_crosshour_runtime/preflight.py": {
+      "sha256": "b08aa2c12eb939eadc16c37921e6e39bf79b7dc62ba8495f4a76e65853b94508",
+      "bytes": 9363
+    },
+    "app/gd_restore_crosshour_runtime/isolated_durable.py": {
+      "sha256": "2336f80b13f69b53853e361e67f99f83759c66f7f13b8cd1c40965fe2a626ec5",
+      "bytes": 47677
+    },
+    "app/gd_restore_crosshour_runtime/replay_economics.py": {
+      "sha256": "27dd833ad84ef46ff8583046bed56596c8afe938df18cb8144753130c72f7bfd",
+      "bytes": 5873
+    },
+    "app/gd_restore_crosshour_runtime/__main__.py": {
+      "sha256": "a10f7520ff2db3d68dfcf57a4b2ef884656423b002a760cf91078d7107749b90",
+      "bytes": 2130
+    },
+    "app/gd_restore_crosshour_runtime/import_prefix.py": {
+      "sha256": "f564468cae8aec75f67a6527564b64afb9d819bbedfc795f7913bffefa5b5b0d",
+      "bytes": 3291
+    },
+    "app/gd_restore_crosshour_runtime/adopt_frames.py": {
+      "sha256": "86c992ca70ac2b451a912bc2b4d1e943e705e0875e9bc40a82ca2e8cf8951240",
+      "bytes": 14259
+    },
+    "app/gd_restore_crosshour_runtime/complete_economics.py": {
+      "sha256": "27b75b0716e2de1b4f65cf0f08515432798a4023994006533a35c9df34884543",
+      "bytes": 4099
+    },
+    "app/gd_restore_crosshour_runtime/historical_store.py": {
+      "sha256": "d36c163fd9b843f568e84e68dbee7dc964dbfc39507f424ce30f14da4e449c49",
+      "bytes": 1818
+    },
+    "app/gd_restore_crosshour_runtime/child_guard/sitecustomize.py": {
+      "sha256": "0deb22b80ab3742200254f03f62e807cc342fedfd3ea8f4f5711f79ae72a6a06",
+      "bytes": 1513
+    },
+    "RESTORE_CROSSHOUR.md": {
+      "sha256": "f95e2046c86e62141bd3294af38fc08c980b92e2c56cb89d712c76b3daad3f8c",
+      "bytes": 2963
     }
   }
 }
