@@ -32,13 +32,13 @@ def snapshot(source,target,*,load_factor=1.,thermal_bid_factors=None,thermal_ram
    if g not in e['thermal']:raise ValueError('未知火电机组：'+g)
    positive(v)
  e['load_mw']={k:v*load_factor for k,v in e['load_mw'].items()}
+ for g,f in (thermal_ramp_factors or {}).items():
+  for key in ('ramp_up_mw_per_h','ramp_down_mw_per_h'):e['thermal'][g][key]={k:v*f for k,v in e['thermal'][g][key].items()}
+ apply_thermal_edits(case,thermal_edits or {},agc=agc)
  for g,f in (thermal_bid_factors or {}).items():
   d=e['thermal'][g];d['base_bid_yuan_per_h']={k:v*f for k,v in d['base_bid_yuan_per_h'].items()}
   for seg in d['segments']:seg['price_yuan_per_mwh']={k:v*f for k,v in seg['price_yuan_per_mwh'].items()}
- for g,f in (thermal_ramp_factors or {}).items():
-  for key in ('ramp_up_mw_per_h','ramp_down_mw_per_h'):e['thermal'][g][key]={k:v*f for k,v in e['thermal'][g][key].items()}
  apply_renewable_bids(case,renewable_bids or {})
- apply_thermal_edits(case,thermal_edits or {},agc=agc)
  from gd_resource_inputs import apply_resource_edits
  apply_resource_edits(case,resource_edits or {})
  out.mkdir(parents=True,exist_ok=False);shutil.copytree(src/'seed',out/'seed');shutil.copy2(src/'INITIAL_CARRY.json',out/'INITIAL_CARRY.json')
@@ -66,28 +66,41 @@ def capacity_cost_preview(technology,old_capacity,new_capacity):
  return {'before':profile(technology,old_capacity),'after':profile(technology,new_capacity)}
 
 
-def validate_thermal_edits(source,edits):
+def validate_thermal_edits(source,edits,*,ramp_factors=None):
  loads,_=codec();root=Path(source)
  case=loads((root/'seed/case.json').read_bytes())
+ for g,f in (ramp_factors or {}).items():
+  if not math.isfinite(f) or f<=0:raise ValueError('爬坡倍率须为正有限数')
+  for key in ('ramp_up_mw_per_h','ramp_down_mw_per_h'):case['energy_inputs']['thermal'][g][key]={t:v*f for t,v in case['energy_inputs']['thermal'][g][key].items()}
  return apply_thermal_edits(case,edits,agc=json.loads((root/'seed/agc.json').read_text()))
 
 
 def apply_thermal_edits(case,edits,*,agc=None):
- """Maximum output edits retain Pmin, prices, costs, ramps and transition curves.
+ """Maximum output alone retains Pmin, prices, ramps and transition curves.
+ Minimum output edits require the verified linear research template.
  Incremental bid MW shares are retained in the new [Pmin,Pmax] range.
  Validate the complete batch before mutating the caller's case.
  """
  from copy import deepcopy
- allowed={'initial_online','initial_power_mw','initial_state_age_h','min_up_h','min_down_h','max_mw'}
- pending={}
+ allowed={'initial_online','initial_power_mw','initial_state_age_h','min_up_h','min_down_h','max_mw','min_mw'}
+ pending={};pending_curves={}
  for g,changes in edits.items():
   if g not in case['energy_inputs']['thermal']:raise ValueError('未知机组：'+g)
   if set(changes)-allowed:raise ValueError('尚未支持的机组参数：'+','.join(sorted(set(changes)-allowed)))
   d=deepcopy(case['energy_inputs']['thermal'][g])
   for k,v in changes.items():
    if k!='initial_online' and (isinstance(v,bool) or not isinstance(v,(int,float)) or not math.isfinite(v) or v<0):raise ValueError(g+'参数必须为非负有限数：'+k)
+  changed_min='min_mw' in changes and changes['min_mw']!=d['min_mw'][0]
+  if changed_min:
+   from gd_thermal_minimum import resize_minimum
+   h=case['energy_inputs']['horizon'];periods=h['periods'] if isinstance(h,dict) else h.periods
+   durations={x['duration_h'] if isinstance(x,dict) else x.duration_h for x in periods}
+   if len(durations)!=1:raise ValueError('原始时间步长不统一')
+   d['_minimum_edit_dt_h']=next(iter(durations))
+   pending_curves[g]=resize_minimum(d,case['curves'][g],case['no_load_cost'][g],changes['min_mw'],changes.get('max_mw'))
+   d.pop('_minimum_edit_dt_h')
   capacity=changes.get('max_mw',d['max_mw'][0])
-  if 'max_mw' in changes and capacity!=d['max_mw'][0]:
+  if changed_min or ('max_mw' in changes and capacity!=d['max_mw'][0]):
    old=d['max_mw'][0];minimum=d['min_mw'][0]
    if len(set(d['max_mw'].values()))!=1 or len(set(d['min_mw'].values()))!=1:raise ValueError(g+'存在分时出力限制，暂不支持统一修改容量')
    if not capacity>minimum:raise ValueError(g+'最大出力必须大于最小出力')
@@ -101,23 +114,23 @@ def apply_thermal_edits(case,edits,*,agc=None):
     status=d['status'][t]
     if not math.isfinite(v) or v<0 or v>capacity or (v>0 and (v<minimum or status in ('off','unavailable'))) or (v==0 and status=='on' and minimum>0):raise ValueError(g+'固定出力与容量或开停状态冲突')
    for kind in ('startup','shutdown'):
-    if any(max(row[k] for k in ('begin','mean','end'))>capacity for row in case['curves'][g][kind]):raise ValueError(g+'启停轨迹超过修改后的容量')
+    if any(max(row[k] for k in ('begin','mean','end'))>capacity for row in pending_curves.get(g,case['curves'][g])[kind]):raise ValueError(g+'启停轨迹超过修改后的容量')
    if agc is not None:
     z=agc[g]
     if any(z['up_mw'][t]+z['down_mw'][t]>capacity-minimum+1e-9 for t in z['up_mw']):raise ValueError(g+'调频预留超过修改后的可调出力范围')
    ratio=(capacity-minimum)/(old-minimum)
    for seg in d['segments']:seg['width_mw']*=ratio
    d['max_mw']={t:float(capacity) for t in d['max_mw']}
-  d.update({k:v for k,v in changes.items() if k!='max_mw'});online=d['initial_online']
+  d.update({k:v for k,v in changes.items() if k not in ('max_mw','min_mw')});online=d['initial_online']
   if type(online) not in (int,bool) or online not in (0,1):raise ValueError(g+'初始状态必须为开机或停机')
-  for k in allowed-{'initial_online','max_mw'}:
+  for k in allowed-{'initial_online','max_mw','min_mw'}:
    v=d[k]
    if isinstance(v,bool) or not isinstance(v,(int,float)) or not math.isfinite(v) or v<0:raise ValueError(g+'参数必须为非负有限数：'+k)
   power=d['initial_power_mw']
   if online and not d['min_mw'][0]<=power<=d['max_mw'][0]:raise ValueError(g+'初始开机出力须在最小、最大出力之间')
   if not online and power!=0:raise ValueError(g+'初始停机时出力必须为0')
   d['initial_online']=int(online);d['initial_state_kind']='stable' if online else 'off';pending[g]=d
- case['energy_inputs']['thermal'].update(pending)
+ case['energy_inputs']['thermal'].update(pending);case['curves'].update(pending_curves)
  return case
 
 

@@ -46,9 +46,10 @@ def render(parent_run='',standalone=False):
    unit=st.selectbox('火电机组',sorted(parameters),key='edit_thermal_unit')
    base=parameters[unit];saved=st.session_state['unit_edits'].get(unit,{})
    current={**base,**saved.get('parameters',{})}
-   st.caption(f"节点 {base['bus']}；最小出力 {base['min_mw']:g} MW")
+   st.caption(f"节点 {base['bus']}")
    with st.form('unit_form_'+unit+'_'+source_token):
-    capacity=st.number_input('最大出力（MW）',min_value=0.,value=float(current['max_mw']),key='capacity_'+unit+'_'+source_token,help='最小出力保持不变；分段报价的电量宽度按可调区间同比调整，报价单价和爬坡不自动改变；利润使用的默认发电成本按容量档位更新。')
+    capacity=st.number_input('最大出力（MW）',min_value=0.,value=float(current['max_mw']),key='capacity_'+unit+'_'+source_token,help='分段报价的电量宽度按可调区间同比调整，报价单价和爬坡不自动改变；利润使用的默认发电成本按容量档位更新。')
+    minimum=st.number_input('最小出力（MW）',min_value=0.,value=float(current['min_mw']),key='minimum_'+unit+'_'+source_token,help='仅支持已核验的线性研究模板：轨迹功率同比缩放、时长不变，基段与轨迹费用按原单价重算；不支持复杂外部曲线。')
     bid=st.number_input('分段电能量报价倍率',0.1,3.0,float(saved.get('bid_factor',1.)),0.05,key='bid_'+unit+'_'+source_token)
     ramp=st.number_input('上下爬坡能力倍率',0.1,3.0,float(saved.get('ramp_factor',1.)),0.05,key='ramp_'+unit+'_'+source_token)
     online=st.selectbox('初始状态',['开机','停机'],index=0 if current['initial_online'] else 1,key='online_'+unit+'_'+source_token)
@@ -57,17 +58,17 @@ def render(parent_run='',standalone=False):
     up=st.number_input('最小开机时间（小时）',0.,value=float(current['min_up_h']),key='up_'+unit+'_'+source_token)
     down=st.number_input('最小停机时间（小时）',0.,value=float(current['min_down_h']),key='down_'+unit+'_'+source_token)
     if st.form_submit_button('保存这台机组的修改'):
-     edit=dict(max_mw=capacity,initial_online=int(online=='开机'),initial_power_mw=initial_power,initial_state_age_h=age,min_up_h=up,min_down_h=down)
+     edit=dict(min_mw=minimum,max_mw=capacity,initial_online=int(online=='开机'),initial_power_mw=initial_power,initial_state_age_h=age,min_up_h=up,min_down_h=down)
      from gd_provincial_inputs import validate_thermal_edits
-     try:validate_thermal_edits(source,{unit:edit})
+     try:validate_thermal_edits(source,{unit:edit},ramp_factors={unit:ramp})
      except (ValueError,KeyError) as exc:st.error(str(exc)+'。未保存。')
      else:st.session_state['unit_edits'][unit]=dict(parameters=edit,bid_factor=bid,ramp_factor=ramp);st.success('已保存，切换机组不会丢失。重新计算后生效。')
    from gd_provincial_inputs import capacity_cost_preview
    saved_capacity=st.session_state['unit_edits'].get(unit,{}).get('parameters',{}).get('max_mw',base['max_mw'])
    costs=capacity_cost_preview(base['technology'],base['max_mw'],saved_capacity)
    st.caption(f"利润默认发电成本（假设值，非报价）：{costs['before']['generation_CNY_MWh']} → {costs['after']['generation_CNY_MWh']} 元/MWh，按已保存容量分档；结果页可另改成本。旧运行手填成本不覆盖，也不自动复制到新运行。")
-   st.caption('容量改变仅同比调整各报价段MW宽度；报价单价、爬坡和调度启停费用/轨迹不自动改变。最小出力、删除机组及备用/调频报价暂不支持修改。')
-   if st.session_state['unit_edits']:st.dataframe([{'机组':g,'最大出力MW':z['parameters'].get('max_mw',parameters[g]['max_mw']),'报价倍率':z['bid_factor'],'爬坡倍率':z['ramp_factor'],'初始开机':bool(z['parameters']['initial_online']),'初始出力MW':z['parameters']['initial_power_mw']}for g,z in st.session_state['unit_edits'].items()],hide_index=True)
+   st.caption('最小出力编辑为研究假设：线性启停轨迹功率同比缩放、时长不变，基段与轨迹费用按原单价重算；固定启停费和爬坡不变。删除机组及备用/调频报价暂不支持修改。')
+   if st.session_state['unit_edits']:st.dataframe([{'机组':g,'最小出力MW':z['parameters'].get('min_mw',parameters[g]['min_mw']),'最大出力MW':z['parameters'].get('max_mw',parameters[g]['max_mw']),'报价倍率':z['bid_factor'],'爬坡倍率':z['ramp_factor'],'初始开机':bool(z['parameters']['initial_online']),'初始出力MW':z['parameters']['initial_power_mw']}for g,z in st.session_state['unit_edits'].items()],hide_index=True)
   for g,z in st.session_state['unit_edits'].items():
    bid_factors[g]=z['bid_factor'];ramp_factors[g]=z['ramp_factor'];thermal_edits[g]=z['parameters']
   from gd_resource_editor import render_resource_editor

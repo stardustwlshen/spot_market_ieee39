@@ -227,8 +227,8 @@
       "bytes": 821
     },
     "app/gd_provincial_page.py": {
-      "sha256": "1b836bd6214d18745db780d4b228f241e266b370d7cbbcba4923bbe5b3876626",
-      "bytes": 11938
+      "sha256": "e3a13b4cd480a2f766379423e7c8340a665c7a4a5e15b6e627514709e507cd25",
+      "bytes": 12315
     },
     "app/gd_hourly_agc_backend.py": {
       "sha256": "d3f2f1084beddc97df9be3318829a0c9c6fb7f4f299b8a3fea9a3d013586b432",
@@ -335,8 +335,8 @@
       "bytes": 1952
     },
     "app/gd_provincial_inputs.py": {
-      "sha256": "6b901cb8884d447d5a65551d7c60ff9bb7ffdd0f2977561d90bce9d46b939f03",
-      "bytes": 9322
+      "sha256": "eadb84cab087c277dae9f3d3fed5dab9dfefaff1849d3a4dcc68f4d32d91c321",
+      "bytes": 10422
     },
     "app/gd_future_window_diagnostic.py": {
       "sha256": "97858a2f9d1bff44037d3266a723ff77e8e98a61414e9c1bde7be88d7274a682",
@@ -19887,12 +19887,24 @@
       "bytes": 4328
     },
     "tests/test_thermal_capacity_editor.py": {
-      "sha256": "fa7e404c109e28b95c213ebb30dd3792ddcace49c2a021199317f4d38ac3d575",
-      "bytes": 4684
+      "sha256": "697ebcc9f6f567bfbae901823bfbc7050577fd537c7b421b98e1f410d7ab17de",
+      "bytes": 4699
     },
     "docs/火电容量编辑.md": {
-      "sha256": "2c655a54fcfab8fcfabf86aaa2b6bc16762ea1ee9a121b762b44a250a3a92d22",
-      "bytes": 2632
+      "sha256": "5bb0aecd1cf02b20517fd43408d8212d1ab809026b85e8a60b103a6f2d860da6",
+      "bytes": 2755
+    },
+    "app/gd_thermal_minimum.py": {
+      "sha256": "ce128b55c5a3b2f2f8249af43062380ac0e3ce288f5e283be414cbb033126976",
+      "bytes": 2933
+    },
+    "tests/test_thermal_minimum_editor.py": {
+      "sha256": "c2a5743983bc72841c29ca72bfa69158b464503ed82873346474c1c64de68d27",
+      "bytes": 3042
+    },
+    "docs/最小出力编辑.md": {
+      "sha256": "4c8e09247ba2391031e34920572897739ebf97f6a2b1459de471665da1729c66",
+      "bytes": 1621
     }
   }
 }

@@ -19,7 +19,7 @@ def test_capacity_expansion_and_reduction(maximum):
  assert [z['price_yuan_per_mwh']for z in d['segments']]==[z['price_yuan_per_mwh']for z in orig['segments']]
  assert c['curves']==old['curves'] and c['reserve']==old['reserve'] and c['energy_inputs']['thermal']['H']==old['energy_inputs']['thermal']['H']
 
-@pytest.mark.parametrize('edit',[{'max_mw':20.},{'max_mw':40.},{'max_mw':float('nan')},{'max_mw':True},{'min_mw':10.}])
+@pytest.mark.parametrize('edit',[{'max_mw':20.},{'max_mw':40.},{'max_mw':float('nan')},{'max_mw':True},{'unsupported_parameter':10.}])
 def test_bad_values_atomic(edit):
  c=case();old=deepcopy(c)
  with pytest.raises(ValueError):apply_thermal_edits(c,{'H':{'max_mw':180.},'G':edit})
