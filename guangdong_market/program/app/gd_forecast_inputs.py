@@ -33,15 +33,24 @@ def baseline_digest(case):
     e=case['energy_inputs']
     return digest({'load':[[str(b),t,v]for (b,t),v in sorted(e['load_mw'].items()) if t<96],'renewable':[[str(b),t,v]for (b,t),v in sorted(e['renewable_mw'].items()) if t<96]})
 
+from functools import lru_cache
+
+@lru_cache(maxsize=1)
+def _baseline_digest_from_bytes(raw):
+    """Reuse parsing only for identical current bytes; never trust path/mtime.
+    Bounded process-local cache stores only an immutable digest, not a mutable case.
+    """
+    from smm.gd_october_job_codec import loads
+    from gd_provincial15_model.adapter import convert_full_case
+    return baseline_digest(convert_full_case(loads(raw)))
+
 def read_bundle(seed_dir):
     p=Path(seed_dir)/FILE
     if not p.exists():return None
     z=json.loads(p.read_text());expected=z.pop('bundle_digest')
     if digest(z)!=expected:raise ValueError('forecast bundle digest mismatch')
-    from smm.gd_october_job_codec import loads
-    from gd_provincial15_model.adapter import convert_full_case
-    baseline=convert_full_case(loads((Path(seed_dir)/'case.json').read_bytes()))
-    if baseline_digest(baseline)!=z['baseline_case_digest']:raise ValueError('forecast baseline does not match bound seed')
+    actual_baseline=_baseline_digest_from_bytes((Path(seed_dir)/'case.json').read_bytes())
+    if actual_baseline!=z['baseline_case_digest']:raise ValueError('forecast baseline does not match bound seed')
     z['bundle_digest']=expected;return z
 
 def apply_forecast(case,seed_dir,issue_tick):

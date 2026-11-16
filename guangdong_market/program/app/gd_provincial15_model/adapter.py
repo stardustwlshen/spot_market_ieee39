@@ -6,17 +6,21 @@ import math,json
 
 def convert_case(case, boundary, agc, *, quarter_count=8, convert_boundary=True):
     from smm.gd_horizon import EnergyHorizon,EnergyPeriod
-    c=deepcopy(case);h=c['energy_inputs']['horizon'];hvars=h if isinstance(h,dict) else vars(h)
+    c=case;h=c['energy_inputs']['horizon'];hvars=h if isinstance(h,dict) else vars(h)
     periods=hvars['periods'];ids=[x['index'] if isinstance(x,dict) else x.index for x in periods]
     if ids!=list(range(len(ids))) or len(ids)<quarter_count*3:raise ValueError('full sourced first24 five-minute input cells required')
     trace=[]
+    id_set=set(ids)
+    leaf_memo={}
     def reduce(v,path):
         if isinstance(v,dict):
             if v and all(isinstance(k,tuple) and len(k)==2 and isinstance(k[1],int) for k in v):
                 units={k[0] for k in v}
-                if all({k[1] for k in v if k[0]==u}==set(ids) for u in units):
-                    return {(u,t):a for u in units for t,a in reduce({k[1]:a for k,a in v.items() if k[0]==u},path).items()}
-            if set(v)==set(ids):
+                grouped={u:{} for u in units}
+                for (u,t),value in v.items():grouped[u][t]=value
+                if all(set(grouped[u])==id_set for u in units):
+                    return {(u,t):a for u in units for t,a in reduce(grouped[u],path).items()}
+            if set(v)==id_set:
                 out={}
                 for q in range(quarter_count):
                     a=[v[t] for t in range(3*q,3*q+3)]
@@ -25,13 +29,13 @@ def convert_case(case, boundary, agc, *, quarter_count=8, convert_boundary=True)
                         if path.endswith(('min_mw','min_flow_mw','minimum_mw')):out[q]=max(a)
                         elif path.endswith(('max_mw','max_flow_mw','ramp_up_mw_per_h','ramp_down_mw_per_h')):out[q]=min(a)
                         else:out[q]=math.fsum(a)/3
-                    elif all(x==a[0] for x in a):out[q]=a[0]
+                    elif all(x==a[0] for x in a):out[q]=deepcopy(a[0],leaf_memo)
                     else:raise ValueError('ambiguous categorical subquarter input '+path)
                 trace.append(path);return out
             return {k:reduce(x,path+'.'+str(k)) for k,x in v.items()}
         if isinstance(v,list):return [reduce(x,path) for x in v]
         if isinstance(v,tuple):return tuple(reduce(x,path) for x in v)
-        return v
+        return deepcopy(v,leaf_memo)
     c=reduce(c,'case')
     c['energy_inputs']['horizon']=EnergyHorizon(tuple(EnergyPeriod(t,.25,.25,'delivery',t==0) for t in range(quarter_count)),'real_time' if quarter_count==8 else 'component','Guangdong2026 6.6.2.1 15min; 8-period horizon is declared research setting')
     for g,curves in c['curves'].items():

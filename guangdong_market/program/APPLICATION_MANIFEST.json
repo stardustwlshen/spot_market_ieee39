@@ -151,8 +151,8 @@
       "bytes": 28239
     },
     "app/gd_forecast_inputs.py": {
-      "sha256": "3bf06aea55e5beb6ddb5017f303765df2d40b108c79e65b013f128777fb511c9",
-      "bytes": 4559
+      "sha256": "6e17ab54cdd4b20ec6f383fcbcba59a6a5afd328490d907da2adf36d09ca3e48",
+      "bytes": 4883
     },
     "app/gd_ui_page.py": {
       "sha256": "a73331a7304a31b004c654ca718b77a015ef81e58cb86cf8446cb6b8198f5536",
@@ -767,8 +767,8 @@
       "bytes": 2878
     },
     "tests/test_provincial_pumped.py": {
-      "sha256": "c6fb391edd075517b25cb6435cdd2eac150b2c5643b8d028c6f9ff23dc57b148",
-      "bytes": 8171
+      "sha256": "7c17ef02429008572c03eefd2eb745ab21af249d703b7df82a4c7f1090aa047e",
+      "bytes": 9138
     },
     "tests/test_hydro_rolling.py": {
       "sha256": "0c6df854ddff363fc7474916eaf841349808fcbc15ce2169a99184077fe5acd4",
@@ -2243,8 +2243,8 @@
       "bytes": 14244
     },
     "app/gd_provincial15_model/adapter.py": {
-      "sha256": "cee013cb3f83fe78a7149cc6544a1b1dbf23e7a76f859b62d718fb59a2ea2092",
-      "bytes": 4752
+      "sha256": "3e4b63fa93855d80d7ac331b0567dea94c02d0c938288f335676d4f5b1eff35d",
+      "bytes": 4883
     },
     "app/gd_provincial15_model/compiler.py": {
       "sha256": "94a886a723f8451ceef421dd3e56a901dc87d2d118eef4f316ec46b68fdb6903",
@@ -19801,6 +19801,14 @@
     "tests/test_gd_service_estimates_scope.py": {
       "sha256": "8a806b45b97809b01ce8f205ef3cd94ac0d8c729e92afa1cf956d7b2726a3a08",
       "bytes": 2468
+    },
+    "tests/test_input_preparation_efficiency.py": {
+      "sha256": "71b98390e844ae8625fe19aeaa7d661a2e6356441bddc3f76dfa1074b0712a47",
+      "bytes": 3631
+    },
+    "docs/输入准备性能验证.md": {
+      "sha256": "82e631e6cbb4963fadf86cf85bcf12784ca7a6a374a23979e998116a0116b6e8",
+      "bytes": 2887
     }
   }
 }

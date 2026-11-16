@@ -7,9 +7,11 @@ import pytest
 
 def setup(n=2):
  m=p.ConcreteModel();m.B=p.Set(initialize=['2']);m.T=p.Set(initialize=range(n));m.other_injection=p.Expression(m.B,m.T,rule=lambda *_:0);m.other_cost=p.Expression(expr=0)
- params=dict(enabled=True,variable_speed=False,bus=2,n_units=1,unit_gen_min=150,unit_gen_max=300,unit_pump=300,e_gen=9.6,e_pump=12.6,v_total=520,vup_min=60,vup_max=450,vdn_min=60,vdn_max=470,start_cost_gen=2000,start_cost_pump=4000,switch_gap=1,max_gen_starts=4,max_pump_starts=2)
+ params=dict(enabled=True,variable_speed=False,bus=2,n_units=1,unit_gen_min=150,unit_gen_max=300,unit_pump=300,e_gen=9.6,e_pump=12.6,v_total=520,vup_min=60,vup_max=450,vdn_min=60,vdn_max=470,start_cost_gen=2000,start_cost_pump=4000,switch_gap=1,max_gen_starts=4,max_pump_starts=2,min_gen_time_h=.5,min_pump_time_h=.5,min_off_time_h=.25)
  inv={'PS1':dict(parameters=params,upper_m3=2000000,lower_m3=3200000,modes={'PS1_1':'off'})}
- dec={'PS1':dict(source='test assumptions',basis='research',gen_bid_yuan_mwh=10,pump_bid_yuan_mwh=0,band_m3=1e6,band_penalty_yuan_m3=1,da_upper_m3={t:2e6 for t in range(n)},da_lower_m3={t:3.2e6 for t in range(n)},initial_units={'PS1_1':dict(gen_starts_used=0,pump_starts_used=0,last_active_mode='off',opposite_mode_block_steps=0)})}
+ # Explicit fixture: idle for one full 15-minute step, satisfying the default
+ # minimum off duration; both initial physical powers are zero.
+ dec={'PS1':dict(source='test assumptions',basis='research',gen_bid_yuan_mwh=10,pump_bid_yuan_mwh=0,band_m3=1e6,band_penalty_yuan_m3=1,da_upper_m3={t:2e6 for t in range(n)},da_lower_m3={t:3.2e6 for t in range(n)},initial_units={'PS1_1':dict(gen_starts_used=0,pump_starts_used=0,last_active_mode='off',opposite_mode_block_steps=0,mode_age_steps=1,gen_mw=0.,pump_mw=0.)})}
  return m,inv,dec
 
 def solve(m):
@@ -61,7 +63,10 @@ def test_DA_terminal_water_and_segment_cost():
  b=attach(m,i,d);b.pump_mode['PS1','PS1_1',0].fix(1);solve(m)
  assert p.value(b.upper['PS1',95])==pytest.approx(2e6)
  assert p.value(b.lower['PS1',95])==pytest.approx(3.2e6)
- assert p.value(sum(b.gen['PS1','PS1_1',t]*.25 for t in m.T))==pytest.approx(75*9.6/12.6)
+ # The declared 30-minute minimum pumping run requires two 15-minute cells.
+ assert p.value(b.pump_mode['PS1','PS1_1',1])==1
+ assert p.value(sum(b.pump['PS1','PS1_1',t]*.25 for t in m.T))==pytest.approx(150)
+ assert p.value(sum(b.gen['PS1','PS1_1',t]*.25 for t in m.T))==pytest.approx(150*9.6/12.6)
  assert all(p.value(b.band_excess['PS1',t])==0 for t in m.T)
 
 def test_DA_missing_terminal_rejected():
@@ -74,12 +79,15 @@ def test_new_DA_reference_binding_and_first_state(tmp_path):
  m,i,d=setup(1)
  cells=[dict(tick=t,pumped={'PS1':dict(upper_m3=2000000+t,lower_m3=3200000-t)}) for t in range(96)]
  f=tmp_path/'physical.json';f.write_text(json.dumps(dict(schema='gd.provincial.da_physical.v1',grid_minutes=15,physical_cells=cells)));sha=hashlib.sha256(f.read_bytes()).hexdigest()
- state={'PS1':dict(upper_m3=1990000,lower_m3=3210000,net_power_mw=150,units={'PS1_1':dict(mode='gen',last_active_mode='gen',opposite_mode_block_steps=1,gen_starts_used=1,pump_starts_used=0)})}
+ state={'PS1':dict(upper_m3=1990000,lower_m3=3210000,net_power_mw=150,units={'PS1_1':dict(mode='gen',last_active_mode='gen',opposite_mode_block_steps=1,gen_starts_used=1,pump_starts_used=0,mode_age_steps=1,gen_mw=150.,pump_mw=0.)})}
  inv,decl=realtime(i,d,physical_path=f,expected_sha256=sha,first_tick=1,count=8,boundary=state,boundary_day_tick=0,band_m3=10000,band_penalty_yuan_m3=1)
  assert inv['PS1']['upper_m3']==1990000
  assert decl['PS1']['da_upper_m3'][0]==2000001
  assert decl['PS1']['da_upper_m3'][7]==2000008
  assert decl['PS1']['initial_units']['PS1_1']['gen_starts_used']==1
+ assert decl['PS1']['initial_units']['PS1_1']['mode_age_steps']==1
+ assert decl['PS1']['initial_units']['PS1_1']['gen_mw']==150.
+ assert decl['PS1']['initial_units']['PS1_1']['pump_mw']==0.
  with pytest.raises(ValueError,match='immediately'):
   realtime(i,d,physical_path=f,expected_sha256=sha,first_tick=1,count=8,boundary=state,boundary_day_tick=7,band_m3=10000,band_penalty_yuan_m3=1)
  f.write_text('{}')
@@ -103,11 +111,12 @@ def test_DA98_terminal_is_day95_not_representative97():
  for t in range(96):
   b.gen_mode['PS1','PS1_1',t].fix(0);b.pump_mode['PS1','PS1_1',t].fix(0)
  b.pump_mode['PS1','PS1_1',96].fix(1);b.gen_mode['PS1','PS1_1',96].fix(0)
- b.pump_mode['PS1','PS1_1',97].fix(0);b.gen_mode['PS1','PS1_1',97].fix(0)
+ # Representative cells still obey the declared minimum pumping run.
+ b.pump_mode['PS1','PS1_1',97].fix(1);b.gen_mode['PS1','PS1_1',97].fix(0)
  solve(m)
  assert p.value(b.upper['PS1',95])==pytest.approx(2e6)
- assert p.value(b.upper['PS1',97])==pytest.approx(2e6+300*.25*10000/12.6)
- assert p.value(b.lower['PS1',97])==pytest.approx(3.2e6-300*.25*10000/12.6)
+ assert p.value(b.upper['PS1',97])==pytest.approx(2e6+300*.5*10000/12.6)
+ assert p.value(b.lower['PS1',97])==pytest.approx(3.2e6-300*.5*10000/12.6)
  # Model-indexed representative contributes to water and starts, not D terminal.
  assert p.value(b.pump_start['PS1','PS1_1',96])==1
 
@@ -126,3 +135,8 @@ def test_independent_PS_price_keeps_lp_modes_and_source(tmp_path):
  assert result['trace'][0]['absolute_tick']==4
  m,i,d=setup(1)
  with pytest.raises(ValueError,match='source-bound'):attach_from_prepared(m,tmp_path,x,4,.1,source_pins={})
+
+
+def test_missing_inherited_duration_is_not_inferred():
+ m,i,d=setup(1);del d['PS1']['initial_units']['PS1_1']['mode_age_steps']
+ with pytest.raises(ValueError,match='explicit inherited pumped mode_age_steps'):attach(m,i,d)
