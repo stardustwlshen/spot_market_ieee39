@@ -95,7 +95,10 @@ class PriceSession:
   for w in scope['source_windows']:
    a,h,s=self.accepted[w];s.verify();e.need(sha(a)==h,'accepted price changed');quarters.append(a)
   v=dict(rt_clock_mode=self.rt_clock_mode,schema='gd.live_host.execution_view.v3',run_id=z['branch_id'],run=z['branch'],base_run=z['base_run'],selected_DA=z['selected_DA'],hour=index,origin=z['request']['origin'],executed_end=scope['executed_end'],issued_end=scope['issued_end'],cells=scope['cells'],values=vals,SCED_sources={str(r['window']):r['SCED_response_sha256']for r in z['reports']},source_pins=z['source_pins'],formal_bill=None,safety_release=False,excluded_issued_ticks=scope['excluded_issued_ticks']);f=self.output/f'EXECUTION_H{index}.json';write(f,v);out=self.output/f'HOUR{index}.json'
-  result=call([B/'math_hour.py',z['selected_DA'],f,*quarters,out],self.output/f'hour{index}.log');self.execution[index]=(out,sha(out));write(self.output/f'SETTLEMENT_H{index}.json',self.settlement(index));return result
+  result=call([B/'math_hour.py',z['selected_DA'],f,*quarters,out],self.output/f'hour{index}.log');self.execution[index]=(out,sha(out));hour_result=read(out)
+  from gd_balance_diagnostics import unavailable
+  if not unavailable(hour_result):write(self.output/f'SETTLEMENT_H{index}.json',self.settlement(index))
+  return result
  def hour_receipt(self,index=0):
   e.need(index in self.execution,'no live completed hour receipt')
   out,digest=self.execution[index];e.need(sha(out)==digest,'hour export drift')

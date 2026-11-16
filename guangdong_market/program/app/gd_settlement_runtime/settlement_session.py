@@ -53,6 +53,7 @@ class SettlementSession:
         self.path=Path(hour_path).resolve();need(sha(self.path)==expected_hour_sha256,'hour digest mismatch')
         self.h=json.loads(self.path.read_text());need(self.h['run_id']==expected_run_id,'hour/run mismatch')
         need(self.h.get('schema')=='gd.live_host.PRICE.hour.v3','hour export schema')
+        need(self.h.get('economic_status')!='economics_unavailable_balance_slack','供需松弛异常小时没有可用经济结算，不能作为零收入累计')
         self.run_id=expected_run_id;self.digest=expected_hour_sha256
         periods={(r['start'],r['end'])for r in self.h['rows']};need(len(periods)==1,'one hour only');self.period=next(iter(periods))
         for p,s in self.h.get('source_pins',{}).items():need(sha(p)==s,'export source changed')

@@ -163,8 +163,8 @@
       "bytes": 4498
     },
     "app/gd_settlement_panel.py": {
-      "sha256": "51ee42591e2eea56ec6cc31e382fd93f1ce0f0c6d1478be67aea7036f408f3b5",
-      "bytes": 4853
+      "sha256": "b8d81f431d6e39488d54ecfde24d66896b4bcd5230d5cadf3de0f0350f41baca",
+      "bytes": 5273
     },
     "app/gd_provincial_register_worker.py": {
       "sha256": "a9a7818e2905230cda4360dce6e44383d36e41c8d5483a53981a5246b572bc67",
@@ -175,8 +175,8 @@
       "bytes": 229
     },
     "app/gd_execution_alerts.py": {
-      "sha256": "337e6b317ab5ad20df96c6213c5c2051fe9e6f29ada4e57bc641adc3816e4e29",
-      "bytes": 3479
+      "sha256": "f99fc53291b70aef44d5d7a5f86923355e5807c2d21f439a68d1eb75d7b7523e",
+      "bytes": 3585
     },
     "app/gd_resume_progress.py": {
       "sha256": "9317917db90483e7e1e1850f134b68a2dbd279e8c6bf95dbbba0f1e5cfee1d07",
@@ -379,8 +379,8 @@
       "bytes": 347
     },
     "app/gd_full_day_ui.py": {
-      "sha256": "434edaba6349fd590e3c98c77272d7518b1f82c5866848e732f1d24e430cc9cd",
-      "bytes": 4876
+      "sha256": "5b85d38427d1a052aab9a1210874d0c525157923cc35a31b05d9902e2fe45c09",
+      "bytes": 5519
     },
     "app/gd_unit_economics.py": {
       "sha256": "70a292997bf515ed4ddd91b8090e984e784be78ad5e8cab57065a33e6330332f",
@@ -543,8 +543,8 @@
       "bytes": 444
     },
     "app/LIVE_MARKET_MANIFEST.json": {
-      "sha256": "e4af2e963b992244e3222d15d41c22b0478a4966933adc371f2704cb7a205273",
-      "bytes": 46001
+      "sha256": "79da3d7b539c64f63c24447bb21104ac5b996b39b913bc236d94ecd4322d0108",
+      "bytes": 46100
     },
     "app/gd_batch_control.py": {
       "sha256": "c7a01de45ca5d6242599cd21e63e646c50bbef0aad4401544649bc21f25e2b1d",
@@ -1955,8 +1955,8 @@
       "bytes": 1579
     },
     "app/gd_live_market_runtime/math_hour.py": {
-      "sha256": "5828c8d5d44b0d62f32ef138e52bdfd13520c2a9ba09648e4da83089b2a83411",
-      "bytes": 11636
+      "sha256": "5c6e5968f714a970467d37443f07cdde85fa4ae7ad63032362a3c7ff38422814",
+      "bytes": 12202
     },
     "app/gd_live_market_runtime/thermal_reference.py": {
       "sha256": "746da972b608757cf8acd126d9bc14c7c869a88a49ddd9d9b199dc38e989979a",
@@ -2059,8 +2059,8 @@
       "bytes": 1249
     },
     "app/gd_live_market_runtime/session.py": {
-      "sha256": "83ad21c3dad56e5c392bcd7bb74b05bce23e966b3a25b39871b9f953dc009b65",
-      "bytes": 26833
+      "sha256": "76466f46ccb7459fa383dabd54b8615033661848bb7fccd92b64cf0f8811002a",
+      "bytes": 26940
     },
     "app/gd_live_market_runtime/provincial_da_view.py": {
       "sha256": "89cb85614d7d40a3ce3d88066aec3b6993dca055812dc47b97ab4bd1700773c6",
@@ -2363,8 +2363,8 @@
       "bytes": 9055
     },
     "app/gd_settlement_runtime/settlement_session.py": {
-      "sha256": "2adfea6bb606f4b2559e016d6db7a2a6cd873d555e059ada8c43465a4e0f1905",
-      "bytes": 8510
+      "sha256": "9d9650921acc358f2971150bc8811260f58ef4867ac80f0df8b995c9b5450d97",
+      "bytes": 8674
     },
     "app/gd_settlement_runtime/extensions.py": {
       "sha256": "45dd90c9f8c8a7f2b034def9c11ad3328783a61f19fd325d6c9b77b3657be11c",
@@ -19665,6 +19665,22 @@
     "docs/AUDIT_20261116.md": {
       "sha256": "bdf3f4f7d2f2931b44fff6d80f833cccaaa80075ba6c488b16b8552b17b095dc",
       "bytes": 1289
+    },
+    "tests/audit_20261116/test_slack.py": {
+      "sha256": "a24ad8e26877bc6f4839510c23e28db83759aba7779ec81dad97b5c3e0c995af",
+      "bytes": 3616
+    },
+    "tests/audit_20261116/test_runtime_files.py": {
+      "sha256": "ee75f0708743b5facb74347cce32cb6acf35a46fb0c33072bf03b4ec6f728fcb",
+      "bytes": 4224
+    },
+    "app/gd_balance_diagnostics.py": {
+      "sha256": "2c8dcedda894c982022e44ec93504a4afa3bd19e41e312a3d59821f3e5b11b8e",
+      "bytes": 1069
+    },
+    "docs/AUDIT_BALANCE_SLACK_20261116.md": {
+      "sha256": "cb338940b015d4eb253e7431c4b94c5c039e1982d2fc996ef6c92f248c168757",
+      "bytes": 1214
     }
   }
 }

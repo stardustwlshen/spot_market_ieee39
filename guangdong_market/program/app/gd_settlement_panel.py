@@ -30,6 +30,13 @@ def simulation_rows(rows):
 
 def render_energy_hour(result,export=None,economics_inputs=None,service_components=None):
  import streamlit as st
+ from gd_balance_diagnostics import unavailable
+ if unavailable(result):
+  st.error(result['economic_reason'])
+  st.dataframe(result['balance_diagnostics'],hide_index=True)
+  st.dataframe(result['dispatch_rows'],hide_index=True)
+  with st.expander('保留的调度与价格来源'):st.json({'physical_cells':result['physical_cells'],'hour_prices':result['hour_prices'],'input_binding':result['input_binding']})
+  return
  from gd_unit_economics import summarize,from_components
  try:
   bound_hour=dict(result)

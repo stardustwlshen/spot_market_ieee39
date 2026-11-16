@@ -15,7 +15,9 @@ def collect(pairs):
   hp=Path(export['path']);expected=export['sha256']
   if hashlib.sha256(hp.read_bytes()).hexdigest()!=expected:raise ValueError('小时结果发生变化')
   ep=hp.with_name(hp.name.replace('HOUR','EXECUTION_H'))
-  e=checked(ep,h['source_pins']);executed_events(h,e)
+  e=checked(ep,h['source_pins'])
+  from gd_balance_diagnostics import unavailable
+  executed_events(dict(h,rows=h['dispatch_rows']) if unavailable(h) else h,e)
   origin=datetime.fromisoformat(e['origin'])
   for key,value in e['values'].items():
    m=re.fullmatch(r'(line_over|line_under|section_over|section_under)\[(.+),(\d+)\]',key)

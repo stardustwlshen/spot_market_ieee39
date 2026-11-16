@@ -29,9 +29,13 @@ def hour_pairs(status):
 def economic_total(pairs):
  from gd_settlement_bridge import components,from_export
  from decimal import Decimal
+ from gd_balance_diagnostics import unavailable
+ if any(unavailable(h)for h,e in pairs):raise ValueError('包含供需松弛异常小时，完整累计收入和利润不可用；请分小时查看。')
  totals={};fields=('energy_revenue_CNY','generation_cost_CNY','executed_startup_cost_CNY','simulated_reserve_gross_revenue_CNY','simulated_agc_gross_revenue_CNY','estimated_spot_margin_before_service_allocation_CNY')
  seen=set()
  for h,e in pairs:
+  from gd_balance_diagnostics import unavailable
+  if unavailable(h):raise ValueError('包含供需松弛异常小时，完整累计收入和利润不可用；请分小时查看。')
   econ=components(from_export(e['path'],h['run_id'],e['sha256']))['unit_economics']
   period=(econ['start'],econ['end'])
   if period in seen:raise ValueError('重复小时不能累计收益')
@@ -49,7 +53,7 @@ def render_status(status):
  import streamlit as st
  p=progress(status)
  st.progress(p['fraction'],text=f"实时调度 {p['executed']}/96 时段；定价 {p['priced']}/96；结算 {p['hours']}/24 小时")
- if p['complete']:st.success('单日求解流程完成：96 时段调度和定价、24 小时结算齐全；是否存在越限及目标偏差请看下方异常。')
+ if p['complete']:st.success('单日求解流程完成：96 时段调度和定价、24 小时结果齐全；经济结算是否完整请看下方异常。')
  elif status.get('status')=='worker_interrupted':st.error('未检测到运行锁，也没有正常结束记录，不能确认计算仍在运行。已保存的结果保留；须核对检查点和未确认的求解调用后再恢复，不能视为完成。')
  elif p['failed']:st.error('实时计算停止：'+(p['message'] or '完成记录不齐全。请查看诊断。'))
  else:st.caption('已执行至 '+p['end_time']+'；后续时段尚未完成。')
@@ -57,13 +61,16 @@ def render_status(status):
  pairs=hour_pairs(status)
  if pairs:
   from gd_execution_alerts import render as render_alerts
+  from gd_balance_diagnostics import unavailable
   render_alerts(pairs)
+  bad=[h.get('hour') for h,e in pairs if unavailable(h)]
+  if bad:st.error('供需松弛异常小时：'+str(bad)+'。调度已保留；这些小时收入和利润不可用，不能提供完整累计收益。')
   mode=st.radio('查看结果',['累计汇总','分小时'],horizontal=True,key='full_day_result_mode')
   if mode=='分小时':
    i=st.selectbox('结果小时',range(len(pairs)),format_func=lambda n:f'{n:02d}:00–{n+1:02d}:00',key='full_day_hour')
    from gd_settlement_panel import render_energy_hour
    render_energy_hour(pairs[i][0],export=pairs[i][1])
-  else:
+  elif not bad:
    st.caption('累计范围：已完成的 '+str(len(pairs))+' 个小时，不含未完成时段。')
    from gd_settlement_panel import simulation_rows
    rows=economic_total(pairs);g=st.selectbox('查看机组',['全部']+[r['resource']for r in rows],key='full_day_sum_unit')
@@ -71,4 +78,3 @@ def render_status(status):
    st.caption('模拟收益为月度辅助服务分摊前估算，不是正式净利润。')
  with st.expander('运行诊断'):st.json(status)
  return p
-
