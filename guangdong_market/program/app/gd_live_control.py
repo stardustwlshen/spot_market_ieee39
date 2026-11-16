@@ -41,15 +41,31 @@ def start(p,confirmed=False):
  need(confirmed is True,'explicit complete displayed stage budget required');need(p==plan(p['da'],p['run'],Path(p['output']).name,p['research_event_simulation'],p['counterfactual_continue'],p['ac_once'],p['event_price_profile'],p.get('stop_request'),p.get('windows',4),p.get('nextday_selection'),p.get('nextday_explicit',False),p.get('reference_revision',False),p.get('post_scuc_planning',False),p.get('post_declarations'),p.get('post_scuc_day',False),p.get('candidate_loss_once',False),p.get('finite_h1',False),p.get('finite_hourly',False),p.get('pricing_clock_path'),p.get('dispatch_mode','provincial8'),p.get('pricing_delta',.1),(p.get('durable_checkpoint')or{}).get('config_path')),'reviewed plan changed');out=Path(p['output']);out.parent.mkdir(parents=True,exist_ok=True);out.mkdir();write(out/'PLAN.json',p);write(out/'INTENT.json',dict(unknown_is_not_zero_calls=True))
  from gd_resume_control import acquire
  lock=acquire(out)if os.name=='posix'else None
- with(out/'stdout.log').open('ab')as f:
-  if os.name=='nt':
-   from gd_process_guard import launch_windows
-   proc=launch_windows([sys.executable,'-B',str(B/'gd_live_worker.py'),'run',str(out)],out,out/'PROCESS.guard',f,env={'PYTHONDONTWRITEBYTECODE':'1'})
-  else:
-   proc=subprocess.Popen([sys.executable,'-B',str(B/'gd_live_worker.py'),'run',str(out)],stdout=f,stderr=subprocess.STDOUT,start_new_session=True,pass_fds=(lock.fileno(),),env={**os.environ,'GD_PIPELINE_LOCK_FD':str(lock.fileno()),'PYTHONDONTWRITEBYTECODE':'1'})
- if lock:lock.close()
+ try:
+  with(out/'stdout.log').open('ab')as f:
+   if os.name=='nt':
+    from gd_process_guard import launch_windows
+    proc=launch_windows([sys.executable,'-B',str(B/'gd_live_worker.py'),'run',str(out)],out,out/'PROCESS.guard',f,env={'PYTHONDONTWRITEBYTECODE':'1'})
+   else:
+    proc=subprocess.Popen([sys.executable,'-B',str(B/'gd_live_worker.py'),'run',str(out)],stdout=f,stderr=subprocess.STDOUT,start_new_session=True,pass_fds=(lock.fileno(),),env={**os.environ,'GD_PIPELINE_LOCK_FD':str(lock.fileno()),'PYTHONDONTWRITEBYTECODE':'1'})
+ except Exception as exc:
+  # Windows handshake can fail after launch; a recorded launch is NOT zero calls.
+  uncertain=os.name=='nt' or not isinstance(exc,OSError) or (out/'LAUNCH_PID.json').exists()
+  from gd_process_guard import atomic_marker
+  try:atomic_marker(out/('LAUNCH_ERROR.json' if uncertain else 'EXIT.json'),dict(status='launch_unknown' if uncertain else 'launch_failed',error=str(exc),native_calls=None if uncertain else 0,automatic_retry=False))
+  except OSError:pass  # Preserve the original launch exception, never invent a save.
+  if uncertain:return dict(status='launch_unknown',output=str(out),warning='启动状态未确认，保留本次任务以免重复启动：'+str(exc),publication_allowed=False)
+  raise
+ finally:
+  if lock:lock.close()  # Child retains inherited ownership after a successful Popen.
  from gd_process_guard import process_namespace
- write(out/'PID.json',dict(pid=proc.pid,process_namespace=process_namespace()));return dict(status='started',output=str(out),publication_allowed=False)
+ try:write(out/'PID.json',dict(pid=proc.pid,process_namespace=process_namespace()))
+ except OSError as exc:
+  # A live child now exists: return its output so UI retains the running attempt.
+  # Do not emit EXIT or invite another launch after a bookkeeping-only failure.
+  return dict(status='started_record_warning',output=str(out),pid=proc.pid,warning='进程已启动，但PID记录保存失败：'+str(exc),publication_allowed=False)
+ return dict(status='started',output=str(out),publication_allowed=False)
+
 def status(out):
  out=Path(out)
  if not out.exists():return dict(status='not_started',native_calls=0)

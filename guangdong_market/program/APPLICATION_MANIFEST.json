@@ -111,8 +111,8 @@
       "bytes": 4521
     },
     "app/gd_live_control.py": {
-      "sha256": "f4253ce657614857a5fe569d5232004a3144229b5a43c20a3f78ea83ac437ae8",
-      "bytes": 12007
+      "sha256": "ba349faa91a54bf5e6da463548600904d0442bd793db631f0c6a36a9385d01e3",
+      "bytes": 13185
     },
     "app/common.py": {
       "sha256": "ddaaf63f676b0097a42260959a3f02b5fd7060c8a89bb18d8ed3cec5ae93c965",
@@ -163,8 +163,8 @@
       "bytes": 4498
     },
     "app/gd_settlement_panel.py": {
-      "sha256": "b8d81f431d6e39488d54ecfde24d66896b4bcd5230d5cadf3de0f0350f41baca",
-      "bytes": 5273
+      "sha256": "597e540e184e1c72641030498d475fe8bc1470fe869052c9b86c9c6dd8ee344b",
+      "bytes": 7197
     },
     "app/gd_provincial_register_worker.py": {
       "sha256": "a9a7818e2905230cda4360dce6e44383d36e41c8d5483a53981a5246b572bc67",
@@ -227,8 +227,8 @@
       "bytes": 821
     },
     "app/gd_provincial_page.py": {
-      "sha256": "4192f2483f3103802694eea9075138746049f11b26126791f197ec67b1c0f2f5",
-      "bytes": 10884
+      "sha256": "ff19b1600037b553bbf89d63cc56e1b8b77580b0830d36ecbbc6ec30535c1a72",
+      "bytes": 10999
     },
     "app/gd_hourly_agc_backend.py": {
       "sha256": "d3f2f1084beddc97df9be3318829a0c9c6fb7f4f299b8a3fea9a3d013586b432",
@@ -379,8 +379,8 @@
       "bytes": 347
     },
     "app/gd_full_day_ui.py": {
-      "sha256": "5b85d38427d1a052aab9a1210874d0c525157923cc35a31b05d9902e2fe45c09",
-      "bytes": 5519
+      "sha256": "b0647eb8d2aaae36870802a296c0ca22f5c9fdad082c3d1d008fb253c07ca74d",
+      "bytes": 6127
     },
     "app/gd_unit_economics.py": {
       "sha256": "70a292997bf515ed4ddd91b8090e984e784be78ad5e8cab57065a33e6330332f",
@@ -543,7 +543,7 @@
       "bytes": 444
     },
     "app/LIVE_MARKET_MANIFEST.json": {
-      "sha256": "066303647245de1e0ded8e7cad703acea0cd88f31d019d16afe6798c409fa197",
+      "sha256": "cfc43a3bdad116d8e9b5cb985a11b8e8a9cd0caba19c49ce06b65f6eab7353d4",
       "bytes": 46100
     },
     "app/gd_batch_control.py": {
@@ -1955,8 +1955,8 @@
       "bytes": 1579
     },
     "app/gd_live_market_runtime/math_hour.py": {
-      "sha256": "5c6e5968f714a970467d37443f07cdde85fa4ae7ad63032362a3c7ff38422814",
-      "bytes": 12202
+      "sha256": "67cbb73e965598d431c026940c678585cf61662747f2069521e28813494e789f",
+      "bytes": 11831
     },
     "app/gd_live_market_runtime/thermal_reference.py": {
       "sha256": "746da972b608757cf8acd126d9bc14c7c869a88a49ddd9d9b199dc38e989979a",
@@ -19655,8 +19655,8 @@
       "bytes": 6368
     },
     "tests/audit_20261116/test_agc_display.py": {
-      "sha256": "37266555752dceec47ed7606a6a5a18eb60c8e05f634de0908cf5ff7706bc53d",
-      "bytes": 2344
+      "sha256": "040be69e05ec7f032ca6624ab32bf5e66065ce162c3eaf78e0ea8265df6ee72b",
+      "bytes": 2912
     },
     "tests/audit_20261116/test_runtime.py": {
       "sha256": "5fc9f814cb38fe146c3d49311726ae1b60ee2f520891f133d115fdb945630706",
@@ -19675,8 +19675,8 @@
       "bytes": 4224
     },
     "app/gd_balance_diagnostics.py": {
-      "sha256": "2c8dcedda894c982022e44ec93504a4afa3bd19e41e312a3d59821f3e5b11b8e",
-      "bytes": 1069
+      "sha256": "06ddf4d56f0a042ec088d62764b6bec7fb0e38710bcd51eaaef0a32bdf7f20f1",
+      "bytes": 3014
     },
     "docs/AUDIT_BALANCE_SLACK_20261116.md": {
       "sha256": "cb338940b015d4eb253e7431c4b94c5c039e1982d2fc996ef6c92f248c168757",
@@ -19697,6 +19697,38 @@
     "docs/AUDIT_PRIMARY_CAPACITY_20261116.md": {
       "sha256": "4f620e730e0b0cd868f813b36d186c24eea20853ee540df828c13af668a50c4c",
       "bytes": 1718
+    },
+    "tests/audit_20261116/test_launch_warning.py": {
+      "sha256": "37762d4e9cfb4df41294fad9eeb1fd9d8f7b17f74344215ac4c5f7fca9af4ee3",
+      "bytes": 1036
+    },
+    "tests/audit_20261116/test_hours.py": {
+      "sha256": "6333b1093f4156539bdb31070272480b0f3f46acf267ee412f9b94654d419251",
+      "bytes": 4499
+    },
+    "tests/audit_20261116/test_launch_failure.py": {
+      "sha256": "e5781af6890019b48474681c8b76d3761ec79f784d818cbb9eded4fe71ce541d",
+      "bytes": 4323
+    },
+    "docs/AUDIT_LAUNCH_AND_HOUR_UI_20261116.md": {
+      "sha256": "31e6c38ddb1ec1b96c20f0ac76e0412a2258757b302c2737350ae87e74d6962f",
+      "bytes": 1299
+    },
+    "tests/audit_20261116/test_slack_account_runtime.py": {
+      "sha256": "2d8a4df2eadc255434f1ecfdd4ad337b30ce0cf6a3754001516b4f888fa1e5e3",
+      "bytes": 4400
+    },
+    "tests/audit_20261116/test_slack_income_ui.py": {
+      "sha256": "8b5227cfc890c3dc7a322a3746968bd191776c96ee4fad25859b7230da5649fd",
+      "bytes": 4852
+    },
+    "tests/audit_20261116/test_slack_accounts.py": {
+      "sha256": "7401af93eab556455e9e7bfad9d87dfc2942c3c6d396a85134c548e76b291b70",
+      "bytes": 5014
+    },
+    "docs/供需松弛时模拟机组收益.md": {
+      "sha256": "34bde25717b537b745513018c50952e6c6badea4f4b4e4ef373d9e3e8d5da52a",
+      "bytes": 836
     }
   }
 }

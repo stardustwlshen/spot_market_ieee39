@@ -29,3 +29,12 @@ module=types.ModuleType('gd_settlement_bridge');module.from_export=lambda p,*a:p
 pairs=[({'run_id':'test'},{'path':p,'sha256':'mock'}) for p in ['a','b']]
 r=economic_total(pairs)[0];assert str(r['simulated_agc_gross_revenue_CNY'])=='119';assert str(r['estimated_spot_margin_before_service_allocation_CNY'])=='339';assert r['agc_revenue_basis']=='mixed';assert str(simulation_rows([r])[0]['调频收入（元）'])=='119'
 print(json.dumps({'passed':True,'cases':results,'cumulative_agc':str(r['simulated_agc_gross_revenue_CNY']),'cumulative_profit':str(r['estimated_spot_margin_before_service_allocation_CNY'])},ensure_ascii=False,indent=2))
+
+# Explicit arithmetic producer's names are supported without filling explicit missing.
+for value in (0, 12, None):
+ r={'reserve_revenue_CNY':value,'simulated_spot_profit_CNY':value}
+ v=simulation_rows([r])[0]
+ assert v['行政备用补偿估算（元）']==value and v['模拟收益（月度分摊前，元）']==value
+ r.update(simulated_reserve_gross_revenue_CNY=None,estimated_spot_margin_before_service_allocation_CNY=None)
+ v=simulation_rows([r])[0]
+ assert v['行政备用补偿估算（元）'] is None and v['模拟收益（月度分摊前，元）'] is None

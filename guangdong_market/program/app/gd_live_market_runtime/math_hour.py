@@ -69,9 +69,8 @@ def compute(da_run,execution,quarters,output):
  from gd_balance_diagnostics import classify
  balance_diagnostics=classify(physical,x)
  result=dict(execution_forecast_binding=execution_forecast_proof,schema='gd.live_host.PRICE.hour.v3',run_id=view['run_id'],branch=view['run'],excluded_issued_ticks=view['excluded_issued_ticks'],input_binding=binding,executed_cells=4,quarter_prices=4,quarter_profiles=[z['context']['boundary_mode']for z in records],quarter_producers=[z['context']['price_producer']for z in records],quarter_reference_revisions=[z['context'].get('D1_reference_revision')for z in records],rows=rows,hour_prices=prices,physical_cells=physical,normalizations=normalizations,total_energy_component_CNY=sum((z['energy_amount_CNY'] for z in rows),D(0)),assumptions=assumptions,formal_bill=None,payable=False,safety_release=False,remaining_hours='unpriced_not_filled',source_pins={**execution_forecast_proof['source_pins'],**{str(p.resolve()):sha(p) for p in [*paths,Path(execution),da/'ARTIFACTS.json',mods[0],Path(__file__),Path(__file__).with_name('settlement_grid.py'),Path(__file__).parents[1]/'gd_balance_diagnostics.py']}})
- if balance_diagnostics:
-  from gd_balance_diagnostics import STATUS
-  result.update(dispatch_rows=[{k:v for k,v in row.items() if k in ('resource','node','technology','direction','start','end','QDA_MWh','simulated_executed_MWh')}for row in rows],economic_status=STATUS,hour=hour,rows=[],total_energy_component_CNY=None,balance_diagnostics=balance_diagnostics,economic_reason='供需平衡使用松弛量；保留调度与价格，当前小时不计算收入或利润。')
+ from gd_balance_diagnostics import attach_accounts
+ attach_accounts(result,balance_diagnostics,hour)
  Path(output).write_text(json.dumps(result,default=encode,indent=2));return dict(status=result.get('economic_status','accepted'),native_calls=0,rows=len(result['rows']),executed_cells=4,total=str(result['total_energy_component_CNY']),formal_bill=None)
 
 

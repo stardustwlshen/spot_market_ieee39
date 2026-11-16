@@ -52,7 +52,9 @@ def economic_total(pairs):
 def render_status(status):
  import streamlit as st
  p=progress(status)
- st.progress(p['fraction'],text=f"实时调度 {p['executed']}/96 时段；定价 {p['priced']}/96；结算 {p['hours']}/24 小时")
+ from gd_balance_diagnostics import unavailable
+ unavailable_hours=sum(bool(h.get('balance_diagnostics')) or unavailable(h) or h.get('economic_status')=='simulation_accounts_with_balance_slack' for h in status.get('hours',[]))
+ st.progress(p['fraction'],text=f"实时调度 {p['executed']}/96 时段；定价 {p['priced']}/96；小时结果 {p['hours']}/24；其中供需松弛异常 {unavailable_hours} 小时")
  if p['complete']:st.success('单日求解流程完成：96 时段调度和定价、24 小时结果齐全；经济结算是否完整请看下方异常。')
  elif status.get('status')=='worker_interrupted':st.error('未检测到运行锁，也没有正常结束记录，不能确认计算仍在运行。已保存的结果保留；须核对检查点和未确认的求解调用后再恢复，不能视为完成。')
  elif p['failed']:st.error('实时计算停止：'+(p['message'] or '完成记录不齐全。请查看诊断。'))
@@ -63,6 +65,8 @@ def render_status(status):
   from gd_execution_alerts import render as render_alerts
   from gd_balance_diagnostics import unavailable
   render_alerts(pairs)
+  affected=[h.get('hour') for h,e in pairs if h.get('economic_status')=='simulation_accounts_with_balance_slack']
+  if affected:st.warning('存在供需松弛的小时：'+str(affected)+'。机组收益仍按实际执行量计算；罚值可能影响价格。以下是列示机组账户，不是平衡的全系统资金账。')
   bad=[h.get('hour') for h,e in pairs if unavailable(h)]
   if bad:st.error('供需松弛异常小时：'+str(bad)+'。调度已保留；这些小时收入和利润不可用，不能提供完整累计收益。')
   mode=st.radio('查看结果',['累计汇总','分小时'],horizontal=True,key='full_day_result_mode')

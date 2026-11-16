@@ -137,6 +137,8 @@ def _render_tracked_day(current=None,tracking_error=None):
  import streamlit as st
  import gd_live_control as ctl
  from gd_full_day_ui import render_status
+ warning=(st.session_state.get('prov_day',{}).get('receipt') or {}).get('warning')
+ if warning:st.warning(warning)
  if tracking_error:st.error('当前任务状态读取失败：'+tracking_error+'；保留任务记录，不自动重新启动。')
  st.button('刷新运行状态／检查重试',key='prov_day_refresh')
  @st.fragment(run_every=None if current and current.get('exit') else '5s')
