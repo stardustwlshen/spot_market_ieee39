@@ -39,3 +39,23 @@ def attach_reserves(m,case,values,first,n,modes):
    b.rows.add(b.pumped_up[s,t]<=response_cap)
  b.up=p.Expression(T,rule=lambda _,t:sum(b.battery_up[u,t]for u in U)+sum(b.pumped_up[s,t]for s in S));b.primary=p.Expression(T,rule=lambda _,t:sum(b.pumped_primary[s,t]for s in S))
  return dict(PS_response_basis=response_basis,energy_basis='period_end',battery_primary=False,PS_primary_and_contingency_share_capacity_and_water=True,thermal_primary_and_contingency_share_capacity=True,response_minutes=10,sustain_minutes=15,qualification='user-selected thermal battery PS only; no wind solar imports',market_award=False)
+
+def primary_fraction_capacities(case,first,periods,eligibility,headroom_maximum):
+ """Use the SCED pre-AGC maximum as the primary percentage base.
+
+ This is the explicit dispatch/pricing consistency choice, not a claim that
+ Guangdong's reused Pmax notation uniquely specifies the AGC treatment.
+ The caller MUST retain the post-AGC joint primary+contingency headroom rows.
+ """
+ result={}
+ for g,d in case['energy_inputs']['thermal'].items():
+  for q in periods:
+   key=(g,q)
+   if eligibility[g][q]=='pricing_stable':
+    value=d['max_mw'][first+q]
+    if isinstance(value,bool) or not math.isfinite(value) or value<0:
+     raise ValueError('finite nonnegative SCED primary fraction capacity required')
+    result[key]=value
+   else:
+    result[key]=headroom_maximum[key]
+ return result

@@ -110,7 +110,7 @@ def prepare(pair,case_path,agc_path,da_run,output,*,research_current_sced=False,
    for q in T:
     if (start+timedelta(minutes=15*q)).date().isoformat()==date:terms.append((-eta if mode_trace[u,q]['mode']=='charge'else 1/eta)*m.P[u,q]*H)
    m.rows.add(sum(terms)+m.zero<=limit-used.get(date,0.))
- from gd_provincial15_model.price_reserves import attach_soft_target,attach_reserves
+ from gd_provincial15_model.price_reserves import attach_soft_target,attach_reserves,primary_fraction_capacities
  soft_target=attach_soft_target(m,Path(r['accepted_prepared_dir']),n,accepted_source_pins or {})
  cost+=soft_target['cost']
  reserve_trace=attach_reserves(m,c,x,first,n,mode_trace)
@@ -134,9 +134,14 @@ def prepare(pair,case_path,agc_path,da_run,output,*,research_current_sced=False,
  minimum={(g,q):price_refs[g,q][1] for g in G for q in T}
  maximum={(g,q):price_refs[g,q][2] for g in G for q in T}
  online={(g,q):int(explicit['eligibility'][g][q]!='off') for g in G for q in T}
- physical_trace=add_physical(m,m.P,G,T,minimum,maximum,online,{q:sum(load[b,q] for b in N) for q in T},{q:sum(tie[b,q] for b in N) for q in T},explicit['constraints'])
+ # Keep the percentage base identical to SCED. The existing joint row below
+ # still limits primary+contingency to post-AGC available headroom.
+ fraction_maximum=primary_fraction_capacities(c,first,T,explicit['eligibility'],maximum)
+ physical_trace=add_physical(m,m.P,G,T,minimum,fraction_maximum,online,{q:sum(load[b,q] for b in N) for q in T},{q:sum(tie[b,q] for b in N) for q in T},explicit['constraints'])
  for g in G:
   for q in T:m.rows.add(m.additional.primary[g,q]+m.accident[g,q]<=maximum[g,q]-m.P[g,q])
+ physical_trace['primary_fraction_basis']='SCED_pre_AGC_maximum; explicit_consistency_choice_not_unique_rule_interpretation'
+ physical_trace['primary_joint_headroom_basis']='post_AGC_maximum_minus_PRICE_power'
  m.objective=p.Objective(expr=cost)
  payload,vs,cs=serialize_model(m,validate_options(dict(threads=1,time_limit=3600.,mip_rel_gap=.01,mip_abs_gap=0.,output_flag=False)));payload['options'].update(dual_feasibility_tolerance=1e-9,simplex_scale_strategy=0);payload.update(dual=True,warmstart=False,preparation_elapsed_s=0.);payload.pop('deadline',None)
  out=Path(output);out.mkdir(parents=True,exist_ok=False);names=dict(variables=[v.name for v in vs],constraints=[z.name for z in cs]);context=dict(horizon_periods=n,reserve_physical=reserve_trace,soft_terminal={k:v for k,v in soft_target.items()if k!='cost'},pumped_storage_pricing=pumped_trace,thermal_event_profile=state,thermal_event_ramp_mapping='affected-unit15min sourced endpoint interpolation_RESEARCH; actual incoming RT state retained for initial stable leg; fixed curve not ordinary ramp',schema='gd.new_RT.independent_PRICE.research.v1',run_id=a['run_id'],window=a['window'],delivery_tick=first,day_quarter=first,start=start.isoformat(),end=(start+timedelta(minutes=15)).isoformat(),cutoff=r['cutoff'],SCED_response_sha256=a['SCED_response_sha256'],RT_dual_used=False,formal_market_price=None,official_route_status='interpretation_unresolved_not_official_infeasibility',current_mode_DA_domain_intersection_conflicts=conflicts,current_mode_binding_is_research_interpretation=True,boundary_mode=boundary,research_boundary=('current accepted SCED reference +/-0.1, new SCUC modes, current issued-prefix SOC/dated usage; NOT official DA-reference pricing'if boundary=='current_sced_research'else'original DA SCED reference +/-0.1 and DA storage pricing modes/SOC/dated usage; current projected previous power for ramps; independent R61-style research PRICE, NOT current RT execution modes or formal price'),delta=explicit['delta'],explicit_contract=explicit,quarter_SOC_domain=True,fifteen_minute_dispatch_not_modified=True,hard_network_no_official_slack_parameters=True,original_400_each=True,source_pins={str(Path(z).resolve()):sha(z)for z in [pair,case_path,agc_path,ph,da/'ARTIFACTS.json',Path(__file__),Path(__file__).with_name('state_adapter.py')]},native_calls=0)

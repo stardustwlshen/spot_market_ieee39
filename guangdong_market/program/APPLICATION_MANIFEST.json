@@ -543,7 +543,7 @@
       "bytes": 444
     },
     "app/LIVE_MARKET_MANIFEST.json": {
-      "sha256": "1104b4540d51811cd63d63f719a21996f237ad653b74dc8efa5cf6faa4174cf4",
+      "sha256": "066303647245de1e0ded8e7cad703acea0cd88f31d019d16afe6798c409fa197",
       "bytes": 46100
     },
     "app/gd_batch_control.py": {
@@ -2075,8 +2075,8 @@
       "bytes": 2350
     },
     "app/gd_live_market_runtime/domain_event.py": {
-      "sha256": "f7cfa120c1fa3406a1e4bbf05210f2d4b77fc5c29e706236dade7e8494049834",
-      "bytes": 17274
+      "sha256": "4aa259478d1491cc3019e6ec1cea15bec99d99bbc46e721fd60272ac9a342c98",
+      "bytes": 17754
     },
     "app/gd_live_market_runtime/settlement_grid.py": {
       "sha256": "28489447861f111986053d0f2c140a15a47097b06b7fdfafd8be9d1edcde52b2",
@@ -2191,8 +2191,8 @@
       "bytes": 4050
     },
     "app/gd_provincial15_model/price_reserves.py": {
-      "sha256": "3ca2091352bc6ef2b08329cd6b1e8f1db94288f05075394e0e6d2af991e6dd62",
-      "bytes": 3056
+      "sha256": "18b6f19edcf0dbf1f28f56c094c10e16063cd4e7f4dd65e7effd4f13dcae1354",
+      "bytes": 3846
     },
     "app/gd_provincial15_model/resource_reserve.py": {
       "sha256": "db19f62ab2727b4475271b159dbc66a4a154c0e582740b1d527cc79fa1baba55",
@@ -19689,6 +19689,14 @@
     "docs/AUDIT_PRICE_READS_20261116.md": {
       "sha256": "66c0819595d7ed043b0355574f9b8876e25acc221710e320a553a72321d27ec6",
       "bytes": 835
+    },
+    "tests/audit_20261116/test_primary_capacity.py": {
+      "sha256": "d2db63725330b6e82df4537e75346c345481bc0f76b2bd1df7428b179b3e26f0",
+      "bytes": 4271
+    },
+    "docs/AUDIT_PRIMARY_CAPACITY_20261116.md": {
+      "sha256": "4f620e730e0b0cd868f813b36d186c24eea20853ee540df828c13af668a50c4c",
+      "bytes": 1718
     }
   }
 }
