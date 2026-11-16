@@ -19779,16 +19779,24 @@
       "bytes": 1513
     },
     "docs/独立检查点恢复.md": {
-      "sha256": "9be02b09916abe35ae570decbe864d533ffdd03b12a71943b03a36d3f981e82c",
-      "bytes": 2032
+      "sha256": "c41ac5fac781f53a75062a1f75122b6462d83935ce15544bb09e8e56aa81430f",
+      "bytes": 3137
     },
     "tests/test_restore_gate.py": {
       "sha256": "e63d9406035ca69e0c058a872eca9c1b8b728ac3408e15af3bbbbb6c2e4cc6ff",
       "bytes": 3439
     },
     "RESTORE_CLI_MANIFEST.json": {
-      "sha256": "7b61458e04050e6cbda27b808fb41c67669910146ad691e6393710b40086b6a4",
-      "bytes": 1867
+      "sha256": "798c2434c7c22a1bca5db677ddb1599c82922b03687bfffd385d1a6fbeb7ddf9",
+      "bytes": 2281
+    },
+    "app/gd_restore_runtime/inspect_backups.py": {
+      "sha256": "8024501708cc74ad2d8cab8c6c996bd47f2d6e5e95e600a641545e05c4e542ea",
+      "bytes": 5349
+    },
+    "tests/test_backup_inspection.py": {
+      "sha256": "ba942b63bde8d3d2f42b82ba72def297fed5f7614742016f1078882d6e0071b1",
+      "bytes": 4783
     }
   }
 }
