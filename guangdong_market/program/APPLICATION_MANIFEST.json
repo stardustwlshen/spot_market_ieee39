@@ -19741,6 +19741,54 @@
     "tests/audit_20261116/test_portable_binding.py": {
       "sha256": "b361a6af80f9532178bc114f3cf8c1e6bc261d3fdfd98889c90995f30548dadf",
       "bytes": 1557
+    },
+    "app/gd_restore_runtime/adopt_frames.py": {
+      "sha256": "9bfd0bf825253cc3aa6cb85400f03a57f42538350c4aed73dc55ae26c9e388d8",
+      "bytes": 12854
+    },
+    "app/gd_restore_runtime/preflight.py": {
+      "sha256": "ac2d4d142db084a3e25e265b879464c6fc5c7fe57d13a2cb992d174f454bb500",
+      "bytes": 9315
+    },
+    "app/gd_restore_runtime/__main__.py": {
+      "sha256": "514bcefdea4054c99b4f75f7e8b747e32462f0675069c128a623460c10173b39",
+      "bytes": 2130
+    },
+    "app/gd_restore_runtime/historical_store.py": {
+      "sha256": "d36c163fd9b843f568e84e68dbee7dc964dbfc39507f424ce30f14da4e449c49",
+      "bytes": 1818
+    },
+    "app/gd_restore_runtime/runner.py": {
+      "sha256": "3fcab63b2d686d0237c1404fcb0ccfccca0ea96934cf544eb12948b27a74ab44",
+      "bytes": 10331
+    },
+    "app/gd_restore_runtime/import_prefix.py": {
+      "sha256": "f564468cae8aec75f67a6527564b64afb9d819bbedfc795f7913bffefa5b5b0d",
+      "bytes": 3291
+    },
+    "app/gd_restore_runtime/__init__.py": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    "app/gd_restore_runtime/isolated_durable.py": {
+      "sha256": "2336f80b13f69b53853e361e67f99f83759c66f7f13b8cd1c40965fe2a626ec5",
+      "bytes": 47677
+    },
+    "app/gd_restore_runtime/child_guard/sitecustomize.py": {
+      "sha256": "0deb22b80ab3742200254f03f62e807cc342fedfd3ea8f4f5711f79ae72a6a06",
+      "bytes": 1513
+    },
+    "docs/独立检查点恢复.md": {
+      "sha256": "9be02b09916abe35ae570decbe864d533ffdd03b12a71943b03a36d3f981e82c",
+      "bytes": 2032
+    },
+    "tests/test_restore_gate.py": {
+      "sha256": "e63d9406035ca69e0c058a872eca9c1b8b728ac3408e15af3bbbbb6c2e4cc6ff",
+      "bytes": 3439
+    },
+    "RESTORE_CLI_MANIFEST.json": {
+      "sha256": "7b61458e04050e6cbda27b808fb41c67669910146ad691e6393710b40086b6a4",
+      "bytes": 1867
     }
   }
 }
