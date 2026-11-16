@@ -227,7 +227,7 @@
       "bytes": 821
     },
     "app/gd_provincial_page.py": {
-      "sha256": "77a54776d3308733309be655c714d79eb6b0d9613ab5abac96c99f27f2dfba9a",
+      "sha256": "4228d32dbc74f7b0d627e9aab98e92b0c27c11e19ac20830f045f721b1acc1d7",
       "bytes": 9467
     },
     "app/gd_hourly_agc_backend.py": {
@@ -543,7 +543,7 @@
       "bytes": 444
     },
     "app/LIVE_MARKET_MANIFEST.json": {
-      "sha256": "6e14fac536d59e91d119085994f277ce6fe7a0f85200f67028a59e243094bcc6",
+      "sha256": "6d8d7a9c6d72e932947c356f9bf3561342a86a0d123ee6729aca67b14d934cf7",
       "bytes": 45782
     },
     "app/gd_batch_control.py": {
@@ -19625,6 +19625,10 @@
     "experimental_not_live/guangdong_thermal_dispatch_contract_v1_20261113/BUILDER_BOUNDARY_R68.json": {
       "sha256": "e5a91d46dcacc34cbd6a18e30b5957762b14b9d24fe7e77d5fca303e9fcfd463",
       "bytes": 4104
+    },
+    "tests/test_provincial_entry_smoke.py": {
+      "sha256": "12b1672f785966b862257553fd9e2763445ca16c78968bc69f9fb426bed9d1b5",
+      "bytes": 789
     }
   }
 }

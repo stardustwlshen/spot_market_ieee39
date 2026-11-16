@@ -1,6 +1,6 @@
 {
   "mathematical_source_application_sha256": "6bba54597a2a62248b5d78d61ba5e94e9bca7328aa5ce7708e4eeaf2af595980",
-  "published_application_sha256": "c9c8253747002c7419cefedd5c10a9d02fab71a6140187a237c95a45253d0bc2",
+  "published_application_sha256": "bfa5f22421eda457686c2682f68e464e02e5e37048b535c0e4e0fcbe383f13c4",
   "mathematical_code_changes_after_full_day": false,
   "post_full_day_changes": [
     "execution line and SOC deviation display",
@@ -10,5 +10,10 @@
   "formal_bill": false,
   "platform_limits": "Windows/macOS full workflow not tested",
   "cloned_resource_independent_editor": false,
-  "renewable_individual_addition": false
+  "renewable_individual_addition": false,
+  "entry_hotfix": {
+    "issue": "IndentationError in default-page resource-add block",
+    "fix": "Move block inside valid-source branch; no model changes",
+    "validation": "Actual default-page AppTest and invalid-source path passed before interruption; recovered exact tested bytes"
+  }
 }

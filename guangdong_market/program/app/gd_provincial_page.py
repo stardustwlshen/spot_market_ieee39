@@ -58,13 +58,13 @@ def render(parent_run='',standalone=False):
    bid_factors[g]=z['bid_factor'];ramp_factors[g]=z['ramp_factor'];thermal_edits[g]=z['parameters']
   from gd_resource_editor import render_resource_editor
   resource_edits=render_resource_editor(source,source_token)
+  from gd_resource_add_editor import render_resource_add_editor
+  additions=render_resource_add_editor(source,source_token)
  forecast_labels={'无误差':'none','低误差':'low','中误差':'normal','高误差':'high'}
  forecast_levels={}
  for kind,label,col in zip(('wind','solar','load'),('风电预测误差','光伏预测误差','负荷预测误差'),st.columns(3)):
   forecast_levels[kind]=forecast_labels[col.selectbox(label,list(forecast_labels),key='forecast_'+kind)]
  st.caption('合成研究场景。实时首15分钟使用该时段实际均值（完美当前时段信息假设）；后续7时段仅用此前观测更新预测。不是严格无未来信息的实时仿真。')
-  from gd_resource_add_editor import render_resource_add_editor
-  additions=render_resource_add_editor(source,source_token)
  identity=(str(source),str(output),name,delta,json.dumps(pins,sort_keys=True),load_factor,json.dumps(bid_factors),json.dumps(ramp_factors),json.dumps(thermal_edits,sort_keys=True),json.dumps(resource_edits,sort_keys=True),json.dumps(additions,sort_keys=True),json.dumps(forecast_levels,sort_keys=True))
  if st.session_state.get('prov_identity')!=identity:
   st.session_state['prov_identity']=identity
