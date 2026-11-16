@@ -151,8 +151,8 @@
       "bytes": 28239
     },
     "app/gd_forecast_inputs.py": {
-      "sha256": "6e17ab54cdd4b20ec6f383fcbcba59a6a5afd328490d907da2adf36d09ca3e48",
-      "bytes": 4883
+      "sha256": "d80800c1aed3e4b3366ed95bd406f1efbfa2c8c7fb931af75e399af5605788cb",
+      "bytes": 5141
     },
     "app/gd_ui_page.py": {
       "sha256": "a73331a7304a31b004c654ca718b77a015ef81e58cb86cf8446cb6b8198f5536",
@@ -1975,8 +1975,8 @@
       "bytes": 2243
     },
     "app/gd_live_market_runtime/math_prepare.py": {
-      "sha256": "158c0cb6dbffecbd2d71f9bb16007068aaa43a1919fee531b208cf8b2c096668",
-      "bytes": 9438
+      "sha256": "2a6f820bc8c457efe08556d1b56d78087158a08abe80ad2699c937b2d61e1cdb",
+      "bytes": 9673
     },
     "app/gd_live_market_runtime/realtime_reference.py": {
       "sha256": "1ef0ea229ed86d33f696910b3d00c23697d5bd96f68830c6e7a5918f8a3fd006",
@@ -2007,8 +2007,8 @@
       "bytes": 3045
     },
     "app/gd_live_market_runtime/forecast_binding.py": {
-      "sha256": "a4e5411d4c3ae0b0f1ad22af51b6075f718883f83da272f470eb6759d63bf95c",
-      "bytes": 2503
+      "sha256": "cb5c27264e04c62fffb82fec6a3e17cad9f462f3ddc7bd4e3c99069b96f7211b",
+      "bytes": 2553
     },
     "app/gd_live_market_runtime/pricing_delta.py": {
       "sha256": "5c165521f53b12660d9390d5debc1b2bec02a4529a7191beeb5c48bce1d0c496",
@@ -2075,8 +2075,8 @@
       "bytes": 2350
     },
     "app/gd_live_market_runtime/domain_event.py": {
-      "sha256": "4aa259478d1491cc3019e6ec1cea15bec99d99bbc46e721fd60272ac9a342c98",
-      "bytes": 17754
+      "sha256": "be3a5bb3806bfe8efaa9622318c3764f571f400d8ca5830b4d8bed50aaa0a700",
+      "bytes": 17938
     },
     "app/gd_live_market_runtime/settlement_grid.py": {
       "sha256": "28489447861f111986053d0f2c140a15a47097b06b7fdfafd8be9d1edcde52b2",
@@ -19807,8 +19807,8 @@
       "bytes": 3631
     },
     "docs/输入准备性能验证.md": {
-      "sha256": "7b9a41c9910ce0cf96f4459d1d643bdbda73500bdc7a4a6fa6051b2e29933d4b",
-      "bytes": 3811
+      "sha256": "e770f80867eb43dc05eecc384f35d2b35bf64b961fe30798a41fb237459ee7c7",
+      "bytes": 6086
     },
     "tests/test_price_parameter_projection.py": {
       "sha256": "f087adbcb175f9e0b75580f93c7027bead25953bbb70f855ef518812e0b3a3e6",
@@ -19877,6 +19877,14 @@
     "RESTORE_CROSSHOUR.md": {
       "sha256": "f95e2046c86e62141bd3294af38fc08c980b92e2c56cb89d712c76b3daad3f8c",
       "bytes": 2963
+    },
+    "app/gd_case_snapshot.py": {
+      "sha256": "9eb911fd298324225b3138f921882e1ff0170843ba0d88a6d7fd34f3af97435b",
+      "bytes": 2230
+    },
+    "tests/test_case_snapshot.py": {
+      "sha256": "0e0208af985f205e3befefdee37325ddc6748e68ff5b7fd0580508e376c8e00b",
+      "bytes": 4328
     }
   }
 }

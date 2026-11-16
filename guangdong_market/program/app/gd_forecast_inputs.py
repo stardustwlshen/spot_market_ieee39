@@ -44,18 +44,21 @@ def _baseline_digest_from_bytes(raw):
     from gd_provincial15_model.adapter import convert_full_case
     return baseline_digest(convert_full_case(loads(raw)))
 
-def read_bundle(seed_dir):
+def read_bundle(seed_dir,*,_case_snapshot=None):
     p=Path(seed_dir)/FILE
     if not p.exists():return None
     z=json.loads(p.read_text());expected=z.pop('bundle_digest')
     if digest(z)!=expected:raise ValueError('forecast bundle digest mismatch')
-    actual_baseline=_baseline_digest_from_bytes((Path(seed_dir)/'case.json').read_bytes())
+    if _case_snapshot is None:actual_baseline=_baseline_digest_from_bytes((Path(seed_dir)/'case.json').read_bytes())
+    else:
+        from gd_case_snapshot import require_snapshot
+        actual_baseline=require_snapshot(_case_snapshot).baseline(Path(seed_dir)/'case.json')
     if actual_baseline!=z['baseline_case_digest']:raise ValueError('forecast baseline does not match bound seed')
     z['bundle_digest']=expected;return z
 
-def apply_forecast(case,seed_dir,issue_tick):
+def apply_forecast(case,seed_dir,issue_tick,*,_case_snapshot=None):
     """Mutate 15min full case. First actual, future forecasts. No DA mutation."""
-    z=read_bundle(seed_dir)
+    z=read_bundle(seed_dir,_case_snapshot=_case_snapshot)
     if z is None:return case
     if type(issue_tick)is not int or not 0<=issue_tick<96:raise ValueError('invalid issue_tick')
     end=min(96,issue_tick+8);e=case['energy_inputs'];proof={}

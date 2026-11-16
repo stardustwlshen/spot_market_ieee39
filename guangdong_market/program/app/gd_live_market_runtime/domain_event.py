@@ -35,15 +35,18 @@ def band(ref,lo,hi,delta=.1):
  if lower>upper:lower=upper # roundoff only, <=1e-9
  return lower,upper
 
-def prepare(pair,case_path,agc_path,da_run,output,*,research_current_sced=False,boundary="DA_reference_R61_compatible_research", verified_inputs=None, explicit=None, thermal_profile=None, selected_profile=None, accepted_source_pins=None):
+def prepare(pair,case_path,agc_path,da_run,output,*,research_current_sced=False,boundary="DA_reference_R61_compatible_research", verified_inputs=None, explicit=None, thermal_profile=None, selected_profile=None, accepted_source_pins=None,_case_snapshot=None):
  need(explicit is not None,"explicit resolved contract required");validate_wiring(explicit);need(verified_inputs is not None,"program verified inputs required");a,r,x=verified_inputs;need(boundary=='current_sced_research','provincial candidate uses explicitly user-selected same-period RT reference');need(research_current_sced is True,'explicit independent research boundary opt-in required; official route checked separately')
  need(sha(case_path)==r['case_sha256']and sha(agc_path)==r['sources']['AGC']['sha256'],'same case/AGC');sys.path.insert(0,str(ROOT/'guangdong_after_reset_r23_compressed_20261112/repo/src'))
  from smm.gd_october_job_codec import loads
  from smm.highs_solver import serialize_model,validate_options
  from gd_provincial15_model.adapter import convert_full_case
- c=convert_full_case(loads(Path(case_path).read_bytes()));
+ if _case_snapshot is None:c=convert_full_case(loads(Path(case_path).read_bytes()))
+ else:
+  from gd_case_snapshot import require_snapshot
+  c=require_snapshot(_case_snapshot).clone(case_path)
  from forecast_binding import for_price
- c,forecast_proof=for_price(c,Path(case_path).parent,r,pins=accepted_source_pins or {},prepared=r['accepted_prepared_dir'])
+ c,forecast_proof=for_price(c,Path(case_path).parent,r,pins=accepted_source_pins or {},prepared=r['accepted_prepared_dir'],_case_snapshot=_case_snapshot)
  for u,terminal in r.get('declared_terminal_by_resource',{}).items():c['batteries'][u].update(terminal)
  n=min(8,96-r['delivery_tick']);need(n>0,'delivery within single day');state=derive(c,x,r['delivery_tick'],quarters=n);need(thermal_profile==state,'same-source derived thermal profile required');need(not state['affected_units']or selected_profile==state['profile'],'explicit event PRICE research profile selection required');need(explicit['eligibility']==state['eligibility'],'thermal eligibility must equal actual cell-derived status');e=c['energy_inputs'];need(set(explicit['eligibility'])==set(e['thermal']), 'exact thermal inventory');need(set(explicit['VRE_offers'])==set(e['buses']), 'explicit bus-aggregated VRE offers required including zero buses');need(not e['sections'],'section constraints require explicit PRICE adapter');agc=read(agc_path);first=r['delivery_tick'];day=datetime.fromisoformat(r['origin']);start=day+timedelta(minutes=15*first);need(first>=0 and first+n<=96,'quarter aligned full source horizon')
  clock_mode=r.get('rt_clock_mode','legacy_notice_lead');need(clock_mode in ('legacy_notice_lead','provincial_15min_execution'),'known RT information clock mode')

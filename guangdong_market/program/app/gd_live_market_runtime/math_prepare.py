@@ -30,9 +30,11 @@ def prepare(source,expected_sha,out,selected_profile=None):
  from functools import partial
  from ramp_anchor import preceding_anchor,apply_first_ramp,POLICY as RP
  out=Path(out).resolve();need(not out.exists(),'fresh PRICE output; never overwrite');out.mkdir(parents=True)
- sf=Path(source).resolve();need(sha(sf)==expected_sha,'internal live snapshot transport changed');z=read(sf);verify(z['source_pins']);delta_selection=delta_from_source(z);information_clock=validate_information_clock(z,z.get('pricing_information_clock_declaration'));w=z['window'];base=Path(z['base_run']);da=Path(z['selected_DA']);verify_selected_da(da);r=z['request'];af=out/'effective_agc.json';write(af,z['effective_agc']);r['effective_agc_path']=str(af);r['sources']['AGC']={**r['sources']['AGC'],'path':str(af),'sha256':sha(af),'available_at':r['cutoff']};r['typed_source_path']=str(sf.resolve());x=z['values'];a=z['accepted'];casefile=base/'seed/case.json';case=convert_full_case(loads(casefile.read_bytes()));params=out/'PARAMETERS.json'
+ sf=Path(source).resolve();need(sha(sf)==expected_sha,'internal live snapshot transport changed');z=read(sf);verify(z['source_pins']);delta_selection=delta_from_source(z);information_clock=validate_information_clock(z,z.get('pricing_information_clock_declaration'));w=z['window'];base=Path(z['base_run']);da=Path(z['selected_DA']);verify_selected_da(da);r=z['request'];af=out/'effective_agc.json';write(af,z['effective_agc']);r['effective_agc_path']=str(af);r['sources']['AGC']={**r['sources']['AGC'],'path':str(af),'sha256':sha(af),'available_at':r['cutoff']};r['typed_source_path']=str(sf.resolve());x=z['values'];a=z['accepted'];casefile=base/'seed/case.json'
+ from gd_case_snapshot import CaseSnapshot
+ case_snapshot=CaseSnapshot(casefile,r['case_sha256'],z['source_pins']);case=case_snapshot.clone(casefile);params=out/'PARAMETERS.json'
  from forecast_binding import for_price
- case,forecast_proof=for_price(case,base/'seed',r,pins=z['source_pins'],prepared=z['reports'][-1]['prepared'])
+ case,forecast_proof=for_price(case,base/'seed',r,pins=z['source_pins'],prepared=z['reports'][-1]['prepared'],_case_snapshot=case_snapshot)
  from zero_vre_reference import canonicalize
  x,zero_vre_proof=canonicalize(z,case)
  n=min(8,96-r['delivery_tick']);state=derive(case,x,r['delivery_tick'],quarters=n);need(selected_profile in (None,PROFILE),'unsupported selected PRICE profile');need(not state['affected_units']or selected_profile==PROFILE,'event/off PRICE state requires independent explicit research profile selection');policy=PROFILE if state['affected_units']else POLICY
@@ -43,7 +45,7 @@ def prepare(source,expected_sha,out,selected_profile=None):
  need(explicit['eligibility']==state['eligibility'],'derived eligibility contract mismatch')
  pair=da/read(da/'ARTIFACTS.json')['stages']['da_sced']['acceptance']['path']if w==-1 else sf
  r['accepted_prepared_dir']=z['reports'][-1]['prepared']
- domain(pair,casefile,Path(r['effective_agc_path']),da,out/'domain',research_current_sced=True,boundary=boundary,verified_inputs=(a,r,x),explicit=explicit,thermal_profile=state,selected_profile=selected_profile,accepted_source_pins=z['source_pins'])
+ domain(pair,casefile,Path(r['effective_agc_path']),da,out/'domain',research_current_sced=True,boundary=boundary,verified_inputs=(a,r,x),explicit=explicit,thermal_profile=state,selected_profile=selected_profile,accepted_source_pins=z['source_pins'],_case_snapshot=case_snapshot)
  model=read(out/'domain/template.json');names=read(out/'domain/names.json');ctx=read(out/'domain/CONTEXT.json');model,names,trace=apply_slacks(model,names,build(model,names),explicit,pars,r['cutoff'])
  art=read(da/'ARTIFACTS.json');phfile=da/art['stages']['da_sced']['physical_solution']['path'];ph=read(phfile)['physical_cells']
  # Accepted historical DA physical archive uses five-minute cells. Its hourly
@@ -70,10 +72,10 @@ def prepare(source,expected_sha,out,selected_profile=None):
  ctx['pricing_delta_selection']=delta_selection
  ctx['reference_selection']='user_selected_RT_SCED_not_literal_DA_wording_in_rule_3_4_4_5'
  ctx['research_boundary']='thermal same-period RT-SCED band using selected research delta='+format(delta_selection['value'],'.17g')+'; storage/VRE reference and mode mapping remain research; no dispatch recomputation or official parameter certification'
- ctx['zero_vre_reference_normalization']=zero_vre_proof;ctx['AGC_forecast_semantics']=z.get('AGC_forecast_semantics');ctx['D1_reference_revision']=z.get('reference_revision');pins=dict(z['source_pins']);pins[str(Path(__file__).resolve())]=sha(__file__);import zero_vre_reference;pins[str(Path(zero_vre_reference.__file__).resolve())]=sha(zero_vre_reference.__file__);pins.update({str(ENGINE/n):h for n,h in read(ENGINE/'FROZEN_MANIFEST.json')['files'].items()});pins.update({str(p):sha(p)for p in [sf,af,params,phfile,*B.glob('*.py'),ENGINE/'FROZEN_MANIFEST.json']});ctx['source_pins'].update(pins)
+ ctx['zero_vre_reference_normalization']=zero_vre_proof;ctx['AGC_forecast_semantics']=z.get('AGC_forecast_semantics');ctx['D1_reference_revision']=z.get('reference_revision');pins=dict(z['source_pins']);pins.update(case_snapshot.source_pins(casefile));pins[str(Path(__file__).resolve())]=sha(__file__);import zero_vre_reference;pins[str(Path(zero_vre_reference.__file__).resolve())]=sha(zero_vre_reference.__file__);pins.update({str(ENGINE/n):h for n,h in read(ENGINE/'FROZEN_MANIFEST.json')['files'].items()});pins.update({str(p):sha(p)for p in [sf,af,params,phfile,*B.glob('*.py'),ENGINE/'FROZEN_MANIFEST.json']});ctx['source_pins'].update(pins)
  dest=out/'prepared';dest.mkdir()
  for n,v in [('template.json',model),('names.json',names),('CONTEXT.json',ctx),('CONTRACT.json',contract),('SOURCE_REVIEW.json',z),('TRACE.json',trace)]:write(dest/n,v)
- verify(pins);write(dest/'READY.json',dict(columns=len(model['variables']),rows=len(model['rows']),artifact_pins={f.name:sha(f)for f in dest.iterdir()},source_pins=pins,native_calls=0,formal=False))
+ case_snapshot.verify(casefile);verify(pins);write(dest/'READY.json',dict(columns=len(model['variables']),rows=len(model['rows']),artifact_pins={f.name:sha(f)for f in dest.iterdir()},source_pins=pins,native_calls=0,formal=False))
  result=dict(pricing_delta=delta_selection['value'],pricing_delta_official_numeric_verified=False,status='prepared',prepared=str(dest),window=w,day_quarter=first,policy=policy,branch_id=z['branch_id'],columns=len(model['variables']),rows=len(model['rows']),native_calls=0,proposed_PRICE_calls=1,seconds=model['options']['time_limit'],time_limit_scope='each_native_solve',model_class='LP',mip_gap=None,mip_gap_display='N/A (LP)',source_SCED_sha256=a['SCED_response_sha256'],formal=False)
  write(out/'RESULT.json',result);return result
 if __name__=='__main__':print(json.dumps(prepare(sys.argv[1],sys.argv[2],sys.argv[3],None if len(sys.argv)<5 or sys.argv[4]=='NONE'else sys.argv[4])))
