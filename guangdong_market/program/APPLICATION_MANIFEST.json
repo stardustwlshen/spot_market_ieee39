@@ -543,8 +543,8 @@
       "bytes": 444
     },
     "app/LIVE_MARKET_MANIFEST.json": {
-      "sha256": "db639da05cd4970ce2e2d0788bc1d0551ea1a28a36c2a3dc4478fa6d6b5c5dc1",
-      "bytes": 46094
+      "sha256": "294dff2cf8774ce731ddcc050035eb464389e574148f2457d21e799061c423ad",
+      "bytes": 46288
     },
     "app/gd_batch_control.py": {
       "sha256": "c7a01de45ca5d6242599cd21e63e646c50bbef0aad4401544649bc21f25e2b1d",
@@ -19905,6 +19905,14 @@
     "docs/最小出力编辑.md": {
       "sha256": "4c8e09247ba2391031e34920572897739ebf97f6a2b1459de471665da1729c66",
       "bytes": 1621
+    },
+    "tests/test_live_release_manifest.py": {
+      "sha256": "30b441e9a6a4a439eaf363cf31bfa098f69b10861536becea94dafbbcfd129a1",
+      "bytes": 1482
+    },
+    "docs/运行入口清单一致性.md": {
+      "sha256": "ed0dd6ad9fa177ac7396a923eab9e7d2949c371ee923a3373491865cb9bbcc5c",
+      "bytes": 1103
     }
   }
 }
