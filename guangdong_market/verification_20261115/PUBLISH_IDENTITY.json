@@ -1,7 +1,7 @@
 {
   "mathematical_source_application_sha256": "6bba54597a2a62248b5d78d61ba5e94e9bca7328aa5ce7708e4eeaf2af595980",
-  "published_application_sha256": "bfa5f22421eda457686c2682f68e464e02e5e37048b535c0e4e0fcbe383f13c4",
-  "mathematical_code_changes_after_full_day": false,
+  "published_application_sha256": "dd4cc22c1d4d854783de4fd57a42c84702c2e7a689a3c1963528e6ae95ae3aba",
+  "mathematical_code_changes_after_full_day": true,
   "post_full_day_changes": [
     "execution line and SOC deviation display",
     "original-template cloning explanation"
@@ -15,5 +15,6 @@
     "issue": "IndentationError in default-page resource-add block",
     "fix": "Move block inside valid-source branch; no model changes",
     "validation": "Actual default-page AppTest and invalid-source path passed before interruption; recovered exact tested bytes"
-  }
+  },
+  "renewable_bid_repair": "See RENEWABLE_BID_SHORT_CHAIN.json; six new native solves, no new full-day run"
 }

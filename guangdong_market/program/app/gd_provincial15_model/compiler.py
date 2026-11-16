@@ -96,7 +96,7 @@ def build(seed, carry, out, agc_projection=None):
    for kind,var in [('startup',m.start),('shutdown',m.stop)]:energy+=sum((row['cost']-case['no_load_cost'][g])*var[g,t-j]for j,row in enumerate(case['curves'][g][kind])if t>=j)
    terms.append(energy/4)
  for bus in m.B:
-  for t in range(n):terms.append((-50*m.renewable_power[bus,t]+case['curtailment_penalty_policy']['value']*m.renewable_curtailment[bus,t])/4)
+  for t in range(n):terms.append((e['renewable_bid_yuan_per_mwh'][bus,t]*m.renewable_power[bus,t]+case['curtailment_penalty_policy']['value']*m.renewable_curtailment[bus,t])/4)
  terms.append(sum((row['cost']-case['no_load_cost'][g])/4 for g,z in bs.items() for row in z['remaining_curve'][:n]));terms.append(m.battery.bid_cost);terms.append(m.pumped.cost);terms.append(m.rt_terminal_target_cost)
  from .objective_components import append_slack_penalties
  retained_penalty_names=append_slack_penalties(m,terms)

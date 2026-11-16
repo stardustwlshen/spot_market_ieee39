@@ -1,3 +1,4 @@
+from gd_provincial15_model.renewable_bids import price_cost as renewable_price_cost
 """Independent 8-quarter PRICE research adapter, never consumes dispatch duals."""
 from pathlib import Path
 from datetime import datetime,timedelta
@@ -120,7 +121,7 @@ def prepare(pair,case_path,agc_path,da_run,output,*,research_current_sced=False,
  load={};tie={}
  for b in N:
   for q in T:
-   ts=range(first+q,first+q+1);load[b,q]=mean([e['load_mw'][b,t]for t in ts]);tie[b,q]=mean([e['physical_tie_mw'][b,t]for t in ts]);A=mean([e['renewable_mw'][b,t]for t in ts]);ref=mean([xr[f"renewable_power['{b}',{t}]"]for t in ts]);lb,ub=band(ref,0.,A,explicit['delta']);m.vre[b,q].setlb(lb);m.vre[b,q].setub(ub);m.curtail[b,q].setub(A);m.rows.add(m.vre[b,q]+m.curtail[b,q]==A);cost+=vre_cost(m.vre[b,q],m.curtail[b,q],explicit,b,H);m.angle[b,q].setlb(-math.pi);m.angle[b,q].setub(math.pi)
+   ts=range(first+q,first+q+1);load[b,q]=mean([e['load_mw'][b,t]for t in ts]);tie[b,q]=mean([e['physical_tie_mw'][b,t]for t in ts]);A=mean([e['renewable_mw'][b,t]for t in ts]);ref=mean([xr[f"renewable_power['{b}',{t}]"]for t in ts]);lb,ub=band(ref,0.,A,explicit['delta']);m.vre[b,q].setlb(lb);m.vre[b,q].setub(ub);m.curtail[b,q].setub(A);m.rows.add(m.vre[b,q]+m.curtail[b,q]==A);cost+=renewable_price_cost(m.vre[b,q],m.curtail[b,q],explicit,b,q,H);m.angle[b,q].setlb(-math.pi);m.angle[b,q].setub(math.pi)
  for b in e['reference_buses']:
   for q in T:m.angle[b,q].fix(0)
  for l,z in e['lines'].items():

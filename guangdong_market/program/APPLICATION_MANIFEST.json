@@ -227,8 +227,8 @@
       "bytes": 821
     },
     "app/gd_provincial_page.py": {
-      "sha256": "4228d32dbc74f7b0d627e9aab98e92b0c27c11e19ac20830f045f721b1acc1d7",
-      "bytes": 9467
+      "sha256": "2f3725e7ed69a4535d6c02ba629401ff5a03ecea5a3a0d0312821e35cced4558",
+      "bytes": 9699
     },
     "app/gd_hourly_agc_backend.py": {
       "sha256": "d3f2f1084beddc97df9be3318829a0c9c6fb7f4f299b8a3fea9a3d013586b432",
@@ -335,8 +335,8 @@
       "bytes": 1952
     },
     "app/gd_provincial_inputs.py": {
-      "sha256": "eca498002b8c6caef7b9a21f7c06344f05c4f79f9862d4a600dfe88955074d9d",
-      "bytes": 5110
+      "sha256": "0ef00eb58de13a8a3204cb329677b08b953b9c6568249212a3ff5b661e39ffee",
+      "bytes": 6383
     },
     "app/gd_future_window_diagnostic.py": {
       "sha256": "97858a2f9d1bff44037d3266a723ff77e8e98a61414e9c1bde7be88d7274a682",
@@ -543,8 +543,8 @@
       "bytes": 444
     },
     "app/LIVE_MARKET_MANIFEST.json": {
-      "sha256": "6d8d7a9c6d72e932947c356f9bf3561342a86a0d123ee6729aca67b14d934cf7",
-      "bytes": 45782
+      "sha256": "58c6b944b41ed9332ebe85d701785a3bff95bee105ff3d1b4e46a11b0ee6e0e0",
+      "bytes": 45995
     },
     "app/gd_batch_control.py": {
       "sha256": "c7a01de45ca5d6242599cd21e63e646c50bbef0aad4401544649bc21f25e2b1d",
@@ -1987,8 +1987,8 @@
       "bytes": 3749
     },
     "app/gd_live_market_runtime/branch_parameters.py": {
-      "sha256": "e2504e335f0e30417c5ffcb79286e1254188eef84c01e5eb652cf3aa6ddeaf48",
-      "bytes": 7916
+      "sha256": "a99e1776769c024f84c6f2d9f0a90a90dfe04bda74301a33223d5bb25b8d4697",
+      "bytes": 8314
     },
     "app/gd_live_market_runtime/reference_clock.py": {
       "sha256": "c874d4c556fccf6e5680b9c59804e5ac6ff4a3983110cbed175993dca2e300be",
@@ -2075,8 +2075,8 @@
       "bytes": 2350
     },
     "app/gd_live_market_runtime/domain_event.py": {
-      "sha256": "708cf1a7c41536792bb2b2c22f8b2794d368577cb1ef674c7e166c0a3e898274",
-      "bytes": 17176
+      "sha256": "f7cfa120c1fa3406a1e4bbf05210f2d4b77fc5c29e706236dade7e8494049834",
+      "bytes": 17274
     },
     "app/gd_live_market_runtime/settlement_grid.py": {
       "sha256": "28489447861f111986053d0f2c140a15a47097b06b7fdfafd8be9d1edcde52b2",
@@ -2247,8 +2247,8 @@
       "bytes": 4752
     },
     "app/gd_provincial15_model/compiler.py": {
-      "sha256": "8a80f896a2a56a94f860317866edb405d10089e0e494732c30abcf22feb4551a",
-      "bytes": 11662
+      "sha256": "94a886a723f8451ceef421dd3e56a901dc87d2d118eef4f316ec46b68fdb6903",
+      "bytes": 11697
     },
     "app/pages/6_旧版参考.py": {
       "sha256": "7e41375ff54f696e1954c9b981398ec46533fc0a503576c0c3f44b9a6462b611",
@@ -19629,6 +19629,18 @@
     "tests/test_provincial_entry_smoke.py": {
       "sha256": "12b1672f785966b862257553fd9e2763445ca16c78968bc69f9fb426bed9d1b5",
       "bytes": 789
+    },
+    "app/gd_provincial15_model/renewable_bids.py": {
+      "sha256": "0cb2698e732705e35fbe4f813f934ab8d59ee80baff3ecb8b3253514b72b1377",
+      "bytes": 978
+    },
+    "app/gd_renewable_bid_editor.py": {
+      "sha256": "e966c5588520cbb6c8876aa9a4da1e53cde0f58cbb3a1cdf031cc1b8e21d1396",
+      "bytes": 1553
+    },
+    "docs/新能源报价同源修复.md": {
+      "sha256": "1d8673e3fbc443fe12a973e0a10354e7ee0c5087b3e06390655f8cdc6da1ad4f",
+      "bytes": 1617
     }
   }
 }

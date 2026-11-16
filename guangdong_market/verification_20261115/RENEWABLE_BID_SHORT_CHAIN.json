@@ -1,0 +1,68 @@
+{
+  "scope": "Renewable bid propagation repair; production short chain, not full-day rerun",
+  "source_archive_sha256": "10ee09ca2267c5e705f6a03de270a5d2c420a316acbe07eec9fe5738b6570e73",
+  "tested_install_application_sha256": "fa0804f29e82da09b6053625eecebca28806fe18dd41848df6a091a1a896cc2e",
+  "published_application_sha256": "dd4cc22c1d4d854783de4fd57a42c84702c2e7a689a3c1963528e6ae95ae3aba",
+  "fixed": "Remove hardcoded -50 from provincial real-time dispatch and pricing; use same window renewable bid input",
+  "production_validation": {
+    "DA_models": [
+      "SCUC",
+      "SCED",
+      "LMP"
+    ],
+    "DA_periods": 98,
+    "RT_models": [
+      "SCUC",
+      "SCED",
+      "PRICE"
+    ],
+    "RT_window_periods": 8,
+    "executed_periods": 1,
+    "native_solves": 6,
+    "node_30_bid": 87,
+    "node_30_objective_coefficient": 21.75,
+    "node_33_bid": 21,
+    "node_33_objective_coefficient": 5.25,
+    "RT_SCED_PRICE_KKT": "passed"
+  },
+  "limitations": [
+    "Wind/solar bids entered by aggregate bus, single whole-day price in UI",
+    "Prior full-day output predates this pricing repair",
+    "No claim of new full-day run or formal settlement profit"
+  ],
+  "entry_hotfix_and_regression_test_preserved": true,
+  "exact_patch_files": [
+    {
+      "path": "app/gd_provincial15_model/renewable_bids.py",
+      "sha256": "0cb2698e732705e35fbe4f813f934ab8d59ee80baff3ecb8b3253514b72b1377"
+    },
+    {
+      "path": "app/gd_provincial15_model/compiler.py",
+      "sha256": "94a886a723f8451ceef421dd3e56a901dc87d2d118eef4f316ec46b68fdb6903"
+    },
+    {
+      "path": "app/gd_live_market_runtime/branch_parameters.py",
+      "sha256": "a99e1776769c024f84c6f2d9f0a90a90dfe04bda74301a33223d5bb25b8d4697"
+    },
+    {
+      "path": "app/gd_live_market_runtime/domain_event.py",
+      "sha256": "f7cfa120c1fa3406a1e4bbf05210f2d4b77fc5c29e706236dade7e8494049834"
+    },
+    {
+      "path": "app/gd_provincial_inputs.py",
+      "sha256": "0ef00eb58de13a8a3204cb329677b08b953b9c6568249212a3ff5b661e39ffee"
+    },
+    {
+      "path": "app/gd_renewable_bid_editor.py",
+      "sha256": "e966c5588520cbb6c8876aa9a4da1e53cde0f58cbb3a1cdf031cc1b8e21d1396"
+    },
+    {
+      "path": "app/gd_provincial_page.py",
+      "sha256": "2f3725e7ed69a4535d6c02ba629401ff5a03ecea5a3a0d0312821e35cced4558"
+    },
+    {
+      "path": "docs/新能源报价同源修复.md",
+      "sha256": "1d8673e3fbc443fe12a973e0a10354e7ee0c5087b3e06390655f8cdc6da1ad4f"
+    }
+  ]
+}

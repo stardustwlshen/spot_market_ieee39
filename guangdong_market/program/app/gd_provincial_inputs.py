@@ -12,7 +12,7 @@ def inventory(source):
  loads,_=codec();c=loads((Path(source)/'seed/case.json').read_bytes())
  return sorted(c['energy_inputs']['thermal'])
 
-def snapshot(source,target,*,load_factor=1.,thermal_bid_factors=None,thermal_ramp_factors=None,thermal_edits=None,resource_edits=None,forecast_levels=None,additions=None):
+def snapshot(source,target,*,load_factor=1.,thermal_bid_factors=None,thermal_ramp_factors=None,thermal_edits=None,resource_edits=None,forecast_levels=None,additions=None,renewable_bids=None):
  from gd_provincial_prepare import inputs_identity
  src=Path(source).resolve();out=Path(target).resolve();pins=inputs_identity(src)
  loads,dumps=codec();case=loads((src/'seed/case.json').read_bytes())
@@ -37,6 +37,7 @@ def snapshot(source,target,*,load_factor=1.,thermal_bid_factors=None,thermal_ram
   for seg in d['segments']:seg['price_yuan_per_mwh']={k:v*f for k,v in seg['price_yuan_per_mwh'].items()}
  for g,f in (thermal_ramp_factors or {}).items():
   for key in ('ramp_up_mw_per_h','ramp_down_mw_per_h'):e['thermal'][g][key]={k:v*f for k,v in e['thermal'][g][key].items()}
+ apply_renewable_bids(case,renewable_bids or {})
  apply_thermal_edits(case,thermal_edits or {})
  from gd_resource_inputs import apply_resource_edits
  apply_resource_edits(case,resource_edits or {})
@@ -49,7 +50,7 @@ def snapshot(source,target,*,load_factor=1.,thermal_bid_factors=None,thermal_ram
  sha=lambda p:hashlib.sha256(p.read_bytes()).hexdigest()
  context=json.loads((src/'SHORT_CONTEXT.json').read_text());context['seed_pins']={str(p):sha(p) for p in [*sorted((out/'seed').glob('*.json')),out/'INITIAL_CARRY.json']}
  (out/'SHORT_CONTEXT.json').write_text(json.dumps(context))
- (out/'USER_EDITS.json').write_text(json.dumps(dict(source_pins=pins,load_factor=load_factor,thermal_bid_factors=thermal_bid_factors or {},thermal_ramp_factors=thermal_ramp_factors or {},thermal_edits=thermal_edits or {},resource_edits=resource_edits or {},additions=additions or [],forecast_levels=forecast_levels,scope='DA seed baseline; RT source-bound correlated scenarios when enabled',formal=False),indent=2))
+ (out/'USER_EDITS.json').write_text(json.dumps(dict(source_pins=pins,load_factor=load_factor,thermal_bid_factors=thermal_bid_factors or {},thermal_ramp_factors=thermal_ramp_factors or {},thermal_edits=thermal_edits or {},resource_edits=resource_edits or {},additions=additions or [],forecast_levels=forecast_levels,renewable_bids=renewable_bids or {},scope='DA seed baseline; RT source-bound correlated scenarios when enabled',formal=False),indent=2))
  return str(out)
 
 
@@ -72,4 +73,23 @@ def apply_thermal_edits(case,edits):
   if online and not d['min_mw'][0]<=power<=d['max_mw'][0]:raise ValueError(g+'初始开机出力须在最小、最大出力之间')
   if not online and power!=0:raise ValueError(g+'初始停机时出力必须为0')
   d.update(changes);d['initial_online']=int(online);d['initial_state_kind']='stable' if online else 'off'
+ return case
+
+
+def renewable_parameters(source):
+ loads,_=codec();case=loads((Path(source)/'seed/case.json').read_bytes());e=case['energy_inputs']
+ buses=sorted({str(b) for (b,t),v in e['renewable_mw'].items() if v>0})
+ return {b:{'bid':float(e['renewable_bid_yuan_per_mwh'][b,0]),'constant':len({float(v) for (bus,t),v in e['renewable_bid_yuan_per_mwh'].items() if str(bus)==b})==1} for b in buses}
+
+
+def apply_renewable_bids(case,bids):
+ """Node-aggregate daily price; no separate wind/solar plant identity invented."""
+ e=case['energy_inputs'];valid={str(b) for (b,t),v in e['renewable_mw'].items() if v>0}
+ for bus,value in bids.items():
+  if bus not in valid:raise ValueError('未知或没有新能源出力的节点：'+str(bus))
+  if isinstance(value,bool) or not isinstance(value,(int,float)) or not math.isfinite(value):raise ValueError('新能源报价必须为有限数值')
+  # Upper bid bound not certified by present rules; do not invent a cap.
+  if value < -50:raise ValueError('新能源报价不能低于 -50 元/MWh')
+ for key in e['renewable_bid_yuan_per_mwh']:
+  if str(key[0]) in bids:e['renewable_bid_yuan_per_mwh'][key]=float(bids[str(key[0])])
  return case
