@@ -1,5 +1,6 @@
-"""Process-local SHA256 reuse for ordinary filesystem changes, not kernel attacks.
-No persisted cache, no mathematical verdict caching; first use reads all bytes.
+"""Read actual source bytes at every verification boundary on all platforms.
+Metadata checks detect ordinary concurrent replacement, not content identity.
+_CACHE and hit counters remain import-compatible but never authorize a digest.
 """
 from pathlib import Path
 import hashlib,os,stat
@@ -7,17 +8,12 @@ _CACHE={}
 STATS={'hits':0,'full_reads':0,'bytes_read':0}
 def signature(s):return (s.st_dev,s.st_ino,s.st_size,s.st_mtime_ns,s.st_ctime_ns)
 def sha(path):
- # Keep OS path traversal semantics (not abspath/normpath: symlink/.. matters).
- # stat/open follow the original alias each time, so replacing a symlink or
- # parent directory still changes the identity signature and invalidates cache.
- # Resolving every ancestor adds many metadata calls on each cache hit without
- # adding content protection beyond the existing stat/open/fstat/stat checks.
- p=Path(path).absolute();before=p.stat();key=(str(p),*signature(before))
+ # Preserve OS traversal semantics (symlink/.. must not be normalized away).
+ # stat/open/fstat/stat checks are race diagnostics; only byte reads compute SHA.
+ p=Path(path).absolute();before=p.stat()
  if not stat.S_ISREG(before.st_mode):raise ValueError('regular source file required')
- old=_CACHE.get(str(p))
- if old is not None and old[0]==key:
-  STATS['hits']+=1;return old[1]
- # One entry per absolute access path; outdated versions cannot regain validity.
+ # Windows ctime may be creation time; timestamp precision also varies by FS.
+ # Never treat unchanged stat fields as evidence of unchanged source contents.
  _CACHE.pop(str(p),None)
  h=hashlib.sha256();count=0
  with p.open('rb') as f:
@@ -31,6 +27,7 @@ def sha(path):
  after=p.stat()
  if signature(before)!=signature(after_fd) or signature(before)!=signature(after) or count!=before.st_size:
   raise ValueError('source changed during hash read')
- result=h.hexdigest();_CACHE[str(p)]=(key,result)
+ result=h.hexdigest()
  STATS['full_reads']+=1;STATS['bytes_read']+=count
  return result
+

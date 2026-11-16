@@ -543,7 +543,7 @@
       "bytes": 444
     },
     "app/LIVE_MARKET_MANIFEST.json": {
-      "sha256": "cfc43a3bdad116d8e9b5cb985a11b8e8a9cd0caba19c49ce06b65f6eab7353d4",
+      "sha256": "54f9caf78a75c2ba04aaf9cfa009b76c1ff64fbdf2285fa3f80d9beccd904b9a",
       "bytes": 46100
     },
     "app/gd_batch_control.py": {
@@ -1891,8 +1891,8 @@
       "bytes": 8435
     },
     "app/lifecycle_runtime/content_hash.py": {
-      "sha256": "d0c23263e0aa6d4f08ce201ab3077482d672970e2723464d8a0d079c5656d6d6",
-      "bytes": 1724
+      "sha256": "088329f371597fbc63d26acd759093f5379b37266009db4ac84c95378c30bece",
+      "bytes": 1484
     },
     "app/gd_post_scuc_runtime/planning.py": {
       "sha256": "97b17c1b50525a273502078d28526669c25e67a7519c13208527562456f85275",
@@ -19729,6 +19729,14 @@
     "docs/供需松弛时模拟机组收益.md": {
       "sha256": "34bde25717b537b745513018c50952e6c6badea4f4b4e4ef373d9e3e8d5da52a",
       "bytes": 836
+    },
+    "tests/audit_20261116/test_hash_full_bytes.py": {
+      "sha256": "d07d16afe0067bae8c4e130c5b44dc54d17336f28c9522846f705bc0bec921db",
+      "bytes": 2478
+    },
+    "docs/AUDIT_CONTENT_HASH_20261116.md": {
+      "sha256": "0f0dcc037c995c68d6f30033005de70e9ad1adde8d4dec41843bb22b7f450e94",
+      "bytes": 956
     }
   }
 }
