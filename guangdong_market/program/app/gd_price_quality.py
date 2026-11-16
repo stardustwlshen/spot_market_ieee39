@@ -44,28 +44,42 @@ def _bound_digest(pins,path):
  if len(values)>1:raise ValueError('conflicting accepted PRICE source aliases: '+str(path))
  return next(iter(values))if values else None
 
-def _from_accepted_quality(path):
+def _from_accepted_quality(path, *, accepted_snapshot=None):
  """Same-directory, exact accepted context/raw binding; absent evidence stays unknown."""
- f=Path(path);a=read(f);p=f.parent/'prepared';rf=p/'PRICE_RESULT.json'
+ f=Path(path)
+ # Call-scoped bytes: re-read and hash on EVERY refresh; no mtime/global cache.
+ snapshots={}
+ def snapshot(file):
+  key=Path(file)
+  if key not in snapshots:
+   raw=key.read_bytes();snapshots[key]=(json.loads(raw),hashlib.sha256(raw).hexdigest())
+  return snapshots[key]
+ if accepted_snapshot is not None:snapshots[f]=accepted_snapshot
+ a,accepted_digest=snapshot(f);p=f.parent/'prepared';rf=p/'PRICE_RESULT.json'
  if not rf.is_file():return unknown('同来源PRICE_RESULT未提供；历史ACCEPTED缺字段不等于零。')
- r=read(rf)
+ r,result_digest=snapshot(rf)
  if not isinstance(r.get('slacks'),dict) or not r['slacks']:return unknown('同来源结果未提供完整定价松弛字段；不能视为零。')
  if r.get('context')!=a.get('context') or r.get('raw_prices')!=a.get('raw_prices') or r.get('KKT')!=a.get('KKT'):raise ValueError('PRICE result differs from accepted source')
+ canonical_pins={}
+ for alias,digest in a.get('source_pins',{}).items():
+  canonical_pins.setdefault(Path(alias).resolve(),set()).add(digest)
  for rel in ('names.json','native_once/COMPLETED.json','native_once/IDENTITY.json','native_once/response.json'):
-  q=p/rel
-  expected=_bound_digest(a.get('source_pins',{}),q)
-  if expected is None or not q.is_file() or sha(q)!=expected:raise ValueError('accepted PRICE raw binding changed: '+rel)
- n=read(p/'names.json');raw=read(p/'native_once/response.json');done=read(p/'native_once/COMPLETED.json')
- if done['response_sha256']!=sha(p/'native_once/response.json') or done['returncode']!=0 or raw.get('optimize_calls')!=1:raise ValueError('native PRICE identity')
+  q=p/rel;values=canonical_pins.get(q.resolve(),set())
+  if len(values)>1:raise ValueError('conflicting accepted PRICE source aliases: '+str(q))
+  expected=next(iter(values)) if values else None
+  if expected is None or not q.is_file() or snapshot(q)[1]!=expected:raise ValueError('accepted PRICE raw binding changed: '+rel)
+ n=snapshot(p/'names.json')[0];raw,raw_digest=snapshot(p/'native_once/response.json');done=snapshot(p/'native_once/COMPLETED.json')[0]
+ if done['response_sha256']!=raw_digest or done['returncode']!=0 or raw.get('optimize_calls')!=1:raise ValueError('native PRICE identity')
  if len(n['variables'])!=len(raw['primal']) or len(set(n['variables']))!=len(n['variables']):raise ValueError('raw primal dimensions')
  values=dict(zip(n['variables'],raw['primal']))
  expected={k:v for k,v in values.items() if k.startswith('PRICE_')}
  if set(expected)!=set(r.get('slacks',{})) or any(v!=r['slacks'][k] for k,v in expected.items()):raise ValueError('reported slacks not identical to raw primal')
- return summarize(r,provenance=dict(accepted_sha256=sha(f),result_sha256=sha(rf),raw_sha256=sha(p/'native_once/response.json'),run_id=r['context'].get('run_id'),quarter=r['context'].get('day_quarter'),source=str(rf)))
+ return summarize(r,provenance=dict(accepted_sha256=accepted_digest,result_sha256=result_digest,raw_sha256=raw_digest,run_id=r['context'].get('run_id'),quarter=r['context'].get('day_quarter'),source=str(rf)))
 def from_accepted(path):
- from gd_price_timing import from_accepted as timing
- clock=timing(path)
- result=_from_accepted_quality(path)
+ from gd_price_timing import evaluate
+ raw=Path(path).read_bytes();accepted=json.loads(raw);digest=hashlib.sha256(raw).hexdigest()
+ clock=evaluate(accepted,source_sha256=digest)
+ result=_from_accepted_quality(path,accepted_snapshot=(accepted,digest))
  result['information_time']=clock
  return result
 
@@ -129,3 +143,4 @@ def render_audit_supplement(index,complete):
  with st.expander('审计补充：逐季度/类型/价格时段/MW（预测域可重叠）'):
   st.dataframe(display_rows([dict(quarter=q,**row) for q,v in audit['quarters'].items() for row in (v['nonzero_rows'] or [])]),hide_index=True)
  with st.expander('技术详情：原始审计字段与来源',expanded=False):st.json(audit)
+

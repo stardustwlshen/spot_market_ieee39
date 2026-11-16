@@ -131,8 +131,8 @@
       "bytes": 4085
     },
     "app/gd_price_quality.py": {
-      "sha256": "1ac26da95ca2ed3459c29427d1909edbab44a8d7a8da9a7b02802a0496beb02f",
-      "bytes": 10782
+      "sha256": "3465b064e073a9a5696c1d085d4de02717caf007b154810b4b77666ed1d216fa",
+      "bytes": 11606
     },
     "app/gd_ui_rt_execute_panel.py": {
       "sha256": "a9ad45fad3301935bb4e7f574783c7c68c64bc9ade8f11efe38f47a6cb93996d",
@@ -543,7 +543,7 @@
       "bytes": 444
     },
     "app/LIVE_MARKET_MANIFEST.json": {
-      "sha256": "79da3d7b539c64f63c24447bb21104ac5b996b39b913bc236d94ecd4322d0108",
+      "sha256": "1104b4540d51811cd63d63f719a21996f237ad653b74dc8efa5cf6faa4174cf4",
       "bytes": 46100
     },
     "app/gd_batch_control.py": {
@@ -19681,6 +19681,14 @@
     "docs/AUDIT_BALANCE_SLACK_20261116.md": {
       "sha256": "cb338940b015d4eb253e7431c4b94c5c039e1982d2fc996ef6c92f248c168757",
       "bytes": 1214
+    },
+    "tests/audit_20261116/test_price_quality_snapshot.py": {
+      "sha256": "0a121af9e1ea8c184bdbcbe85350598c96e79da6348ded82962a1f570551c620",
+      "bytes": 2589
+    },
+    "docs/AUDIT_PRICE_READS_20261116.md": {
+      "sha256": "66c0819595d7ed043b0355574f9b8876e25acc221710e320a553a72321d27ec6",
+      "bytes": 835
     }
   }
 }
