@@ -8,12 +8,13 @@ from wiring import validate_wiring
 NETWORK_DEFAULT_CNY_PER_MWH = 1000.
 NETWORK_DEFAULT_SOURCE = dict(document='南方区域电力现货市场实施细则（2026年V1.0版）',url='http://www.gzpec.cn/law/jygz/202611/P020261103633894465723.pdf',printed_page=180,pdf_page=183,item=18,pdf_sha256='978d7d7179e3629f8a86fb2d770470e1700b67c4bb867123b07a2d8f480c3caf',scope='regional_default_not_authenticated_Guangdong_override')
 CHOICES=dict(storage_reference='selected_domain_reference',storage_mode='selected_reference_cell_modes',storage_SOC_start='selected_reference_prefix_SOC',storage_terminal='declared_terminal_if_in_horizon',storage_cycle_sign='positive_charge_internal_throughput',charge_discharge_sign='net_discharge_positive',five_to_fifteen_power='arithmetic_three_mean_MW',ramp_mapping='quarter_min_ramp_from_current_previous_power')
-def sample(da,run,w,output,name,domain,*,verified_request=None):
+def sample(da,run,w,output,name,domain,*,verified_request=None,accepted_source_pins=None):
  # Standalone callers retain the complete independent source reconstruction.
  need(verified_request is not None,'live verified request required')
+ need(accepted_source_pins is not None,'accepted source pins required')
  run=Path(run).resolve();case=convert_full_case(loads((run/'seed/case.json').read_bytes()))
  from gd_forecast_inputs import apply_forecast
- apply_forecast(case,run/'seed',verified_request['delivery_tick'])
+ apply_forecast(case,run/'seed',verified_request['delivery_tick'],accepted_source_pins=accepted_source_pins)
  return _write_parameters(case,da,run,w,output,name,domain,verified_request=verified_request)
 
 def _write_parameters(case,da,run,w,output,name,domain,*,verified_request):

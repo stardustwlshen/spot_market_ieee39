@@ -44,10 +44,36 @@ def _baseline_digest_from_bytes(raw):
     from gd_provincial15_model.adapter import convert_full_case
     return baseline_digest(convert_full_case(loads(raw)))
 
-def read_bundle(seed_dir,*,_case_snapshot=None):
-    p=Path(seed_dir)/FILE
-    if not p.exists():return None
-    z=json.loads(p.read_text());expected=z.pop('bundle_digest')
+def _read_forecast_bytes(seed_dir,accepted_source_pins):
+    """Check the exact consumed bytes against the previously accepted binding.
+
+    None retains the unbound utility interface. An explicit mapping is strict:
+    absence is allowed only when neither a binding nor a file exists. Never
+    establish a fresh binding here, and never use path/mtime as identity.
+    """
+    p=(Path(seed_dir)/FILE).resolve()
+    try:raw=p.read_bytes()
+    except FileNotFoundError:
+        if accepted_source_pins is not None and str(p) in accepted_source_pins:
+            raise ValueError('bound forecast scenario is missing')
+        return None
+    if accepted_source_pins is not None:
+        expected_hash=accepted_source_pins.get(str(p))
+        if expected_hash is None or hashlib.sha256(raw).hexdigest()!=expected_hash:
+            raise ValueError('forecast scenario absent from accepted source pins or changed')
+    return raw
+
+def verified_forecast_pins(seed_dir,accepted_source_pins):
+    """Recheck presence/identity without ever replacing an accepted digest."""
+    raw=_read_forecast_bytes(seed_dir,accepted_source_pins)
+    if raw is None:return {}
+    p=str((Path(seed_dir)/FILE).resolve())
+    return {p:accepted_source_pins[p]}
+
+def read_bundle(seed_dir,*,_case_snapshot=None,accepted_source_pins=None):
+    raw=_read_forecast_bytes(seed_dir,accepted_source_pins)
+    if raw is None:return None
+    z=json.loads(raw);expected=z.pop('bundle_digest')
     if digest(z)!=expected:raise ValueError('forecast bundle digest mismatch')
     if _case_snapshot is None:actual_baseline=_baseline_digest_from_bytes((Path(seed_dir)/'case.json').read_bytes())
     else:
@@ -56,9 +82,9 @@ def read_bundle(seed_dir,*,_case_snapshot=None):
     if actual_baseline!=z['baseline_case_digest']:raise ValueError('forecast baseline does not match bound seed')
     z['bundle_digest']=expected;return z
 
-def apply_forecast(case,seed_dir,issue_tick,*,_case_snapshot=None):
+def apply_forecast(case,seed_dir,issue_tick,*,_case_snapshot=None,accepted_source_pins=None):
     """Mutate 15min full case. First actual, future forecasts. No DA mutation."""
-    z=read_bundle(seed_dir,_case_snapshot=_case_snapshot)
+    z=read_bundle(seed_dir,_case_snapshot=_case_snapshot,accepted_source_pins=accepted_source_pins)
     if z is None:return case
     if type(issue_tick)is not int or not 0<=issue_tick<96:raise ValueError('invalid issue_tick')
     end=min(96,issue_tick+8);e=case['energy_inputs'];proof={}
@@ -75,9 +101,9 @@ def apply_forecast(case,seed_dir,issue_tick,*,_case_snapshot=None):
     case['_forecast_proof']={'bundle_digest':z['bundle_digest'],'issue_tick':issue_tick,'notice':z['notice'],'resources':proof}
     return case
 
-def apply_actual(case,seed_dir):
+def apply_actual(case,seed_dir,*,accepted_source_pins=None):
     """Executed-hour audit/settlement loads use synthetic realised path, not DA."""
-    z=read_bundle(seed_dir)
+    z=read_bundle(seed_dir,accepted_source_pins=accepted_source_pins)
     if z is None:return case
     e=case['energy_inputs']
     for r in z['resources'].values():

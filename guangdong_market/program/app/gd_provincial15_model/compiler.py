@@ -42,7 +42,7 @@ def build(seed, carry, out, agc_projection=None):
  assert zero,'provincial grid marker required'
  assert start==c['cutoff_tick']+(0 if zero else 3) and c['boundary_at']==begin.isoformat() and start>=(0 if zero else 3) and start+n<=len(original['energy_inputs']['load_mw'])//len(original['energy_inputs']['buses'])
  from gd_forecast_inputs import apply_forecast
- original=apply_forecast(original,seed,start)
+ original=apply_forecast(original,seed,start,accepted_source_pins=c['source_pins'])
  from .penalty_policy import apply_dispatch
  case=apply_dispatch(slice_time(original,start,n));e=case['energy_inputs'];e['horizon']=EnergyHorizon(tuple(EnergyPeriod(t,.25,.25,'delivery',t==0)for t in range(n)),'real_time','provincial fifteen-minute eight-step research window');e['renewable_mode']='dispatchable_bus_aggregate'
  bs=c['thermal'];assert set(bs)==set(e['thermal']) and set(c['storage'])==set(case['batteries'])
@@ -118,6 +118,8 @@ def build(seed, carry, out, agc_projection=None):
  summary['source_pins'][str((out/'RT_SOFT_TERMINAL.json').resolve())]=sha(out/'RT_SOFT_TERMINAL.json')
  if binding is not None:
   (out/'AGC_CONSUMPTION.json').write_text(json.dumps(binding,indent=2));summary['source_pins'].update(binding['source_pins']);summary['source_pins'][str(Path(agc_projection).resolve())]=sha(agc_projection);summary['AGC_consumption_sha256']=sha(out/'AGC_CONSUMPTION.json')
+ from gd_forecast_inputs import verified_forecast_pins
+ summary['source_pins'].update(verified_forecast_pins(seed,c['source_pins']))
  (out/'SUMMARY.json').write_text(json.dumps(summary,indent=2));return summary
 if __name__=='__main__':
  import argparse

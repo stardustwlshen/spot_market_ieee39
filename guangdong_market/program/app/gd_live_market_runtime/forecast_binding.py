@@ -8,11 +8,13 @@ def _need(ok,msg):
  if not ok:raise ValueError(msg)
 def source_pin(seed,pins):
  p=(Path(seed)/FILE).resolve()
- if not p.exists():return {}
+ if not p.exists():
+  _need(str(p) not in pins,'bound forecast scenario is missing')
+  return {}
  _need(pins.get(str(p))==_sha(p),'forecast scenario absent from accepted source pins or changed')
  import gd_forecast_inputs,gd_forecast_scenarios
  files=[p,Path(__file__).resolve(),Path(gd_forecast_inputs.__file__).resolve(),Path(gd_forecast_scenarios.__file__).resolve()]
- return {str(f):_sha(f)for f in files}
+ return {str(f):(pins[str(p)] if f==p else _sha(f))for f in files}
 def assert_same_window(forecast,accepted,first,count):
  a=forecast.get('_forecast_proof');b=accepted.get('_forecast_proof')
  _need(a is not None and b is not None,'accepted forecast vintage proof missing')
@@ -28,11 +30,11 @@ def for_price(case,seed,request,*,pins,prepared,_case_snapshot=None):
  if not fp:return case,dict(mode='legacy_no_synthetic_forecast',source_pins={})
  from smm.gd_october_job_codec import loads
  p=(Path(prepared)/'derived_case.json').resolve();_need(pins.get(str(p))==_sha(p),'accepted forecast case not source-bound')
- apply_forecast(case,seed,request['delivery_tick'],_case_snapshot=_case_snapshot);accepted=loads(p.read_bytes());proof=assert_same_window(case,accepted,request['delivery_tick'],min(8,96-request['delivery_tick']))
+ apply_forecast(case,seed,request['delivery_tick'],_case_snapshot=_case_snapshot,accepted_source_pins=pins);accepted=loads(p.read_bytes());proof=assert_same_window(case,accepted,request['delivery_tick'],min(8,96-request['delivery_tick']))
  proof.update(mode='same_SCED_issue_tick_forecast',source_pins={**fp,str(p):_sha(p)},current_perfect_nowcast_is_research_assumption=True,future_actual_values_used=False)
  return case,proof
 def for_execution(case,seed,*,pins):
  fp=source_pin(seed,pins)
  if not fp:return case,dict(mode='legacy_no_synthetic_forecast',source_pins={})
- apply_actual(case,seed)
+ apply_actual(case,seed,accepted_source_pins=pins)
  return case,dict(mode='executed_actual_for_balance_not_forecast',source_pins=fp,first_cell_nowcast_matches_actual_by_explicit_research_assumption=True)

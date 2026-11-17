@@ -41,7 +41,7 @@
   },
   "price/single_price.py": {
     "source": "price_correctness_delta_20261114/single_price.py",
-    "sha256": "e419d6f2872851c9603fcd19bbbaeaebb7ae21ad784b810270d4bc59a4f01915"
+    "sha256": "c30f62c8d05ab85e948d1de9eaab30c4f0c097a5c7e1fee3c068589c7b7396ea"
   },
   "price/domain_event.py": {
     "source": "price_correctness_delta_20261114/domain_event.py",

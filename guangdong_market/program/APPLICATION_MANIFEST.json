@@ -151,8 +151,8 @@
       "bytes": 28239
     },
     "app/gd_forecast_inputs.py": {
-      "sha256": "d80800c1aed3e4b3366ed95bd406f1efbfa2c8c7fb931af75e399af5605788cb",
-      "bytes": 5141
+      "sha256": "c7f7faec07b37beb4b20e2d2b785592efee6c66c0473e6e541c4bc8119952cd5",
+      "bytes": 6562
     },
     "app/gd_ui_page.py": {
       "sha256": "a73331a7304a31b004c654ca718b77a015ef81e58cb86cf8446cb6b8198f5536",
@@ -543,8 +543,8 @@
       "bytes": 444
     },
     "app/LIVE_MARKET_MANIFEST.json": {
-      "sha256": "294dff2cf8774ce731ddcc050035eb464389e574148f2457d21e799061c423ad",
-      "bytes": 46288
+      "sha256": "bfda31dd426e875d282c84f411de2d24b8fd2644039f8e983fcdbe819f99c017",
+      "bytes": 46282
     },
     "app/gd_batch_control.py": {
       "sha256": "c7a01de45ca5d6242599cd21e63e646c50bbef0aad4401544649bc21f25e2b1d",
@@ -1987,8 +1987,8 @@
       "bytes": 3749
     },
     "app/gd_live_market_runtime/branch_parameters.py": {
-      "sha256": "84f60ccedcde143e9326b48f3a47a1c385b4ea64908f0b69e86b42484abcd18e",
-      "bytes": 9073
+      "sha256": "b2b6dfa173a2937c64d1af86e71e4e3e31fc2635816f1055fd4ad6622f0d4f28",
+      "bytes": 9213
     },
     "app/gd_live_market_runtime/reference_clock.py": {
       "sha256": "c874d4c556fccf6e5680b9c59804e5ac6ff4a3983110cbed175993dca2e300be",
@@ -2007,8 +2007,8 @@
       "bytes": 3045
     },
     "app/gd_live_market_runtime/forecast_binding.py": {
-      "sha256": "cb5c27264e04c62fffb82fec6a3e17cad9f462f3ddc7bd4e3c99069b96f7211b",
-      "bytes": 2553
+      "sha256": "132fdd629953c41a0319a9b9047568d30eff46793e9a48fa83e2b8f5e580279d",
+      "bytes": 2701
     },
     "app/gd_live_market_runtime/pricing_delta.py": {
       "sha256": "5c165521f53b12660d9390d5debc1b2bec02a4529a7191beeb5c48bce1d0c496",
@@ -2247,8 +2247,8 @@
       "bytes": 4883
     },
     "app/gd_provincial15_model/compiler.py": {
-      "sha256": "94a886a723f8451ceef421dd3e56a901dc87d2d118eef4f316ec46b68fdb6903",
-      "bytes": 11697
+      "sha256": "6f4068f571d65f2eaace5a1396b774ccc61baa79b6a09c7cdc07c3313d73ae3a",
+      "bytes": 11868
     },
     "app/pages/6_旧版参考.py": {
       "sha256": "7e41375ff54f696e1954c9b981398ec46533fc0a503576c0c3f44b9a6462b611",
@@ -2711,7 +2711,7 @@
       "bytes": 4798
     },
     "app/research_runtime/single_window/INSTALL_MANIFEST.json": {
-      "sha256": "6bc03b3db01737c50845de58bcd96bc18f7a5a0edd558fa7d774c8adb8f2a7ed",
+      "sha256": "fcb363b9a4a268af956112ec4908b6152bd6c419c423fc78c2f5e29e15c55a5b",
       "bytes": 4631
     },
     "app/research_runtime/single_window/price/incoming_active.py": {
@@ -2739,8 +2739,8 @@
       "bytes": 16422
     },
     "app/research_runtime/single_window/price/single_price.py": {
-      "sha256": "e419d6f2872851c9603fcd19bbbaeaebb7ae21ad784b810270d4bc59a4f01915",
-      "bytes": 12884
+      "sha256": "c30f62c8d05ab85e948d1de9eaab30c4f0c097a5c7e1fee3c068589c7b7396ea",
+      "bytes": 12933
     },
     "app/research_runtime/single_window/price/loss_price.py": {
       "sha256": "c299919872fa9aea03a7bbbf1bb1aa99abbdbdf122c7db70ec3935f9b305e179",
@@ -19913,6 +19913,10 @@
     "docs/运行入口清单一致性.md": {
       "sha256": "ed0dd6ad9fa177ac7396a923eab9e7d2949c371ee923a3373491865cb9bbcc5c",
       "bytes": 1103
+    },
+    "tests/test_forecast_consumption_binding.py": {
+      "sha256": "275bd79afbc8a87bc79a7e74a1a350f7deba4d76dc58bf26be854708bb6649fd",
+      "bytes": 6577
     }
   }
 }

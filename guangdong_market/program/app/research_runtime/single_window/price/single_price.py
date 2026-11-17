@@ -61,7 +61,7 @@ def prepare_eight_quarters(*,program_root,session,hooks,near_prepared,near_actua
  sys.path.insert(0,str(PRICE_ENGINE/'price'))
  from branch_parameters import sample,resolved
  r['typed_source_path']=str(proof)
- params=out/'PARAMETERS.json';sample(da,base,w,params,'near24_eight_quarter_research','current_sced_research',verified_request=r)
+ params=out/'PARAMETERS.json';sample(da,base,w,params,'near24_eight_quarter_research','current_sced_research',verified_request=r,accepted_source_pins=host_binding['source_pins'])
  explicit,contract,pars,boundary=resolved(params,case,da,base,w,r);explicit['eligibility']=state['eligibility']
  sys.path.insert(0,str(Path(__file__).parent));spec=importlib.util.spec_from_file_location('one_quarter_domain',Path(__file__).with_name('domain_event.py'));domain=importlib.util.module_from_spec(spec);domain.ENGINE=PRICE_ENGINE;spec.loader.exec_module(domain)
  domain.prepare(proof,casefile,af,da,out/'prepared',research_current_sced=True,boundary='current_sced_research',verified_inputs=(a,r,x),explicit=explicit,thermal_profile=state,selected_profile=event_profile,stage_boundary=c,quarter_node_loss_mw=loss)
