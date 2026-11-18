@@ -333,7 +333,7 @@
   "gd_process_guard.py": "66edb7cafe13af74ec5b4d5add3e1ff01c156dab3f14205ea236c5cc652dc637",
   "gd_ui_recommit_prepare.py": "9229bfdc70a87d84181fcb698f43cf539441036df4ee94a267a3601d8d996b70",
   "gd_provincial_price_worker.py": "07475fa68972d45254483dae39bcb47a7063ce4c1a7284bef0cd737d64cfc7e4",
-  "gd_provincial_page.py": "e3a13b4cd480a2f766379423e7c8340a665c7a4a5e15b6e627514709e507cd25",
+  "gd_provincial_page.py": "cb8a0369b9ab0a5d3b2f64bed627421fd0548192c386321fa89173bcea1032da",
   "gd_hourly_agc_backend.py": "d3f2f1084beddc97df9be3318829a0c9c6fb7f4f299b8a3fea9a3d013586b432",
   "gd_ui_three_state_supervisor.py": "dc75eb0f547145a130248e82f4ecdcaa6ccf0bf78a85600a12ec49a61f83b23c",
   "gd_batch_engine.py": "fc476c30ed95b331f217f21845ef6ba45abcf4ebfbd3331cbeaffbd912b10870",
@@ -388,7 +388,7 @@
   "gd_live_market_runtime/agc_sources.py": "8fd537268bf92e175e0fb982de8982452fc7e290e157955167477d176033b2a6",
   "gd_provincial15_model/curtailment_policy.py": "6fbd0beda75f5630be28a4340b1871cfae8e0f7d1c0ae03f0f1db1c583bd8de5",
   "gd_live_market_runtime/forecast_binding.py": "132fdd629953c41a0319a9b9047568d30eff46793e9a48fa83e2b8f5e580279d",
-  "gd_resource_editor.py": "071aaae9659cebb73f5b25e8a8bbed1b1cf88a19903683fb30bf8497b414243d",
+  "gd_resource_editor.py": "adad055576d870b8d37d9317e938150e2029558383a54a5f8f3a2da0d9166fc8",
   "gd_forecast_inputs.py": "c7f7faec07b37beb4b20e2d2b785592efee6c66c0473e6e541c4bc8119952cd5",
   "gd_forecast_scenarios.py": "da56a336f417b64e17da74ca40005d90fd6468127eec09d37ba323dd4d1d6797",
   "gd_resource_registry.py": "b8bcba80ac75c7abc18298776a731a202e8d0b11b9aa5b9b3876fb4211150b5e",
@@ -398,8 +398,10 @@
   "gd_resource_add_editor.py": "b0a01b11b666d8c91375d35ef69e6110b4ccce381cd9369b2c43c33e0748758f",
   "gd_execution_alerts.py": "f99fc53291b70aef44d5d7a5f86923355e5807c2d21f439a68d1eb75d7b7523e",
   "gd_provincial15_model/renewable_bids.py": "0cb2698e732705e35fbe4f813f934ab8d59ee80baff3ecb8b3253514b72b1377",
-  "gd_renewable_bid_editor.py": "e966c5588520cbb6c8876aa9a4da1e53cde0f58cbb3a1cdf031cc1b8e21d1396",
+  "gd_renewable_bid_editor.py": "27aaf0bf0754aa5a7d21637fa394cc6daab10295506a5725e0fffecae2886761",
   "gd_balance_diagnostics.py": "06ddf4d56f0a042ec088d62764b6bec7fb0e38710bcd51eaaef0a32bdf7f20f1",
   "gd_case_snapshot.py": "9eb911fd298324225b3138f921882e1ff0170843ba0d88a6d7fd34f3af97435b",
-  "gd_thermal_minimum.py": "ce128b55c5a3b2f2f8249af43062380ac0e3ce288f5e283be414cbb033126976"
+  "gd_thermal_minimum.py": "ce128b55c5a3b2f2f8249af43062380ac0e3ce288f5e283be414cbb033126976",
+  "gd_optional_drafts.py": "609973265f69eea0f7b16d447196a2ad8f521a0c2b69bceb95d41ca0e3e398b9",
+  "gd_thermal_drafts.py": "90e9f6cf610685fb7cae68f9de3ebb77eba39ebe9d91cf5fbe5d021e093d5ae1"
 }
