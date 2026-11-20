@@ -62,6 +62,7 @@ def render(parent_run='',standalone=False):
   source=st.text_input('当前场景输入目录',source_default,key='prov_source')
   st.caption('使用当前场景的负荷、风光、机组参数和报价重新计算日前；不会复用旧出清结果。当前入口接收来源完整的场景目录。')
   output=st.text_input('结果保存目录',str(Path(__file__).resolve().parents[1]/'runs'),key='prov_out')
+ busy=_render_saved_jobs(output,ctl) or busy
  name=st.text_input('本次运行名称','market_day',key='prov_name',help='用于区分本次试验。计算会建立独立结果，不覆盖此前同名尝试。')
  with st.expander('高级：定价与求解说明'):
   delta=st.number_input('定价出力范围 δ（研究假设，%）',0.,100.,10.,1.,key='prov_delta')/100
@@ -195,6 +196,46 @@ def render(parent_run='',standalone=False):
     st.rerun()
    except Exception as exc:st.error(str(exc))
  if st.session_state.get('prov_day'):_render_tracked_day(current)
+
+
+def _render_saved_jobs(output,control):
+ import streamlit as st
+ from gd_saved_tasks import discover
+ from gd_full_day_ui import progress
+ found=discover(output,control)
+ labels={'ready_saved':'准备完成（只读）','failed_saved':'已有失败记录','running_or_unknown':'运行中或待核实','terminal_saved':'已结束（只读）','unknown':'记录待核实'}
+ with st.expander('找回已保存任务（只读）'):
+  st.caption('仅扫描所选结果保存目录。不会恢复计算权限、恢复日前执行准备或重新启动任务；切换到其他目录可查看其中任务。')
+  if found['block_new_start']:st.warning('当前目录中有未确认任务或无法完整核对的记录，暂不启动新计算。请查看下方原因及原任务。')
+  for reason in found['warnings']:st.error(reason)
+  rows=found['days']+found['tasks']
+  if not rows:st.caption('此结果目录没有找到可查看的任务。')
+  if rows:
+   jobs={row['output']:row for row in rows}
+   def label(key):
+    if key is None:return '选择任务后查看'
+    row=jobs[key]
+    return f"{row['kind']} · {row['name']} · {labels[row['state']]} · {key}"
+   key=st.selectbox('要查看的旧任务',[None,*jobs],format_func=label,key='prov_saved_job_choice')
+   if key in jobs:
+    selected=jobs[key]
+    st.caption('正在查看：'+selected['output']+'。不改变当前输入或正在跟踪的实时任务。')
+    st.button('刷新所选旧任务',key='prov_saved_job_refresh')
+    if selected.get('error'):st.error('任务记录提示：'+str(selected['error']))
+    if selected['kind']=='DA':
+     progress=selected.get('progress',{})
+     st.write({'状态':labels[selected['state']],'已记录步骤':progress.get('stage','待核实')})
+    elif selected.get('status') is not None:
+     try:
+      record=selected['status'];view=progress(record)
+      st.write({'状态':labels[selected['state']],'已调度时段':view['executed'],'已定价时段':view['priced'],'已记录小时':view['hours']})
+      if view['message']:st.caption('原任务说明：'+str(view['message']))
+      quarters=record.get('quarters',[])
+      if quarters:
+       q=st.selectbox('查看已保存时段的节点电价',list(range(len(quarters))),format_func=lambda i:'时段 '+str(quarters[i]['quarter']+1),key='prov_saved_job_quarter')
+       st.json(quarters[q]['raw_prices'])
+     except (AttributeError,IndexError,KeyError,TypeError,ValueError) as exc:st.error('任务结果不能完整显示：'+str(exc))
+ return found['block_new_start']
 
 
 def _render_tracked_day(current=None,tracking_error=None):
