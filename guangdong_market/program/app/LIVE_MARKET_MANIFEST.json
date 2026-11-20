@@ -333,7 +333,7 @@
   "gd_process_guard.py": "66edb7cafe13af74ec5b4d5add3e1ff01c156dab3f14205ea236c5cc652dc637",
   "gd_ui_recommit_prepare.py": "9229bfdc70a87d84181fcb698f43cf539441036df4ee94a267a3601d8d996b70",
   "gd_provincial_price_worker.py": "07475fa68972d45254483dae39bcb47a7063ce4c1a7284bef0cd737d64cfc7e4",
-  "gd_provincial_page.py": "7379199e328dd9cb99f63e04d765b3cfc104766fefa947ec0d6356ab9aa516a0",
+  "gd_provincial_page.py": "3fda0b862d11e06d4f656b7e776122b35af83778c05351a41064fe568866bf12",
   "gd_hourly_agc_backend.py": "d3f2f1084beddc97df9be3318829a0c9c6fb7f4f299b8a3fea9a3d013586b432",
   "gd_ui_three_state_supervisor.py": "dc75eb0f547145a130248e82f4ecdcaa6ccf0bf78a85600a12ec49a61f83b23c",
   "gd_batch_engine.py": "fc476c30ed95b331f217f21845ef6ba45abcf4ebfbd3331cbeaffbd912b10870",
@@ -404,5 +404,5 @@
   "gd_thermal_minimum.py": "ce128b55c5a3b2f2f8249af43062380ac0e3ce288f5e283be414cbb033126976",
   "gd_optional_drafts.py": "609973265f69eea0f7b16d447196a2ad8f521a0c2b69bceb95d41ca0e3e398b9",
   "gd_thermal_drafts.py": "90e9f6cf610685fb7cae68f9de3ebb77eba39ebe9d91cf5fbe5d021e093d5ae1",
-  "gd_saved_tasks.py": "bfca6b3cb208a22e78effaff4799c98258a7997311530c2058989d3df5b9b5e7"
+  "gd_saved_tasks.py": "0676178e8a9cf0e35e75deb0ba7460fde0e6bbcde4a45e7fecc8facb0d842eed"
 }

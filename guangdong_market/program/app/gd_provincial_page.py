@@ -203,7 +203,7 @@ def _render_saved_jobs(output,control):
  from gd_saved_tasks import discover
  from gd_full_day_ui import progress
  found=discover(output,control)
- labels={'ready_saved':'准备完成（只读）','failed_saved':'已有失败记录','running_or_unknown':'运行中或待核实','terminal_saved':'已结束（只读）','unknown':'记录待核实'}
+ labels={'ready_saved':'准备完成（只读）','failed_saved':'已有失败记录','running_or_unknown':'运行中或待核实','terminal_saved':'已结束（只读）','first_hour_saved':'首小时已结束（只读）','unknown':'记录待核实'}
  with st.expander('找回已保存任务（只读）'):
   st.caption('仅扫描所选结果保存目录。不会恢复计算权限、恢复日前执行准备或重新启动任务；切换到其他目录可查看其中任务。')
   if found['block_new_start']:st.warning('当前目录中有未确认任务或无法完整核对的记录，暂不启动新计算。请查看下方原因及原任务。')

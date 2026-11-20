@@ -43,6 +43,102 @@ def _status(output, control):
         import gd_live_control as control
     return control.status(str(output))
 
+def _read_pinned(path, expected):
+    # Read with the scanner's size bound and never follow an evidence link.
+    if path.is_symlink() or path.resolve() != path or not path.is_file():
+        raise ValueError('证据路径不匹配：' + path.name)
+    with path.open('rb') as f:
+        data = f.read(MAX_JSON_BYTES + 1)
+    if len(data) > MAX_JSON_BYTES or hashlib.sha256(data).hexdigest() != expected:
+        raise ValueError('证据校验不匹配：' + path.name)
+    result = json.loads(data)
+    if not isinstance(result, dict):
+        raise ValueError('证据格式错误：' + path.name)
+    return result
+
+def _completed_first_hour(output, plan, status, end):
+    """Only the native four-window receipt family; never a whole-day result."""
+    if not isinstance(end, dict) or end.get('status') != 'complete_research':
+        return False
+    if plan.get('windows') != 4 or type(plan['windows']) is not int:
+        return False
+    branch = str(output / 'pipeline/dispatch')
+    pins = plan.get('source_pins')
+    clock = plan.get('pricing_clock_path')
+    if (plan.get('logical_source_branch') != branch
+        or plan.get('execution_attempt_id') != output.name
+        or plan.get('model_scope') != 'active_power_dc'
+        or not isinstance(clock, str) or not Path(clock).is_absolute()
+        or not isinstance(pins, dict)
+        or not all(pins.get(x) for x in (clock, str(Path(plan['run']) / 'SHORT_CONTEXT.json'), str(Path(plan['run']) / 'seed/case.json')))):
+        raise ValueError('首小时计划的计算来源不完整')
+    hours = status.get('hours')
+    quarters = status.get('quarters')
+    if (type(status.get('completed_windows')) is not int or status['completed_windows'] != 4
+        or not isinstance(quarters, list) or len(quarters) != 4
+        or not all(isinstance(q, dict) and type(q.get('quarter')) is int and q['quarter'] == w
+                   for w, q in enumerate(quarters))
+        or not isinstance(hours, list) or len(hours) != 1):
+        raise ValueError('首小时调度、定价或小时记录不完整')
+    pipeline = output / 'pipeline'
+    receipt_path = pipeline / 'COMPLETE.json'
+    if receipt_path.resolve() != receipt_path:
+        raise ValueError('首小时结束凭证路径不匹配')
+    receipt = _read(receipt_path)
+    hour = pipeline / 'price/HOUR0.json'
+    original = _read_pinned(hour, _hour_digest(status, hour))
+    summary = end.get('hour')
+    run_id = original.get('run_id')
+    if (receipt.get('status') != 'complete_research'
+        or type(receipt.get('windows')) is not int or receipt['windows'] != 4
+        or type(receipt.get('native_calls')) is not int or receipt['native_calls'] != 12
+        or type(receipt.get('AC_calls')) is not int or receipt['AC_calls'] != 0
+        or receipt.get('formal') is not False or receipt.get('safety_release') is not False
+        or end.get('model_scope') != 'active_power_dc' or end.get('safety_release') is not False
+        or end.get('publication_allowed') is not False
+        or not isinstance(run_id, str) or not run_id or receipt.get('branch_id') != run_id
+        or original.get('branch') != branch or original.get('schema') != 'gd.live_host.PRICE.hour.v3'
+        or original.get('executed_cells') != 4 or original.get('quarter_prices') != 4
+        or original.get('safety_release') is not False or original.get('formal_bill') is not None
+        or hours[0] != original or status.get('hour') != original
+        or not isinstance(summary, dict) or receipt.get('hour') != summary
+        or type(summary.get('executed_cells')) is not int or summary['executed_cells'] != 4
+        or type(summary.get('native_calls')) is not int or summary['native_calls'] != 0):
+        raise ValueError('首小时结束凭证或小时来源不匹配')
+    hour_pins = original.get('source_pins')
+    if not isinstance(hour_pins, dict):
+        raise ValueError('首小时缺少定价来源校验')
+    execution = pipeline / 'price/EXECUTION_H0.json'
+    executed = _read_pinned(execution, hour_pins.get(str(execution)))
+    cells = executed.get('cells')
+    if (executed.get('schema') != 'gd.live_host.execution_view.v3' or executed.get('run_id') != run_id
+        or executed.get('run') != branch or executed.get('base_run') != plan['run']
+        or executed.get('selected_DA') != plan['da'] or type(executed.get('hour')) is not int
+        or executed['hour'] != 0 or type(executed.get('executed_end')) is not int
+        or executed['executed_end'] != 4 or not isinstance(cells, list)
+        or any(type(cell) is not int for cell in cells) or cells != [0, 1, 2, 3]):
+        raise ValueError('首小时执行记录与运行来源不匹配')
+    for w, quarter in enumerate(quarters):
+        accepted = pipeline / f'price/q{w}/ACCEPTED.json'
+        raw = _read_pinned(accepted, hour_pins.get(str(accepted)))
+        ctx = raw.get('context', {})
+        prices = raw.get('raw_prices')
+        if (ctx.get('short_run') != branch or ctx.get('run_id') != run_id
+            or ctx.get('selected_DA') != plan['da'] or type(ctx.get('day_quarter')) is not int
+            or ctx['day_quarter'] != w or raw.get('schema') != 'gd.independent_PRICE.accepted.v2'
+            or raw.get('KKT', {}).get('passed') is not True
+            or not isinstance(prices, dict) or len(prices) != 39
+            or quarter.get('raw_prices') != prices):
+            raise ValueError('首小时定价记录与运行来源不匹配')
+    return True
+
+def _hour_digest(status, hour):
+    exports = status.get('hour_exports')
+    if (not isinstance(exports, list) or len(exports) != 1 or not isinstance(exports[0], dict)
+        or exports[0].get('path') != str(hour) or not isinstance(exports[0].get('sha256'), str)):
+        raise ValueError('首小时结果导出路径不匹配')
+    return exports[0]['sha256']
+
 def read_tracking(record, control=None):
     """Recheck a discovered RT task; never restore a launchable ready object."""
     output = Path(record['output'])
@@ -68,9 +164,12 @@ def read_tracking(record, control=None):
         terminal = terminal_status(status)
         if end is not None and _read(output / 'EXIT.json') != end:
             raise ValueError('结束记录与状态读取不一致')
-        # A binding-valid but unknown exit remains viewable, without releasing a launch.
-        result.update(status=status, state='terminal_saved' if terminal else 'running_or_unknown',
-                      block_new_start=not terminal, error=None)
+        if terminal and end.get('status') == 'complete_research' and windows != 96:
+            raise ValueError('全天结果与计划段数不一致')
+        short = not terminal and _completed_first_hour(output, plan, status, end)
+        # Keep full-day status separate from the terminal short-run evidence.
+        state = 'first_hour_saved' if short else 'terminal_saved' if terminal else 'running_or_unknown'
+        result.update(status=status, state=state, block_new_start=not (terminal or short), error=None)
     except Exception as exc:
         result.update(state='unknown', status=None, block_new_start=True, error=str(exc))
     result['read_only'] = True
