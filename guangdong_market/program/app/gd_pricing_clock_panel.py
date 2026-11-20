@@ -20,5 +20,9 @@ def render(identity):
   st.caption('未声明输入时标：可浏览历史和查看计划；新价格求解会拒绝未知时标。')
   return None
  st.caption(STATEMENT)
- if not st.session_state.get('clock_path'):st.session_state['clock_path']=create(STATEMENT)
+ if not st.session_state.get('clock_path'):
+  try:st.session_state['clock_path']=create(STATEMENT)
+  except OSError as exc:
+   st.error(f'无法保存输入时标声明：{DEFAULT_STORE}。原因：{exc}。日前结果仍保留，暂不可启动实时。请在可写的安装目录使用程序，或修复目录的写入权限后重试。')
+   return None
  return st.session_state['clock_path']

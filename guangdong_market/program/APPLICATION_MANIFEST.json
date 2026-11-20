@@ -543,7 +543,7 @@
       "bytes": 444
     },
     "app/LIVE_MARKET_MANIFEST.json": {
-      "sha256": "eb3d1c4413f35429341ac1f044f071098b77bc66bc6db19f2115ea2698b5ded2",
+      "sha256": "40a8b55441b56ccf613108d9c5c01d4c7a8d6c60c8b5f9c682ec730943d63d1e",
       "bytes": 46562
     },
     "app/gd_batch_control.py": {
@@ -603,8 +603,8 @@
       "bytes": 5598
     },
     "app/gd_pricing_clock_panel.py": {
-      "sha256": "be0e3c7af55167ba4a4f39341a64c34c64f0716c025e51fc644dacf7f80e8226",
-      "bytes": 1538
+      "sha256": "9cec39ee9564c6b31cfcdf8133d588e317d263fa927cb126ac107b339150aa72",
+      "bytes": 1802
     },
     "app/gd_post_scuc_panel.py": {
       "sha256": "9bc594e115a4637bfef88ac55eff279e8e8079d1d6b0ef7b8b14a394b314fa5c",
