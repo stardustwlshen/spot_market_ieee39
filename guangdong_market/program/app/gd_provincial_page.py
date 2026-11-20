@@ -2,6 +2,40 @@
 from pathlib import Path
 import json
 
+def _read_network_report(path):
+ """Validate the report emitted by the current DA worker before showing RT controls."""
+ import math
+ def unique_fields(pairs):
+  obj={}
+  for key,value in pairs:
+   if key in obj:raise ValueError('越限报告包含重复字段：'+key)
+   obj[key]=value
+  return obj
+ report=json.loads(path.read_text(),object_pairs_hook=unique_fields)
+ if not isinstance(report,dict) or report.get('schema')!='gd.network_violation_summary.v1':
+  raise ValueError('越限报告格式或版本不符')
+ rows=report.get('violations')
+ def mw(value):
+  return type(value) in (int,float) and math.isfinite(value)
+ top=report.get('maximum_excess_mw')
+ if (not isinstance(rows,list) or not mw(top) or top<0
+     or report.get('has_violation') is not bool(rows)
+     or report.get('network_secure') is not (not rows)):
+  raise ValueError('越限报告缺少有效汇总，或有无越限与明细不一致')
+ for r in rows:
+  if (not isinstance(r,dict) or not isinstance(r.get('resource'),str) or not r['resource'].strip()
+      or r.get('resource_type') not in ('line','section') or r.get('direction') not in ('upper','lower')
+      or type(r.get('tick')) is not int or r['tick']<0
+      or r.get('role')!=('delivery' if r['tick']<96 else 'representative')
+      or not mw(r.get('excess_mw')) or r['excess_mw']<=0):
+   raise ValueError('越限报告的设备、时段或越限量无效')
+ delivery=sum(r['role']=='delivery' for r in rows)
+ if (top!=max((r['excess_mw'] for r in rows),default=0.)
+     or type(report.get('delivery_violation_count')) is not int or report['delivery_violation_count']!=delivery
+     or type(report.get('representative_violation_count')) is not int or report['representative_violation_count']!=len(rows)-delivery):
+  raise ValueError('越限报告的最大值或计数与明细不一致')
+ return report
+
 def render(parent_run='',standalone=False):
  import streamlit as st
  import gd_provincial_prepare as prep
@@ -132,17 +166,19 @@ def render(parent_run='',standalone=False):
  st.subheader('③ 运行全天实时计算')
  st.caption('核对下方研究假设后启动；全天共 96 个时段，进度在下方显示。')
  network_file=Path(ready['da'])/'NETWORK_VIOLATIONS.json'
- if network_file.is_file():
-  network=json.loads(network_file.read_text())
-  if network.get('has_violation'):
-   st.warning('日前存在线路或断面越限：最大 '+format(network['maximum_excess_mw'],'.2f')+' MW。已计入罚值，求解成功不代表无越限。')
-   with st.expander('查看越限时段'):
-    st.dataframe([{'线路或断面':r['resource'],'时段':r['tick']+1,'超限MW':r['excess_mw'],'范围':'当日' if r['role']=='delivery' else '次日代表点'}for r in network['violations']],hide_index=True)
+ network=None
+ try:network=_read_network_report(network_file)
+ except (OSError,UnicodeError,ValueError,OverflowError) as exc:
+  st.error(f'无法核验日前线路或断面越限报告：{network_file}。原因：{exc}。已保留日前结果及已有任务，暂不可启动实时。请检查文件读取权限或重新计算日前生成新结果，不要手动修改报告。')
+ if network is not None and network['has_violation']:
+  st.warning('日前存在线路或断面越限：最大 '+format(network['maximum_excess_mw'],'.2f')+' MW。已计入罚值，求解成功不代表无越限。')
+  with st.expander('查看越限时段'):
+   st.dataframe([{'线路或断面':r['resource'],'时段':r['tick']+1,'超限MW':r['excess_mw'],'范围':'当日' if r['role']=='delivery' else '次日代表点'}for r in network['violations']],hide_index=True)
  with st.expander('计算方法'):
   st.caption('实时参考同周期 SCED。相关规则存在不同解释，本程序采用此约定；详细口径见 QUICKSTART.md。')
  # Existing live engine supports an explicit information-availability declaration.
  from gd_pricing_clock_panel import render as render_clock
- clock=render_clock((ready['da'],ready['run']))
+ clock=render_clock((ready['da'],ready['run'])) if network is not None else None
  from gd_full_day_ui import start_day
  day=st.session_state.get('prov_day')
  current=None
@@ -153,7 +189,7 @@ def render(parent_run='',standalone=False):
  if not day or can_restart:
   st.caption('结果保存在本机，尚未配置自动备份。')
   label='从当日初态重新计算实时（保留失败记录）' if can_restart else '开始全天实时计算（96 时段）'
-  if st.button(label,key='prov_rt_start',disabled=clock is None or busy or bool(unsaved_units)) and clock is not None and not busy and not unsaved_units:
+  if st.button(label,key='prov_rt_start',disabled=network is None or clock is None or busy or bool(unsaved_units)) and network is not None and clock is not None and not busy and not unsaved_units:
    try:
     st.session_state['prov_day']=start_day(ready,clock,delta)
     st.rerun()
