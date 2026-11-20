@@ -4,7 +4,7 @@ No plan/start/resume calls. A fresh browser session does not imply a fresh run.
 Unknown/incomplete evidence blocks new starts; PID files never prove liveness.
 """
 from pathlib import Path
-import json,os
+import json,os,hashlib
 
 def terminal_status(status):
     """Only explicit, known terminal receipts may unblock a new attempt."""
@@ -87,6 +87,26 @@ def _day(root):
             stage = progress.get('stage')
             if type(stage) is not int or not 0 <= stage <= 3:
                 raise ValueError('失败步骤不明')
+            receipt=progress.get('prelaunch_failure')
+            if receipt is not None:
+                keys={'schema','stage','reason','output','ui_input_sha256','launched_workers'}
+                if not isinstance(receipt,dict) or set(receipt)!=keys:
+                    raise ValueError('启动前终止凭证格式错误')
+                if (stage != 0 or type(receipt['stage']) is not int or receipt['stage'] != 0
+                    or type(receipt['launched_workers']) is not int or receipt['launched_workers'] != 0
+                    or receipt['schema'] != 'gd.da.no_launch.v1'
+                    or receipt['reason'] != 'source_identity_before_first_launch'
+                    or receipt['output'] != str(root)
+                    or any(progress.get(k) for k in ('timed_out','native_completion_unknown'))):
+                    raise ValueError('启动前终止凭证不一致')
+                if {p.name for p in root.iterdir()} != {'UI_INPUT.json','PROGRESS.json'}:
+                    raise ValueError('启动前终止目录存在其他执行证据')
+                ui=_read(root/'UI_INPUT.json')
+                digest=hashlib.sha256(json.dumps(ui,sort_keys=True,separators=(',',':'),allow_nan=False).encode()).hexdigest()
+                if digest != receipt['ui_input_sha256']:
+                    raise ValueError('启动前输入凭证不匹配')
+                result.update(state='failed_saved',block_new_start=False,error=progress.get('error'),verification_scope='verified stage-zero no-launch failure; explicit new attempt only')
+                return result
             step = _read(root / ('STEP_' + str(stage) + '.json'))
             if type(step.get('returncode')) is int and step['returncode'] != 0 and not any(z.get(k) for z in (progress, step) for k in ('timed_out', 'native_completion_unknown')):
                 result.update(state='failed_saved', block_new_start=False, error=progress.get('error'), verification_scope='recorded wrapper nonzero exit; no automatic retry')

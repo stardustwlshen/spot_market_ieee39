@@ -362,7 +362,7 @@
   "gd_ui_price_feedback_evidence.py": "c6b2f27674e327927d1fd3ad0b87122d19b6b67a3fba76ab17eedd94debca1fb",
   "gd_ui_agc_prepare_panel.py": "9ae4f59f8305bbb8f1bcc9d288315a0497dc1b9e3c5d797feba1a0bf3a1a3be7",
   "gd_ui_recovery.py": "5f5d94971a3b6b852cd48c3f0287a2f124c541243bf092c53e32d417e0d69674",
-  "gd_provincial_prepare.py": "68349741eeaefcbe6d4ae132d04402a4ae9d227273cc482c1d633443d2c541a4",
+  "gd_provincial_prepare.py": "49a052bb8308ad5a64cb6bd5789efec84fc4defd5ccbc988f64e04caf0d6cf66",
   "market_views.py": "3ae1d8cb234e0c2dc0f180bf53ed779ff1fa33fe6de54a88f45bc36982e43474",
   "gd_provincial_base_worker.py": "577dc9a63a063029403bb17158f6b5a9bb7a610db4b8ffef9fd860c64b8446bd",
   "gd_auto_economics.py": "e6d7ae2fd97ebc8da47aac822aa37a8104c2dc58deecb9431289bd3ec1c63b3c",
@@ -404,5 +404,5 @@
   "gd_thermal_minimum.py": "ce128b55c5a3b2f2f8249af43062380ac0e3ce288f5e283be414cbb033126976",
   "gd_optional_drafts.py": "609973265f69eea0f7b16d447196a2ad8f521a0c2b69bceb95d41ca0e3e398b9",
   "gd_thermal_drafts.py": "90e9f6cf610685fb7cae68f9de3ebb77eba39ebe9d91cf5fbe5d021e093d5ae1",
-  "gd_saved_tasks.py": "12a0bf2900d1f3e2da2abda7a300ce315bd83ec844ec4cf5592872edcb076960"
+  "gd_saved_tasks.py": "bfca6b3cb208a22e78effaff4799c98258a7997311530c2058989d3df5b9b5e7"
 }

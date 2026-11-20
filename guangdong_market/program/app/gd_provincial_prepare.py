@@ -45,13 +45,18 @@ def prepare_fresh(source_base,output,*,confirmed=False,delta=.1,progress=None):
         with temp.open('x',encoding='utf-8') as f:
             f.write(json.dumps(z,ensure_ascii=False,indent=2,allow_nan=False));f.flush();os.fsync(f.fileno())
         os.replace(temp,target)
-    save('UI_INPUT.json',dict(source_base=str(Path(source_base).resolve()),source_pins=pins,pricing_delta=delta,formal=False,day_periods=98,settlement_periods=96,grid_minutes=15))
+    ui=dict(source_base=str(Path(source_base).resolve()),source_pins=pins,pricing_delta=delta,formal=False,day_periods=98,settlement_periods=96,grid_minutes=15)
+    save('UI_INPUT.json',ui)
+    ui_sha=hashlib.sha256(json.dumps(ui,sort_keys=True,separators=(',',':'),allow_nan=False).encode()).hexdigest()
     labels=['日前机组组合及调度','日前节点电价','校验日前结果','准备实时初始状态']
     for i,(label,cmd) in enumerate(zip(labels,commands(source_base,out,delta))):
         try:
             if inputs_identity(source_base)!=pins:raise ValueError('输入在计算期间发生变化，已停止；旧结果保留')
         except (ValueError,OSError) as exc:
-            save('PROGRESS.json',dict(stage=i,label=label,status='failed',error=str(exc)))
+            failed=dict(stage=i,label=label,status='failed',error=str(exc))
+            if i == 0:
+                failed['prelaunch_failure']=dict(schema='gd.da.no_launch.v1',stage=0,reason='source_identity_before_first_launch',output=str(out),ui_input_sha256=ui_sha,launched_workers=0)
+            save('PROGRESS.json',failed)
             raise
         if progress:progress(i,label)
         save('PROGRESS.json',dict(stage=i,label=label,status='running'))
