@@ -6,6 +6,7 @@ def render(parent_run='',standalone=False):
  import streamlit as st
  import gd_provincial_prepare as prep
  import gd_live_control as ctl
+ from gd_full_day_ui import day_exit_kind
  if standalone:st.set_page_config(page_title='单日市场模拟',layout='wide')
  st.title('单日市场模拟')
  st.caption('设置场景 → 计算日前 → 运行实时 → 查看结果。修改输入后需重新计算。')
@@ -15,7 +16,7 @@ def render(parent_run='',standalone=False):
  if tracked:
   try:tracked_status=ctl.status(tracked['output'])
   except Exception as exc:tracking_error=str(exc)
- busy=bool(tracked and (tracking_error or not (tracked_status or {}).get('exit')))
+ busy=bool(tracked and (tracking_error or day_exit_kind(tracked_status)=='unknown'))
  if busy:st.info('当前实时任务仍在运行或状态待核实。输入修改仅用于下一次计算，不会改变当前任务；结束前不能重复启动。')
  st.caption('日前计划 · 15 分钟实时滚动 · 有功/DC 网络')
  configured=Path(__file__).with_name('PROVINCIAL_INPUT.json')
@@ -104,7 +105,7 @@ def render(parent_run='',standalone=False):
  st.caption('使用已保存输入计算日前计划与价格，不会启动全天实时计算。')
  if pins is None:st.info('尚不能计算：请先修正上方场景输入错误。')
  if unsaved_units:st.warning('参数修改尚未保存：'+ '、'.join(unsaved_units)+'。请保存或撤销后再计算。')
- if st.button('计算日前并准备实时',disabled=pins is None or busy or bool(unsaved_units),key='prov_prepare',type='primary') and not unsaved_units:
+ if st.button('计算日前并准备实时',disabled=pins is None or busy or bool(unsaved_units),key='prov_prepare',type='primary') and pins is not None and not busy and not unsaved_units:
   try:
    st.session_state.pop('prov_ready',None)
    from gd_unified_backend import layout
@@ -142,17 +143,17 @@ def render(parent_run='',standalone=False):
  # Existing live engine supports an explicit information-availability declaration.
  from gd_pricing_clock_panel import render as render_clock
  clock=render_clock((ready['da'],ready['run']))
- from gd_full_day_ui import start_day,render_status,progress
+ from gd_full_day_ui import start_day
  day=st.session_state.get('prov_day')
  current=None
  if day:
   try:current=ctl.status(day['output'])
   except Exception as exc:st.error('进度读取失败：'+str(exc))
- can_restart=bool(current and progress(current)['failed'])
+ can_restart=bool(day and current and day_exit_kind(current)=='launch_failed')
  if not day or can_restart:
   st.caption('结果保存在本机，尚未配置自动备份。')
   label='从当日初态重新计算实时（保留失败记录）' if can_restart else '开始全天实时计算（96 时段）'
-  if st.button(label,key='prov_rt_start',disabled=clock is None or bool(unsaved_units)) and not unsaved_units:
+  if st.button(label,key='prov_rt_start',disabled=clock is None or busy or bool(unsaved_units)) and clock is not None and not busy and not unsaved_units:
    try:
     st.session_state['prov_day']=start_day(ready,clock,delta)
     st.rerun()
@@ -163,18 +164,18 @@ def render(parent_run='',standalone=False):
 def _render_tracked_day(current=None,tracking_error=None):
  import streamlit as st
  import gd_live_control as ctl
- from gd_full_day_ui import render_status
+ from gd_full_day_ui import day_exit_kind,render_status
  warning=(st.session_state.get('prov_day',{}).get('receipt') or {}).get('warning')
  st.subheader('④ 查看进度与结果')
  st.caption('显示本次已启动任务；未完成时段留空。收益是研究估算，非完整净利润。')
  if warning:st.warning(warning)
  if tracking_error:st.error('当前任务状态读取失败：'+tracking_error+'；保留任务记录，不自动重新启动。')
  st.button('刷新运行状态／检查重试',key='prov_day_refresh')
- @st.fragment(run_every=None if current and current.get('exit') else '5s')
+ @st.fragment(run_every=None if day_exit_kind(current)!='unknown' else '5s')
  def live_progress():
   try:
    observed=ctl.status(st.session_state['prov_day']['output'])
    render_status(observed)
-   if observed.get('exit') and not (current and current.get('exit')):st.rerun()
+   if day_exit_kind(observed)!='unknown' and day_exit_kind(current)=='unknown':st.rerun()
   except Exception as exc:st.error('结果读取失败：'+str(exc))
  live_progress()

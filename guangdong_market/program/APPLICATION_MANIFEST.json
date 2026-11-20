@@ -227,8 +227,8 @@
       "bytes": 821
     },
     "app/gd_provincial_page.py": {
-      "sha256": "cb8a0369b9ab0a5d3b2f64bed627421fd0548192c386321fa89173bcea1032da",
-      "bytes": 14868
+      "sha256": "aed68a1e33b88de5e95fd9329fe13e65c3d57d008e3865e87eec428b6b5629e2",
+      "bytes": 15012
     },
     "app/gd_hourly_agc_backend.py": {
       "sha256": "d3f2f1084beddc97df9be3318829a0c9c6fb7f4f299b8a3fea9a3d013586b432",
@@ -379,8 +379,8 @@
       "bytes": 347
     },
     "app/gd_full_day_ui.py": {
-      "sha256": "b0647eb8d2aaae36870802a296c0ca22f5c9fdad082c3d1d008fb253c07ca74d",
-      "bytes": 6127
+      "sha256": "fc7691c57593eceaf437971ac54fb96c47e9e20c96ea231a147bc8798b5e6f97",
+      "bytes": 6830
     },
     "app/gd_unit_economics.py": {
       "sha256": "70a292997bf515ed4ddd91b8090e984e784be78ad5e8cab57065a33e6330332f",
@@ -543,7 +543,7 @@
       "bytes": 444
     },
     "app/LIVE_MARKET_MANIFEST.json": {
-      "sha256": "06062954c96f23b8a4330d01ae4eecefc66569a00b9bab303c3ab6f1ae51919d",
+      "sha256": "3589fd03e04d505a8ee5c70b1f2d867f66a679939f1a7cc69f090ceb1d363386",
       "bytes": 46471
     },
     "app/gd_batch_control.py": {

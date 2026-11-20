@@ -2,6 +2,19 @@
 from pathlib import Path
 import json,uuid
 
+def day_exit_kind(status):
+ """UI-only classification; unknown evidence never authorizes a new run."""
+ if not isinstance(status,dict):return 'unknown'
+ end=status.get('exit')
+ if not isinstance(end,dict):return 'unknown'
+ kind=end.get('status')
+ if kind=='complete_research':
+  count=status.get('completed_windows')
+  quarters,hours=status.get('quarters'),status.get('hours')
+  if type(count) is int and count==96 and isinstance(quarters,list) and len(quarters)==96 and isinstance(hours,list) and len(hours)==24:return 'complete'
+ if kind=='launch_failed' and type(end.get('native_calls')) is int and end['native_calls']==0:return 'launch_failed'
+ return 'unknown'
+
 def start_day(ready,clock,delta,control=None):
  if not clock:raise ValueError('请先勾选输入可用时间研究假设，再开始实时计算')
  if control is None:import gd_live_control as control
@@ -11,7 +24,7 @@ def start_day(ready,clock,delta,control=None):
  return dict(output=p['output'],receipt=receipt,windows=96)
 
 def progress(status):
- done=int(status.get('completed_windows',0));priced=len(status.get('quarters',[]));hours=len(status.get('hours',[]));end=status.get('exit')or{}
+ done=int(status.get('completed_windows',0));priced=len(status.get('quarters',[]));hours=len(status.get('hours',[]));end=status.get('exit');end=end if isinstance(end,dict) else {}
  complete=end.get('status')=='complete_research' and done==96 and priced==96 and hours==24
  failed=bool(end) and not complete
  return dict(executed=done,priced=priced,hours=hours,complete=complete,failed=failed,fraction=min(1.,max(0.,done/96)),message=end.get('error','') if failed else '',end_time=f'{done//4:02d}:{(done%4)*15:02d}')
