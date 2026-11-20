@@ -10,7 +10,12 @@ class LedgerSource(TypedSource):
   super().__init__(host)
   base=host.session.run;seed=base/'seed';warm=read(seed/'WARMSTART_SOURCE.json');da=Path(host.session.context['selected_DA'])
   paths=[*seed.glob('*.json'),base/'SHORT_CONTEXT.json',Path(getattr(host,'initial_carry_path',base/'INITIAL_CARRY.json')),Path(warm['names']),Path(warm['response']),da/'ARTIFACTS.json']
-  self._base_pins={str(f.resolve()):sha(f)for f in paths};self._identity=(host.branch_id,str(base),str(da),id(host.session),id(host.agc))
+  from gd_forecast_inputs import FILE,retain_forecast_pin
+  forecast=(seed/FILE).resolve()
+  self._base_pins={str(f.resolve()):sha(f)for f in paths if f.resolve()!=forecast}
+  accepted=host.session.context['seed_pins']
+  retain_forecast_pin(seed,accepted,accepted,self._base_pins)
+  self._identity=(host.branch_id,str(base),str(da),id(host.session),id(host.agc))
  def verify(self):
   super().verify()
   if self._identity is not None:
@@ -86,7 +91,11 @@ class LedgerSource(TypedSource):
      for t,v in local[g][side].items():agc[g][side][str(first+int(t))]=v
    d=p.engine.loads((prep/'derived_case.json').read_bytes());e.need(len(d['energy_inputs']['horizon']['periods'])==request['near_cells'],'accepted SCED horizon must equal truncated PRICE horizon');request['declared_terminal_by_resource']={g:{k:z[k]for k in ('terminal_at','terminal_energy_mwh')}for g,z in d['batteries'].items()};response=reports[-1]['SCED_response_sha256']
   else:response=warm['response_sha256']
-  for f in files:pins[str(f.resolve())]=sha(f)
+  from gd_forecast_inputs import FILE,retain_forecast_pin
+  forecast=(seed/FILE).resolve()
+  for f in files:
+   if f.resolve()!=forecast:pins[str(f.resolve())]=sha(f)
+  retain_forecast_pin(seed,ctx['seed_pins'],carry['source_pins'],pins)
   for f in B.glob('*.py'):pins[str(f)]=sha(f)
   data=dict(schema='gd.live_host.PRICE_snapshot.v3',branch_id=h.branch_id,branch=str(getattr(h,'source_branch',h.output)),base_run=str(base),selected_DA=str(da),source_kind=getattr(h,'source_kind','live_native_host'),window=w,request=request,accepted=dict(run_id=h.branch_id,window=w,SCED_response_sha256=response),values=values,effective_agc=agc,reports=reports,executed_end=0 if w<0 else carry['executed_end_exclusive'],issued_end=3 if w<0 else carry['issued_end_exclusive'],source_pins=pins,formal=False,safety_release=False,native_calls=0)
   if getattr(h,'same_period_execution',False):data['rt_clock_mode']='provincial_15min_execution';request['rt_clock_mode']='provincial_15min_execution';request['grid_minutes']=15;data['grid_minutes']=15

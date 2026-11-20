@@ -105,6 +105,8 @@ class GeneralEventHooks(NormalizedHooks):
   # into the next builder's legacy notice map and additive hook.
   # Already issued at authenticated accepted-plan clock, before prefix prediction.
   carry['notice_values']={g:{str(r['notice_tick']):1 for r in nextledger['receipts'].values()if r['unit']==g and r['phase']=='startup'}for g in carry['thermal']}
+  from gd_forecast_inputs import retain_forecast_pin
+  retain_forecast_pin(s.run/'seed',s.context['seed_pins'],incoming['source_pins'],carry['source_pins'])
   carry['event_ledger_sha256']=nextledger['ledger_sha256']
   output=Path(output).resolve();write(output,carry);self.carries[str(output)]=sha(output)
   self.ledgers[nextledger['ledger_sha256']]=nextledger

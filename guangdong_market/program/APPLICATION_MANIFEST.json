@@ -151,8 +151,8 @@
       "bytes": 28239
     },
     "app/gd_forecast_inputs.py": {
-      "sha256": "c7f7faec07b37beb4b20e2d2b785592efee6c66c0473e6e541c4bc8119952cd5",
-      "bytes": 6562
+      "sha256": "822e4dfca2391d61660b143a2bf5c55bb6111396ef618f36e4b33363017640cd",
+      "bytes": 7114
     },
     "app/gd_ui_page.py": {
       "sha256": "a73331a7304a31b004c654ca718b77a015ef81e58cb86cf8446cb6b8198f5536",
@@ -543,7 +543,7 @@
       "bytes": 444
     },
     "app/LIVE_MARKET_MANIFEST.json": {
-      "sha256": "40a8b55441b56ccf613108d9c5c01d4c7a8d6c60c8b5f9c682ec730943d63d1e",
+      "sha256": "02f2c06cabef6445c0dabb0ce70e06134048969cc18b586ace3882a660ecdb75",
       "bytes": 46562
     },
     "app/gd_batch_control.py": {
@@ -1883,11 +1883,11 @@
       "bytes": 6132
     },
     "app/lifecycle_runtime/portable_gate.py": {
-      "sha256": "cae01f25344511669ecc9efbf7c83df2902184d796b1316f0903e69d3153c479",
+      "sha256": "159c114f77a61a513a1b3268439712b9b804b252c33b735b518ca5321e7c2fbe",
       "bytes": 525
     },
     "app/lifecycle_runtime/PORTABLE_MANIFEST.json": {
-      "sha256": "70367ee21ac47e443d1b4879d256c23d69bae3b10f97632b64ea80c982bd68e4",
+      "sha256": "b70c8f21b7903a592a36789ff1b236a98986dd8d8360272aaa328019c09d54c3",
       "bytes": 8435
     },
     "app/lifecycle_runtime/content_hash.py": {
@@ -2035,8 +2035,8 @@
       "bytes": 7234
     },
     "app/gd_live_market_runtime/source_ledger.py": {
-      "sha256": "5239ab008c22dfed5619379730e9682ba55146fc353f41530bd32f712af3dd41",
-      "bytes": 9268
+      "sha256": "d8baf906f4438a22b263fdb7a9516c996fe70bdc9101f51f8b9bfc53312a304b",
+      "bytes": 9684
     },
     "app/gd_live_market_runtime/zero_vre_reference.py": {
       "sha256": "470cc65f47d59e7fafc0122ed5cda89910d6419ad2431c31d6783d42ab5ece11",
@@ -2507,8 +2507,8 @@
       "bytes": 1429
     },
     "app/lifecycle_runtime/guangdong_event_host_candidate_v1_20261113/runtime_hooks.py": {
-      "sha256": "db929113e0133c996494bd2b21627f4f1dc68e9dff1dafcd5e6d66153d18917b",
-      "bytes": 5821
+      "sha256": "cdfbf909ec519d3402a8d924bf917d805684debe80976cecadbc80807096d025",
+      "bytes": 5978
     },
     "app/lifecycle_runtime/guangdong_event_host_candidate_v1_20261113/test_v6_runtime.py": {
       "sha256": "c3809e55609bcc9716330120f63670b912236c3e633f100eac65d230822ee72f",
@@ -2595,8 +2595,8 @@
       "bytes": 1010
     },
     "app/lifecycle_runtime/guangdong_general_event_runner_v1_20261113/runner.py": {
-      "sha256": "33c14a23dd95d068294dfe84285f5783c4541e68d4c2652daf47e44cae04036a",
-      "bytes": 13578
+      "sha256": "69da9b5ab4a0aa93d9383c65e9fc65276ed9ed2a5d25650238cc4c0e1cb620ad",
+      "bytes": 13735
     },
     "app/lifecycle_runtime/guangdong_general_event_runner_v1_20261113/availability.py": {
       "sha256": "c98f46e4a8d182b34757dd4218b620c7f9f392b2baaa01d032ef35391ee5312c",
@@ -2631,8 +2631,8 @@
       "bytes": 4449
     },
     "app/lifecycle_runtime/guangdong_normalized_event_handoff_v1_20261113/hooks.py": {
-      "sha256": "f0137c52d5a0fd200da0b5709c2c957b5c057ef745d7d483d2577e31e84103e7",
-      "bytes": 3835
+      "sha256": "ee4b2f1a3b08e6420f63ed2f41f21b41b58afb382dc4373bdaf619a8d98bd863",
+      "bytes": 3992
     },
     "app/lifecycle_runtime/guangdong_safety_session_v1_20261113/data/IEEE39_RESEARCH_INPUT.json": {
       "sha256": "e11ea32b3c859f3926e872af09adfe2bafd8b84100dc21b3adea8a274cc909a2",

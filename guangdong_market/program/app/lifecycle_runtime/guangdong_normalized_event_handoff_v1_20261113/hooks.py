@@ -34,6 +34,8 @@ class NormalizedHooks(RuntimeHooks):
   # into the next builder's legacy notice map and additive hook.
   nextledger=event.publish(bundle,ledger,expected_bundle_sha256=h,cutoff_tick=new['executed_end_exclusive'],simulate=True,expected_previous_ledger_sha256=record['ledger_id'])
   carry['notice_values']={g:{str(r['notice_tick']):1 for r in nextledger['receipts'].values()if r['unit']==g and r['phase']=='startup'}for g in carry['thermal']}
+  from gd_forecast_inputs import retain_forecast_pin
+  retain_forecast_pin(s.run/'seed',s.context['seed_pins'],incoming['source_pins'],carry['source_pins'])
   carry['event_ledger_sha256']=nextledger['ledger_sha256']
   output=Path(output).resolve();write(output,carry);self.carries[str(output)]=sha(output)
   self.ledgers[nextledger['ledger_sha256']]=nextledger

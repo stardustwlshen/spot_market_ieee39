@@ -70,6 +70,14 @@ def verified_forecast_pins(seed_dir,accepted_source_pins):
     p=str((Path(seed_dir)/FILE).resolve())
     return {p:accepted_source_pins[p]}
 
+def retain_forecast_pin(seed_dir,accepted_source_pins,prior_source_pins,output_source_pins):
+    """Retain only the already accepted forecast hash across a runtime handoff."""
+    path=str((Path(seed_dir)/FILE).resolve())
+    expected=accepted_source_pins.get(path)
+    if prior_source_pins.get(path)!=expected or (path in output_source_pins and output_source_pins[path]!=expected):
+        raise ValueError('conflicting forecast source pin during rolling handoff')
+    output_source_pins.update(verified_forecast_pins(seed_dir,accepted_source_pins))
+
 def read_bundle(seed_dir,*,_case_snapshot=None,accepted_source_pins=None):
     raw=_read_forecast_bytes(seed_dir,accepted_source_pins)
     if raw is None:return None
