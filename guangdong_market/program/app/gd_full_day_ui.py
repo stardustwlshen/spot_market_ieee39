@@ -72,28 +72,51 @@ def hour_pairs(status):
   rows.append((h,exports[key]))
  return rows
 
-def economic_total(pairs):
+def _hour_label(n):
+ return f'{n:02d}:00–{n+1:02d}:00'
+
+def economic_summary(pairs):
  from gd_settlement_bridge import components,from_export
+ from gd_settlement_panel import checked_economics
+ from gd_unit_economics import number
  from decimal import Decimal
  from gd_balance_diagnostics import unavailable
  if any(unavailable(h)for h,e in pairs):raise ValueError('包含供需松弛异常小时，完整累计收入和利润不可用；请分小时查看。')
  totals={};fields=('energy_revenue_CNY','generation_cost_CNY','executed_startup_cost_CNY','simulated_reserve_gross_revenue_CNY','simulated_agc_gross_revenue_CNY','estimated_spot_margin_before_service_allocation_CNY')
- seen=set()
- for h,e in pairs:
-  from gd_balance_diagnostics import unavailable
-  if unavailable(h):raise ValueError('包含供需松弛异常小时，完整累计收入和利润不可用；请分小时查看。')
-  econ=components(from_export(e['path'],h['run_id'],e['sha256']))['unit_economics']
-  period=(econ['start'],econ['end'])
-  if period in seen:raise ValueError('重复小时不能累计收益')
-  seen.add(period)
-  for row in econ['rows']:
-   r=totals.setdefault(row['resource'],dict(resource=row['resource'],**{f:Decimal(0) for f in fields},agc_estimate={'amount_CNY':Decimal(0)}))
-   for f in fields:
-    v=row.get(f);r[f]=None if v is None or r[f] is None else r[f]+Decimal(str(v))
-   v=(row.get('agc_estimate')or{}).get('amount_CNY');old=r['agc_estimate']['amount_CNY'];r['agc_estimate']['amount_CNY']=None if v is None or old is None else old+Decimal(str(v))
-   basis=row.get('agc_revenue_basis','missing')
-   r['agc_revenue_basis']=basis if 'agc_revenue_basis' not in r else r['agc_revenue_basis'] if r['agc_revenue_basis']==basis else 'mixed'
- return list(totals.values())
+ seen=set();coverage={};partial_hours=[]
+ for index,(h,e) in enumerate(pairs):
+  hour=_hour_label(index)
+  try:
+   econ=checked_economics(components(from_export(e['path'],h['run_id'],e['sha256']))['unit_economics'])
+   period=(econ['start'],econ['end'])
+   if period in seen:raise ValueError('重复小时不能累计收益')
+   seen.add(period)
+   if econ.get('status')=='partial':partial_hours.append(hour)
+   units=set()
+   for row in econ['rows']:
+    unit=row['resource']
+    if unit in units:raise ValueError('同一小时存在重复机组经济记录')
+    units.add(unit);coverage[unit]=coverage.get(unit,0)+1
+    r=totals.setdefault(unit,dict(resource=unit,**{f:Decimal(0) for f in fields},agc_estimate={'amount_CNY':Decimal(0)}))
+    for f in fields:
+     v=row.get(f);r[f]=None if v is None or r[f] is None else r[f]+number(v)
+    v=(row.get('agc_estimate')or{}).get('amount_CNY');old=r['agc_estimate']['amount_CNY']
+    r['agc_estimate']['amount_CNY']=None if v is None or old is None else old+number(v)
+    basis=row.get('agc_revenue_basis','missing')
+    r['agc_revenue_basis']=basis if 'agc_revenue_basis' not in r else r['agc_revenue_basis'] if r['agc_revenue_basis']==basis else 'mixed'
+  except (ValueError,TypeError,KeyError,OSError,ArithmeticError) as exc:
+   raise ValueError(f'{hour}：{exc}') from exc
+ missing_coverage=False
+ for unit,r in totals.items():
+  if coverage[unit]!=len(pairs):
+   missing_coverage=True
+   for field in fields:r[field]=None
+   r['agc_estimate']['amount_CNY']=None
+   r['agc_revenue_basis']='missing'
+ return dict(rows=list(totals.values()),partial_hours=partial_hours,missing_coverage=missing_coverage)
+
+def economic_total(pairs):
+ return economic_summary(pairs)['rows']
 
 def render_status(status):
  import streamlit as st
@@ -117,14 +140,21 @@ def render_status(status):
   if bad:st.error('供需松弛异常小时：'+str(bad)+'。调度已保留；这些小时收入和利润不可用，不能提供完整累计收益。')
   mode=st.radio('查看结果',['累计汇总','分小时'],horizontal=True,key='full_day_result_mode')
   if mode=='分小时':
-   i=st.selectbox('结果小时',range(len(pairs)),format_func=lambda n:f'{n:02d}:00–{n+1:02d}:00',key='full_day_hour')
+   i=st.selectbox('结果小时',range(len(pairs)),format_func=_hour_label,key='full_day_hour')
    from gd_settlement_panel import render_energy_hour
    render_energy_hour(pairs[i][0],export=pairs[i][1])
   elif not bad:
-   st.caption('累计范围：已完成的 '+str(len(pairs))+' 个小时，不含未完成时段。')
-   from gd_settlement_panel import simulation_rows
-   rows=economic_total(pairs);g=st.selectbox('查看机组',['全部']+[r['resource']for r in rows],key='full_day_sum_unit')
-   st.dataframe(simulation_rows([r for r in rows if g=='全部' or r['resource']==g]),hide_index=True)
-   st.caption('模拟收益为月度辅助服务分摊前估算，不是正式净利润。')
+   try:summary=economic_summary(pairs)
+   except ValueError as exc:st.error('无法汇总已完成小时的经济性结果：'+str(exc)+'。未跳过该小时，也未补零。请选择「分小时」查看已保存的调度、价格及原因。')
+   else:
+    st.caption('累计范围：已完成的 '+str(len(pairs))+' 个小时，不含未完成时段。')
+    if summary['partial_hours'] or summary['missing_coverage']:
+     message='累计经济性数据不完整。每台机组仅累计在所有已完成小时均有数据的分项；缺项留空，不按零补齐。'
+     if summary['partial_hours']:message+=' 部分数据可用的小时：'+'、'.join(summary['partial_hours'])+'。'
+     st.warning(message)
+    from gd_settlement_panel import simulation_rows
+    rows=summary['rows'];g=st.selectbox('查看机组',['全部']+[r['resource']for r in rows],key='full_day_sum_unit')
+    st.dataframe(simulation_rows([r for r in rows if g=='全部' or r['resource']==g]),hide_index=True)
+    st.caption('模拟收益为月度辅助服务分摊前估算，不是正式净利润。')
  with st.expander('运行诊断'):st.json(status)
  return p

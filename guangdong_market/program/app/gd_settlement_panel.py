@@ -47,6 +47,15 @@ def _energy_rows(rows,labels,choice):
  return [{label:(direction_label(r) if k=='direction' else r.get(k)) for k,label in labels.items()}
          for r in rows if choice=='全部' or r['resource']==choice]
 
+def checked_economics(economics):
+ """Preserve the reason emitted by the results bridge before accessing rows."""
+ if not isinstance(economics,dict):raise ValueError('经济性结果格式无效')
+ if economics.get('status')=='input_rejected':
+  raise ValueError(economics.get('reason') or '来源校验未通过')
+ if not isinstance(economics.get('rows'),list) or not economics['rows']:
+  raise ValueError('缺少分机组经济性记录')
+ return economics
+
 def render_energy_hour(result,export=None,economics_inputs=None,service_components=None):
  import streamlit as st
  from gd_balance_diagnostics import unavailable
@@ -69,6 +78,7 @@ def render_energy_hour(result,export=None,economics_inputs=None,service_componen
  from gd_unit_economics import summarize,from_components
  rows=result['rows']
  choice=st.selectbox('查看机组',['全部']+list(dict.fromkeys(r['resource'] for r in rows)),key='energy_unit_'+result['run_id']+'_'+str(result.get('hour')))
+ economics_available=False
  try:
   bound_hour=dict(result)
   if export:bound_hour['_hour_sha256']=export['sha256']
@@ -76,15 +86,19 @@ def render_energy_hour(result,export=None,economics_inputs=None,service_componen
    from gd_settlement_bridge import from_export,components
    economics=components(from_export(export['path'],result['run_id'],export['sha256']))['unit_economics']
   else:economics=from_components(bound_hour,**service_components) if service_components is not None else summarize(bound_hour,economics_inputs)
+  economics=checked_economics(economics)
   st.subheader('分机组收入、成本与模拟收益')
+  if economics.get('status')=='partial':st.warning('本小时经济性数据不完整；仅显示可核对的分项，缺项不按零处理。请展开「估算依据与未核实项目」。')
   visible=[r for r in economics['rows'] if choice=='全部' or r['resource']==choice]
   st.dataframe(simulation_rows(visible),hide_index=True)
   st.caption('模拟收益＝电能量收入＋所列调频收入＋行政备用补偿估算－发电及实际启停成本。未扣月度辅助服务分摊，不是正式净利润。')
   with st.expander('估算依据与未核实项目'):
    st.caption('备用补偿池和补偿单价属于可配置研究假设；不等同实际备用交易收入。调频数据来源见上表；实际里程及考核扣减未核实时，不作为正式结算。2025年规则来源不代表已认证2026年适用性。')
-   st.dataframe([{'机组':r['resource'],'正式结算缺项':'；'.join(r.get('missing',[]))} for r in visible],hide_index=True)
+   st.dataframe([{'机组':r['resource'],'模拟收益数据缺项':'；'.join(r.get('missing',[]))} for r in visible],hide_index=True)
    if economics.get('reserve_estimate'):st.json(economics['reserve_estimate'])
- except (ValueError,TypeError,KeyError) as exc:st.error('经济性来源检查失败：'+str(exc))
+  economics_available=True
+ except (ValueError,TypeError,KeyError,OSError,ArithmeticError) as exc:
+  st.error('经济性来源检查失败：'+str(exc)+'。下方仍可查看本小时已保存的调度和价格，暂不展示金额。')
  with st.expander('电能量分项明细'):
   st.caption('日前、实时均为同一节点、同一小时用于模拟结算的电价，不是单个 15 分钟的原始电价，也不是正式结算价。')
   series=result.get('hour_prices') or {}
@@ -92,4 +106,5 @@ def render_energy_hour(result,export=None,economics_inputs=None,service_componen
                                    for price in series[stage].values()) for stage in ('DA','RT')):
    st.caption('本结果的小时口径：各自 4 个 15 分钟价格先按研究上下限截取，再取算术平均。')
   labels={'resource':'机组','node':'节点','direction':'方向','start':'开始','end':'结束','QDA_MWh':'日前电量（MWh）','simulated_executed_MWh':'实时电量（MWh）','deviation_MWh':'偏差电量（MWh）','DA_hour_price':'日前小时电价（元/MWh）','RT_hour_price':'实时小时电价（元/MWh）','energy_amount_CNY':'电能量收入（元）'}
+  if not economics_available:labels.pop('energy_amount_CNY')
   st.dataframe(_energy_rows(rows,labels,choice),hide_index=True)
