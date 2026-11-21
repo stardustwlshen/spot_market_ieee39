@@ -93,7 +93,7 @@
   "lifecycle_runtime/guangdong_clocked_general_host_v1_20261113/clocked_host.py": "c66d570cfdb24b03786e3fc3346c455e4209f16fafd2def61e682d1e8a2f0020",
   "lifecycle_runtime/guangdong_day_clock_candidate_v1_20261113/nextday_declaration.py": "311753046472ecb0168c0bd88692d713f754a6f54421d89a9779afae03474ffa",
   "lifecycle_runtime/guangdong_day_clock_candidate_v1_20261113/clock_adapter.py": "990a367d0f4a9f59584f79334587a505a5dcaabc98b91041293f2967cb8e2184",
-  "gd_settlement_panel.py": "597e540e184e1c72641030498d475fe8bc1470fe869052c9b86c9c6dd8ee344b",
+  "gd_settlement_panel.py": "178044897aa2af26ce2d8f056b87f23d5cba00d7d138b1a45829ffbc1837c06e",
   "gd_corrected_day_panel.py": "d5efdd18f82f34833b086992cdc75dc1c263b70abda59dc7ef61736ebd5cbe5f",
   "gd_price_ui_panel.py": "5c261e1ab16ba802736f2676dbdbd7b35912e3862e56855dfcff1d7139585532",
   "gd_thermal_day_panel.py": "dd4a4db24f43afc5ed4243f27274f600ed6255f4ccd6e311f75ff64ad93d27cf",
