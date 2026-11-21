@@ -2,16 +2,36 @@
 from pathlib import Path
 import json,uuid
 
+def _has_exact_sequence(rows, field, count):
+ """A row count is not enough: duplicate or missing delivery slots are invalid."""
+ return (isinstance(rows,list) and len(rows)==count
+         and all(isinstance(row,dict) and type(row.get(field)) is int and row[field]==i
+                 for i,row in enumerate(rows)))
+
+def _has_full_day_evidence(status):
+ count=status.get('completed_windows')
+ quarters,hours,exports=status.get('quarters'),status.get('hours'),status.get('hour_exports')
+ if (type(count) is not int or count!=96
+     or not _has_exact_sequence(quarters,'quarter',96)
+     or not _has_exact_sequence(hours,'hour',24)
+     or not isinstance(exports,list) or len(exports)!=24):
+  return False
+ run_id=hours[0].get('run_id')
+ branch=hours[0].get('branch')
+ if not isinstance(run_id,str) or not run_id or not isinstance(branch,str) or not branch:
+  return False
+ price_dir=Path(branch).parent/'price'
+ return all(hour.get('run_id')==run_id and hour.get('branch')==branch
+            and isinstance(export,dict) and export.get('path')==str(price_dir/f'HOUR{i}.json')
+            for i,(hour,export) in enumerate(zip(hours,exports)))
+
 def day_exit_kind(status):
  """UI-only classification; unknown evidence never authorizes a new run."""
  if not isinstance(status,dict):return 'unknown'
  end=status.get('exit')
  if not isinstance(end,dict):return 'unknown'
  kind=end.get('status')
- if kind=='complete_research':
-  count=status.get('completed_windows')
-  quarters,hours=status.get('quarters'),status.get('hours')
-  if type(count) is int and count==96 and isinstance(quarters,list) and len(quarters)==96 and isinstance(hours,list) and len(hours)==24:return 'complete'
+ if kind=='complete_research' and _has_full_day_evidence(status):return 'complete'
  if kind=='launch_failed' and type(end.get('native_calls')) is int and end['native_calls']==0:return 'launch_failed'
  return 'unknown'
 
@@ -23,11 +43,24 @@ def start_day(ready,clock,delta,control=None):
  receipt=control.start(p,confirmed=True)
  return dict(output=p['output'],receipt=receipt,windows=96)
 
-def progress(status):
- done=int(status.get('completed_windows',0));priced=len(status.get('quarters',[]));hours=len(status.get('hours',[]));end=status.get('exit');end=end if isinstance(end,dict) else {}
- complete=end.get('status')=='complete_research' and done==96 and priced==96 and hours==24
- failed=bool(end) and not complete
- return dict(executed=done,priced=priced,hours=hours,complete=complete,failed=failed,fraction=min(1.,max(0.,done/96)),message=end.get('error','') if failed else '',end_time=f'{done//4:02d}:{(done%4)*15:02d}')
+def progress(status, *, first_hour_saved=False):
+ done=status.get('completed_windows',0)
+ done=done if type(done) is int and 0<=done<=96 else 0
+ quarters,hour_rows=status.get('quarters'),status.get('hours')
+ priced=len(quarters) if isinstance(quarters,list) else 0
+ hours=len(hour_rows) if isinstance(hour_rows,list) else 0
+ end=status.get('exit')
+ end=end if isinstance(end,dict) else {}
+ complete=day_exit_kind(status)=='complete'
+ # Only the saved-task verifier may attest to a completed short run.
+ short=first_hour_saved and end.get('status')=='complete_research' and (done,priced,hours)==(4,4,1)
+ failed=bool(end) and not (complete or short)
+ message=end.get('error','') if failed else ''
+ if failed and end.get('status')=='complete_research':
+  message='已有结束记录，但全天调度、定价或小时结果未按顺序齐备，不能标记完成。'
+ return dict(executed=done,priced=priced,hours=hours,complete=complete,first_hour_complete=short,
+             failed=failed,fraction=min(1.,max(0.,done/96)),message=message,
+             end_time=f'{done//4:02d}:{(done%4)*15:02d}')
 
 def hour_pairs(status):
  exports={Path(e['path']).stem:e for e in status.get('hour_exports',[])}

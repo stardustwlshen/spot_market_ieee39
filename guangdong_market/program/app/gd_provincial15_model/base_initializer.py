@@ -15,7 +15,9 @@ def initialize(*,source_base,da_manifest,output,program,research=False):
  # The archived scenario seed is data lineage only, not the new DA acceptance.
  old=read(src/'SHORT_CONTEXT.json')
  for f,h in old['seed_pins'].items():
-  if sha(f)!=h:raise ValueError('scenario seed source changed: '+f)
+  pinned=Path(f)
+  pinned=pinned if pinned.is_absolute() else src/pinned
+  if sha(pinned)!=h:raise ValueError('scenario seed source changed: '+str(pinned))
  out.mkdir(parents=True);shutil.copytree(src/'seed',out/'seed')
  from smm.gd_october_job_codec import loads
  case=loads((out/'seed/case.json').read_bytes());request=read(out/'seed/request.json')

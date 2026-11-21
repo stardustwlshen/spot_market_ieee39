@@ -31,8 +31,8 @@
       "bytes": 369
     },
     "QUICKSTART.md": {
-      "sha256": "9cee5e420f669dad391551938a096769cfaf611046c427875b5d6ffaabe9e9e5",
-      "bytes": 6101
+      "sha256": "0affdec6deb8a7d979848a86713a6884926bc30408a66c17bf475b1f6eb3effc",
+      "bytes": 6280
     },
     "启动.cmd": {
       "sha256": "7e0dde6abc5bc481f08c6db9fe152874f4e4345deff8b5694e874851c923625d",
@@ -227,8 +227,8 @@
       "bytes": 821
     },
     "app/gd_provincial_page.py": {
-      "sha256": "3fda0b862d11e06d4f656b7e776122b35af83778c05351a41064fe568866bf12",
-      "bytes": 19887
+      "sha256": "33c4172760da8989159fcdc18665196231c99e1f174d787055861a6d0ea67ff6",
+      "bytes": 20067
     },
     "app/gd_hourly_agc_backend.py": {
       "sha256": "d3f2f1084beddc97df9be3318829a0c9c6fb7f4f299b8a3fea9a3d013586b432",
@@ -379,8 +379,8 @@
       "bytes": 347
     },
     "app/gd_full_day_ui.py": {
-      "sha256": "fc7691c57593eceaf437971ac54fb96c47e9e20c96ea231a147bc8798b5e6f97",
-      "bytes": 6830
+      "sha256": "3b31fe36f46c8c16030c73b15e9d12601d2f2952ac3e46ccdd80f6d6248bd73b",
+      "bytes": 8332
     },
     "app/gd_unit_economics.py": {
       "sha256": "70a292997bf515ed4ddd91b8090e984e784be78ad5e8cab57065a33e6330332f",
@@ -543,7 +543,7 @@
       "bytes": 444
     },
     "app/LIVE_MARKET_MANIFEST.json": {
-      "sha256": "b216383ec008e4b35bd17ee1c0201475389d79a6c7164a059d0541e347068be9",
+      "sha256": "199950d1623c14e8509d3916fe220cdcec149cef05c031571ae74a5aab845d87",
       "bytes": 46562
     },
     "app/gd_batch_control.py": {
@@ -2203,8 +2203,8 @@
       "bytes": 4728
     },
     "app/gd_provincial15_model/base_initializer.py": {
-      "sha256": "f0436acf7f4c3840a923a597483eff3ab4e51be644c53018c91af15a9e560769",
-      "bytes": 5867
+      "sha256": "c3ad0db05784c36d33038a530778b2c92a34641b218fe20812299d3b03426e64",
+      "bytes": 5955
     },
     "app/gd_provincial15_model/battery_short.py": {
       "sha256": "f94012753e6fa573ec06b83fbec347f53a1c68bee5d0e402c822b992e88bbf9a",
@@ -19937,6 +19937,10 @@
     "app/gd_saved_tasks.py": {
       "sha256": "0676178e8a9cf0e35e75deb0ba7460fde0e6bbcde4a45e7fecc8facb0d842eed",
       "bytes": 15533
+    },
+    "tests/test_saved_day_completion.py": {
+      "sha256": "e3c3b445db3eccac2f6c427863244d8c6d850ab7e975ad0abc0c29cb10dcbafe",
+      "bytes": 5433
     }
   }
 }

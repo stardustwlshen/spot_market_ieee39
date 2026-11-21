@@ -227,9 +227,10 @@ def _render_saved_jobs(output,control):
      st.write({'状态':labels[selected['state']],'已记录步骤':progress.get('stage','待核实')})
     elif selected.get('status') is not None:
      try:
-      record=selected['status'];view=progress(record)
+      record=selected['status'];view=progress(record,first_hour_saved=selected['state']=='first_hour_saved')
       st.write({'状态':labels[selected['state']],'已调度时段':view['executed'],'已定价时段':view['priced'],'已记录小时':view['hours']})
-      if view['message']:st.caption('原任务说明：'+str(view['message']))
+      if view['first_hour_complete']:st.caption('仅覆盖 00:00–01:00（4 个实时段），不代表全天计算完成。')
+      if view['message']:st.caption('状态说明：'+str(view['message']))
       quarters=record.get('quarters',[])
       if quarters:
        q=st.selectbox('查看已保存时段的节点电价',list(range(len(quarters))),format_func=lambda i:'时段 '+str(quarters[i]['quarter']+1),key='prov_saved_job_quarter')
