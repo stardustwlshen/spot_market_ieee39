@@ -7,10 +7,10 @@ import streamlit as st
 
 from market_rule_profile import SICHUAN_V5
 from sichuan_v5_intraday import Update
-from sichuan_v5_rules import Participant, participation_rule
 from sichuan_v5_price_review import BoundRerun, Incident, ReviewRequest, Vector
 from sichuan_v5_reconciliation import reconcile_energy
-from sichuan_v5_workflow import archive_names, json_bytes, load, review, run
+from sichuan_v5_archive_ui import render_archive_picker, render_failed_archive
+from sichuan_v5_workflow import json_bytes, load, review, run
 
 
 def _quarter_label(t):
@@ -100,18 +100,51 @@ def _render_price_review(root, name, results, quarter):
                 st.rerun()
 
 
-def _render_reconciliation(name, results, quarter):
+def _display_number(value):
+    """Human-scale display; structured reports/downloads retain source precision."""
+    return '未形成' if value is None else format(Decimal(str(value)), ',.2f')
+
+
+def _render_unit_detail(name, resources, rt, da, transactions):
+    by_unit={u['id']:u for u in resources}
+    resolved={r['resource_id']:r for r in transactions}
+    selected=st.selectbox('查看机组或储能',list(by_unit),key='scv5_unit_'+name,
+                         format_func=lambda u:f"{u}（节点 {by_unit[u]['bus']}）")
+    resource=by_unit[selected]
+    row=resolved.get(selected)
+    if row is None:
+        st.info(f'{selected} 不属于本算例现货金额测算范围；仍纳入物理平衡。')
+        st.dataframe([{'量（上网）':'日前参考上网量（MWh，不结算）','值':_display_number(Decimal(str(da['power'][selected]))/4)},
+                      {'量（上网）':'实时上网量（MWh）','值':_display_number(Decimal(str(rt['power'][selected]))/4)}],
+                     hide_index=True)
+        return
+    directions=[('上网','delivered','delivery','effective_rt_nodal_price','rt_nodal')]
+    if resource['kind']=='storage':
+        directions.append(('充电','consumed','consumption','effective_rt_uniform_price','rt_uniform'))
+    lines=[]
+    for label,energy,basis,price,kind in directions:
+        basis_value=row.get(basis+'_price_source')
+        active=Decimal(str(row['grid_'+energy+'_mwh']))!=0
+        lines.append({'方向':label,'日前参考量（MWh，不结算）':_display_number(row['da_'+energy+'_mwh']),
+                      '实时电量（MWh）':_display_number(row['grid_'+energy+'_mwh']),
+                      '实际计价口径':_PRICE_SOURCES.get(basis_value,'本方向无电量' if not active else '暂不计价'),
+                      '采用价格（元/MWh）':_display_number(row[price]) if basis_value==kind else '—',
+                      '研究金额（元）':_display_number(row['grid_'+energy+'_amount'])})
+    st.dataframe(lines,hide_index=True)
+    if row.get('rt_price_source') not in (None,'rt_initial'):
+        st.caption('价格复核来源：'+_PRICE_SOURCES.get(row['rt_price_source'],str(row['rt_price_source']))+'。')
+
+
+def _render_reconciliation(name, report, quarter):
     with st.expander('实时量价对账与导出'):
-        st.caption('只计已执行实时段。上网合计仅含纳入现货金额测算的资源，不含固定非市场注入；用电含负荷与储能充电，两列不用于检验系统平衡。日前仅对照电量，未定价不补零。')
-        report=reconcile_energy(results['inputs']['case'],results['rt'],
-                                results.get('reviewed_values',results['values']),
-                                da_reference=results['da'],price_reviews=results.get('price_reviews'))
+        st.caption('此处总量覆盖本次所有已执行实时段；下表只列所选时段。现货上网量不含固定非市场注入，用电量含负荷和储能充电，两者不用于核验全网平衡。净额不是全网盈亏或正式账单。日前仅对照电量。')
         summary=report['summary']
         cols=st.columns(3)
-        cols[0].metric('对账上网合计（MWh）',summary['grid_delivered_mwh'])
-        cols[1].metric('用电合计（MWh）',summary['grid_consumed_mwh'])
+        cols[0].metric('现货纳入主体上网量（MWh）',_display_number(summary['grid_delivered_mwh']))
+        cols[1].metric('用电合计（MWh，含储能充电）',_display_number(summary['grid_consumed_mwh']))
         net=summary['net_amount']
-        cols[2].metric('已执行时段总净额（元）','未完整' if net is None else net)
+        cols[2].metric('现货纳入主体净额（元，已执行段累计）',
+                       '未完整' if net is None else _display_number(net))
         fields={'resource_id':'主体','role':'角色','bus':'节点','grid_delivered_mwh':'实时上网 MWh',
                 'grid_consumed_mwh':'实时用电 MWh','da_delivered_mwh':'日前参考上网 MWh',
                 'da_consumed_mwh':'日前参考用电 MWh','raw_rt_nodal_price':'原始节点价',
@@ -119,7 +152,8 @@ def _render_reconciliation(name, results, quarter):
                 'rt_price_source':'实时价格来源','delivery_price_source':'上网计价口径','consumption_price_source':'用电计价口径',
                 'grid_delivered_amount':'上网金额（元）','grid_consumed_amount':'用电金额（元）',
                 'net_amount':'净额（元）'}
-        rows=[{label:_PRICE_SOURCES.get(r.get(k),r.get(k)) if k.endswith('_source') else r.get(k)
+        rows=[{label:(_PRICE_SOURCES.get(r.get(k),r.get(k)) if k.endswith('_source') else
+                      r.get(k) if k in ('resource_id','role','bus') else _display_number(r.get(k)))
                for k,label in fields.items()} for r in report['transactions'] if r['quarter']==quarter]
         st.dataframe(rows,hide_index=True)
         st.download_button('下载实时量价对账 JSON',data=json_bytes(report),
@@ -129,12 +163,37 @@ def _render_reconciliation(name, results, quarter):
 def _render_results(root, name, results):
     receipt=results['receipt']
     n=receipt['quarters']
-    st.subheader('③ 查看运行结果')
-    st.caption(f'{name} · 四川 V5.0 征求意见稿省内研究 · {n}/96 个实时段')
+    st.subheader('③ 查看运行结果',anchor='sichuan-results')
+    end=f'{n//4:02d}:{n%4*15:02d}'
+    st.caption(f'本次覆盖 00:00–{end}（{n}/96 个实时段） · {name}')
+    loaded=results['inputs']
+    if all(type(loaded.get(k)) in (float,int) for k in ('month','load_factor','solar_factor','coal_offer')):
+        st.caption(f'本任务参数：{loaded["month"]} 月 · 负荷 ×{loaded["load_factor"]:.2f} · '
+                   f'光伏 ×{loaded["solar_factor"]:.2f} · C1 首段报价 {loaded["coal_offer"]:g} 元/MWh')
     if n < 96:
-        st.info('这是首段试算，不代表全天；未计算的时段不填零。')
-    st.caption('日前预出清仅是技术参考，没有日前应收应付，也没有日前—实时偏差金额。')
-    st.line_chart({'全网日前预出清负荷 MW':[sum(q['demand'].values()) for q in results['da']]})
+        st.info('本次未完成全天模拟；未执行的时段不填零。')
+    t=st.selectbox('选择已执行实时段',list(range(n)),format_func=_quarter_label,
+                   key='scv5_period_'+name)
+    rt=results['rt'][t]; da=results['da'][t]
+    price=results.get('reviewed_values',results['values'])[t]
+    uniform=price['uniform_price']
+    report=reconcile_energy(results['inputs']['case'],results['rt'],
+                            results.get('reviewed_values',results['values']),
+                            da_reference=results['da'],price_reviews=results.get('price_reviews'))
+    st.markdown(f'**当前时段：{_quarter_label(t)}**')
+    st.metric('实时统一结算点研究价（元/MWh）',_display_number(uniform))
+    if uniform is None:
+        st.warning('该时段未形成统一研究价。可能因可靠性松弛、缺少符合条件的正权重电量或价格证据不足；不把缺项当作零价。')
+    st.caption('日前仅对照电量，不计费用。实时发电一般按节点价，负荷和储能充电用统一结算点研究价；统一价为合格发电量加权，储能仅计放电。下列金额不是正式账单。')
+    _render_unit_detail(name,results['inputs']['case']['resources'],rt,da,
+                        [r for r in report['transactions'] if r['quarter']==t])
+    _render_reconciliation(name,report,t)
+    st.download_button('下载已执行时段研究结果 JSON', data=json_bytes({
+        'rules':receipt['rules'],'formal_settlement':False,'status':receipt['status'],'quarters':results.get('reviewed_values',results['values']),'original_quarters':results['values'],
+        'price_reviews':results.get('price_reviews',[])}),
+        file_name=name+'_实时研究结果.json',mime='application/json')
+    with st.expander('查看全天日前负荷参考'):
+        st.line_chart({'全网日前预出清负荷 MW':[sum(q['demand'].values()) for q in results['da']]})
     if results.get('intraday'):
         plan=results['intraday']
         start=plan['activation']['effective_quarter']
@@ -168,15 +227,6 @@ def _render_results(root, name, results):
             st.dataframe([{'机组':r,'普通研究中标（MW）':a['regular_mw'],
                            '普通研究边际价（元/MW·h）':a['regular_price_cny_per_mw_h']}
                           for r,a in reserve_demo['awards'].items()],hide_index=True)
-    t=st.selectbox('选择已执行实时段',list(range(n)),format_func=_quarter_label,
-                   key='scv5_period_'+name)
-    rt=results['rt'][t]; da=results['da'][t]
-    price=results.get('reviewed_values',results['values'])[t]
-    uniform=price['uniform_price']
-    st.metric('实时统一结算点研究价（元/MWh）','未形成' if uniform is None else uniform)
-    st.caption('按符合 V5.0 §4.4 的实时发电出清电量加权，储能只计放电。表中按研究规则显示每段电能量价值，不是正式账单。')
-    if uniform is None:
-        st.warning('该时段未形成统一研究价。可能因可靠性松弛、缺少符合条件的正权重电量或价格证据不足；不把缺项当作零价。')
     if da.get('equal_offer_dispatch'):
         with st.expander('查看本时段日前同价出清记录'):
             st.caption('在固定组合与原始经济最优约束下分配；参考节点价仍取原始定价模型。实时不使用这一研究规则。')
@@ -191,8 +241,11 @@ def _render_results(root, name, results):
         st.caption('备用可靠性缺额不代表辅助服务结算。本场景未声明可靠性备用需求时，不显示经济性授予。')
         st.metric('可靠性备用缺额（MW）',rt['reliability_reserve_short_mw'])
         st.dataframe([{'资源':r,'新能源未利用 MW':v} for r,v in rt['curtailed_mw'].items()],hide_index=True)
-        st.dataframe([{'机组':r,'调频＋备用上调占位 MW':v[0],'调频下调占位 MW':v[1]}
-                       for r,v in rt['ancillary_holds_mw'].items()],hide_index=True)
+        if rt['ancillary_holds_mw']:
+            st.dataframe([{'机组':r,'调频＋备用上调占位 MW':v[0],'调频下调占位 MW':v[1]}
+                          for r,v in rt['ancillary_holds_mw'].items()],hide_index=True)
+        else:
+            st.caption('此时段没有已记录的调频或备用容量占位。')
     if rt.get('hydro'):
         with st.expander('查看梯级水库与水量'):
             st.caption('合成 H1→H2 延迟30分钟，H3独立；展示执行后库容及本段入流/弃水，不是实时实测。')
@@ -200,16 +253,7 @@ def _render_results(root, name, results):
                            '上游到达量 m³':v['upstream_arrival_m3'],'区间来水 m³/s':v['natural_inflow_m3s'],
                            '发电流量 m³/s':v['turbine_m3s'],'弃水 m³/s':v['water_spill_m3s']}
                           for r,v in rt['hydro'].items()],hide_index=True)
-    st.dataframe([{'主体':r['resource_id'],'实时上网 MWh':r['grid_delivered_mwh'],
-                   '实时用电 MWh':r['grid_consumed_mwh'],'研究上网金额（元）':r['grid_delivered_amount'],
-                   '研究用电金额（元，负号是支出）':r['grid_consumed_amount'],
-                   '实时电能量研究净额（元）':r['net_amount']} for r in price['rows']],hide_index=True)
     _render_price_review(root,name,results,t)
-    _render_reconciliation(name,results,t)
-    st.download_button('下载已执行时段研究结果 JSON', data=json_bytes({
-        'rules':receipt['rules'],'formal_settlement':False,'status':receipt['status'],'quarters':results.get('reviewed_values',results['values']),'original_quarters':results['values'],
-        'price_reviews':results.get('price_reviews',[])}),
-        file_name=name+'_实时研究结果.json',mime='application/json')
 
 
 def render():
@@ -218,19 +262,29 @@ def render():
     st.caption('选择场景 → 设置报价与开关 → 日前预出清 → 15分钟实时滚动 → 查看量价和模拟电费')
     st.info('使用 IEEE39 合成数据，验证四川征求稿规则的研究实现。不是已生效规则、真实四川系统、正式账单或生产调度工具。')
     root=SICHUAN_V5.default_results(Path(__file__).resolve().parents[1])
-    with st.expander('找回四川已保存研究任务（只读）'):
-        old=st.selectbox('选择四川研究记录',[None,*archive_names(root)],
-                         format_func=lambda x:x or '不查看旧记录',key='scv5_archive')
-        st.caption('与广东历史档案分目录。浏览旧任务不会启动或恢复求解。')
-    st.subheader('① 场景、报价与辅助服务')
-    month=st.selectbox('运行月份',range(1,13),index=6,format_func=lambda m:f'{m} 月',key='scv5_month')
-    pv=participation_rule(Participant.COMPETITIVE_PV,month)
-    st.caption('竞价光伏：'+('报量报价' if pv.bid_mode.value=='quantity_price' else '报量不报价')+'。此处是 V5.0 竞价光伏的现货月份定义。')
-    left,middle,right=st.columns(3)
-    load_factor=left.slider('负荷倍率',.65,1.25,1.,.01,key='scv5_load')
-    solar_factor=middle.slider('光伏可用出力倍率',.5,1.3,1.,.05,key='scv5_solar')
-    coal_offer=right.slider('煤机 C1 首段报价（元/MWh）',220,500,320,key='scv5_bid')
-    st.caption('报价曲线依 V5.0 分段边界生成；运行物理参数和最小出力成本是合成研究设定。')
+    old=render_archive_picker(root,latest_failure=st.session_state.get('scv5_latest_failure'))
+    if old is not None:
+        st.info('正在查看保存记录。下面的设置不会改变该记录；要计算新场景，先点“返回新任务”。')
+    run_panel=st.container()
+    with run_panel:
+        with st.form('scv5_basic_inputs',enter_to_submit=False):
+            st.subheader('① 选场景、设报价')
+            month=st.selectbox('运行月份',range(1,13),index=6,format_func=lambda m:f'{m} 月',key='scv5_month')
+            st.caption('竞价光伏：6–10 月报量报价，其他月份报量不报价。')
+            left,middle,right=st.columns(3)
+            load_factor=left.slider('负荷倍率',.65,1.25,1.,.01,key='scv5_load')
+            solar_factor=middle.slider('光伏可用出力倍率',.5,1.3,1.,.05,key='scv5_solar')
+            coal_offer=right.number_input('煤机 C1 首段报价（元/MWh）',220,500,320,step=1,key='scv5_bid')
+            st.caption('可直接输入 C1 首段报价；其他机组使用场景默认报价。')
+            st.subheader('② 运行出清')
+            n=st.radio('运行范围', (4,96),format_func=lambda x:'首小时试算（4 段）' if x==4 else '完整单日（96 段）',horizontal=True)
+            st.caption('首小时也先计算全天日前参考，实时只执行 4 段；用完整单日查看全天结果。')
+            clicked=st.form_submit_button('计算日前并运行实时',type='primary',key='scv5_run',disabled=old is not None)
+        feedback=st.empty()
+        if old is None and st.session_state.get('scv5_recent'):
+            st.markdown('[跳到本次显示的运行结果 ↓](#sichuan-results)')
+    results_panel=st.container()
+    st.markdown('#### 可选研究设置')
     with st.expander('辅助服务占位和实时预测'):
         storage_product=st.radio('独立储能选择',('spot','none'),format_func=lambda a:'仅现货' if a=='spot' else '不参与（零充放电）')
 
@@ -267,12 +321,9 @@ def render():
         if id_enabled:
             id_start=st.selectbox('更新开始时段',range(96),index=48,format_func=_quarter_label,key='scv5_id_start')
             id_pct=st.slider('更新后剩余时段负荷变化（%）',-20,20,5,key='scv5_id_pct')
-    st.subheader('② 运行出清')
-    n=st.radio('运行范围', (4,96),format_func=lambda x:'首小时试算（4 段）' if x==4 else '完整单日（96 段）',horizontal=True)
-    if st.button('计算日前并运行实时',type='primary',key='scv5_run',disabled=old is not None):
-        st.session_state.pop('scv5_recent',None)
+    if clicked:
         try:
-            with st.status('启动四川研究任务…',expanded=True) as status:
+            with run_panel.status('启动四川研究任务…',expanded=True) as status:
                 update=Update(id_start,1+id_pct/100.) if id_enabled else None
                 name,_=run(root,month=month,load_factor=load_factor,solar_factor=solar_factor,
                            coal_offer=float(coal_offer),rt_error=err,periods=n,progress=st.write,
@@ -280,12 +331,27 @@ def render():
                            hydro_cascade=hydro_cascade,reserve_gross=reserve_gross,clear_agc=agc_demo,
                            equal_offer_priority=equal_offer_priority)
                 st.session_state['scv5_recent']=name
+                st.session_state.pop('scv5_latest_failure',None)
+                st.session_state.pop('scv5_run_error',None)
                 status.update(label='四川研究运行已保存',state='complete')
         except (ValueError,OSError,RuntimeError) as exc:
-            st.error('四川研究运行未完成，未使用广东结果：'+str(exc))
+            failed=getattr(exc,'archive_name',None)
+            if failed:
+                st.session_state['scv5_latest_failure']=failed
+            st.session_state['scv5_run_error']=str(exc)
+        st.rerun()
+    if old is None:
+        error=st.session_state.get('scv5_run_error')
+        recent=st.session_state.get('scv5_recent')
+        if error:
+            feedback.error('本次未完成：'+error+('。下方仍显示上一次成功结果。' if recent else '。可修改当前参数后重试。'))
+        elif recent:
+            feedback.success('运行已保存。向下查看结果，或从顶部找回研究记录。')
     name=old or st.session_state.get('scv5_recent')
     if name:
-        try:
-            _render_results(root,name,load(root,name))
-        except (OSError,ValueError,TypeError,KeyError) as exc:
-            st.error('无法核验四川研究档案：'+str(exc))
+        with results_panel:
+            try:
+                if not render_failed_archive(root,name):
+                    _render_results(root,name,load(root,name))
+            except (OSError,ValueError,TypeError,KeyError) as exc:
+                st.error('无法核验四川研究档案：'+str(exc))

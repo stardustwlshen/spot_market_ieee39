@@ -159,7 +159,9 @@ def run(root, *, month, load_factor=1., solar_factor=1., coal_offer=320., rt_err
              intraday_status=('executed' if 'ID_PLAN.json' in files else
                               'not_reached' if intraday_update else 'not_declared'), data_files=files.copy()))
     except Exception as exc:
-        save('FAILURE.json',dict(rules=SICHUAN_V5.identity(),error=str(exc),failed_research=True,automatic_restart=False))
+        save('FAILURE.json',dict(rules=SICHUAN_V5.identity(),error=str(exc),failed_research=True,automatic_restart=False,
+                                 input_sha256=files['INPUT.json']))
+        exc.archive_name=name
         raise
     return name, load(directory,name)
 

@@ -13,7 +13,11 @@ PROGRAM=Path(__file__).resolve().parents[1]
 
 
 def test_new_default_no_legacy_fallback():
-    assert Path(command(PROGRAM,'python',8501)[4]).name=='四川.py'
+    cmd=command(PROGRAM,'python',8501)
+    assert Path(cmd[4]).name=='四川.py'
+    assert cmd[cmd.index('--server.showEmailPrompt')+1]=='false'
+    assert cmd[cmd.index('--client.showSidebarNavigation')+1]=='false'
+    assert '--server.showEmailPrompt' not in command(PROGRAM,'python',8501,'guangdong')
     assert Path(command(PROGRAM,'python',8501,'guangdong')[4]).name=='主页.py'
     with pytest.raises(ValueError,match='未知市场'):
         command(PROGRAM,'python',8501,'typo')
@@ -29,9 +33,9 @@ def test_native_entry_run_then_read_only_archive_and_tamper(tmp_path, monkeypatc
     app=AppTest.from_file(str(PROGRAM/'app/四川.py'),default_timeout=100).run()
     assert not app.exception and not app.error
     assert '四川 V5.0' in app.title[0].value
-    app.selectbox(key='scv5_month').select(5).run()
+    app.selectbox(key='scv5_month').select(5)
     assert any('报量不报价' in cap.value for cap in app.caption)
-    app.slider(key='scv5_bid').set_value(360).run()
+    app.number_input(key='scv5_bid').set_value(360)
     app.button(key='scv5_run').click().run()
     assert not app.exception and not app.error
     paths=list(root.iterdir())

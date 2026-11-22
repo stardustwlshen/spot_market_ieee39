@@ -20,9 +20,14 @@ def command(root: Path, python: str, port: int, profile: str = "sichuan-v5") -> 
     if profile not in ('sichuan-v5','guangdong'):
         raise ValueError('未知市场配置')
     entry='四川.py' if profile=='sichuan-v5' else '主页.py'
-    return [python, '-m', 'streamlit', 'run', str(root / 'app' / entry),
-            '--server.address', '127.0.0.1', '--server.port', str(port),
-            '--browser.gatherUsageStats', 'false']
+    cmd=[python, '-m', 'streamlit', 'run', str(root / 'app' / entry),
+         '--server.address', '127.0.0.1', '--server.port', str(port),
+         '--browser.gatherUsageStats', 'false']
+    if profile=='sichuan-v5':
+        # No email gate or mixed legacy-page menu on the local Sichuan launcher.
+        cmd+=['--server.showEmailPrompt','false','--client.showSidebarNavigation','false',
+              '--client.toolbarMode','viewer']
+    return cmd
 
 def check(root: Path) -> list[str]:
     errors=[]
