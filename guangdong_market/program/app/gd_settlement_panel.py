@@ -56,7 +56,7 @@ def checked_economics(economics):
   raise ValueError('缺少分机组经济性记录')
  return economics
 
-def render_energy_hour(result,export=None,economics_inputs=None,service_components=None):
+def render_energy_hour(result,export=None,economics_inputs=None,service_components=None,*,widget_scope=''):
  import streamlit as st
  from gd_balance_diagnostics import unavailable
  if unavailable(result):
@@ -64,7 +64,7 @@ def render_energy_hour(result,export=None,economics_inputs=None,service_componen
   labels={'tick':'时段序号','residual_MW':'供需差额（MW）','shortfall_MW':'供电缺额（MW）','surplus_MW':'供电富余（MW）'}
   st.dataframe([{label:r.get(k) for k,label in labels.items()} for r in result['balance_diagnostics']],hide_index=True)
   rows=result['dispatch_rows']
-  choice=st.selectbox('查看机组',['全部']+sorted({r['resource'] for r in rows}),key='abnormal_unit_'+result['run_id']+'_'+str(result.get('hour')))
+  choice=st.selectbox('查看机组',['全部']+sorted({r['resource'] for r in rows}),key='abnormal_unit_'+result['run_id']+'_'+str(result.get('hour'))+widget_scope)
   labels={'resource':'机组','node':'节点','direction':'方向','start':'开始','end':'结束','QDA_MWh':'日前电量（MWh）','simulated_executed_MWh':'实时电量（MWh）'}
   st.dataframe(_energy_rows(rows,labels,choice),hide_index=True)
   with st.expander('保留的调度与价格来源'):st.json({'physical_cells':result['physical_cells'],'hour_prices':result['hour_prices'],'input_binding':result['input_binding']})
@@ -77,7 +77,7 @@ def render_energy_hour(result,export=None,economics_inputs=None,service_componen
   if result.get('system_balance'):st.json(result['system_balance'])
  from gd_unit_economics import summarize,from_components
  rows=result['rows']
- choice=st.selectbox('查看机组',['全部']+list(dict.fromkeys(r['resource'] for r in rows)),key='energy_unit_'+result['run_id']+'_'+str(result.get('hour')))
+ choice=st.selectbox('查看机组',['全部']+list(dict.fromkeys(r['resource'] for r in rows)),key='energy_unit_'+result['run_id']+'_'+str(result.get('hour'))+widget_scope)
  economics_available=False
  try:
   bound_hour=dict(result)

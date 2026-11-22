@@ -205,6 +205,7 @@ def _render_saved_jobs(output,control):
  from gd_saved_tasks import discover
  from gd_full_day_ui import progress
  found=discover(output,control)
+ hour_choice=None
  labels={'ready_saved':'准备完成（只读）','failed_saved':'已有失败记录','running_or_unknown':'运行中或待核实','terminal_saved':'已结束（只读）','first_hour_saved':'首小时已结束（只读）','unknown':'记录待核实'}
  with st.expander('找回已保存任务（只读）',expanded=found['block_new_start']):
   st.caption('仅扫描所选结果保存目录。不会恢复计算权限、恢复日前执行准备或重新启动任务；切换到其他目录可查看其中任务。')
@@ -241,12 +242,42 @@ def _render_saved_jobs(output,control):
       st.write({'状态':labels[selected['state']],'已调度时段':view['executed'],'已定价时段':view['priced'],'已记录小时':view['hours']})
       if view['first_hour_complete']:st.caption('仅覆盖 00:00–01:00（4 个实时段），不代表全天计算完成。')
       if view['message']:st.caption('状态说明：'+str(view['message']))
+      if (view['first_hour_complete'] or view['complete']) and st.checkbox('查看小时电量、电价与模拟收益',key='prov_saved_hour_details'):
+       from gd_full_day_ui import _hour_label
+       index=st.selectbox('已保存结果小时',range(view['hours']),format_func=_hour_label,key='prov_saved_hour')
+       hour_choice=(selected['output'],record,index)
       quarters=record.get('quarters',[])
       if quarters:
+       st.caption('下方是单个15分钟的原始节点电价。小时模拟结算价见上方小时选项。' if view['first_hour_complete'] or view['complete'] else '下方是已保存的15分钟原始节点电价，不是小时模拟结算价。')
        q=st.selectbox('查看已保存时段的节点电价',list(range(len(quarters))),format_func=lambda i:'时段 '+str(quarters[i]['quarter']+1),key='prov_saved_job_quarter')
        st.json(quarters[q]['raw_prices'])
      except (AttributeError,IndexError,KeyError,TypeError,ValueError) as exc:st.error('任务结果不能完整显示：'+str(exc))
+ if hour_choice is not None:
+  try:
+   hour,export=_checked_saved_hour(*hour_choice)
+  except (OSError,IndexError,KeyError,TypeError,ValueError) as exc:
+   st.error('已保存小时明细无法核验：'+str(exc))
+  else:
+   from gd_settlement_panel import render_energy_hour
+   st.subheader('已保存小时明细（只读）')
+   st.caption('只展示已核验的这一小时，不会继续求解或改变当前输入。模拟收益不是正式结算。')
+   render_energy_hour(hour,export=export,widget_scope='saved')
  return found['block_new_start']
+
+
+def _checked_saved_hour(output,status,index):
+ import hashlib
+ hour=status['hours'][index]
+ export=status['hour_exports'][index]
+ path=Path(export['path'])
+ expected=Path(output)/'pipeline'/'price'/f'HOUR{index}.json'
+ if (path!=expected or path.resolve()!=path or type(hour.get('hour')) is not int or hour['hour']!=index
+     or hour.get('branch')!=str(Path(output)/'pipeline'/'dispatch')):
+  raise ValueError('小时结果与任务或时段不匹配')
+ raw=path.read_bytes()
+ if hashlib.sha256(raw).hexdigest()!=export['sha256'] or json.loads(raw)!=hour:
+  raise ValueError('小时结果与已核验的导出文件不一致')
+ return hour,export
 
 
 def _render_tracked_day(current=None,tracking_error=None):

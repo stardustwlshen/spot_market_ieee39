@@ -31,8 +31,8 @@
       "bytes": 369
     },
     "QUICKSTART.md": {
-      "sha256": "08be012448aa937798f90265599f635ed19e83dea9cb3fee9c9135b6a22e2616",
-      "bytes": 6784
+      "sha256": "a46d45cbdea1e24c71e7ab10fb7cf45c88c5a038e3b1f55affc5d92df59b1b7a",
+      "bytes": 7066
     },
     "启动.cmd": {
       "sha256": "7e0dde6abc5bc481f08c6db9fe152874f4e4345deff8b5694e874851c923625d",
@@ -163,8 +163,8 @@
       "bytes": 4498
     },
     "app/gd_settlement_panel.py": {
-      "sha256": "97ab16cf8bfee2835c717e8fcabb9b2a7cbb58463141162019682a8a2519aeb4",
-      "bytes": 9032
+      "sha256": "8ccec29e43d17f0dada9564ace72aee9b73fd62797ccf93a04e8a8be6afd8ecc",
+      "bytes": 9076
     },
     "app/gd_provincial_register_worker.py": {
       "sha256": "a9a7818e2905230cda4360dce6e44383d36e41c8d5483a53981a5246b572bc67",
@@ -227,8 +227,8 @@
       "bytes": 821
     },
     "app/gd_provincial_page.py": {
-      "sha256": "84bdb97bb2a2a2d4d4f3e1497d6cbd3045092129d5509ee3101cc8d43927e669",
-      "bytes": 20810
+      "sha256": "311bc69ff9d71f12cedba8afee936db17dfbe793086e30088af3bd4615c799e7",
+      "bytes": 22621
     },
     "app/gd_hourly_agc_backend.py": {
       "sha256": "d3f2f1084beddc97df9be3318829a0c9c6fb7f4f299b8a3fea9a3d013586b432",
@@ -543,7 +543,7 @@
       "bytes": 444
     },
     "app/LIVE_MARKET_MANIFEST.json": {
-      "sha256": "83d14c29db068fc45b18b7f36dd9e0e6b12e3e847a8bee0770eacc1e9abf05e1",
+      "sha256": "1e7b6f20be1e1b79802d840bc3d4b0cd506c59315a4a3d61afd0c5e591ee2c40",
       "bytes": 46562
     },
     "app/gd_batch_control.py": {
@@ -19949,6 +19949,10 @@
     "tests/test_hourly_economic_recovery.py": {
       "sha256": "0e811a7571d31be81e00521ff478b9198ac017181311ddc06d084e2a27d84c3b",
       "bytes": 3961
+    },
+    "tests/test_saved_hour_drilldown.py": {
+      "sha256": "77c4c1ad45593a018c9af8b7740aae6e04bb8d63cda5d6c7ef8fd44baba3a37e",
+      "bytes": 3696
     }
   }
 }
