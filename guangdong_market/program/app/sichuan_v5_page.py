@@ -1,4 +1,6 @@
 """Sichuan branch default UI; Guangdong historical source stays unmodified."""
+from decimal import Decimal, InvalidOperation
+import json
 from pathlib import Path
 
 import streamlit as st
@@ -6,7 +8,9 @@ import streamlit as st
 from market_rule_profile import SICHUAN_V5
 from sichuan_v5_intraday import Update
 from sichuan_v5_rules import Participant, participation_rule
-from sichuan_v5_workflow import archive_names, json_bytes, load, run
+from sichuan_v5_price_review import BoundRerun, Incident, ReviewRequest, Vector
+from sichuan_v5_reconciliation import reconcile_energy
+from sichuan_v5_workflow import archive_names, json_bytes, load, review, run
 
 
 def _quarter_label(t):
@@ -17,7 +21,112 @@ def _segment_label(start,stop):
     return f'{start//4:02d}:{(start%4)*15:02d}–{stop//4:02d}:{(stop%4)*15:02d}'
 
 
-def _render_results(name, results):
+_INCIDENTS={
+    'missing_boundary':'边界缺失', 'incorrect_boundary':'边界错误',
+    'program_fault':'程序故障', 'other_price_anomaly':'其他已记录价格异常',
+}
+_PRICE_SOURCES={'rt_initial':'原始实时价','rt_recomputed':'同段实时重算',
+                'da_proxy_rt':'同段日前参考作为实时代理','withheld':'暂不计价',
+                'rt_nodal':'节点价','rt_uniform':'统一结算点价'}
+
+
+def _unique_json(pairs):
+    result={}
+    for key,value in pairs:
+        if key in result:
+            raise ValueError('JSON 中有重复字段')
+        result[key]=value
+    return result
+
+
+def _uploaded_rerun(payload, run_id, sha, quarter):
+    if len(payload)>128*1024:
+        raise ValueError('重算凭证不应超过 128 KB')
+    record=json.loads(payload,parse_float=Decimal,object_pairs_hook=_unique_json)
+    if not isinstance(record,dict) or set(record)!={'run_id','rt_sha256','quarter','record_id','nodal_yuan_mwh'}:
+        raise ValueError('重算凭证字段必须与下载模板一致')
+    if (record['run_id']!=run_id or record['rt_sha256']!=sha
+            or type(record['quarter']) is not int or record['quarter']!=quarter):
+        raise ValueError('重算凭证未绑定到本次运行和本时段')
+    raw=record['nodal_yuan_mwh']
+    if not isinstance(raw,dict) or any(not k.isascii() or not k.isdigit() or str(int(k))!=k for k in raw):
+        raise ValueError('节点编号必须是规范整数键')
+    if any(type(v) not in (str,int,Decimal) for v in raw.values()):
+        raise ValueError('重算节点价必须为有限十进制数')
+    try:
+        values={int(k):Decimal(v) for k,v in raw.items()}
+    except InvalidOperation as exc:
+        raise ValueError('重算节点价必须为有限十进制数') from exc
+    if not isinstance(record['record_id'],str) or not record['record_id'].strip() or len(record['record_id'])>200:
+        raise ValueError('请填写有效重算记录编号（最多 200 字）')
+    return BoundRerun(run_id,sha,Vector('rt_recomputed',quarter,values,record['record_id']))
+
+
+def _render_price_review(root, name, results, quarter):
+    existing=next((r for r in results.get('price_reviews',[]) if r['quarter']==quarter),None)
+    with st.expander('复核本时段实时电价（仅研究）'):
+        st.caption('仅在执行量已核验时使用。已记录异常应优先采用同段实时重算；只有明确记载无法重算的原因时，才可使用同段日前参考作为实时代理。原始执行、价格与凭证不覆盖。这里只核验研究凭证，不认证外部签发，也不会自动重算。')
+        if existing:
+            decision=existing.get('decision',existing)
+            st.info('已保存复核：'+_PRICE_SOURCES.get(decision.get('source'),str(decision.get('source'))))
+            st.json(existing,expanded=False)
+            return
+        rt=results['rt'][quarter]
+        if max((*rt['shed'].values(),*rt['spill'].values(),rt['reliability_reserve_short_mw']))>1.e-6:
+            st.warning('本时段存在可靠性松弛，不能使用价格复核。本段原始结果仍可查看。')
+            return
+        sha=results['receipt']['data_files']['RT_EXECUTED.json']
+        template={'run_id':name,'rt_sha256':sha,'quarter':quarter,'record_id':'',
+                  'nodal_yuan_mwh':dict.fromkeys(rt['demand'],None)}
+        st.download_button('下载重算凭证模板（不是重算结果）',data=json_bytes(template),
+                           file_name=f'{name}_q{quarter+1}_重算模板.json',mime='application/json')
+        with st.form(f'scv5_review_{name}_{quarter}',clear_on_submit=False):
+            cause=st.selectbox('已记录异常类型',_INCIDENTS,format_func=_INCIDENTS.__getitem__)
+            incident_id=st.text_input('异常记录编号（必填）',max_chars=200)
+            rerun=st.file_uploader('独立重算凭证（可选，按模板完整填写）',type='json')
+            blocker=st.text_input('无法重算的具体原因（仅在无法重算并申请同段日前代理时填写）',max_chars=500)
+            submitted=st.form_submit_button('保存本时段价格复核')
+        if submitted:
+            try:
+                if not incident_id.strip():
+                    raise ValueError('必须有异常记录编号')
+                if (rerun is None)==(not blocker.strip()):
+                    raise ValueError('请提供重算凭证，或明确填写无法重算的原因；不能同时填两项')
+                rr=None if rerun is None else _uploaded_rerun(rerun.getvalue(),name,sha,quarter)
+                review(root,name,ReviewRequest(name,sha,quarter,Incident(cause,incident_id.strip(),blocker.strip() or None),rr))
+            except (ValueError,RuntimeError,OSError,TypeError) as exc:
+                st.error('未保存价格复核：'+str(exc))
+            else:
+                st.rerun()
+
+
+def _render_reconciliation(name, results, quarter):
+    with st.expander('实时量价对账与导出'):
+        st.caption('只计已执行实时段。上网合计仅含纳入现货金额测算的资源，不含固定非市场注入；用电含负荷与储能充电，两列不用于检验系统平衡。日前仅对照电量，未定价不补零。')
+        report=reconcile_energy(results['inputs']['case'],results['rt'],
+                                results.get('reviewed_values',results['values']),
+                                da_reference=results['da'],price_reviews=results.get('price_reviews'))
+        summary=report['summary']
+        cols=st.columns(3)
+        cols[0].metric('对账上网合计（MWh）',summary['grid_delivered_mwh'])
+        cols[1].metric('用电合计（MWh）',summary['grid_consumed_mwh'])
+        net=summary['net_amount']
+        cols[2].metric('已执行时段总净额（元）','未完整' if net is None else net)
+        fields={'resource_id':'主体','role':'角色','bus':'节点','grid_delivered_mwh':'实时上网 MWh',
+                'grid_consumed_mwh':'实时用电 MWh','da_delivered_mwh':'日前参考上网 MWh',
+                'da_consumed_mwh':'日前参考用电 MWh','raw_rt_nodal_price':'原始节点价',
+                'effective_rt_nodal_price':'有效实时节点价','effective_rt_uniform_price':'有效实时统一价',
+                'rt_price_source':'实时价格来源','delivery_price_source':'上网计价口径','consumption_price_source':'用电计价口径',
+                'grid_delivered_amount':'上网金额（元）','grid_consumed_amount':'用电金额（元）',
+                'net_amount':'净额（元）'}
+        rows=[{label:_PRICE_SOURCES.get(r.get(k),r.get(k)) if k.endswith('_source') else r.get(k)
+               for k,label in fields.items()} for r in report['transactions'] if r['quarter']==quarter]
+        st.dataframe(rows,hide_index=True)
+        st.download_button('下载实时量价对账 JSON',data=json_bytes(report),
+                           file_name=name+'_实时量价对账.json',mime='application/json')
+
+
+def _render_results(root, name, results):
     receipt=results['receipt']
     n=receipt['quarters']
     st.subheader('③ 查看运行结果')
@@ -61,11 +170,17 @@ def _render_results(name, results):
                           for r,a in reserve_demo['awards'].items()],hide_index=True)
     t=st.selectbox('选择已执行实时段',list(range(n)),format_func=_quarter_label,
                    key='scv5_period_'+name)
-    rt=results['rt'][t]; da=results['da'][t]; price=results['values'][t]
-    st.metric('实时统一结算点研究价（元/MWh）',price['uniform_price'] or '未形成')
+    rt=results['rt'][t]; da=results['da'][t]
+    price=results.get('reviewed_values',results['values'])[t]
+    uniform=price['uniform_price']
+    st.metric('实时统一结算点研究价（元/MWh）','未形成' if uniform is None else uniform)
     st.caption('按符合 V5.0 §4.4 的实时发电出清电量加权，储能只计放电。表中按研究规则显示每段电能量价值，不是正式账单。')
-    if price['valuation_status']!='provisional_rt_only':
-        st.warning('该时段有可靠性松弛：暂停计算模拟电费。原始模型对偶只用于诊断。')
+    if uniform is None:
+        st.warning('该时段未形成统一研究价。可能因可靠性松弛、缺少符合条件的正权重电量或价格证据不足；不把缺项当作零价。')
+    if da.get('equal_offer_dispatch'):
+        with st.expander('查看本时段日前同价出清记录'):
+            st.caption('在固定组合与原始经济最优约束下分配；参考节点价仍取原始定价模型。实时不使用这一研究规则。')
+            st.json(da['equal_offer_dispatch'],expanded=False)
     with st.expander('查看节点价格、线路潮流及松弛'):
         st.dataframe([{'节点':b,'日前参考模型对偶（不结算）':da['raw_nodal_prices'][b],
                        '实时原始对偶（研究诊断）':rt['raw_nodal_prices'][b],
@@ -89,8 +204,11 @@ def _render_results(name, results):
                    '实时用电 MWh':r['grid_consumed_mwh'],'研究上网金额（元）':r['grid_delivered_amount'],
                    '研究用电金额（元，负号是支出）':r['grid_consumed_amount'],
                    '实时电能量研究净额（元）':r['net_amount']} for r in price['rows']],hide_index=True)
+    _render_price_review(root,name,results,t)
+    _render_reconciliation(name,results,t)
     st.download_button('下载已执行时段研究结果 JSON', data=json_bytes({
-        'rules':receipt['rules'],'formal_settlement':False,'status':receipt['status'],'quarters':results['values']}),
+        'rules':receipt['rules'],'formal_settlement':False,'status':receipt['status'],'quarters':results.get('reviewed_values',results['values']),'original_quarters':results['values'],
+        'price_reviews':results.get('price_reviews',[])}),
         file_name=name+'_实时研究结果.json',mime='application/json')
 
 
@@ -135,11 +253,14 @@ def render():
     with st.expander('梯级水库研究（可选）'):
         hydro_cascade=st.checkbox('使用合成水库约束和上游传播时滞',key='scv5_cascade')
         st.caption('在日电量上限之外独立启用库容、区间来水、发电用水、弃水和生态流量；无变水头或禁振区。')
+    with st.expander('日前同价出清研究'):
+        equal_offer_priority=st.checkbox('启用日前同价清洁能源优先与分段分配',value=True,key='scv5_equal_offer')
+        st.caption('只用于日前预出清。受限网络不能强制配比；保留原报价和原始定价模型，不改变实时规则或煤机组合平局规则。')
     with st.expander('口径与未覆盖规则'):
         st.markdown('直流有功、线路硬限、无交流/无功/N−1。热机开停最短时长、初期状态、非市场电源计划、水电日电量与日内保留、储能曲线均为明示合成输入。'
                     '实时滚动 2 小时，仅执行首个 15 分钟；研究首段已知该段人工实际均值，并非提前可得生产数据。'
                     '日前预出清的启停结果仅作为研究正式组合替代；未模拟日内完整边界类型、生产级日前正式组合、变水头与水电禁振区、市场力替代、'
-                    '各类特殊计划、异常时段重算后才可使用的日前代理价及完整中长期、辅助服务、结算分摊。')
+                    '各类特殊计划及完整中长期、辅助服务、结算分摊。')
     with st.expander('日内边界变化（可选）'):
         id_enabled=st.checkbox('声明日内负荷预测显著变化',key='scv5_id_enabled')
         st.caption('仅在指定时点收到更新，从已执行状态重新优化剩余日内计划；此前负荷预测和平衡不读取该更新。日内不出价、不结算。')
@@ -156,7 +277,8 @@ def render():
                 name,_=run(root,month=month,load_factor=load_factor,solar_factor=solar_factor,
                            coal_offer=float(coal_offer),rt_error=err,periods=n,progress=st.write,
                            storage_product=storage_product,regulation_up=reg,reserve_up=reserve,intraday_update=update,
-                           hydro_cascade=hydro_cascade,reserve_gross=reserve_gross,clear_agc=agc_demo)
+                           hydro_cascade=hydro_cascade,reserve_gross=reserve_gross,clear_agc=agc_demo,
+                           equal_offer_priority=equal_offer_priority)
                 st.session_state['scv5_recent']=name
                 status.update(label='四川研究运行已保存',state='complete')
         except (ValueError,OSError,RuntimeError) as exc:
@@ -164,6 +286,6 @@ def render():
     name=old or st.session_state.get('scv5_recent')
     if name:
         try:
-            _render_results(name,load(root,name))
+            _render_results(root,name,load(root,name))
         except (OSError,ValueError,TypeError,KeyError) as exc:
             st.error('无法核验四川研究档案：'+str(exc))

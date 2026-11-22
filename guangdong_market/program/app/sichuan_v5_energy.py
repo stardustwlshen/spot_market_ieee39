@@ -331,7 +331,94 @@ def _validate_ancillary(case, holds, spot_disabled):
 
 
 
-def day_ahead(case, *, fixed_commitment=None, holds=(), spot_disabled=(), time_limit_s=3600):
+def _tie_allocate(model, case, time_limit_s):
+    """Apply optional DA lexicographic allocation on a clone of the priced LP.
+
+    Scope: only explicit offer blocks from public coal, hydro and renewables.
+    At a clipped unit/line/horizon the feasible minimum L1 quota departure is
+    a research convention, not a draft-specified redistribution algorithm.
+    """
+    import pyomo.environ as p
+
+    by_price={}
+    for r in case.resources:
+        if r.kind not in ('hydro','renewable') and not (r.kind=='thermal' and r.role=='public_coal'):
+            continue
+        for i,(width,price) in enumerate(r.segments):
+            by_price.setdefault(price,[]).append((r.id,i,width,r.kind,r.role))
+    same_type=[]
+    clean=[]
+    for price,blocks in sorted(by_price.items()):
+        if any(c=='thermal' for _,_,_,c,_ in blocks) and any(c!='thermal' for _,_,_,c,_ in blocks):
+            clean.extend((r,i) for r,i,_,c,_ in blocks if c!='thermal')
+        # Don't blend competitive PV with a different registered resource type
+        # merely because both share the renewable physical implementation.
+        for kind,role in sorted({(k,role) for _,_,_,k,role in blocks}):
+            group=[(r,i,w) for r,i,w,k,category in blocks if (k,category)==(kind,role)]
+            if len({r for r,_,_ in group})>1:
+                same_type.append((price,kind,role,group))
+    if not same_type and not clean:
+        return None
+
+    opt=float(p.value(model.objective))
+    lp=model.clone()
+    lp.del_component(lp.dual) # dispatch-only solves cannot overwrite original nodal duals
+    lp.tie_constraints=p.ConstraintList()
+    lp.tie_constraints.add(lp.objective.expr==opt)
+    lp.objective.deactivate()
+    # Primary model represents emergency shortfalls via finite penalties;
+    # a secondary solve must not introduce or relocate emergency slack.
+    for name in ('shed','spill','reserve_short'):
+        for idx,var in getattr(lp,name).items():
+            var.fix(max(0.,float(p.value(getattr(model,name)[idx]))))
+    if clean:
+        expr=sum(lp.segment[r,i,t] for r,i in clean for t in range(PERIODS))
+        lp.clean_priority=p.Objective(expr=expr,sense=p.maximize)
+        _solve(lp,mip=False,time_limit_s=time_limit_s)
+        best_clean=float(p.value(expr))
+        lp.tie_constraints.add(expr>=best_clean-1e-7)
+        lp.clean_priority.deactivate()
+    if same_type:
+        from collections import defaultdict
+        quotas={}
+        for g,(_,_,_,blocks) in enumerate(same_type):
+            weights=defaultdict(float)
+            for r,_,w in blocks:
+                weights[r]+=w
+            for r,w in weights.items():
+                quotas[g,r]=w/sum(weights.values())
+        lp.quota_error=p.Var([(g,r,t) for g,r in quotas for t in range(PERIODS)],domain=p.NonNegativeReals)
+        for (g,r),share in quotas.items():
+            _,_,_,group=same_type[g]
+            for t in range(PERIODS):
+                total=sum(lp.segment[u,i,t] for u,i,_ in group)
+                own=sum(lp.segment[u,i,t] for u,i,_ in group if u==r)
+                delta=own-share*total
+                lp.tie_constraints.add(delta<=lp.quota_error[g,r,t])
+                lp.tie_constraints.add(-delta<=lp.quota_error[g,r,t])
+        lp.share_priority=p.Objective(expr=sum(lp.quota_error.values()))
+        _solve(lp,mip=False,time_limit_s=time_limit_s)
+    if abs(float(p.value(lp.objective.expr))-opt)>1e-5:
+        raise ClearingError('同价分配未保持原始经济目标，本次不发布')
+    rows=_rows(lp,case,0,PERIODS,prices=False)
+    for t,row in enumerate(rows):
+        deviations=[]
+        for price,kind,role,group in same_type:
+            segments=[{'unit':r,'index':i,'width_mw':w,'accepted_mw':float(p.value(lp.segment[r,i,t]))}
+                      for r,i,w in group]
+            deviations.append({'price':price,'kind':kind,'role':role,'segments':segments})
+        row['equal_offer_dispatch']={
+            'status':'secondary_dispatch',
+            'pricing_source':'original_fixed_commitment_lp',
+            'allocation':'maximize_equal_offer_clean_mw_then_minimize_feasible_segment_share_l1',
+            'whole_day_primary_cost_difference_cny':float(p.value(lp.objective.expr))-opt,
+            'share_groups':deviations,
+        }
+    return rows
+
+
+def day_ahead(case, *, fixed_commitment=None, holds=(), spot_disabled=(), time_limit_s=3600,
+              equal_offer_priority=False):
     """Return 96 DA reference quarters, never a monetary settlement."""
     validate(case)
     _validate_ancillary(case, holds, spot_disabled)
@@ -339,7 +426,18 @@ def day_ahead(case, *, fixed_commitment=None, holds=(), spot_disabled=(), time_l
     # Fixed thermal commitment still leaves derived binary transition variables.
     _solve(m,mip=True,time_limit_s=time_limit_s)
     _pricing(m,time_limit_s=time_limit_s)
-    return _rows(m,case,0,PERIODS)
+    priced=_rows(m,case,0,PERIODS)
+    if not equal_offer_priority:
+        return priced
+    allocated=_tie_allocate(m,case,time_limit_s)
+    if allocated is None:
+        for row in priced:
+            row['equal_offer_dispatch']={'status':'no_supported_equal_offer_group',
+                                         'pricing_source':'original_fixed_commitment_lp'}
+        return priced
+    for row,baseline in zip(allocated,priced):
+        row['raw_nodal_prices']=baseline['raw_nodal_prices']
+    return allocated
 
 
 def intraday(case, begin, carry, *, holds=(), spot_disabled=(), time_limit_s=3600):

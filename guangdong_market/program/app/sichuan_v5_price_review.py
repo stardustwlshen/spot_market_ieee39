@@ -89,3 +89,126 @@ def choose_rt_price(quarter, nodes, *, initial=None, incident=None, rerun=None, 
         return PriceDecision("withheld", quarter, None, None, incident.record_id)
     prices = _read(same_quarter_da, "da_preclear", quarter, node_set)
     return PriceDecision("da_proxy_rt", quarter, prices, same_quarter_da.evidence_id, incident.record_id)
+
+
+@dataclass(frozen=True)
+class BoundRerun:
+    """Declared research price evidence, bound to one original result."""
+    run_id: str
+    rt_sha256: str
+    vector: Vector
+
+
+@dataclass(frozen=True)
+class ReviewRequest:
+    run_id: str
+    rt_sha256: str
+    quarter: int
+    incident: Incident
+    rerun: BoundRerun | None = None
+
+
+def _clean_physical(row, nodes):
+    if row.get("dispatch_verified") is False:
+        return False
+    try:
+        shed, spill = row["shed"], row["spill"]
+        if not all(isinstance(x, Mapping) and set(x)=={str(n) for n in nodes} for x in (shed,spill)):
+            return False
+        checks=(*shed.values(), *spill.values(), row["reliability_reserve_short_mw"])
+        return all(type(v) in (int,float) and -1e-6<=v<=1e-6 for v in checks)
+    except (KeyError, TypeError):
+        return False
+
+
+def resolve_run_review(run_id, rt_sha256, inputs, rt_rows, da_rows, request):
+    """Select an RT research price; never repair or produce physical dispatch."""
+    from dataclasses import asdict
+    from math import isfinite
+    from types import SimpleNamespace
+    from sichuan_v5_demo import research_values
+
+    if not isinstance(request, ReviewRequest) or (request.run_id,request.rt_sha256)!=(run_id,rt_sha256):
+        raise ValueError("价格复核证据与原运行摘要不匹配")
+    incident=request.incident
+    if (not isinstance(incident,Incident) or incident.reason not in _CAUSES
+            or not _valid_text(incident.record_id)
+            or incident.documented_rerun_blocker is not None and not _valid_text(incident.documented_rerun_blocker)):
+        raise ValueError("必须提交显式价格异常记录")
+    q=request.quarter
+    if type(q) is not int or not 0<=q<len(rt_rows):
+        raise ValueError("只能复核已执行的实际时段")
+    nodes=tuple(inputs["case"]["buses"])
+    rt=rt_rows[q]
+    if rt.get("quarter")!=q or not _clean_physical(rt,nodes):
+        raise ValueError("原实时出清物理结果不可核验；禁止复核价格或生成金额")
+
+    def vector(row, stage, evidence):
+        raw=row.get("raw_nodal_prices")
+        if (row.get("quarter")!=q or not isinstance(raw,Mapping)
+                or set(raw)!={str(n) for n in nodes}
+                or not all(type(x) in (float,int) and isfinite(x) for x in raw.values())):
+            return None
+        return Vector(stage,q,{n:Decimal(str(raw[str(n)])) for n in nodes},evidence)
+
+    alt=None
+    if request.rerun is not None:
+        rr=request.rerun
+        if not isinstance(rr,BoundRerun) or (rr.run_id,rr.rt_sha256)!=(run_id,rt_sha256):
+            raise ValueError("复算证据与原运行摘要不匹配")
+        alt=rr.vector
+        if alt is None:
+            raise ValueError("缺少复算节点价格")
+    da=da_rows[q]
+    proxy=(vector(da,"da_preclear",f"{run_id}:DA_PRECLEAR.json:{q}")
+           if alt is None and incident.documented_rerun_blocker and _clean_physical(da,nodes) else None)
+    decision=choose_rt_price(q,nodes,incident=incident,rerun=alt,same_quarter_da=proxy)
+    selected=decision.nodal_yuan_mwh
+    adjusted=dict(rt,raw_nodal_prices=selected if selected is not None else dict.fromkeys(nodes,0))
+    for key in ("shed","spill","demand"):
+        adjusted[key]={int(k):v for k,v in adjusted[key].items()}
+    case=SimpleNamespace(buses=nodes,resources=[SimpleNamespace(**r) for r in inputs["case"]["resources"]])
+    values=research_values(case,adjusted)
+    if selected is None:
+        from sichuan_v5_demo import _result
+        from sichuan_v5_settlement import SettlementInput
+        values={"quarter":q,"valuation_status":"withheld_price_review",
+                "cleared_nodal_price":dict.fromkeys(nodes),"uniform_price":None,
+                "rows":[_result(SettlementInput(q,r["resource_id"],r["role"],
+                                               Decimal(r["grid_delivered_mwh"]),
+                                               Decimal(r["grid_consumed_mwh"])))
+                        for r in values["rows"]]}
+    return {
+        "schema":"ieee39.sichuan_v5.price_review.v1", "formal_settlement":False,
+        "evidence_status":"declared_synthetic_research", "request":asdict(request),
+        "source":decision.source, "quarter":q, "incident_id":incident.record_id,
+        "evidence_id":decision.evidence_id, "original_raw_nodal_prices":rt.get("raw_nodal_prices"),
+        "selected_nodal_prices":decision.nodal_yuan_mwh,"values":values,
+    }
+
+
+def parse_review_request(record):
+    """Parse a complete, explicitly run-bound JSON request; never infer IDs."""
+    try:
+        if (not isinstance(record, dict)
+                or not {"run_id","rt_sha256","quarter","incident"}<=set(record)
+                or set(record)-{"run_id","rt_sha256","quarter","incident","rerun"}):
+            raise ValueError("不完整的复核请求")
+        incident=Incident(**record['incident'])
+        alt=record.get('rerun')
+        rr=None
+        if alt is not None:
+            if set(alt)!={"run_id","rt_sha256","vector"}:
+                raise ValueError("不完整的复算证据")
+            v=alt['vector']
+            if (set(v)!={"stage","quarter","nodal_yuan_mwh","evidence_id"}
+                    or any(str(int(k))!=k for k in v['nodal_yuan_mwh'])
+                    or any(type(a) not in (str,int) for a in v['nodal_yuan_mwh'].values())):
+                raise ValueError('节点编号或价格格式异常')
+            rr=BoundRerun(alt['run_id'],alt['rt_sha256'],
+                          Vector(v['stage'],v['quarter'],
+                                 {int(k):Decimal(a) for k,a in v['nodal_yuan_mwh'].items()},
+                                 v['evidence_id']))
+        return ReviewRequest(record['run_id'],record['rt_sha256'],record['quarter'],incident,rr)
+    except (KeyError,TypeError,ValueError,ArithmeticError,AttributeError) as exc:
+        raise ValueError('价格复核档案证据格式有误') from exc

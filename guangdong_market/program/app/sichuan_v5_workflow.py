@@ -4,6 +4,7 @@ from datetime import datetime, timezone
 from decimal import Decimal
 import hashlib
 import json
+import os
 from pathlib import Path
 import re
 import uuid
@@ -14,6 +15,7 @@ from sichuan_v5_ancillary import Award, prepare_energy_boundary
 from sichuan_v5_demo import fixture, forecast_callback, research_values
 from sichuan_v5_energy import PERIODS, day_ahead, intraday, realtime
 from sichuan_v5_intraday import Update
+from sichuan_v5_price_review import parse_review_request, resolve_run_review
 
 
 def json_bytes(record):
@@ -37,7 +39,9 @@ def _sources():
 
 
 def run(root, *, month, load_factor=1., solar_factor=1., coal_offer=320., rt_error=.025,
-        periods=4, storage_product='spot', regulation_up=0., reserve_up=0., intraday_update=None, hydro_cascade=False, reserve_gross=0., clear_agc=False, progress=None):
+        periods=4, storage_product='spot', regulation_up=0., reserve_up=0., intraday_update=None, hydro_cascade=False, reserve_gross=0., clear_agc=False, equal_offer_priority=False, progress=None):
+    if type(equal_offer_priority) is not bool:
+        raise ValueError('日前同价次序选项必须为布尔值')
     if storage_product not in ('spot','none'):
         raise ValueError('当前没有储能辅助服务测试和持续时长数据，只支持现货/不参与')
     if (type(periods) is not int or not 1<=periods<=PERIODS
@@ -62,7 +66,7 @@ def run(root, *, month, load_factor=1., solar_factor=1., coal_offer=320., rt_err
     inputs.update(case=asdict(case), rt_error=rt_error, requested_periods=periods, storage_product=storage_product,
                   user_declared_ancillary_awards=[asdict(a) for a in awards],
                   research_reserve_gross_mw=reserve_gross,
-                  clears_segmented_agc=clear_agc,
+                  clears_segmented_agc=clear_agc, equal_offer_priority=equal_offer_priority,
                   intraday_update=asdict(intraday_update) if intraday_update is not None else None,
                   rules= SICHUAN_V5.identity(), runtime_sources=_sources())
     directory=Path(root).resolve()
@@ -83,7 +87,7 @@ def run(root, *, month, load_factor=1., solar_factor=1., coal_offer=320., rt_err
     save('INPUT.json',inputs)
     try:
         tell('正在计算日前预出清和节点参考价（不结算）…')
-        preclear=day_ahead(case,spot_disabled=disabled)
+        preclear=day_ahead(case,spot_disabled=disabled,**({'equal_offer_priority':True} if equal_offer_priority else {}))
         save('DA_PRECLEAR.json',preclear)
         reference=preclear
         if reserve_gross:
@@ -149,7 +153,7 @@ def run(root, *, month, load_factor=1., solar_factor=1., coal_offer=320., rt_err
         save('RT_RESEARCH_VALUES.json',money)
         status='full_day_research' if periods==PERIODS else 'partial_day_research'
         save('RECEIPT.json',dict(schema=('ieee39.sichuan_v5.receipt.v3' if clear_agc else 'ieee39.sichuan_v5.receipt.v2'),rules=SICHUAN_V5.identity(),status=status,
-             quarters=periods, formal_settlement=False, price_fallback_applied=False,
+             quarters=periods, equal_offer_priority=equal_offer_priority, formal_settlement=False, price_fallback_applied=False,
              **({'agc_stage':'segmented_research_cleared'} if clear_agc else {}),
              reserve_stage='research_cleared' if reserve_gross else 'not_enabled',
              intraday_status=('executed' if 'ID_PLAN.json' in files else
@@ -210,6 +214,9 @@ def load(root,name):
         raise ValueError('四川研究凭证格式有误')
     data={key:read(key,files[key]) for key in sorted(required)}
     require_profile(data['INPUT.json'].get('rules'),SICHUAN_V5)
+    priority=data['INPUT.json'].get('equal_offer_priority',False)
+    if type(priority) is not bool or receipt.get('equal_offer_priority',False) is not priority:
+        raise ValueError('日前同价次序研究选项与运行档案不匹配')
     n=receipt['quarters']
     if (type(n) is not int or not 1<=n<=PERIODS
             or receipt.get('status')!=('full_day_research' if n==PERIODS else 'partial_day_research')
@@ -287,8 +294,52 @@ def load(root,name):
                     or any(row.get('quarter')!=t or 'raw_nodal_prices' in row or 'net_amount' in row
                            for t,row in enumerate(rows,activation))):
                 raise ValueError('日内物理计划时段或非结算口径无效')
-    return {'receipt':receipt, 'inputs':data['INPUT.json'], 'da':data['DA_PRECLEAR.json'],'intraday':id_result,'reserve':reserve_result,'agc':agc_result,
-            'rt':data['RT_EXECUTED.json'],'values':data['RT_RESEARCH_VALUES.json']}
+    run_data={'receipt':receipt, 'inputs':data['INPUT.json'], 'da':data['DA_PRECLEAR.json'],
+              'intraday':id_result,'reserve':reserve_result,'agc':agc_result,
+              'rt':data['RT_EXECUTED.json'],'values':data['RT_RESEARCH_VALUES.json']}
+    reviews=[]
+    reviewed_values=list(run_data['values'])
+    for q in range(n):
+        filename=_review_filename(q)
+        if (path/filename).exists() or (path/filename).is_symlink():
+            sidecar=read(filename)
+            if sidecar.get('quarter')!=q:
+                raise ValueError('价格复核档案时段不匹配')
+            checked=_resolve_review(name,run_data,parse_review_request(sidecar.get('request')))
+            if sidecar!=json.loads(json_bytes(checked)):
+                raise ValueError('价格复核档案与原运行、证据或试算结果不一致')
+            reviews.append(sidecar)
+            reviewed_values[q]=sidecar['values']
+    return dict(run_data,price_reviews=reviews,reviewed_values=reviewed_values)
+
+
+def _review_filename(quarter):
+    return f'RT_PRICE_REVIEW_Q{quarter:02d}.json'
+
+
+def _resolve_review(name,data,request):
+    return resolve_run_review(name,data['receipt']['data_files']['RT_EXECUTED.json'],
+                              data['inputs'],data['rt'],data['da'],request)
+
+
+def review(root,name,request):
+    """Create a separate immutable research review; never rewrite the run files."""
+    data=load(root,name)
+    result=_resolve_review(name,data,request)
+    target=Path(root).resolve()/name
+    output=target/_review_filename(result['quarter'])
+    staged=target/f'.pending_rt_price_review_{uuid.uuid4().hex}'
+    payload=json_bytes(result)
+    try:
+        with staged.open('xb') as stream:
+            stream.write(payload)
+        try:
+            os.link(staged,output)
+        except FileExistsError as exc:
+            raise ValueError('该执行时段已有不可覆盖的价格复核档案') from exc
+    finally:
+        staged.unlink(missing_ok=True)
+    return load(root,name)
 
 
 def _check_segmented(agc_rows,reserve_rows,da_rows,rt_rows,reserve_gross):
