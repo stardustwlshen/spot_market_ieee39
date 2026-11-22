@@ -9,6 +9,7 @@ import re
 import uuid
 
 from market_rule_profile import SICHUAN_V5, require_profile
+from sichuan_v5_agc_stages import AGC_SEGMENTS, ROUNDING_TOL, reserve_offers, stages
 from sichuan_v5_ancillary import Award, prepare_energy_boundary
 from sichuan_v5_demo import fixture, forecast_callback, research_values
 from sichuan_v5_energy import PERIODS, day_ahead, intraday, realtime
@@ -36,7 +37,7 @@ def _sources():
 
 
 def run(root, *, month, load_factor=1., solar_factor=1., coal_offer=320., rt_error=.025,
-        periods=4, storage_product='spot', regulation_up=0., reserve_up=0., intraday_update=None, hydro_cascade=False, reserve_gross=0., progress=None):
+        periods=4, storage_product='spot', regulation_up=0., reserve_up=0., intraday_update=None, hydro_cascade=False, reserve_gross=0., clear_agc=False, progress=None):
     if storage_product not in ('spot','none'):
         raise ValueError('当前没有储能辅助服务测试和持续时长数据，只支持现货/不参与')
     if (type(periods) is not int or not 1<=periods<=PERIODS
@@ -45,6 +46,8 @@ def run(root, *, month, load_factor=1., solar_factor=1., coal_offer=320., rt_err
     if (type(reserve_gross) not in (float,int) or not 0.<=reserve_gross<=300.
             or reserve_gross and reserve_up):
         raise ValueError('研究备用需求应在0–300 MW；不能同时手填备用占位')
+    if type(clear_agc) is not bool or clear_agc and (not reserve_gross or regulation_up or reserve_up):
+        raise ValueError('启用分段调频须启用研究备用，且不得同时手填调频／备用')
     if intraday_update is not None and not isinstance(intraday_update,Update):
         raise ValueError('日内优化必须使用显式生效时点和负荷边界声明')
     forecast=forecast_callback(rt_error)
@@ -59,6 +62,7 @@ def run(root, *, month, load_factor=1., solar_factor=1., coal_offer=320., rt_err
     inputs.update(case=asdict(case), rt_error=rt_error, requested_periods=periods, storage_product=storage_product,
                   user_declared_ancillary_awards=[asdict(a) for a in awards],
                   research_reserve_gross_mw=reserve_gross,
+                  clears_segmented_agc=clear_agc,
                   intraday_update=asdict(intraday_update) if intraday_update is not None else None,
                   rules= SICHUAN_V5.identity(), runtime_sources=_sources())
     directory=Path(root).resolve()
@@ -83,33 +87,36 @@ def run(root, *, month, load_factor=1., solar_factor=1., coal_offer=320., rt_err
         save('DA_PRECLEAR.json',preclear)
         reference=preclear
         if reserve_gross:
-            from sichuan_v5_reserve_market import RegulationAward, ReserveOffer, clear_reserve
+            from sichuan_v5_reserve_market import RegulationAward, clear_reserve
             # Separate formal-commitment research proxy after DA preclear.
             # Both synthetic stages see the same disclosed fixture, with no
             # production/interprovincial updates claimed.
-            tell('计算独立的日前正式组合研究代理，随后核验调频声明、预出清备用…')
+            tell('计算独立的日前正式组合研究代理，随后分段出清调频和备用…' if clear_agc
+                 else '计算独立的日前正式组合研究代理，随后核验调频声明、预出清备用…')
             formal=intraday(case,0,None,spot_disabled=disabled)
             save('DA_COMMITMENT_RESEARCH.json',formal)
-            dec=lambda x:Decimal(str(x))
-            reg=(RegulationAward('C1',dec(regulation_up),Decimal(0),dec(regulation_up),'declared_C1_regulation'),) if regulation_up else ()
-            offers=tuple(ReserveOffer(r.id,'hydro',dec(r.capacity_mw)*Decimal('.15'),
-                dec(price),dec(r.capacity_mw),dec(r.minimum_mw),dec(r.capacity_mw),dec(r.capacity_mw),True,
-                installed_mw=dec(r.capacity_mw),seasonal_or_better=True)
-                for r,price in ((r,45 if r.id=='H1' else 90) for r in case.resources if r.id in ('H1','H2')))
-            draft=clear_reserve(dec(reserve_gross),dec(regulation_up),offers,reg,
-                             duration_hours=Decimal(24),regulation_stage_evidence_id='synthetic_user_declared_prior_regulation')
-            if draft.unmet_mw:
-                tell(f'研究备用缺额 {draft.unmet_mw} MW，不开始后续实时。')
-            save('DA_RESERVE_RESEARCH.json',asdict(draft))
-            if draft.unmet_mw:
-                raise ValueError('研究备用需求未满足，未运行实时；已保存预出清和备用记录')
-            awards=tuple(Award(t,key,float(a),float(b),float(c)) for t in range(PERIODS)
-                         for key,(a,b,c) in sorted(draft.energy_holds.items()))
+            if clear_agc:
+                sec=stages(case,formal,reserve_gross,
+                           publish_regulation=lambda rows:save('DA_AGC_RESEARCH.json',rows),
+                           publish_reserve=lambda rows:save('DA_RESERVE_RESEARCH.json',rows))
+                awards=tuple(Award(t,key,float(a),float(b),float(c))
+                             for t,w in sec.items() for key,(a,b,c) in sorted(w.items()))
+            else:
+                dec=lambda x:Decimal(str(x))
+                reg=(RegulationAward('C1',dec(regulation_up),Decimal(0),dec(regulation_up),'declared_C1_regulation'),) if regulation_up else ()
+                draft=clear_reserve(dec(reserve_gross),dec(regulation_up),reserve_offers(case),reg,
+                                 duration_hours=Decimal(24),regulation_stage_evidence_id='synthetic_user_declared_prior_regulation')
+                save('DA_RESERVE_RESEARCH.json',asdict(draft))
+                if draft.unmet_mw:
+                    tell(f'研究备用缺额 {draft.unmet_mw} MW，不开始后续实时。')
+                    raise ValueError('研究备用需求未满足，未运行实时；已保存预出清和备用记录')
+                awards=tuple(Award(t,key,float(a),float(b),float(c)) for t in range(PERIODS)
+                             for key,(a,b,c) in sorted(draft.energy_holds.items()))
             holds,disabled=prepare_energy_boundary(unit_ids=tuple(r.id for r in case.resources),
                     storage_market={'ES1':(storage_product,)*PERIODS},awards=awards)
             reference=formal
-        if awards:
-            tell('校核外部声明的调频／备用容量占位…')
+        if awards or reserve_gross:
+            tell('校核分段调频／备用容量占位…' if clear_agc else '校核外部声明的调频／备用容量占位…')
             constrained=day_ahead(case,fixed_commitment=reference,holds=holds,spot_disabled=disabled)
             if reserve_gross:
                 if any(max((*r['shed'].values(),*r['spill'].values(),r['reliability_reserve_short_mw']))>1.e-6
@@ -141,8 +148,9 @@ def run(root, *, month, load_factor=1., solar_factor=1., coal_offer=320., rt_err
         save('RT_EXECUTED.json',rt)
         save('RT_RESEARCH_VALUES.json',money)
         status='full_day_research' if periods==PERIODS else 'partial_day_research'
-        save('RECEIPT.json',dict(schema='ieee39.sichuan_v5.receipt.v2',rules=SICHUAN_V5.identity(),status=status,
+        save('RECEIPT.json',dict(schema=('ieee39.sichuan_v5.receipt.v3' if clear_agc else 'ieee39.sichuan_v5.receipt.v2'),rules=SICHUAN_V5.identity(),status=status,
              quarters=periods, formal_settlement=False, price_fallback_applied=False,
+             **({'agc_stage':'segmented_research_cleared'} if clear_agc else {}),
              reserve_stage='research_cleared' if reserve_gross else 'not_enabled',
              intraday_status=('executed' if 'ID_PLAN.json' in files else
                               'not_reached' if intraday_update else 'not_declared'), data_files=files.copy()))
@@ -185,14 +193,19 @@ def load(root,name):
     required={'INPUT.json','DA_PRECLEAR.json','RT_EXECUTED.json','RT_RESEARCH_VALUES.json'}
     files=receipt['data_files']
     schema=receipt.get('schema')
-    modern=schema=='ieee39.sichuan_v5.receipt.v2'
+    segmented=schema=='ieee39.sichuan_v5.receipt.v3'
+    modern=schema in ('ieee39.sichuan_v5.receipt.v2','ieee39.sichuan_v5.receipt.v3')
+    if segmented:
+        if receipt.get('agc_stage')!='segmented_research_cleared' or receipt.get('reserve_stage')!='research_cleared':
+            raise ValueError('分段调频与备用研究状态无效')
+        required.add('DA_AGC_RESEARCH.json')
     if modern and receipt.get('reserve_stage')=='research_cleared':
         required.update(('DA_COMMITMENT_RESEARCH.json','DA_RESERVE_RESEARCH.json',
                          'DA_POST_ANCILLARY_SCED_RESEARCH.json'))
     if modern and receipt.get('intraday_status')=='executed':
         required.add('ID_PLAN.json')
     if (set(files)!=required or not all(isinstance(v,str) and re.fullmatch(r'[a-f0-9]{64}',v) for v in files.values())
-            or schema not in ('ieee39.sichuan_v5.receipt.v1','ieee39.sichuan_v5.receipt.v2')
+            or not (modern or schema=='ieee39.sichuan_v5.receipt.v1')
             or receipt.get('formal_settlement') is not False):
         raise ValueError('四川研究凭证格式有误')
     data={key:read(key,files[key]) for key in sorted(required)}
@@ -205,16 +218,22 @@ def load(root,name):
                for key,count in [('DA_PRECLEAR.json',PERIODS),('RT_EXECUTED.json',n),('RT_RESEARCH_VALUES.json',n)])):
         raise ValueError('四川研究结果时段记录缺项或顺序有误')
     reserve_result=data.get('DA_RESERVE_RESEARCH.json')
+    agc_result=data.get('DA_AGC_RESEARCH.json')
+    if segmented!=bool(data['INPUT.json'].get('clears_segmented_agc',False)):
+        raise ValueError('调频研究档案与选项来源不匹配')
     if reserve_result is not None:
         commitments=data['DA_COMMITMENT_RESEARCH.json']
         constrained=data['DA_POST_ANCILLARY_SCED_RESEARCH.json']
         if (not data['INPUT.json'].get('research_reserve_gross_mw')
-                or Decimal(reserve_result['unmet_mw'])!=0
+                or (not segmented and Decimal(reserve_result['unmet_mw'])!=0)
                 or any(len(rows)!=PERIODS or any(row.get('quarter')!=i for i,row in enumerate(rows))
                        for rows in (commitments,constrained))
                 or any('raw_nodal_prices' in row for row in commitments)
                 or any(before['online']!=after['online'] for before,after in zip(commitments,constrained))):
             raise ValueError('研究备用凭证与组合或容量边界不符')
+        if segmented:
+            _check_segmented(agc_result,reserve_result,constrained,data['RT_EXECUTED.json'],
+                             data['INPUT.json']['research_reserve_gross_mw'])
     elif modern and data['INPUT.json'].get('research_reserve_gross_mw'):
         raise ValueError('缺少研究备用出清凭证')
     id_result=data.get('ID_PLAN.json')
@@ -268,5 +287,43 @@ def load(root,name):
                     or any(row.get('quarter')!=t or 'raw_nodal_prices' in row or 'net_amount' in row
                            for t,row in enumerate(rows,activation))):
                 raise ValueError('日内物理计划时段或非结算口径无效')
-    return {'receipt':receipt, 'inputs':data['INPUT.json'], 'da':data['DA_PRECLEAR.json'],'intraday':id_result,'reserve':reserve_result,
+    return {'receipt':receipt, 'inputs':data['INPUT.json'], 'da':data['DA_PRECLEAR.json'],'intraday':id_result,'reserve':reserve_result,'agc':agc_result,
             'rt':data['RT_EXECUTED.json'],'values':data['RT_RESEARCH_VALUES.json']}
+
+
+def _check_segmented(agc_rows,reserve_rows,da_rows,rt_rows,reserve_gross):
+    def fail():
+        raise ValueError('分段调频凭证与备用抵扣或能量占位不一致')
+    if not isinstance(agc_rows,list) or not isinstance(reserve_rows,list) or len(agc_rows)!=len(AGC_SEGMENTS) or len(reserve_rows)!=len(AGC_SEGMENTS):
+        fail()
+    for (start,stop,demand),g,r in zip(AGC_SEGMENTS,agc_rows,reserve_rows):
+        if any(q.get('start')!=start or q.get('stop')!=stop for q in (g,r)):
+            fail()
+        agc,res=(q['result'] for q in (g,r))
+        credit=Decimal(agc['system_regulation_credit_mw'])
+        awards=agc['awarded']
+        compiled=res['energy_holds']
+        if (Decimal(agc['demand_mw'])!=demand or not 0<=Decimal(agc['unmet_mw'])<=ROUNDING_TOL
+                or not 0<=Decimal(res['unmet_mw'])<=ROUNDING_TOL
+                or abs(sum((Decimal(a['reserve_credit_mw']) for a in awards.values()),Decimal(0))-credit)>ROUNDING_TOL
+                or abs(Decimal(res['net_demand_mw'])-max(Decimal(0),Decimal(str(reserve_gross))-credit))>ROUNDING_TOL
+                or Decimal(res['duration_hours'])!=Decimal(stop-start)/4
+                or res['regulation_stage_evidence_id']!=agc['stage_evidence_id']
+                or any(max(abs(Decimal(a[k])-Decimal(a['reserve_credit_mw']))
+                           for k in ('hold_up_mw','hold_down_mw'))>ROUNDING_TOL
+                       or abs(Decimal(a['first_mw'])+Decimal(a['second_mw'])-Decimal(a['reserve_credit_mw']))>ROUNDING_TOL
+                       or a['evidence_id']!=agc['stage_evidence_id']+':'+unit
+                       for unit,a in awards.items())
+                or set(compiled)!=set(awards)|set(res['awards'])):
+            fail()
+        for unit,(up,down,standby) in compiled.items():
+            award=awards.get(unit)
+            reserve_award=res['awards'].get(unit)
+            if (Decimal(up)!=(Decimal(award['hold_up_mw']) if award else 0)
+                    or Decimal(down)!=(Decimal(award['hold_down_mw']) if award else 0)
+                    or Decimal(standby)!=(Decimal(reserve_award['regular_mw'])+Decimal(reserve_award['supplemental_mw']) if reserve_award else 0)):
+                fail()
+        expected={unit:[float(up)+float(standby),float(down)] for unit,(up,down,standby) in compiled.items()
+                  if Decimal(up) or Decimal(down) or Decimal(standby)}
+        if any(row['ancillary_holds_mw']!=expected for row in (*da_rows[start:stop],*rt_rows[start:stop])):
+            fail()

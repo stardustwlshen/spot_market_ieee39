@@ -13,6 +13,10 @@ def _quarter_label(t):
     return f'{t//4:02d}:{(t%4)*15:02d}–{(t+1)//4:02d}:{((t+1)%4)*15:02d}'
 
 
+def _segment_label(start,stop):
+    return f'{start//4:02d}:{(start%4)*15:02d}–{stop//4:02d}:{(stop%4)*15:02d}'
+
+
 def _render_results(name, results):
     receipt=results['receipt']
     n=receipt['quarters']
@@ -33,7 +37,21 @@ def _render_results(name, results):
                           for row in plan['rows']],hide_index=True)
     elif receipt.get('intraday_status')=='not_reached':
         st.caption('本次时段尚未到达日内更新声明的生效时间，没有生成日内计划。')
-    if results.get('reserve'):
+    if results.get('agc'):
+        with st.expander('查看分段调频、备用和占位研究'):
+            st.caption('正式组合研究代理 → 调频初步出清 → 一份容量抵扣备用 → 保留上、下方向容量后出清能量。各段价格是不同产品的研究参考，不是收入。')
+            st.dataframe([{'时段':_segment_label(a['start'],a['stop']),
+                           '调频需求（MW）':a['result']['demand_mw'],
+                           '调频抵扣（MW，只记一次）':a['result']['system_regulation_credit_mw'],
+                           '调频研究首轮里程价（元/MW）':a['result']['first_price_cny_per_mw'],
+                           '抵扣后备用需求（MW）':b['result']['net_demand_mw'],
+                           '普通备用研究价（元/MW·h）':b['result']['ordinary_marginal_price_cny_per_mw_h']}
+                          for a,b in zip(results['agc'],results['reserve'])],hide_index=True)
+            st.dataframe([{'时段':_segment_label(seg['start'],seg['stop']),
+                           '机组':resource,'调频上调占位（MW）':a['hold_up_mw'],
+                           '调频下调占位（MW）':a['hold_down_mw'],'备用抵扣（MW）':a['reserve_credit_mw']}
+                          for seg in results['agc'] for resource,a in seg['result']['awarded'].items()],hide_index=True)
+    elif results.get('reserve'):
         reserve_demo=results['reserve']
         with st.expander('查看顺序辅助服务研究'):
             st.caption('合成日前正式组合代理 → 已声明调频及抵扣 → 单区单段备用预出清 → 保留容量后 SCED。非正式成交、补偿或实际调用。')
@@ -97,15 +115,21 @@ def render():
     st.caption('报价曲线依 V5.0 分段边界生成；运行物理参数和最小出力成本是合成研究设定。')
     with st.expander('辅助服务占位和实时预测'):
         storage_product=st.radio('独立储能选择',('spot','none'),format_func=lambda a:'仅现货' if a=='spot' else '不参与（零充放电）')
-        reg=st.number_input('煤机 C1 已声明调频上调占位（MW）',0.,100.,0.,step=5.)
+
         reserve_demo=st.checkbox('运行顺序备用预出清研究',key='scv5_reserve_demo')
         if reserve_demo:
             reserve_gross=st.number_input('研究总备用需求（MW）',1.,300.,120.,step=5.,key='scv5_reserve_gross')
-            st.caption('采用全天单段、仅 H1/H2 合成水电报价。C1 已声明的上调容量作为研究抵扣，不出清调频或结算。')
+            agc_demo=st.checkbox('先做分段调频研究出清',key='scv5_agc_demo')
+            if agc_demo:
+                st.caption('00–12 时40 MW、12–24 时60 MW；使用合成准入及历史 Kh，分别结转至备用。没有实测 AGC 里程和费用。')
+            else:
+                st.caption('采用全天单段、仅 H1/H2 合成水电报价。C1 已声明的上调容量作为研究抵扣，不出清调频或结算。')
             reserve=0.
         else:
             reserve_gross=0.
+            agc_demo=False
             reserve=st.number_input('煤机 C1 已声明备用上调占位（MW）',0.,100.,0.,step=5.)
+        reg=0. if agc_demo else st.number_input('煤机 C1 已声明调频上调占位（MW）',0.,100.,0.,step=5.)
         err=st.slider('合成实时负荷扰动幅度',0.,.08,.025,.005)
         st.caption('研究备用结果可进入能量模型容量占位，不计算实际调用或收入；没有从广东继承辅助服务授予。')
     with st.expander('梯级水库研究（可选）'):
@@ -132,7 +156,7 @@ def render():
                 name,_=run(root,month=month,load_factor=load_factor,solar_factor=solar_factor,
                            coal_offer=float(coal_offer),rt_error=err,periods=n,progress=st.write,
                            storage_product=storage_product,regulation_up=reg,reserve_up=reserve,intraday_update=update,
-                           hydro_cascade=hydro_cascade,reserve_gross=reserve_gross)
+                           hydro_cascade=hydro_cascade,reserve_gross=reserve_gross,clear_agc=agc_demo)
                 st.session_state['scv5_recent']=name
                 status.update(label='四川研究运行已保存',state='complete')
         except (ValueError,OSError,RuntimeError) as exc:
