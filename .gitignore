@@ -5,6 +5,7 @@ __pycache__/
 .pytest_cache/
 outputs/
 runs/
+runs_sichuan_v5_consultation/
 scenarios/
 
 # Local archived experiments are evidence, not source artifacts.

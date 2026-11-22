@@ -1,3 +1,5 @@
+> **`sichuan-v5` 分支入口：** [四川 V5.0（征求意见稿）单日研究模拟](guangdong_market/program/SICHUAN_V5.md)。在 `guangdong_market/program` 运行 `python scripts/launch_sichuan.py`，默认进入四川；运行原 `python scripts/launch.py` 显式启动广东入口。两套结果不混用。Windows 双击 `guangdong_market/program/启动四川.cmd`，不要用根目录的旧版 `start.bat`。以下其他说明保留为历史，不代表四川草案的规则或验收范围。
+
 > **2026-11-15 新版入口：** [广东省内单日市场模拟](guangdong_market/使用说明.md)。请进入 `guangdong_market/program`，按新说明安装并启动。以下原项目说明及根部程序保留供历史参考，不与新版混用。新版包含软约束越限提示及研究收益，非正式市场账单。
 
 # IEEE39 电力现货市场出清仿真
