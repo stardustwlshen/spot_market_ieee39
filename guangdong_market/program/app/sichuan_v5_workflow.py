@@ -1,6 +1,7 @@
 """Sichuan-only execution/provenance. Neither writes nor reads Guangdong runs."""
 from dataclasses import asdict, replace
 from datetime import datetime, timezone
+from decimal import Decimal
 import hashlib
 import json
 from pathlib import Path
@@ -10,11 +11,18 @@ import uuid
 from market_rule_profile import SICHUAN_V5, require_profile
 from sichuan_v5_ancillary import Award, prepare_energy_boundary
 from sichuan_v5_demo import fixture, forecast_callback, research_values
-from sichuan_v5_energy import PERIODS, day_ahead, realtime
+from sichuan_v5_energy import PERIODS, day_ahead, intraday, realtime
+from sichuan_v5_intraday import Update
 
 
 def json_bytes(record):
-    return json.dumps(record, ensure_ascii=False, sort_keys=True, allow_nan=False).encode('utf-8')
+    def convert(value):
+        if isinstance(value,Decimal):
+            return str(value)
+        if isinstance(value,frozenset):
+            return sorted(value)
+        raise TypeError(f'无法保存：{type(value).__name__}')
+    return json.dumps(record, ensure_ascii=False, sort_keys=True, allow_nan=False,default=convert).encode('utf-8')
 
 
 def digest(payload):
@@ -28,14 +36,20 @@ def _sources():
 
 
 def run(root, *, month, load_factor=1., solar_factor=1., coal_offer=320., rt_error=.025,
-        periods=4, storage_product='spot', regulation_up=0., reserve_up=0., progress=None):
+        periods=4, storage_product='spot', regulation_up=0., reserve_up=0., intraday_update=None, hydro_cascade=False, reserve_gross=0., progress=None):
     if storage_product not in ('spot','none'):
         raise ValueError('当前没有储能辅助服务测试和持续时长数据，只支持现货/不参与')
     if (type(periods) is not int or not 1<=periods<=PERIODS
             or not all(type(v) in (float,int) and 0.<=v<=100. for v in (regulation_up,reserve_up))):
         raise ValueError('运行范围或辅助服务占位无效')
+    if (type(reserve_gross) not in (float,int) or not 0.<=reserve_gross<=300.
+            or reserve_gross and reserve_up):
+        raise ValueError('研究备用需求应在0–300 MW；不能同时手填备用占位')
+    if intraday_update is not None and not isinstance(intraday_update,Update):
+        raise ValueError('日内优化必须使用显式生效时点和负荷边界声明')
     forecast=forecast_callback(rt_error)
-    case, inputs = fixture(month, load_factor=load_factor, solar_factor=solar_factor, coal_offer=coal_offer)
+    case, inputs = fixture(month, load_factor=load_factor, solar_factor=solar_factor, coal_offer=coal_offer,
+                           hydro_cascade=hydro_cascade)
     if storage_product!='spot':
         case=replace(case,storage_plan=tuple({'ES1':0.} for _ in range(PERIODS)))
     awards=tuple(Award(t,'C1',regulation_up_mw=regulation_up,reserve_up_mw=reserve_up)
@@ -44,6 +58,8 @@ def run(root, *, month, load_factor=1., solar_factor=1., coal_offer=320., rt_err
                     storage_market={'ES1':(storage_product,)*PERIODS}, awards=awards)
     inputs.update(case=asdict(case), rt_error=rt_error, requested_periods=periods, storage_product=storage_product,
                   user_declared_ancillary_awards=[asdict(a) for a in awards],
+                  research_reserve_gross_mw=reserve_gross,
+                  intraday_update=asdict(intraday_update) if intraday_update is not None else None,
                   rules= SICHUAN_V5.identity(), runtime_sources=_sources())
     directory=Path(root).resolve()
     if directory.name!=SICHUAN_V5.results_folder:
@@ -65,19 +81,71 @@ def run(root, *, month, load_factor=1., solar_factor=1., coal_offer=320., rt_err
         tell('正在计算日前预出清和节点参考价（不结算）…')
         preclear=day_ahead(case,spot_disabled=disabled)
         save('DA_PRECLEAR.json',preclear)
-        # V5 DA preclear is a reference. This prototype's single synthetic
-        # preclear commitment stands in for the separate official commitment.
+        reference=preclear
+        if reserve_gross:
+            from sichuan_v5_reserve_market import RegulationAward, ReserveOffer, clear_reserve
+            # Separate formal-commitment research proxy after DA preclear.
+            # Both synthetic stages see the same disclosed fixture, with no
+            # production/interprovincial updates claimed.
+            tell('计算独立的日前正式组合研究代理，随后核验调频声明、预出清备用…')
+            formal=intraday(case,0,None,spot_disabled=disabled)
+            save('DA_COMMITMENT_RESEARCH.json',formal)
+            dec=lambda x:Decimal(str(x))
+            reg=(RegulationAward('C1',dec(regulation_up),Decimal(0),dec(regulation_up),'declared_C1_regulation'),) if regulation_up else ()
+            offers=tuple(ReserveOffer(r.id,'hydro',dec(r.capacity_mw)*Decimal('.15'),
+                dec(price),dec(r.capacity_mw),dec(r.minimum_mw),dec(r.capacity_mw),dec(r.capacity_mw),True,
+                installed_mw=dec(r.capacity_mw),seasonal_or_better=True)
+                for r,price in ((r,45 if r.id=='H1' else 90) for r in case.resources if r.id in ('H1','H2')))
+            draft=clear_reserve(dec(reserve_gross),dec(regulation_up),offers,reg,
+                             duration_hours=Decimal(24),regulation_stage_evidence_id='synthetic_user_declared_prior_regulation')
+            if draft.unmet_mw:
+                tell(f'研究备用缺额 {draft.unmet_mw} MW，不开始后续实时。')
+            save('DA_RESERVE_RESEARCH.json',asdict(draft))
+            if draft.unmet_mw:
+                raise ValueError('研究备用需求未满足，未运行实时；已保存预出清和备用记录')
+            awards=tuple(Award(t,key,float(a),float(b),float(c)) for t in range(PERIODS)
+                         for key,(a,b,c) in sorted(draft.energy_holds.items()))
+            holds,disabled=prepare_energy_boundary(unit_ids=tuple(r.id for r in case.resources),
+                    storage_market={'ES1':(storage_product,)*PERIODS},awards=awards)
+            reference=formal
         if awards:
             tell('校核外部声明的调频／备用容量占位…')
-            day_ahead(case,fixed_commitment=preclear,holds=holds,spot_disabled=disabled)
+            constrained=day_ahead(case,fixed_commitment=reference,holds=holds,spot_disabled=disabled)
+            if reserve_gross:
+                if any(max((*r['shed'].values(),*r['spill'].values(),r['reliability_reserve_short_mw']))>1.e-6
+                       for r in constrained):
+                    raise ValueError('备用研究中标后的日前 SCED 有可靠性松弛，不采用')
+                save('DA_POST_ANCILLARY_SCED_RESEARCH.json',constrained)
+                reference=constrained
         tell('正在执行 15 分钟滚动出清和节点定价…')
-        rt=realtime(case,preclear,executed_periods=periods,holds=holds,spot_disabled=disabled,window_inputs=forecast)
+        def record_intraday(start,carry,planned):
+            thermal={resource.id for resource in case.resources if resource.kind=='thermal'}
+            activation={'effective_quarter':start,'prior_executed_quarter':None if carry is None else carry['quarter'],
+                        'thermal_mw': {} if carry is None else {r:carry['power'][r] for r in sorted(thermal)},
+                        'thermal_online': {} if carry is None else carry['online'],
+                        'thermal_state_age_quarters': {} if carry is None else carry['online_age'],
+                        'storage_end_soc_mwh': {} if carry is None else carry['energy'],
+                        'hydro_prior_executed_mwh': {} if carry is None else carry['hydro_used']}
+            if carry is not None and case.cascade is not None:
+                water=carry['cascade_state']
+                activation['hydro_cascade_state']={'period':water.period,'volume_m3':dict(water.volume_m3),
+                    'in_transit':[{'upstream':u,'downstream':d,'next_arrivals_m3':list(a)}
+                                  for (u,d),a in sorted(water.in_transit_m3.items())]}
+            tell(f'日内负荷边界从第{start+1}段起生效，已更新其后物理计划；不生成价格。')
+            save('ID_PLAN.json',dict(schema='ieee39.sichuan_v5.intraday.v1',
+                                    activation=activation, rows=planned, is_market_settlement=False))
+        rt=realtime(case,reference,executed_periods=periods,holds=holds,spot_disabled=disabled,
+                    window_inputs=forecast,intraday_update=intraday_update,intraday_result=record_intraday)
+
         money=[research_values(case,row) for row in rt]
         save('RT_EXECUTED.json',rt)
         save('RT_RESEARCH_VALUES.json',money)
         status='full_day_research' if periods==PERIODS else 'partial_day_research'
-        save('RECEIPT.json',dict(schema='ieee39.sichuan_v5.receipt.v1',rules=SICHUAN_V5.identity(),status=status,
-             quarters=periods, formal_settlement=False, price_fallback_applied=False, data_files=files.copy()))
+        save('RECEIPT.json',dict(schema='ieee39.sichuan_v5.receipt.v2',rules=SICHUAN_V5.identity(),status=status,
+             quarters=periods, formal_settlement=False, price_fallback_applied=False,
+             reserve_stage='research_cleared' if reserve_gross else 'not_enabled',
+             intraday_status=('executed' if 'ID_PLAN.json' in files else
+                              'not_reached' if intraday_update else 'not_declared'), data_files=files.copy()))
     except Exception as exc:
         save('FAILURE.json',dict(rules=SICHUAN_V5.identity(),error=str(exc),failed_research=True,automatic_restart=False))
         raise
@@ -116,8 +184,15 @@ def load(root,name):
     require_profile(receipt.get('rules'),SICHUAN_V5)
     required={'INPUT.json','DA_PRECLEAR.json','RT_EXECUTED.json','RT_RESEARCH_VALUES.json'}
     files=receipt['data_files']
+    schema=receipt.get('schema')
+    modern=schema=='ieee39.sichuan_v5.receipt.v2'
+    if modern and receipt.get('reserve_stage')=='research_cleared':
+        required.update(('DA_COMMITMENT_RESEARCH.json','DA_RESERVE_RESEARCH.json',
+                         'DA_POST_ANCILLARY_SCED_RESEARCH.json'))
+    if modern and receipt.get('intraday_status')=='executed':
+        required.add('ID_PLAN.json')
     if (set(files)!=required or not all(isinstance(v,str) and re.fullmatch(r'[a-f0-9]{64}',v) for v in files.values())
-            or receipt.get('schema')!='ieee39.sichuan_v5.receipt.v1'
+            or schema not in ('ieee39.sichuan_v5.receipt.v1','ieee39.sichuan_v5.receipt.v2')
             or receipt.get('formal_settlement') is not False):
         raise ValueError('四川研究凭证格式有误')
     data={key:read(key,files[key]) for key in sorted(required)}
@@ -129,5 +204,69 @@ def load(root,name):
             or any(len(data[key])!=count or any(row.get('quarter')!=i for i,row in enumerate(data[key]))
                for key,count in [('DA_PRECLEAR.json',PERIODS),('RT_EXECUTED.json',n),('RT_RESEARCH_VALUES.json',n)])):
         raise ValueError('四川研究结果时段记录缺项或顺序有误')
-    return {'receipt':receipt, 'inputs':data['INPUT.json'], 'da':data['DA_PRECLEAR.json'],
+    reserve_result=data.get('DA_RESERVE_RESEARCH.json')
+    if reserve_result is not None:
+        commitments=data['DA_COMMITMENT_RESEARCH.json']
+        constrained=data['DA_POST_ANCILLARY_SCED_RESEARCH.json']
+        if (not data['INPUT.json'].get('research_reserve_gross_mw')
+                or Decimal(reserve_result['unmet_mw'])!=0
+                or any(len(rows)!=PERIODS or any(row.get('quarter')!=i for i,row in enumerate(rows))
+                       for rows in (commitments,constrained))
+                or any('raw_nodal_prices' in row for row in commitments)
+                or any(before['online']!=after['online'] for before,after in zip(commitments,constrained))):
+            raise ValueError('研究备用凭证与组合或容量边界不符')
+    elif modern and data['INPUT.json'].get('research_reserve_gross_mw'):
+        raise ValueError('缺少研究备用出清凭证')
+    id_result=data.get('ID_PLAN.json')
+    if modern:
+        configured=data['INPUT.json']['intraday_update']
+        update=Update(**configured) if configured is not None else None
+        activation=update.effective_quarter if update else None
+        expected='not_declared' if update is None else 'executed' if activation<n else 'not_reached'
+        if receipt.get('intraday_status')!=expected:
+            raise ValueError('日内优化状态未绑定运行时段')
+        if id_result is not None:
+            rows=id_result['rows']
+            if activation:
+                original=data['RT_EXECUTED.json'][activation-1]
+                handoff=id_result['activation']
+                if (handoff.get('thermal_online')!=original['online']
+                        or handoff.get('thermal_mw')!={r:original['power'][r] for r in original['online']}
+                        or handoff.get('storage_end_soc_mwh')!=original['energy']):
+                    raise ValueError('日内参考状态未绑定此前已执行结果')
+                if original.get('hydro'):
+                    water=handoff.get('hydro_cascade_state')
+                    if (not isinstance(water,dict) or water.get('period')!=activation
+                            or set(water.get('volume_m3',{}))!=set(original['hydro'])
+                            or any(abs(water['volume_m3'][r]-z['storage_m3'])>1.e-5
+                                   for r,z in original['hydro'].items())):
+                        raise ValueError('日内水力状态未绑定此前已执行库容')
+                    links=data['INPUT.json']['case']['cascade']['reaches']
+                    by_link={(v['upstream'],v['downstream']):v['next_arrivals_m3']
+                             for v in water['in_transit']}
+                    if len(by_link)!=len(links) or len(by_link)!=len(water['in_transit']):
+                        raise ValueError('日内河段在途水量记录有误')
+                    for link in links:
+                        u,d=link['upstream'],link['downstream']
+                        lag=link['travel_quarters']
+                        pending=by_link[(u,d)]
+                        expected=[]
+                        for at in range(activation,activation+lag):
+                            origin=at-lag
+                            if origin<0:
+                                expected.append(link['initial_arrivals_m3'][at])
+                            else:
+                                sample=data['RT_EXECUTED.json'][origin]['hydro'][u]
+                                expected.append(900*(sample['turbine_m3s']+sample['water_spill_m3s']))
+                        if len(pending)!=lag or any(abs(x-y)>1.e-5 for x,y in zip(pending,expected)):
+                            raise ValueError('日内河段在途水量未绑定先前已执行流量')
+            if (id_result.get('schema')!='ieee39.sichuan_v5.intraday.v1'
+                    or id_result.get('is_market_settlement') is not False
+                    or id_result['activation'].get('effective_quarter')!=activation
+                    or id_result['activation'].get('prior_executed_quarter')!=(None if activation==0 else activation-1)
+                    or len(rows)!=PERIODS-activation
+                    or any(row.get('quarter')!=t or 'raw_nodal_prices' in row or 'net_amount' in row
+                           for t,row in enumerate(rows,activation))):
+                raise ValueError('日内物理计划时段或非结算口径无效')
+    return {'receipt':receipt, 'inputs':data['INPUT.json'], 'da':data['DA_PRECLEAR.json'],'intraday':id_result,'reserve':reserve_result,
             'rt':data['RT_EXECUTED.json'],'values':data['RT_RESEARCH_VALUES.json']}

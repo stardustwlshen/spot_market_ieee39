@@ -4,6 +4,7 @@ from pathlib import Path
 import streamlit as st
 
 from market_rule_profile import SICHUAN_V5
+from sichuan_v5_intraday import Update
 from sichuan_v5_rules import Participant, participation_rule
 from sichuan_v5_workflow import archive_names, json_bytes, load, run
 
@@ -21,6 +22,25 @@ def _render_results(name, results):
         st.info('这是首段试算，不代表全天；未计算的时段不填零。')
     st.caption('日前预出清仅是技术参考，没有日前应收应付，也没有日前—实时偏差金额。')
     st.line_chart({'全网日前预出清负荷 MW':[sum(q['demand'].values()) for q in results['da']]})
+    if results.get('intraday'):
+        plan=results['intraday']
+        start=plan['activation']['effective_quarter']
+        st.caption(f'日内物理计划从 {_quarter_label(start)} 起，覆盖剩余 {len(plan["rows"])} 段；仅供实时参考，不定价、不结算。')
+        with st.expander('查看日内物理参考计划'):
+            st.dataframe([{'时段':_quarter_label(row['quarter']),
+                           '全网负荷计划（MW）':sum(row['demand'].values()),
+                           '运行煤机数':sum(row['online'].values())}
+                          for row in plan['rows']],hide_index=True)
+    elif receipt.get('intraday_status')=='not_reached':
+        st.caption('本次时段尚未到达日内更新声明的生效时间，没有生成日内计划。')
+    if results.get('reserve'):
+        reserve_demo=results['reserve']
+        with st.expander('查看顺序辅助服务研究'):
+            st.caption('合成日前正式组合代理 → 已声明调频及抵扣 → 单区单段备用预出清 → 保留容量后 SCED。非正式成交、补偿或实际调用。')
+            st.metric('扣除调频后研究备用需求（MW）',reserve_demo['net_demand_mw'])
+            st.dataframe([{'机组':r,'普通研究中标（MW）':a['regular_mw'],
+                           '普通研究边际价（元/MW·h）':a['regular_price_cny_per_mw_h']}
+                          for r,a in reserve_demo['awards'].items()],hide_index=True)
     t=st.selectbox('选择已执行实时段',list(range(n)),format_func=_quarter_label,
                    key='scv5_period_'+name)
     rt=results['rt'][t]; da=results['da'][t]; price=results['values'][t]
@@ -40,6 +60,13 @@ def _render_results(name, results):
         st.dataframe([{'资源':r,'新能源未利用 MW':v} for r,v in rt['curtailed_mw'].items()],hide_index=True)
         st.dataframe([{'机组':r,'调频＋备用上调占位 MW':v[0],'调频下调占位 MW':v[1]}
                        for r,v in rt['ancillary_holds_mw'].items()],hide_index=True)
+    if rt.get('hydro'):
+        with st.expander('查看梯级水库与水量'):
+            st.caption('合成 H1→H2 延迟30分钟，H3独立；展示执行后库容及本段入流/弃水，不是实时实测。')
+            st.dataframe([{'水库':r,'执行后库容 m³':v['storage_m3'],
+                           '上游到达量 m³':v['upstream_arrival_m3'],'区间来水 m³/s':v['natural_inflow_m3s'],
+                           '发电流量 m³/s':v['turbine_m3s'],'弃水 m³/s':v['water_spill_m3s']}
+                          for r,v in rt['hydro'].items()],hide_index=True)
     st.dataframe([{'主体':r['resource_id'],'实时上网 MWh':r['grid_delivered_mwh'],
                    '实时用电 MWh':r['grid_consumed_mwh'],'研究上网金额（元）':r['grid_delivered_amount'],
                    '研究用电金额（元，负号是支出）':r['grid_consumed_amount'],
@@ -71,23 +98,41 @@ def render():
     with st.expander('辅助服务占位和实时预测'):
         storage_product=st.radio('独立储能选择',('spot','none'),format_func=lambda a:'仅现货' if a=='spot' else '不参与（零充放电）')
         reg=st.number_input('煤机 C1 已声明调频上调占位（MW）',0.,100.,0.,step=5.)
-        reserve=st.number_input('煤机 C1 已声明备用上调占位（MW）',0.,100.,0.,step=5.)
+        reserve_demo=st.checkbox('运行顺序备用预出清研究',key='scv5_reserve_demo')
+        if reserve_demo:
+            reserve_gross=st.number_input('研究总备用需求（MW）',1.,300.,120.,step=5.,key='scv5_reserve_gross')
+            st.caption('采用全天单段、仅 H1/H2 合成水电报价。C1 已声明的上调容量作为研究抵扣，不出清调频或结算。')
+            reserve=0.
+        else:
+            reserve_gross=0.
+            reserve=st.number_input('煤机 C1 已声明备用上调占位（MW）',0.,100.,0.,step=5.)
         err=st.slider('合成实时负荷扰动幅度',0.,.08,.025,.005)
-        st.caption('仅校核输入占位，不出清辅助服务或计算收入。不存在从广东继承的辅助服务授予与补偿。')
+        st.caption('研究备用结果可进入能量模型容量占位，不计算实际调用或收入；没有从广东继承辅助服务授予。')
+    with st.expander('梯级水库研究（可选）'):
+        hydro_cascade=st.checkbox('使用合成水库约束和上游传播时滞',key='scv5_cascade')
+        st.caption('在日电量上限之外独立启用库容、区间来水、发电用水、弃水和生态流量；无变水头或禁振区。')
     with st.expander('口径与未覆盖规则'):
         st.markdown('直流有功、线路硬限、无交流/无功/N−1。热机开停最短时长、初期状态、非市场电源计划、水电日电量与日内保留、储能曲线均为明示合成输入。'
                     '实时滚动 2 小时，仅执行首个 15 分钟；研究首段已知该段人工实际均值，并非提前可得生产数据。'
-                    '日前预出清的启停结果仅作为研究正式组合替代；未模拟独立日前正式组合、日内正式滚动、梯级水库、市场力替代、'
+                    '日前预出清的启停结果仅作为研究正式组合替代；未模拟日内完整边界类型、生产级日前正式组合、变水头与水电禁振区、市场力替代、'
                     '各类特殊计划、异常时段重算后才可使用的日前代理价及完整中长期、辅助服务、结算分摊。')
+    with st.expander('日内边界变化（可选）'):
+        id_enabled=st.checkbox('声明日内负荷预测显著变化',key='scv5_id_enabled')
+        st.caption('仅在指定时点收到更新，从已执行状态重新优化剩余日内计划；此前负荷预测和平衡不读取该更新。日内不出价、不结算。')
+        if id_enabled:
+            id_start=st.selectbox('更新开始时段',range(96),index=48,format_func=_quarter_label,key='scv5_id_start')
+            id_pct=st.slider('更新后剩余时段负荷变化（%）',-20,20,5,key='scv5_id_pct')
     st.subheader('② 运行出清')
     n=st.radio('运行范围', (4,96),format_func=lambda x:'首小时试算（4 段）' if x==4 else '完整单日（96 段）',horizontal=True)
     if st.button('计算日前并运行实时',type='primary',key='scv5_run',disabled=old is not None):
         st.session_state.pop('scv5_recent',None)
         try:
             with st.status('启动四川研究任务…',expanded=True) as status:
+                update=Update(id_start,1+id_pct/100.) if id_enabled else None
                 name,_=run(root,month=month,load_factor=load_factor,solar_factor=solar_factor,
                            coal_offer=float(coal_offer),rt_error=err,periods=n,progress=st.write,
-                           storage_product=storage_product,regulation_up=reg,reserve_up=reserve)
+                           storage_product=storage_product,regulation_up=reg,reserve_up=reserve,intraday_update=update,
+                           hydro_cascade=hydro_cascade,reserve_gross=reserve_gross)
                 st.session_state['scv5_recent']=name
                 status.update(label='四川研究运行已保存',state='complete')
         except (ValueError,OSError,RuntimeError) as exc:

@@ -1,6 +1,12 @@
 """Independent lossless IEEE39 research core, no Guangdong pricing/AGC defaults."""
 from dataclasses import dataclass
 from math import isfinite
+if __package__:
+    from .sichuan_v5_hydro import Cascade, advance_cascade, attach_cascade_constraints, initial_cascade_state, validate_cascade
+    from .sichuan_v5_intraday import amended_case
+else:
+    from sichuan_v5_hydro import Cascade, advance_cascade, attach_cascade_constraints, initial_cascade_state, validate_cascade
+    from sichuan_v5_intraday import amended_case
 
 DT = .25
 PERIODS = 96
@@ -49,6 +55,7 @@ class Case:
     storage_plan: tuple = () # scheduled signed MW; positive discharge; zero if not spot
     reserve_mw: float = 0. # explicit research reliability requirement, not a service award
     unmet_load_yuan_mwh: float = 10000. # synthetic reliability proxy, not a market cap
+    cascade: Cascade | None = None
 
 
 class ClearingError(ValueError):
@@ -89,6 +96,12 @@ def validate(case):
     rs = {r.id: r for r in case.resources}
     if not rs or len(rs) != len(case.resources):
         raise ClearingError('资源必须唯一且非空')
+    if case.cascade is not None:
+        validate_cascade(case.cascade)
+        hydro={r.id for r in case.resources if r.kind=='hydro'}
+        if (len(case.cascade.natural_inflow_m3s)!=PERIODS
+                or not {r.id for r in case.cascade.reservoirs}<=hydro):
+            raise ClearingError('合成梯级水库与水电资源/96段边界不匹配')
     for r in case.resources:
         if (r.bus not in buses or r.kind not in ('thermal','renewable','hydro','fixed','storage')
             or not _num(r.capacity_mw, 1e-9) or not _num(r.offer_yuan_mwh, -case.unmet_load_yuan_mwh, case.unmet_load_yuan_mwh)
@@ -184,9 +197,14 @@ def _build(case, begin, stop, *, carry=None, da_mode=None, holds=(), spot_disabl
                 prev_u=initial if t == begin else m.online[r,t-1]
                 m.phys.add(u-prev_u == y-z)
                 m.phys.add(y+z <= 1)
+                age=v.initial_state_age_quarters if carry is None else carry['online_age'][r]
+                remaining=max(0,(v.min_up_quarters if initial else v.min_down_quarters)-age)
                 if da_mode is not None:
-                    u.fix(da_mode[t]['online'][r])
-                elif t-begin < max(0,(v.min_up_quarters if initial else v.min_down_quarters)-v.initial_state_age_quarters):
+                    wanted=da_mode[t]['online'][r]
+                    if t-begin<remaining and wanted!=initial:
+                        raise ClearingError(f'机组 {r} 在时段 {t+1} 的参考组合违反已执行启停时长')
+                    u.fix(wanted)
+                elif t-begin<remaining:
                     u.fix(initial)
                 m.phys.add(g >= v.minimum_mw*u)
                 up,down = holds[t].get(r, (0.,0.)) if holds else (0.,0.)
@@ -225,7 +243,13 @@ def _build(case, begin, stop, *, carry=None, da_mode=None, holds=(), spot_disabl
         # the DA budget use outside the current look-ahead as a research anchor.
         after = 0. if da_mode is None else DT*sum(row['power'][r] for row in da_mode[stop:])
         m.phys.add(DT*sum(m.power[r,t] for t in times) <= max(0.,budget-after))
-    m.objective = p.Objective(expr=DT*sum(
+    spill_cost=0
+    if case.cascade is not None:
+        attach_cascade_constraints(m,case.cascade,begin,stop,lambda r,t:m.power[r,t],
+                                   state=None if carry is None else carry['cascade_state'])
+        # Modest synthetic coefficient, not the official numerical water penalty.
+        spill_cost=.02*sum(m.cascade_spill.values())
+    m.objective = p.Objective(expr=spill_cost+DT*sum(
         sum(rs[r].offer_yuan_mwh*m.power[r,t] for r in rs if not rs[r].segments)
         +sum(price*m.segment[r,i,t] for (r,i),(_,price) in segments.items())
         +sum(.01*m.charge[r,t] for r in st)
@@ -249,7 +273,7 @@ def _solve(model, *, mip, time_limit_s):
     model.solutions.load_from(result)
 
 
-def _rows(model, case, begin, stop):
+def _rows(model, case, begin, stop, *, prices=True):
     import pyomo.environ as p
     rs={r.id:r for r in case.resources}
     th=[r for r in rs if rs[r].kind == 'thermal']
@@ -271,7 +295,13 @@ def _rows(model, case, begin, stop):
              spill={b:q(model.spill[b,t]) for b in case.buses},
              flows={l.id:q(model.flow[l.id,t]) for l in case.lines},
              reliability_reserve_short_mw=q(model.reserve_short[t]),
-             raw_nodal_prices={b:q(model.dual[model.balance[b,t]]/DT) for b in case.buses})
+             **({'hydro':{r.id:{'storage_m3':q(model.cascade_volume[r.id,t]),
+                                  'turbine_m3s':q(model.cascade_turbine[r.id,t]),
+                                  'water_spill_m3s':q(model.cascade_spill[r.id,t]),
+                                  'upstream_arrival_m3':q(model.cascade_arrival[r.id,t]),
+                                  'natural_inflow_m3s':q(model.cascade_natural[r.id,t])}
+                           for r in case.cascade.reservoirs}} if case.cascade is not None else {}),
+             **({'raw_nodal_prices':{b:q(model.dual[model.balance[b,t]]/DT) for b in case.buses}} if prices else {}))
         for t in range(begin,stop)]
 
 
@@ -312,8 +342,28 @@ def day_ahead(case, *, fixed_commitment=None, holds=(), spot_disabled=(), time_l
     return _rows(m,case,0,PERIODS)
 
 
+def intraday(case, begin, carry, *, holds=(), spot_disabled=(), time_limit_s=3600):
+    """Physical planning for the remaining day. No LP prices or ledger."""
+    if type(begin) is not int or not 0<=begin<PERIODS:
+        raise ClearingError('日内生效时段无效')
+    if (begin==0 and carry is not None or begin>0
+            and (not isinstance(carry,dict) or carry.get('quarter')!=begin-1)):
+        raise ClearingError('日内优化需要从已执行的上一时段状态开始')
+    validate(case)
+    _validate_ancillary(case, holds, spot_disabled)
+    model=_build(case,begin,PERIODS,carry=carry,holds=holds,spot_disabled=spot_disabled)
+    _solve(model,mip=True,time_limit_s=time_limit_s)
+    rows=_rows(model,case,begin,PERIODS,prices=False)
+    rejected=next((r for r in rows if max((*r['shed'].values(),*r['spill'].values(),
+                                           r['reliability_reserve_short_mw']))>1.e-6),None)
+    if rejected:
+        raise ClearingError(f'日内参考计划第 {rejected["quarter"]+1} 段有可靠性松弛，不采用；请检查边界')
+    return rows
+
+
 def realtime(case, da, *, executed_periods=PERIODS, window_quarters=WINDOW,
-             holds=(), spot_disabled=(), window_inputs=None, time_limit_s=3600):
+             holds=(), spot_disabled=(), window_inputs=None, intraday_update=None,
+             intraday_result=None, time_limit_s=3600):
     """Execute only first cell; forecast callback may supply scheduled window inputs.
 
     Without callback, this is a deterministic perfect-information synthetic replay.
@@ -326,18 +376,32 @@ def realtime(case, da, *, executed_periods=PERIODS, window_quarters=WINDOW,
         raise ClearingError('实时研究窗口须为1–16段')
     if len(da)!=PERIODS or any(row.get('quarter')!=t for t,row in enumerate(da)):
         raise ClearingError('实时需要同源连续96段日前组合')
+    if intraday_update is not None and (type(intraday_update.effective_quarter) is not int
+                                        or not 0<=intraday_update.effective_quarter<PERIODS):
+        raise ClearingError('日内边界更新时段无效')
+    base_case=case
+    schedule=da
+    online={r.id:int(r.initial_mw>0) for r in case.resources if r.kind=='thermal'}
+    ages={r.id:r.initial_state_age_quarters for r in case.resources if r.kind=='thermal'}
     hydro={r.id:0. for r in case.resources if r.daily_water_budget_mwh is not None}
     carry=None
+    water=initial_cascade_state(case.cascade) if case.cascade is not None else None
     results=[]
     for t in range(executed_periods):
+        if intraday_update is not None and t==intraday_update.effective_quarter:
+            base_case=amended_case(case,intraday_update)
+            planned=intraday(base_case,t,carry,holds=holds,spot_disabled=spot_disabled,time_limit_s=time_limit_s)
+            schedule=[*da[:t],*planned]
+            if intraday_result is not None:
+                intraday_result(t,carry,planned)
         stop=min(PERIODS,t+window_quarters)
-        current=case if window_inputs is None else window_inputs(case,t,stop)
-        m=_build(current,t,stop,carry=carry,da_mode=da,holds=holds,spot_disabled=spot_disabled)
+        current=base_case if window_inputs is None else window_inputs(base_case,t,stop)
+        m=_build(current,t,stop,carry=carry,da_mode=schedule,holds=holds,spot_disabled=spot_disabled)
         # The U values are fixed; derive starts/stops solely from fixed commitments.
         for r in (v.id for v in case.resources if v.kind == 'thermal'):
             last=(int(next(v for v in case.resources if v.id==r).initial_mw>0) if carry is None else carry['online'][r])
             for k in range(t,stop):
-                now=da[k]['online'][r]
+                now=schedule[k]['online'][r]
                 m.started[r,k].fix(max(0,now-last))
                 m.stopped[r,k].fix(max(0,last-now))
                 last=now
@@ -346,5 +410,23 @@ def realtime(case, da, *, executed_periods=PERIODS, window_quarters=WINDOW,
         results.append(row)
         for r in hydro:
             hydro[r]+=DT*row['power'][r]
-        carry={**row,'hydro_used':hydro.copy()}
+        for r,state in row['online'].items():
+            ages[r]=ages[r]+1 if state==online[r] else 1
+        online=row['online']
+        carry={**row,'online_age':ages.copy(),'hydro_used':hydro.copy()}
+        if water is not None:
+            reservoirs=row['hydro']
+            flow={r:row['power'][r] for r in reservoirs}
+            spill={r:z['water_spill_m3s'] for r,z in reservoirs.items()}
+            for values in (flow,spill):
+                if any(x < -1e-8 for x in values.values()):
+                    raise ClearingError('水力模型求解出现超出数值容差的负出力/弃水')
+            solved=advance_cascade(current.cascade,water,{r:max(0.,v) for r,v in flow.items()},
+                                   {r:max(0.,v) for r,v in spill.items()})
+            for r,z in reservoirs.items():
+                if (abs(solved.state.volume_m3[r]-z['storage_m3'])>1e-5
+                        or abs(solved.upstream_arrival_m3[r]-z['upstream_arrival_m3'])>1e-5):
+                    raise ClearingError('实时水量状态与独立守恒核验不一致')
+            water=solved.state
+            carry['cascade_state']=water
     return results

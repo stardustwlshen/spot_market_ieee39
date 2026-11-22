@@ -1,6 +1,7 @@
 """Declared synthetic inputs built only from the public IEEE39 topology."""
 from dataclasses import asdict
 from decimal import Decimal, ROUND_HALF_UP
+from dataclasses import replace
 import csv
 import hashlib
 import math
@@ -29,7 +30,7 @@ def _digest(path):
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
-def fixture(month, *, load_factor=1., solar_factor=1., coal_offer=320.):
+def fixture(month, *, load_factor=1., solar_factor=1., coal_offer=320., hydro_cascade=False):
     if (type(month) is not int or not 1<=month<=12 or not .65<=load_factor<=1.25
             or not .5<=solar_factor<=1.3 or not 220<=coal_offer<=500):
         raise ClearingError('合成场景或报价超出允许演示范围')
@@ -72,6 +73,16 @@ def fixture(month, *, load_factor=1., solar_factor=1., coal_offer=320.):
         # Charge and discharge balance exactly at 0.9 × 0.9 efficiency.
         storage.append({'ES1': -35. if 11<=h<14 else 28.35 if 18<=h<21 else 0.})
     case = Case(tuple(buses),lines,rs,tuple(demand),tuple(available),tuple(storage))
+    if hydro_cascade:
+        from sichuan_v5_hydro import Cascade, Reach, Reservoir
+        # 30-minute H1→H2 transit, H3 is physically independent. Constant
+        # conversion factors and explicit pre-day transit are teaching data.
+        reservoirs=(Reservoir('H1',.2e6,20.e6,6.e6,.32,600.,min_release_m3s=15.,max_release_m3s=800.),
+                    Reservoir('H2',.2e6,28.e6,10.e6,.40,600.,min_release_m3s=20.,max_release_m3s=1000.),
+                    Reservoir('H3',.2e6,28.e6,12.e6,.37,700.,min_release_m3s=15.,max_release_m3s=1050.))
+        reach=Reach('H1','H2',2,(135000.,145000.))
+        inlet=tuple({'H1':145.+25.*math.sin(math.pi*t/96.),'H2':78.,'H3':190.} for t in range(96))
+        case=replace(case,cascade=Cascade(reservoirs,(reach,),inlet))
     declarations = {r.id: participation_rule(Participant(r.role),month).bid_mode.value for r in rs}
     return case, {
         'month':month, 'load_factor':load_factor, 'solar_factor':solar_factor, 'coal_offer':coal_offer,
