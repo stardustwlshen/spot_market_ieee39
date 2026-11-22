@@ -147,29 +147,33 @@ def _build(case, begin, stop, *, carry=None, da_mode=None, holds=(), spot_disabl
     import pyomo.environ as p
     rs = {r.id: r for r in case.resources}
     ls = {l.id: l for l in case.lines}
-    th = {r for r in rs if rs[r].kind == 'thermal'}
-    st = {r for r in rs if rs[r].kind == 'storage'}
+    # Pyomo can normalize dict index arguments in hash-dependent order. Stable
+    # columns and constraints prevent intertemporal equal-cost hydro schedules
+    # from changing between processes and shifting RT's remaining-water limits.
+    resource_ids, line_ids = tuple(rs), tuple(ls)
+    th = tuple(sorted(r for r in rs if rs[r].kind == 'thermal'))
+    st = tuple(sorted(r for r in rs if rs[r].kind == 'storage'))
     hydro = {r for r in rs if rs[r].daily_water_budget_mwh is not None}
     times = range(begin, stop)
     by_bus = {b: [r for r,v in rs.items() if v.bus == b] for b in case.buses}
     m = p.ConcreteModel()
     m.ancillary_holds=holds or ({},)*PERIODS
     segments={(r,i):(width,price) for r in rs for i,(width,price) in enumerate(rs[r].segments)}
-    m.segment = p.Var(segments,times,bounds=lambda _,r,i,t: (0,segments[r,i][0]))
-    m.power = p.Var(rs, times, domain=p.NonNegativeReals)
-    m.charge = p.Var(sorted(st), times, domain=p.NonNegativeReals)
-    m.energy = p.Var(sorted(st), times, domain=p.NonNegativeReals)
-    m.mode = p.Var(sorted(st), times, domain=p.Binary)
-    m.online = p.Var(sorted(th), times, domain=p.Binary)
-    m.started = p.Var(sorted(th), times, domain=p.Binary)
-    m.stopped = p.Var(sorted(th), times, domain=p.Binary)
-    m.reserve = p.Var(sorted(th), times, domain=p.NonNegativeReals)
+    m.segment = p.Var(tuple(segments),times,bounds=lambda _,r,i,t: (0,segments[r,i][0]))
+    m.power = p.Var(resource_ids, times, domain=p.NonNegativeReals)
+    m.charge = p.Var(st, times, domain=p.NonNegativeReals)
+    m.energy = p.Var(st, times, domain=p.NonNegativeReals)
+    m.mode = p.Var(st, times, domain=p.Binary)
+    m.online = p.Var(th, times, domain=p.Binary)
+    m.started = p.Var(th, times, domain=p.Binary)
+    m.stopped = p.Var(th, times, domain=p.Binary)
+    m.reserve = p.Var(th, times, domain=p.NonNegativeReals)
     m.shed = p.Var(case.buses, times, domain=p.NonNegativeReals)
     m.spill = p.Var(case.buses, times, domain=p.NonNegativeReals)
     m.reserve_short = p.Var(times, domain=p.NonNegativeReals)
     m.angle = p.Var(case.buses, times)
-    m.flow = p.Var(ls, times, bounds=lambda _, l, t: (-ls[l].limit_mw, ls[l].limit_mw))
-    m.eq_flow = p.Constraint(ls,times, rule=lambda _,l,t:
+    m.flow = p.Var(line_ids, times, bounds=lambda _, l, t: (-ls[l].limit_mw, ls[l].limit_mw))
+    m.eq_flow = p.Constraint(line_ids,times, rule=lambda _,l,t:
        m.flow[l,t] == 100/ls[l].reactance*(m.angle[ls[l].source,t]-m.angle[ls[l].target,t]))
     out = {b:[l for l,v in ls.items() if v.source == b] for b in case.buses}
     into = {b:[l for l,v in ls.items() if v.target == b] for b in case.buses}
