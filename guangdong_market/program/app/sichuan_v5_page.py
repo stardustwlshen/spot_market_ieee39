@@ -105,7 +105,11 @@ def _display_number(value):
     return '未形成' if value is None else format(Decimal(str(value)), ',.2f')
 
 
-def _render_unit_detail(name, resources, rt, da, transactions):
+_STORAGE_RUN_MODE={'spot':'仅参与现货','none':'不参与（零充放电）'}
+_PV_RUN_MODE={'quantity_only':'报量不报价','quantity_price':'报量报价'}
+
+
+def _render_unit_detail(name, resources, rt, da, transactions, *, storage_mode=None):
     by_unit={u['id']:u for u in resources}
     resolved={r['resource_id']:r for r in transactions}
     selected=st.selectbox('查看机组或储能',list(by_unit),key='scv5_unit_'+name,
@@ -120,6 +124,10 @@ def _render_unit_detail(name, resources, rt, da, transactions):
         return
     directions=[('上网','delivered','delivery','effective_rt_nodal_price','rt_nodal')]
     if resource['kind']=='storage':
+        if storage_mode == 'none':
+            st.info(f'{selected} 在本任务中选择不参与，计划充放电为零；不代表参与现货但未出清。')
+        elif storage_mode == 'spot':
+            st.caption(f'{selected} 在本任务中仅参与现货；本时段没有活动不代表整日不参与。')
         directions.append(('充电','consumed','consumption','effective_rt_uniform_price','rt_uniform'))
     lines=[]
     for label,energy,basis,price,kind in directions:
@@ -170,6 +178,16 @@ def _render_results(root, name, results):
     if all(type(loaded.get(k)) in (float,int) for k in ('month','load_factor','solar_factor','coal_offer')):
         st.caption(f'本任务参数：{loaded["month"]} 月 · 负荷 ×{loaded["load_factor"]:.2f} · '
                    f'光伏 ×{loaded["solar_factor"]:.2f} · C1 首段报价 {loaded["coal_offer"]:g} 元/MWh')
+    storage_mode=loaded.get('storage_product')
+    participation=loaded.get('declared_participation')
+    pv_mode=participation.get('PV1') if isinstance(participation,dict) else None
+    choices=[]
+    if isinstance(storage_mode, str) and storage_mode in _STORAGE_RUN_MODE:
+        choices.append('独立储能：'+_STORAGE_RUN_MODE[storage_mode])
+    if isinstance(pv_mode, str) and pv_mode in _PV_RUN_MODE:
+        choices.append('竞价光伏 PV1：'+_PV_RUN_MODE[pv_mode])
+    if choices:
+        st.caption('本任务参与方式：'+' · '.join(choices))
     if n < 96:
         st.info('本次未完成全天模拟；未执行的时段不填零。')
     t=st.selectbox('选择已执行实时段',list(range(n)),format_func=_quarter_label,
@@ -186,7 +204,7 @@ def _render_results(root, name, results):
         st.warning('该时段未形成统一研究价。可能因可靠性松弛、缺少符合条件的正权重电量或价格证据不足；不把缺项当作零价。')
     st.caption('日前仅对照电量，不计费用。实时发电一般按节点价，负荷和储能充电用统一结算点研究价；统一价为合格发电量加权，储能仅计放电。下列金额不是正式账单。')
     _render_unit_detail(name,results['inputs']['case']['resources'],rt,da,
-                        [r for r in report['transactions'] if r['quarter']==t])
+                        [r for r in report['transactions'] if r['quarter']==t],storage_mode=storage_mode)
     _render_reconciliation(name,report,t)
     st.download_button('下载已执行时段研究结果 JSON', data=json_bytes({
         'rules':receipt['rules'],'formal_settlement':False,'status':receipt['status'],'quarters':results.get('reviewed_values',results['values']),'original_quarters':results['values'],

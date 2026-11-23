@@ -67,3 +67,36 @@ def test_submitted_bid_and_failure_keeps_previous_success(tmp_path,monkeypatch):
     app.button(key='scv5_leave_archive').click().run()
     assert app.number_input(key='scv5_bid').value==380
     assert not app.button(key='scv5_run').disabled and len(list(root.iterdir()))==2
+
+
+def test_saved_storage_choice_and_pv_mode_do_not_follow_new_task_defaults(tmp_path,monkeypatch):
+    monkeypatch.syspath_prepend(str(PROGRAM/'app'))
+    import market_rule_profile
+    monkeypatch.setattr(market_rule_profile.MarketProfile,'default_results',
+                        lambda self, _:tmp_path/self.results_folder)
+    root=market_rule_profile.SICHUAN_V5.default_results(tmp_path)
+    app=AppTest.from_file(str(PROGRAM/'app/四川.py'),default_timeout=100).run()
+    storage=next(r for r in app.radio if r.label=='独立储能选择')
+    storage.set_value('none').run()
+    app.selectbox(key='scv5_month').select(5)
+    app.number_input(key='scv5_bid').set_value(390)
+    app.slider(key='scv5_load').set_value(1.04)
+    app.button(key='scv5_run').click().run()
+    assert not app.error and not app.exception
+    [saved]=root.iterdir()
+    old_input=(saved/'INPUT.json').read_bytes()
+    old_rt=(saved/'RT_EXECUTED.json').read_bytes()
+    initial=json.loads(old_input)
+    assert initial['storage_product']=='none'
+    assert initial['declared_participation']['PV1']=='quantity_only'
+    assert all(row['power']['ES1']==row['charge']['ES1']==0 for row in json.loads(old_rt))
+    other=AppTest.from_file(str(PROGRAM/'app/四川.py'),default_timeout=90).run()
+    other.selectbox(key='scv5_archive').select(saved.name).run()
+    assert next(r.value for r in other.radio if r.label=='独立储能选择')=='spot'
+    assert any('本任务参与方式：独立储能：不参与（零充放电） · 竞价光伏 PV1：报量不报价' in c.value
+               for c in other.caption)
+    other.selectbox(key='scv5_unit_'+saved.name).select('ES1').run()
+    assert any('ES1 在本任务中选择不参与' in i.value for i in other.info)
+    assert (saved/'INPUT.json').read_bytes()==old_input
+    assert (saved/'RT_EXECUTED.json').read_bytes()==old_rt
+    assert list(root.iterdir())==[saved]
