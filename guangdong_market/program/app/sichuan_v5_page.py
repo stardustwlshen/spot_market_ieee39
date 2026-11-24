@@ -223,6 +223,35 @@ def _render_results(root, name, results):
                           for row in plan['rows']],hide_index=True)
     elif receipt.get('intraday_status')=='not_reached':
         st.caption('本次时段尚未到达日内更新声明的生效时间，没有生成日内计划。')
+    final_da=results.get('da_post_ancillary')
+    rt_hydro=rt.get('hydro',{})
+    if final_da is not None or rt.get('ancillary_holds_mw') or rt_hydro:
+        with st.expander('追踪本时段的辅助占位与梯级水库'):
+            if final_da is not None:
+                st.caption('日前预出清用于参考；占位后日前 SCED 是辅助服务容量保留后的能量计划。两者都不计费用，不替代实时执行值。')
+            final_row=final_da[t] if final_da is not None else None
+            holds=rt.get('ancillary_holds_mw',{})
+            da_holds=final_row['ancillary_holds_mw'] if final_row else {}
+            units=sorted(set(holds)|set(da_holds))
+            if units:
+                st.caption('上调占位含调频和备用，下调为调频；不是实际调用量。')
+                st.dataframe([{'机组':r, '日前预出清出力（MW）':round(da['power'][r],2),
+                               **({'占位后日前 SCED 出力（MW）':round(final_row['power'][r],2)}
+                                  if final_row else {}),
+                               '实时执行出力（MW）':round(rt['power'][r],2),
+                               '实时上调占位（MW）':round(holds.get(r,(0.,0.))[0],2),
+                               '实时下调占位（MW）':round(holds.get(r,(0.,0.))[1],2)}
+                              for r in units],hide_index=True)
+            elif final_row is not None:
+                st.caption('本时段没有正的辅助服务容量占位。')
+            if rt_hydro:
+                st.caption('梯级水库均为合成数据；列出已执行实时段的期末库容和水量。')
+                st.dataframe([{'水库':r,'实时期末库容（m³）':round(z['storage_m3'],2),
+                               '上游到达水量（m³）':round(z['upstream_arrival_m3'],2),
+                               '天然来水流量（m³/s）':round(z['natural_inflow_m3s'],2),
+                               '发电用水流量（m³/s）':round(z['turbine_m3s'],2),
+                               '弃水流量（m³/s）':round(z['water_spill_m3s'],2)}
+                              for r,z in sorted(rt_hydro.items())],hide_index=True)
     if results.get('agc'):
         with st.expander('查看分段调频、备用和占位研究'):
             st.caption('正式组合研究代理 → 调频初步出清 → 一份容量抵扣备用 → 保留上、下方向容量后出清能量。各段价格是不同产品的研究参考，不是收入。')

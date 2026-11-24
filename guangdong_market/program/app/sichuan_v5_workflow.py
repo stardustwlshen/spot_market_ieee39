@@ -307,6 +307,7 @@ def load(root,name):
                 raise ValueError('日内物理计划时段或非结算口径无效')
     run_data={'receipt':receipt, 'inputs':data['INPUT.json'], 'da':data['DA_PRECLEAR.json'],
               'intraday':id_result,'reserve':reserve_result,'agc':agc_result,
+              'da_post_ancillary':data.get('DA_POST_ANCILLARY_SCED_RESEARCH.json'),
               'rt':data['RT_EXECUTED.json'],'values':data['RT_RESEARCH_VALUES.json']}
     reviews=[]
     reviewed_values=list(run_data['values'])

@@ -148,12 +148,43 @@ def test_native_full_staged_agc_then_reserve_and_archive_evidence(tmp_path,monke
         assert len(result['rt'][q]['raw_nodal_prices'])==39
     assert all(x['result']['regulation_stage_evidence_id']==y['result']['stage_evidence_id'] for x,y in zip(b,a))
     assert result['intraday']['activation']['hydro_cascade_state']['period']==48
+    # Independently balance stored volumes and delayed transfers for all
+    # executed intervals, not merely the planner handoff sample.
+    cascade=result['inputs']['case']['cascade']
+    previous={r['id']:r['initial_storage_m3'] for r in cascade['reservoirs']}
+    for q,row in enumerate(result['rt']):
+        for unit,z in row['hydro'].items():
+            expected=z['upstream_arrival_m3']+900*(z['natural_inflow_m3s']-z['turbine_m3s']-z['water_spill_m3s'])
+            assert z['storage_m3']-previous[unit]==pytest.approx(expected,rel=0,abs=1.e-5)
+            previous[unit]=z['storage_m3']
+        for link in cascade['reaches']:
+            origin=q-link['travel_quarters']
+            if origin<0:
+                expected=link['initial_arrivals_m3'][q]
+            else:
+                upstream=result['rt'][origin]['hydro'][link['upstream']]
+                expected=900*(upstream['turbine_m3s']+upstream['water_spill_m3s'])
+            assert row['hydro'][link['downstream']]['upstream_arrival_m3']==pytest.approx(expected,rel=0,abs=1.e-5)
     da=json.loads((root/name/'DA_POST_ANCILLARY_SCED_RESEARCH.json').read_bytes())
     wrong=deepcopy(b)
     wrong[0]['result']['energy_holds']['H1'][2]='80.01'
     with pytest.raises(ValueError,match='占位不一致'):
         _check_segmented(a,wrong,da,result['rt'],120.)
+    assert result['da_post_ancillary']==da
+    assert [da[q]['ancillary_holds_mw']['H1'] for q in (47,48)]==[[92.,12.],[78.,18.]]
     assert load(root,name)['agc']==a
+    monkeypatch.setattr(SICHUAN_V5.__class__,'default_results',lambda self,_:root)
+    fresh=AppTest.from_file(str(PROGRAM/'app/四川.py'),default_timeout=30).run()
+    fresh.selectbox(key='scv5_archive').select(name).run()
+    assert fresh.button(key='scv5_run').disabled and not fresh.error and not fresh.exception
+    for q,expected in ((47,(92.,12.)),(48,(78.,18.))):
+        fresh.selectbox(key='scv5_period_'+name).select(q).run()
+        holds=next(d.value for d in fresh.dataframe if '实时上调占位（MW）' in d.value).set_index('机组')
+        assert tuple(holds.loc['H1',['实时上调占位（MW）','实时下调占位（MW）']])==expected
+        assert holds.loc['H1','占位后日前 SCED 出力（MW）']==round(da[q]['power']['H1'],2)
+        hydro=next(d.value for d in fresh.dataframe if '实时期末库容（m³）' in d.value).set_index('水库')
+        assert hydro.loc['H2','上游到达水量（m³）']==round(result['rt'][q]['hydro']['H2']['upstream_arrival_m3'],2)
+    assert len(list(root.iterdir()))==1
     path=root/name/'DA_AGC_RESEARCH.json'
     path.write_bytes(path.read_bytes()+b'\n')
     with pytest.raises(ValueError,match='校验不匹配'):
