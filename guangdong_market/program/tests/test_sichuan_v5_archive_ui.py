@@ -76,3 +76,53 @@ def test_malformed_and_half_written_archives_not_presented_as_diagnosed(tmp_path
     (path/'FAILURE.json').write_text('{}')
     with pytest.raises(ValueError):
         read_failure(root,name)
+
+
+def test_actual_two_run_picker_disambiguates_scenarios_and_preserves_archive(tmp_path,monkeypatch):
+    import json
+    import market_rule_profile as profile
+    monkeypatch.setattr(profile.MarketProfile,'default_results',lambda self,_:tmp_path/self.results_folder)
+    root=tmp_path/SICHUAN_V5.results_folder
+    page=Path(__file__).resolve().parents[1]/'app/四川.py'
+    def start():
+        return AppTest.from_file(str(page),default_timeout=100).run()
+    app=start()
+    for month,quote,load_factor in [(5,355,.97),(6,410,1.02)]:
+        app.selectbox(key='scv5_month').select(month)
+        app.number_input(key='scv5_bid').set_value(quote)
+        app.slider(key='scv5_load').set_value(load_factor)
+        app.button(key='scv5_run').click().run()
+        assert not app.exception and not app.error
+    snapshots={json.loads((d/'INPUT.json').read_bytes())['coal_offer']:d for d in root.iterdir()}
+    before={d.name:{f.name:f.read_bytes() for f in d.iterdir()} for d in snapshots.values()}
+    fresh=start()
+    labels=fresh.selectbox(key='scv5_archive').options
+    assert any('首小时｜5月 · C1 355元/MWh · 负荷×0.97' in x for x in labels)
+    assert any('首小时｜6月 · C1 410元/MWh · 负荷×1.02' in x for x in labels)
+    fresh.selectbox(key='scv5_archive').select(snapshots[355].name).run()
+    assert any('355 元/MWh' in c.value for c in fresh.caption)
+    assert any('本任务参与方式：' in c.value and '报量不报价' in c.value for c in fresh.caption)
+    assert fresh.number_input(key='scv5_bid').value==320 and fresh.button(key='scv5_run').disabled
+    assert before=={d.name:{f.name:f.read_bytes() for f in d.iterdir()} for d in root.iterdir()}
+    f=snapshots[410]/'RECEIPT.json'
+    wrong=json.loads(f.read_bytes())
+    wrong['scenario_hint']['coal_offer']=355
+    f.write_bytes(json_bytes(wrong))
+    fresh.selectbox(key='scv5_archive').select(snapshots[410].name).run()
+    assert any('任务摘要与已校验输入不一致' in e.value for e in fresh.error)
+
+
+def test_archive_label_collision_retains_selectable_identity(tmp_path):
+    root=tmp_path/SICHUAN_V5.results_folder
+    names=['scv5_20261122T023045Z_111111abcdef','scv5_20261122T023045Z_222222abcdef']
+    for name in names:
+        (root/name).mkdir(parents=True)
+    app=AppTest.from_string(f"""
+from pathlib import Path
+from sichuan_v5_archive_ui import render_archive_picker
+render_archive_picker(Path({str(root)!r}))
+""").run()
+    w=app.selectbox(key='scv5_archive')
+    assert len(set(w.options))==3
+    for n in names:
+        assert app.selectbox(key='scv5_archive').select(n).run().selectbox(key='scv5_archive').value==n

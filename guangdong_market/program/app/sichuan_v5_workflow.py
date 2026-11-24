@@ -32,6 +32,12 @@ def digest(payload):
     return hashlib.sha256(payload).hexdigest()
 
 
+def archive_scenario(inputs):
+    """Short recorded inputs for the archive picker, never used by the solver."""
+    keys=('month','load_factor','coal_offer','requested_periods','storage_product')
+    return {k:inputs[k] for k in keys if k in inputs}
+
+
 def _sources():
     here=Path(__file__).resolve().parent
     sources=sorted(here.glob('sichuan_v5_*.py'))+[here/'market_rule_profile.py']
@@ -154,13 +160,14 @@ def run(root, *, month, load_factor=1., solar_factor=1., coal_offer=320., rt_err
         status='full_day_research' if periods==PERIODS else 'partial_day_research'
         save('RECEIPT.json',dict(schema=('ieee39.sichuan_v5.receipt.v3' if clear_agc else 'ieee39.sichuan_v5.receipt.v2'),rules=SICHUAN_V5.identity(),status=status,
              quarters=periods, equal_offer_priority=equal_offer_priority, formal_settlement=False, price_fallback_applied=False,
+             scenario_hint=archive_scenario(inputs),
              **({'agc_stage':'segmented_research_cleared'} if clear_agc else {}),
              reserve_stage='research_cleared' if reserve_gross else 'not_enabled',
              intraday_status=('executed' if 'ID_PLAN.json' in files else
                               'not_reached' if intraday_update else 'not_declared'), data_files=files.copy()))
     except Exception as exc:
         save('FAILURE.json',dict(rules=SICHUAN_V5.identity(),error=str(exc),failed_research=True,automatic_restart=False,
-                                 input_sha256=files['INPUT.json']))
+                                 input_sha256=files['INPUT.json'],scenario_hint=archive_scenario(inputs)))
         exc.archive_name=name
         raise
     return name, load(directory,name)
@@ -216,6 +223,8 @@ def load(root,name):
         raise ValueError('四川研究凭证格式有误')
     data={key:read(key,files[key]) for key in sorted(required)}
     require_profile(data['INPUT.json'].get('rules'),SICHUAN_V5)
+    if 'scenario_hint' in receipt and receipt['scenario_hint']!=archive_scenario(data['INPUT.json']):
+        raise ValueError('任务摘要与已校验输入不一致')
     priority=data['INPUT.json'].get('equal_offer_priority',False)
     if type(priority) is not bool or receipt.get('equal_offer_priority',False) is not priority:
         raise ValueError('日前同价次序研究选项与运行档案不匹配')
