@@ -3,6 +3,7 @@ import json
 from pathlib import Path
 
 import pytest
+import streamlit as st
 from streamlit.testing.v1 import AppTest
 
 PROGRAM=Path(__file__).resolve().parents[1]
@@ -13,6 +14,12 @@ def test_review_and_reconcile_on_native_sichuan_page(tmp_path,monkeypatch):
     from market_rule_profile import MarketProfile, SICHUAN_V5
     monkeypatch.setattr(MarketProfile,'default_results',lambda self,_:tmp_path/self.results_folder)
     root=SICHUAN_V5.default_results(tmp_path)
+    payloads={}
+    render_download=st.download_button
+    def capture(label,*args,**kwargs):
+        payloads[label]=json.loads(kwargs['data'])
+        return render_download(label,*args,**kwargs)
+    monkeypatch.setattr(st,'download_button',capture)
     app=AppTest.from_file(str(PROGRAM/'app/四川.py'),default_timeout=90).run()
     assert app.checkbox(key='scv5_equal_offer').value
     app.button(key='scv5_run').click().run()
@@ -37,6 +44,13 @@ def test_review_and_reconcile_on_native_sichuan_page(tmp_path,monkeypatch):
     fresh=AppTest.from_file(str(PROGRAM/'app/四川.py'),default_timeout=30).run()
     fresh.selectbox(key='scv5_archive').select(archived.name).run()
     assert not fresh.exception and not fresh.error
+    valuation=payloads['下载实时估值 JSON']
+    ledger=payloads['下载实时量价对账 JSON']
+    assert valuation['provenance']==ledger['provenance']
+    assert ledger['provenance']['price_review_quarters']==[0]
+    assert ledger['quarters'][0]['rt_price_source']=='da_proxy_rt'
+    assert ledger['quarters'][1]['rt_price_source']=='rt_initial'
+    assert valuation['original_quarters']==json.loads(original['RT_RESEARCH_VALUES.json'])
     assert any('同段日前参考作为实时代理' in i.value for i in fresh.info)
     assert not any(b.label=='保存本时段价格复核' for b in fresh.button)
     fresh.selectbox(key='scv5_period_'+archived.name).select(1).run()

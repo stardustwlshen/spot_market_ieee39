@@ -1,4 +1,5 @@
 """A failed first configuration remains editable; JSON labels match their scope."""
+import hashlib
 import json
 from pathlib import Path
 
@@ -50,3 +51,28 @@ def test_first_offer_recovery_and_result_download_scope(tmp_path, monkeypatch):
     for result in (valuation, recon):
         assert [q['quarter'] for q in result['quarters']] == list(range(4))
     assert recon['summary']['full_day_coverage'] is False
+
+
+    # A new session restores the same data, even if the recipient renames
+    # the download. The original RT digest binds actual archive bytes.
+    initial_payloads = dict(payloads)
+    fresh = AppTest.from_file(str(PROGRAM / 'app/四川.py'), default_timeout=30).run()
+    fresh.selectbox(key='scv5_archive').select(archive.name).run()
+    assert fresh.button(key='scv5_run').disabled
+    fresh.selectbox(key='scv5_period_' + archive.name).select(3).run()
+    assert not fresh.error and not fresh.exception
+    receipt = json.loads((archive / 'RECEIPT.json').read_bytes())
+    rt_sha = hashlib.sha256((archive / 'RT_EXECUTED.json').read_bytes()).hexdigest()
+    assert rt_sha == receipt['data_files']['RT_EXECUTED.json']
+    for index, label in enumerate(('下载实时估值 JSON', '下载实时量价对账 JSON')):
+        assert payloads[label] == initial_payloads[label]
+        filename = tmp_path / f'专家收到并重命名{index}.json'
+        filename.write_text(json.dumps(payloads[label][1]), encoding='utf-8')
+        saved = json.loads(filename.read_bytes())
+        expected = {'schema': 'ieee39.sichuan_v5.result_provenance.v1',
+                    'run_id': archive.name, 'rules': receipt['rules'],
+                    'executed_quarters': 4, 'expected_day_quarters': 96,
+                    'full_day_coverage': False, 'original_rt_executed_sha256': rt_sha,
+                    'price_review_quarters': [], 'complete_archive': False}
+        assert saved['provenance'] == expected
+    assert len(list(root.iterdir())) == 1

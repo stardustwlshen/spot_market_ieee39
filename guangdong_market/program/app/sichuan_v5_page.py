@@ -143,7 +143,18 @@ def _render_unit_detail(name, resources, rt, da, transactions, *, storage_mode=N
         st.caption('价格复核来源：'+_PRICE_SOURCES.get(row['rt_price_source'],str(row['rt_price_source']))+'。')
 
 
-def _render_reconciliation(name, report, quarter):
+def _result_provenance(name, results):
+    receipt=results['receipt']  # From the hash-verified archive loader.
+    return {'schema':'ieee39.sichuan_v5.result_provenance.v1',
+            'run_id':name, 'rules':receipt['rules'],
+            'executed_quarters':receipt['quarters'], 'expected_day_quarters':96,
+            'full_day_coverage':receipt['quarters']==96,
+            'original_rt_executed_sha256':receipt['data_files']['RT_EXECUTED.json'],
+            'price_review_quarters':[r['quarter'] for r in results.get('price_reviews',[])],
+            'complete_archive':False}
+
+
+def _render_reconciliation(name, report, quarter, provenance):
     with st.expander('实时量价对账与导出'):
         st.caption('此处总量覆盖本次所有已执行实时段；下表只列所选时段。现货上网量不含固定非市场注入，用电量含负荷和储能充电，两者不用于核验全网平衡。净额不是全网盈亏或正式账单。日前仅对照电量。')
         summary=report['summary']
@@ -164,7 +175,7 @@ def _render_reconciliation(name, report, quarter):
                       r.get(k) if k in ('resource_id','role','bus') else _display_number(r.get(k)))
                for k,label in fields.items()} for r in report['transactions'] if r['quarter']==quarter]
         st.dataframe(rows,hide_index=True)
-        st.download_button('下载实时量价对账 JSON',data=json_bytes(report),
+        st.download_button('下载实时量价对账 JSON',data=json_bytes({**report, 'provenance':provenance}),
                            file_name=name+'_实时量价对账.json',mime='application/json')
 
 
@@ -205,14 +216,15 @@ def _render_results(root, name, results):
     st.caption('日前仅对照电量，不计费用。实时发电一般按节点价，负荷和储能充电用统一结算点研究价；统一价为合格发电量加权，储能仅计放电。下列金额不是正式账单。')
     _render_unit_detail(name,results['inputs']['case']['resources'],rt,da,
                         [r for r in report['transactions'] if r['quarter']==t],storage_mode=storage_mode)
-    _render_reconciliation(name,report,t)
+    provenance=_result_provenance(name,results)
+    _render_reconciliation(name,report,t,provenance)
     st.caption('两个 JSON 分别提供实时量价对账和实时估值，均覆盖全部已执行段，'
                '不包含完整的出清输入、支路潮流、辅助服务占位或梯级水库记录。')
     st.caption(f'如需保留完整原始复核资料，请备份程序目录下的 '
                f'`{SICHUAN_V5.results_folder}/{name}/`，不要只保存下载的 JSON。')
     st.download_button('下载实时估值 JSON', data=json_bytes({
         'rules':receipt['rules'],'formal_settlement':False,'status':receipt['status'],'quarters':results.get('reviewed_values',results['values']),'original_quarters':results['values'],
-        'price_reviews':results.get('price_reviews',[])}),
+        'price_reviews':results.get('price_reviews',[]),'provenance':provenance}),
         file_name=name+'_实时研究结果.json',mime='application/json')
     with st.expander('查看全天日前负荷参考'):
         st.line_chart({'全网日前预出清负荷 MW':[sum(q['demand'].values()) for q in results['da']]})
