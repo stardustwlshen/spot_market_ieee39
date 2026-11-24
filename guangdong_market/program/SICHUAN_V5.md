@@ -1,6 +1,42 @@
 # 四川 V5.0 征求意见稿 · IEEE39 研究模拟
 
-在本目录执行 `python scripts/launch_sichuan.py --check` 检查依赖，再执行 `python scripts/launch_sichuan.py`。Windows 和 macOS 可以双击这里的 `启动四川.cmd` / `启动四川.command`。默认是四川；旧广东页面使用 `python scripts/launch_sichuan.py --profile guangdong`。此分支不把旧程序做就地改名，也不重写广东结果。旧广东工程自带核验是原路径/指纹绑定，不承诺搬迁后的原始档案可恢复；建议保留原 checkout 和结果目录。
+这是 **四川 V5.0 征求意见稿的 IEEE39 合成研究模拟**。可用于学习报价、出清、节点电价和研究金额；不是已生效的四川规则，不用于实际调度或正式结算。
+
+## 第一次使用
+
+1. 从 GitHub 下载 [`sichuan-v5` 分支](https://github.com/stardustwlshen/spot_market_ieee39/tree/sichuan-v5) 的完整 ZIP 并解压，或用 Git 切换到该分支。不要只下载单个启动文件。把解压目录放到自己可写的位置，进入 **`guangdong_market/program`**。
+2. 安装 [CPython 3.12](https://www.python.org/downloads/)。以下命令在 `guangdong_market/program` 里执行。不必激活环境，也不必提供邮箱、账号或电网数据。
+
+**Windows（PowerShell 或 CMD）：**
+
+```text
+py -3.12 -m venv .venv
+.\.venv\Scripts\python.exe -m pip install -r requirements-runtime.txt
+.\.venv\Scripts\python.exe scripts\launch_sichuan.py --check
+.\.venv\Scripts\python.exe scripts\launch_sichuan.py
+```
+
+**macOS / Linux（终端）：**
+
+Apple Silicon 请使用 macOS 12 或更新版本：当前 SciPy 的 Python 3.12 预编译包要求至少 macOS 12。
+
+```sh
+python3.12 -m venv .venv
+.venv/bin/python -m pip install -r requirements-runtime.txt
+.venv/bin/python scripts/launch_sichuan.py --check
+.venv/bin/python scripts/launch_sichuan.py
+```
+
+3. 浏览器打开终端显示的本机地址，默认 `http://127.0.0.1:8501`。保留终端运行，结束后按 Ctrl+C。以后可重用同一个环境：Windows 双击当前目录的 `启动四川.cmd`，macOS 可运行 `./启动四川.command`。根目录 `start.bat` 是旧程序。此启动器仅监听本机；不要把本机地址发给别人当作公开网站。
+4. 第一次不必改参数：点「计算日前并运行实时」，等「运行已保存」。检查结果有 `00:00–01:00（4/96 个实时段）`，再选时段和机组，展开「实时量价对账与导出」下载研究 JSON。关闭页面后重开可从顶部找回。发给别人的是源码包/分支链接或导出的 JSON，不要把本地 .venv 和整份运行目录一并分享。
+
+### 常见问题
+
+- 找不到 `py` / `python3.12`：确认装的是 Python 3.12，并从能找到该解释器的终端执行。Windows 若只提供 `python`，先用 `python --version` 确认是 3.12，再用它创建环境。
+- 缺依赖或 HiGHS 无法加载：先确认在正确目录，重跑同一虚拟环境的 pip 安装和 `--check`。首次安装需要能访问 Python 软件包源。保留第一条具体报错便于排查。
+- 默认端口已被占用：在启动命令后加 `--port 8502` 并打开新地址。
+- 不能保存：检查解压目录或其中 `runs_sichuan_v5_consultation` 的写权限。先备份已有结果，再换到可写目录。失败任务不会覆盖之前的成功结果。
+- 广东旧入口是独立程序，必要时运行 `python scripts/launch_sichuan.py --profile guangdong`。新旧结果不混用；原广东记录涉及绝对路径和指纹，保留原 checkout 与结果目录。
 
 ## 普通操作
 

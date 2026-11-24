@@ -1,7 +1,7 @@
 """Portable foreground launcher. Does not run a solver or change provenance."""
 from __future__ import annotations
 import argparse
-import importlib.util
+import importlib
 import os
 from pathlib import Path
 import subprocess
@@ -29,19 +29,34 @@ def command(root: Path, python: str, port: int, profile: str = "sichuan-v5") -> 
               '--client.toolbarMode','viewer']
     return cmd
 
-def check(root: Path) -> list[str]:
+def check(root: Path, profile: str = 'sichuan-v5') -> list[str]:
     errors=[]
-    if sys.version_info < (3, 12):
-        errors.append('请使用 Python 3.12 或更新版本（推荐 3.12）。')
-    for entry in ('四川.py','主页.py'):
-        if not (root / 'app' / entry).is_file():errors.append('程序目录缺少 app/'+entry+'，请重新完整解压。')
+    if sys.version_info < (3,12):
+        return ['请使用 Python 3.12 或更新版本（推荐 3.12）。当前为 '+sys.version.split()[0]+'。']
+    if profile=='sichuan-v5':
+        required=('app/四川.py','data/case39/buses.csv','data/case39/branches.csv')
+    else:
+        required=('app/主页.py',)
+    for relative in required:
+        if not root.joinpath(relative).is_file():
+            errors.append('程序包缺少 '+relative+'；请完整下载并解压对应分支。')
+    if errors:
+        return errors
     for name in MODULES:
         try:
-            available=importlib.util.find_spec(name) is not None
-        except (ImportError, ModuleNotFoundError):
-            available=False
-        if not available: errors.append('缺少依赖：'+name)
-    return errors
+            importlib.import_module(name)
+        except ModuleNotFoundError as exc:
+            errors.append('缺少依赖：'+str(exc.name or name))
+        except (ImportError,OSError,RuntimeError) as exc:
+            errors.append('依赖 '+name+' 已安装但无法加载：'+str(exc))
+    if not errors:
+        try:
+            import pyomo.environ as p
+            if not p.SolverFactory('highs').available(exception_flag=False):
+                errors.append('HiGHS 无法用于 Pyomo；请在项目虚拟环境重装运行依赖。')
+        except (ImportError,OSError,RuntimeError) as exc:
+            errors.append('HiGHS 检查失败：'+str(exc))
+    return list(dict.fromkeys(errors))
 
 def main(argv=None):
     parser=argparse.ArgumentParser(description='本机启动市场模拟界面；此步骤不运行出清。')
@@ -54,13 +69,13 @@ def main(argv=None):
     # Re-enter once using the project's environment, rather than a system streamlit.
     if Path(interpreter).absolute() != Path(sys.executable).absolute():
         return subprocess.call([interpreter, str(Path(__file__).resolve()), *(argv if argv is not None else sys.argv[1:])])
-    errors=check(root)
+    errors=check(root,args.profile)
     if errors:
         print('\n'.join(errors),file=sys.stderr)
-        print('激活项目虚拟环境后执行：python -m pip install -r requirements-runtime.txt',file=sys.stderr)
+        print('首次安装请看本目录 SICHUAN_V5.md。安装命令：项目虚拟环境的 python -m pip install -r requirements-runtime.txt',file=sys.stderr)
         return 2
     if args.check:
-        print('启动所需环境检查通过；不代表求解、界面或跨平台功能已全部验证。')
+        print('启动检查通过（程序、依赖与 HiGHS 可用）；尚未运行市场求解。')
         return 0
     try: cmd=command(root, interpreter, args.port,args.profile)
     except ValueError as exc:
