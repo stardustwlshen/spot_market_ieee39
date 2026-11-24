@@ -206,7 +206,11 @@ def _render_results(root, name, results):
     _render_unit_detail(name,results['inputs']['case']['resources'],rt,da,
                         [r for r in report['transactions'] if r['quarter']==t],storage_mode=storage_mode)
     _render_reconciliation(name,report,t)
-    st.download_button('下载已执行时段研究结果 JSON', data=json_bytes({
+    st.caption('两个 JSON 分别提供实时量价对账和实时估值，均覆盖全部已执行段，'
+               '不包含完整的出清输入、支路潮流、辅助服务占位或梯级水库记录。')
+    st.caption(f'如需保留完整原始复核资料，请备份程序目录下的 '
+               f'`{SICHUAN_V5.results_folder}/{name}/`，不要只保存下载的 JSON。')
+    st.download_button('下载实时估值 JSON', data=json_bytes({
         'rules':receipt['rules'],'formal_settlement':False,'status':receipt['status'],'quarters':results.get('reviewed_values',results['values']),'original_quarters':results['values'],
         'price_reviews':results.get('price_reviews',[])}),
         file_name=name+'_实时研究结果.json',mime='application/json')
