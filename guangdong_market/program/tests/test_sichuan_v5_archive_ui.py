@@ -126,3 +126,66 @@ render_archive_picker(Path({str(root)!r}))
     assert len(set(w.options))==3
     for n in names:
         assert app.selectbox(key='scv5_archive').select(n).run().selectbox(key='scv5_archive').value==n
+
+
+def test_full_id_reopens_old_verified_run_without_resetting_current_draft(tmp_path,monkeypatch):
+    from market_rule_profile import MarketProfile
+    from sichuan_v5_workflow import archive_names
+
+    monkeypatch.setattr(MarketProfile,'default_results',lambda self,_:tmp_path/self.results_folder)
+    root=tmp_path/SICHUAN_V5.results_folder
+    page=Path(__file__).resolve().parents[1]/'app/四川.py'
+    app=AppTest.from_file(str(page),default_timeout=100).run()
+    app.selectbox(key='scv5_month').select(5).run()
+    app.number_input(key='scv5_bid').set_value(355).run()
+    assert not root.exists(), 'Editing a draft must not start a solver.'
+    app.button(key='scv5_run').click().run()
+    assert not app.exception and not app.error
+    assert any('4/96 个实时段' in c.value and 'scv5_' in c.value for c in app.caption)
+    [old]=list(root.iterdir())
+    before={p.name:p.read_bytes() for p in old.iterdir()}
+
+    # Newer canonical but incomplete records count in the recent picker too.
+    for i in range(200):
+        (root/f'scv5_20990101T000000Z_{i:012x}').mkdir()
+    assert len(archive_names(root))==200 and old.name not in archive_names(root)
+
+    app=AppTest.from_file(str(page),default_timeout=100).run()
+    assert any('最近 200 条记录（最多 200 条' in c.value for c in app.caption)
+    assert len(app.selectbox(key='scv5_archive').options)==201  # includes the new-run choice
+    app.selectbox(key='scv5_month').select(6).run()
+    app.number_input(key='scv5_bid').set_value(410).run()
+    app.slider(key='scv5_load').set_value(1.02).run()
+
+    def lookup(name):
+        app.text_input(key='scv5_archive_id').set_value(name)
+        app.button(key='scv5_archive_open').click().run()
+
+    lookup('x'+old.name)
+    assert any('请输入完整任务编号' in w.value for w in app.warning)
+    assert not app.button(key='scv5_run').disabled
+    lookup('scv5_20990101T000000Z_ffffffffffff')
+    assert any('当前结果目录未找到' in w.value for w in app.warning)
+    assert not app.button(key='scv5_run').disabled
+
+    lookup(old.name)
+    assert not app.exception and not app.error
+    assert any('当前打开：'+old.name in c.value for c in app.caption)
+    assert any('355 元/MWh' in c.value for c in app.caption)
+    assert app.button(key='scv5_run').disabled
+    assert before=={p.name:p.read_bytes() for p in old.iterdir()}
+    assert len(list(root.iterdir()))==201
+
+    app.button(key='scv5_leave_archive').click().run()
+    assert not app.button(key='scv5_run').disabled
+    assert app.text_input(key='scv5_archive_id').value==''
+    assert app.selectbox(key='scv5_month').value==6
+    assert app.number_input(key='scv5_bid').value==410
+    assert app.slider(key='scv5_load').value==1.02
+
+    artifact=old/'RT_EXECUTED.json'
+    artifact.write_bytes(before[artifact.name]+b' ')
+    lookup(old.name)
+    assert not app.exception
+    assert any('结果校验不匹配：RT_EXECUTED.json' in e.value for e in app.error)
+    assert len(list(root.iterdir()))==201

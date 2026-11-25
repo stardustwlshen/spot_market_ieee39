@@ -3,24 +3,12 @@ from datetime import datetime, timedelta, timezone
 import hashlib
 import json
 from math import isfinite
-from pathlib import Path
-import re
 
 import streamlit as st
 
 from market_rule_profile import SICHUAN_V5, require_profile
-from sichuan_v5_workflow import archive_names, archive_scenario
-
-
-def _archive(root, name):
-    path=Path(root).resolve()
-    if (path.name!=SICHUAN_V5.results_folder or not isinstance(name,str)
-            or not re.fullmatch(r'scv5_\d{8}T\d{6}Z_[a-f0-9]{12}',name)):
-        raise ValueError("不是四川研究档案")
-    path=path/name
-    if path.is_symlink() or not path.is_dir():
-        raise ValueError("不是四川研究档案")
-    return path
+from sichuan_v5_workflow import (ARCHIVE_ID_PATTERN, RECENT_ARCHIVE_LIMIT, archive_names,
+                                  archive_path, archive_scenario)
 
 
 def _record(path, key, *, limit=64*1024*1024):
@@ -45,7 +33,7 @@ def _file_present(path,key):
 
 def read_failure(root,name):
     """Return a diagnosed failure, not an integrity error; no writes."""
-    path=_archive(root,name)
+    path=archive_path(root,name)
     if _file_present(path,'RECEIPT.json') or not _file_present(path,'FAILURE.json'):
         return None
     failure,_=_record(path,'FAILURE.json')
@@ -81,7 +69,7 @@ def archive_label(root,name):
     if name is None:
         return '新任务（不查看旧记录）'
     try:
-        path=_archive(root,name)
+        path=archive_path(root,name)
         if _file_present(path,'RECEIPT.json'):
             status='已保存'
             hint=_hint(path,'RECEIPT.json')
@@ -100,24 +88,61 @@ def archive_label(root,name):
 
 def _return_to_new():
     st.session_state['scv5_archive']=None
+    st.session_state.pop('scv5_archive_exact_match',None)
+    st.session_state.pop('scv5_archive_lookup_error',None)
+    st.session_state['scv5_archive_id']=''
+
+
+def _select_recent():
+    st.session_state.pop('scv5_archive_exact_match',None)
+    st.session_state.pop('scv5_archive_lookup_error',None)
+    st.session_state['scv5_archive_id']=''
+
+
+def _lookup_archive(root, recent):
+    name=st.session_state.get('scv5_archive_id','').strip()
+    if not ARCHIVE_ID_PATTERN.fullmatch(name):
+        st.session_state['scv5_archive_lookup_error']='请输入完整任务编号，不能使用目录或文件路径。'
+        return
+    try:
+        archive_path(root,name)
+    except (OSError,ValueError):
+        st.session_state['scv5_archive_lookup_error']='当前结果目录未找到可打开的档案。请核对任务编号及所用版本。'
+        return
+    st.session_state.pop('scv5_archive_lookup_error',None)
+    st.session_state['scv5_archive']=name if name in recent else None
+    st.session_state['scv5_archive_exact_match']=name if name not in recent else None
 
 
 def render_archive_picker(root, *, latest_failure=None):
     """Select a saved run without restoring inputs or running a solver."""
     with st.expander('找回四川已保存研究任务（只读）',expanded=latest_failure is not None):
-        names=[None,*archive_names(root)]
+        recent=archive_names(root)
+        names=[None,*recent]
         labels={name:archive_label(root,name) for name in names}
         # Streamlit maps serialized labels to values. Keep full identity
         # when unlikely equal timestamp/suffix labels actually collide.
         from collections import Counter
         counts=Counter(labels.values())
-        old=st.selectbox('选择四川研究记录',names,
-                         format_func=lambda x:labels[x] if counts[labels[x]]==1 else f'{labels[x]}｜{x}',
-                         key='scv5_archive')
-        st.caption('浏览旧任务不会加载参数到表单，也不会启动或恢复求解。')
+        selected=st.selectbox('选择四川研究记录',names,
+                              format_func=lambda x:labels[x] if counts[labels[x]]==1 else f'{labels[x]}｜{x}',
+                              key='scv5_archive',on_change=_select_recent)
+        st.caption(f'下拉列表显示最近 {len(recent)} 条记录（最多 {RECENT_ARCHIVE_LIMIT} 条，含未完成项）。'
+                   '更早的记录可按完整任务编号打开。')
+        with st.form('scv5_archive_lookup'):
+            st.text_input('完整任务编号',placeholder='scv5_20261122T023045Z_123456abcdef',
+                          key='scv5_archive_id',max_chars=80)
+            st.form_submit_button('按编号打开',key='scv5_archive_open',
+                                  on_click=_lookup_archive,args=(root,recent))
+        lookup_error=st.session_state.get('scv5_archive_lookup_error')
+        if lookup_error:
+            st.warning(lookup_error)
+        old=st.session_state.get('scv5_archive_exact_match') or selected
+        st.caption('浏览旧任务不会加载参数到新任务，也不会启动或恢复求解。')
         if latest_failure is not None:
             st.caption('最近一次尝试未完成：'+archive_label(root,latest_failure))
         if old is not None:
+            st.caption('当前打开：'+old)
             st.button('返回新任务',key='scv5_leave_archive',on_click=_return_to_new)
         return old
 

@@ -175,22 +175,38 @@ def run(root, *, month, load_factor=1., solar_factor=1., coal_offer=320., rt_err
     return name, load(directory,name)
 
 
+RECENT_ARCHIVE_LIMIT = 200
+ARCHIVE_ID_PATTERN = re.compile(r'scv5_[0-9]{8}T[0-9]{6}Z_[a-f0-9]{12}')
+
+
+def archive_path(root, name):
+    """Resolve only an existing, ordinary archive dir inside the configured root."""
+    directory=Path(root).resolve()
+    if (directory.name!=SICHUAN_V5.results_folder or not isinstance(name,str)
+            or not ARCHIVE_ID_PATTERN.fullmatch(name)):
+        raise ValueError('不是四川研究档案')
+    path=directory/name
+    if path.is_symlink() or getattr(path,'is_junction',lambda:False)():
+        raise ValueError('不跟随结果目录链接')
+    if not path.is_dir():
+        raise ValueError('没有找到这项四川研究档案')
+    if path.resolve(strict=True)!=path:
+        raise ValueError('不跟随结果目录链接')
+    return path
+
+
 def archive_names(root):
     path=Path(root).resolve()
     if path.name!=SICHUAN_V5.results_folder or not path.is_dir():
         return []
     # Never create a result or launch a worker on archive browsing.
-    return sorted((f.name for f in path.iterdir() if not f.is_symlink() and f.is_dir()
-                   and re.fullmatch(r'scv5_\d{8}T\d{6}Z_[a-f0-9]{12}',f.name)),reverse=True)[:200]
+    return sorted((f.name for f in path.iterdir() if ARCHIVE_ID_PATTERN.fullmatch(f.name)
+                   and not f.is_symlink() and not getattr(f,'is_junction',lambda:False)()
+                   and f.is_dir()),reverse=True)[:RECENT_ARCHIVE_LIMIT]
 
 
 def load(root,name, *, _capture_verified_bytes=None):
-    directory=Path(root).resolve()
-    if directory.name!=SICHUAN_V5.results_folder or not re.fullmatch(r'scv5_\d{8}T\d{6}Z_[a-f0-9]{12}',name):
-        raise ValueError('不是四川研究档案')
-    path=directory/name
-    if path.is_symlink():
-        raise ValueError('不跟随结果目录链接')
+    path=archive_path(root,name)
     def read(key,expected=None):
         p=path/key
         if p.is_symlink() or not p.is_file() or p.stat().st_size>64*1024*1024:
