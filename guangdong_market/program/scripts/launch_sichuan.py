@@ -1,9 +1,11 @@
 """Portable foreground launcher. Does not run a solver or change provenance."""
 from __future__ import annotations
 import argparse
+import errno
 import importlib
 import os
 from pathlib import Path
+import socket
 import subprocess
 import sys
 
@@ -58,6 +60,21 @@ def check(root: Path, profile: str = 'sichuan-v5') -> list[str]:
             errors.append('HiGHS 检查失败：'+str(exc))
     return list(dict.fromkeys(errors))
 
+def check_port(port: int) -> str | None:
+    # Match the application's IPv4 loopback bind. Allow immediate POSIX
+    # restart after a closed connection; never enable Windows shared binding.
+    try:
+        with socket.socket(socket.AF_INET,socket.SOCK_STREAM) as listener:
+            if os.name!='nt':
+                listener.setsockopt(socket.SOL_SOCKET,socket.SO_REUSEADDR,1)
+            listener.bind(('127.0.0.1',port))
+    except OSError as exc:
+        if exc.errno==errno.EADDRINUSE or getattr(exc,'winerror',None)==10048:
+            return f'本机端口 {port} 已被占用，未启动此程序。'
+        return f'无法使用本机端口 {port}，未启动此程序：{exc}'
+    return None
+
+
 def main(argv=None):
     parser=argparse.ArgumentParser(description='本机启动市场模拟界面；此步骤不运行出清。')
     parser.add_argument('--check', action='store_true', help='仅检查环境，不启动网页')
@@ -80,7 +97,15 @@ def main(argv=None):
     try: cmd=command(root, interpreter, args.port,args.profile)
     except ValueError as exc:
         print(str(exc),file=sys.stderr);return 2
-    print('本机访问：http://127.0.0.1:'+str(args.port)+'；停止网页按 Ctrl+C。')
+    if args.profile=='sichuan-v5':
+        if port_error:=check_port(args.port):
+            print(port_error+' 要保留现有服务，请用 --port 换一个空闲端口（例如 8502）。',file=sys.stderr)
+            return 2
+        # A successful probe is not a reservation. Only Streamlit announces
+        # the URL after startup, including handling any race for the socket.
+        print('启动成功后，以终端显示的本机地址为准；停止网页按 Ctrl+C。',flush=True)
+    else:
+        print('本机访问：http://127.0.0.1:'+str(args.port)+'；停止网页按 Ctrl+C。')
     env={**os.environ,'PYTHONUTF8':'1'}
     try: return subprocess.call(cmd,cwd=root,env=env)
     except KeyboardInterrupt: return 130
