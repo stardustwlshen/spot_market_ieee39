@@ -1,0 +1,13 @@
+**
+!requirements-runtime.txt
+!app/
+!app/四川.py
+!app/market_rule_profile.py
+!app/sichuan_v5_*.py
+!data/
+!data/case39/
+!data/case39/buses.csv
+!data/case39/branches.csv
+!scripts/
+!scripts/launch_sichuan.py
+!scripts/host_sichuan.py

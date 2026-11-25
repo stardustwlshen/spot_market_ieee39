@@ -2,6 +2,8 @@
 
 这是 **四川 V5.0 征求意见稿的 IEEE39 合成研究模拟**。可用于学习报价、出清、节点电价和研究金额；不是已生效的四川规则，不用于实际调度或正式结算。
 
+需要私有 Linux 容器托管时，参见[私有云托管与验收](SICHUAN_HOSTING.md)；这不是已部署的链接。
+
 ## 第一次使用
 
 1. 从项目的 [`sichuan-v5` 分支](https://github.com/stardustwlshen/spot_market_ieee39/tree/sichuan-v5) 下载完整源码 ZIP。若试用说明给出固定提交的 ZIP，优先用该链接，而不是会更新的分支 ZIP。不要只下载单个启动文件。macOS/Linux 可解压到可写目录，再进入 **`guangdong_market/program`**；Windows 建议按下方步骤直接解到短路径。
