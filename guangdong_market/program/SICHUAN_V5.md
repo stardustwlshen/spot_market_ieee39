@@ -4,7 +4,25 @@
 
 ## 第一次使用
 
-1. 从 GitHub 下载 [`sichuan-v5` 分支](https://github.com/stardustwlshen/spot_market_ieee39/tree/sichuan-v5) 的完整 ZIP 并解压，或用 Git 切换到该分支。不要只下载单个启动文件。把解压目录放到自己可写的位置，进入 **`guangdong_market/program`**。
+1. 从项目的 [`sichuan-v5` 分支](https://github.com/stardustwlshen/spot_market_ieee39/tree/sichuan-v5) 下载完整源码 ZIP。若试用说明给出固定提交的 ZIP，优先用该链接，而不是会更新的分支 ZIP。不要只下载单个启动文件。macOS/Linux 可解压到可写目录，再进入 **`guangdong_market/program`**；Windows 建议按下方步骤直接解到短路径。
+
+   **Windows 不需要 Git 或管理员操作：** 完整 ZIP 含历史引擎的深层目录。直接在「下载」里用资源管理器解包，或保留 GitHub 的长外层目录，即使靠近盘符也可能报路径过长。只对上面可信的项目源码 ZIP 使用以下步骤。打开 PowerShell，把示例 ZIP 路径换成实际下载文件的完整路径；`C:\sc` 必须不存在且其父目录可写，也可用同样短的 `D:\sc`。若目标已存在（包括上次解包未完成），换一个短的新目录，不覆盖旧程序或结果。
+
+   ```powershell
+   & {
+       $zip = (Resolve-Path -LiteralPath 'C:\Users\你的用户名\Downloads\实际下载文件名.zip' -ErrorAction Stop).Path
+       $dest = 'C:\sc'
+       $tar = Join-Path $env:SystemRoot 'System32\tar.exe'
+       if (-not (Test-Path -LiteralPath $tar)) { throw '未找到 Windows 自带 tar.exe，请使用下方 Git 方案。' }
+       if (Test-Path -LiteralPath $dest) { throw '目标已存在，请换一个短的新目录。' }
+       New-Item -ItemType Directory -Path $dest -ErrorAction Stop | Out-Null
+       & $tar -xkf $zip -C $dest --strip-components 1
+       if ($LASTEXITCODE -ne 0) { throw '解压未完成，不要继续安装；核对 ZIP 后用新的短目录重试。' }
+       Set-Location -LiteralPath (Join-Path $dest 'guangdong_market\program') -ErrorAction Stop
+   }
+   ```
+
+   `--strip-components 1` 只取掉 GitHub 的一层外目录。已有 Git 且不指定提交时，也可运行 `git clone --depth 1 --single-branch --branch sichuan-v5 https://github.com/stardustwlshen/spot_market_ieee39.git C:\sc`（目标同样要新建），再进入 `C:\sc\guangdong_market\program`；固定提交请以给定 ZIP 为准。不要为此更改 Windows 全局长路径设置。
 2. 安装 [CPython 3.12](https://www.python.org/downloads/)。以下命令在 `guangdong_market/program` 里执行。不必激活环境，也不必提供邮箱、账号或电网数据。
 
 **Windows（PowerShell 或 CMD）：**
