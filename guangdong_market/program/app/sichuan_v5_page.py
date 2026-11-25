@@ -1,6 +1,7 @@
 """Sichuan branch default UI; Guangdong historical source stays unmodified."""
 from decimal import Decimal, InvalidOperation
 import json
+from zipfile import BadZipFile
 from pathlib import Path
 
 import streamlit as st
@@ -10,7 +11,7 @@ from sichuan_v5_intraday import Update
 from sichuan_v5_price_review import BoundRerun, Incident, ReviewRequest, Vector
 from sichuan_v5_reconciliation import reconcile_energy
 from sichuan_v5_archive_ui import render_archive_picker, render_failed_archive
-from sichuan_v5_workflow import json_bytes, load, review, run
+from sichuan_v5_workflow import evidence_zip, json_bytes, load, review, run
 
 
 def _quarter_label(t):
@@ -226,6 +227,17 @@ def _render_results(root, name, results):
         'rules':receipt['rules'],'formal_settlement':False,'status':receipt['status'],'quarters':results.get('reviewed_values',results['values']),'original_quarters':results['values'],
         'price_reviews':results.get('price_reviews',[]),'provenance':provenance}),
         file_name=name+'_实时研究结果.json',mime='application/json')
+    with st.expander('专家复核：原始档案 ZIP'):
+        st.caption('包含本次已保存的原始输入、出清结果和核验凭证；只打包这一次运行。'
+                   '不会上传，也不是正式结算或续算文件。发给他人之前请确认可分享。')
+        if st.button('准备原始档案 ZIP',key='scv5_evidence_prepare_'+name):
+            try:
+                bundle=evidence_zip(root,name)
+            except (OSError,ValueError,KeyError,TypeError,BadZipFile) as exc:
+                st.error(f'原始档案无法打包：{exc}')
+            else:
+                st.download_button('下载原始档案 ZIP',data=bundle,mime='application/zip',
+                                   file_name=name+'_原始复核档案.zip',on_click='ignore')
     with st.expander('查看全天日前负荷参考'):
         st.line_chart({'全网日前预出清负荷 MW':[sum(q['demand'].values()) for q in results['da']]})
     if results.get('intraday'):

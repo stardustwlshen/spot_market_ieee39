@@ -3,6 +3,8 @@ from dataclasses import asdict, replace
 from datetime import datetime, timezone
 from decimal import Decimal
 import hashlib
+from io import BytesIO
+from zipfile import ZipFile, ZIP_DEFLATED
 import json
 import os
 from pathlib import Path
@@ -182,7 +184,7 @@ def archive_names(root):
                    and re.fullmatch(r'scv5_\d{8}T\d{6}Z_[a-f0-9]{12}',f.name)),reverse=True)[:200]
 
 
-def load(root,name):
+def load(root,name, *, _capture_verified_bytes=None):
     directory=Path(root).resolve()
     if directory.name!=SICHUAN_V5.results_folder or not re.fullmatch(r'scv5_\d{8}T\d{6}Z_[a-f0-9]{12}',name):
         raise ValueError('不是四川研究档案')
@@ -196,7 +198,10 @@ def load(root,name):
         data=p.read_bytes()
         if expected is not None and digest(data)!=expected:
             raise ValueError('结果校验不匹配：'+key)
-        return json.loads(data)
+        record=json.loads(data)
+        if _capture_verified_bytes is not None and key!='FAILURE.json':
+            _capture_verified_bytes(key,data)
+        return record
     if not (path/'RECEIPT.json').exists():
         reason=read('FAILURE.json')
         require_profile(reason.get('rules'),SICHUAN_V5)
@@ -323,6 +328,24 @@ def load(root,name):
             reviews.append(sidecar)
             reviewed_values[q]=sidecar['values']
     return dict(run_data,price_reviews=reviews,reviewed_values=reviewed_values)
+
+
+def evidence_zip(root,name):
+    """Package only the original bytes validated by one successful load."""
+    payload={}
+    total=0
+    def capture(key,raw):
+        nonlocal total
+        total+=len(raw)
+        if total>32*1024*1024:
+            raise ValueError('原始资料超过 32 MiB 网页打包上限，请备份本地单个运行目录')
+        payload[key]=raw
+    load(root,name,_capture_verified_bytes=capture)
+    output=BytesIO()
+    with ZipFile(output,'w',compression=ZIP_DEFLATED) as zip_file:
+        for filename,raw in sorted(payload.items()):
+            zip_file.writestr(f'{name}/{filename}',raw)
+    return output.getvalue()
 
 
 def _review_filename(quarter):
