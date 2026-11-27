@@ -15,6 +15,9 @@ with sync_playwright() as pw:
         for tab in ("公司报价","市场中标","实时实发","梯级水量","收入与对照"):
             expect(page.get_by_role("tab", name=tab, exact=True)).to_have_count(1)
         print("Initial tabs",page.get_by_role("tab").all_text_contents(),flush=True)
+        def bring_to_top(target):
+            target.evaluate("(el)=>el.scrollIntoView({block:'start',behavior:'instant'})")
+            page.evaluate("document.fonts.ready")
         def select_tab(name):
             group = page.get_by_role("tablist").filter(has=page.get_by_role("tab",name="公司报价",exact=True))
             item = group.get_by_role("tab",name=name,exact=True)
@@ -65,6 +68,7 @@ with sync_playwright() as pw:
         handoff = page.get_by_role("button",name="查看深溪沟到水时段")
         expect(handoff).to_be_visible()
         handoff.scroll_into_view_if_needed()
+        page.evaluate("document.fonts.ready")
         page.screenshot(path=str(folder/f"river-{size['width']}.png"))
         handoff.click()
         selected("dadu_unit_dadu19_20261127T094442Z_88b5e1e39adf","深溪沟")
@@ -76,10 +80,14 @@ with sync_playwright() as pw:
         selected("dadu_q_dadu19_20261127T094442Z_88b5e1e39adf","19:15–19:30")
         for tab in ("公司报价","市场中标","实时实发","梯级水量","收入与对照"):
             select_tab(tab)
+            if tab == "实时实发":
+                bring_to_top(page.get_by_text(re.compile("19:30 系统运行对照")).first)
+            if tab == "公司报价":
+                bring_to_top(page.get_by_text(re.compile("安谷 · 19:15–19:30 成交与现金")).first)
             if tab == "收入与对照":
                 subtotal = page.get_by_text(re.compile(r"12,135,083\.84"))
                 expect(subtotal).to_be_visible()
-                subtotal.scroll_into_view_if_needed()
+                bring_to_top(subtotal)
             page.screenshot(path=str(folder/(str(("公司报价","市场中标","实时实发","梯级水量","收入与对照").index(tab)+1)+f"-{size['width']}.png")))
             expect(page.locator('[data-testid="stException"]')).to_have_count(0)
         page.get_by_role("button",name="回放另一策略的同站同时段").click()

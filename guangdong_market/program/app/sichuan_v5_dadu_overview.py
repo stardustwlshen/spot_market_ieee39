@@ -51,7 +51,7 @@ def render_overview(result):
         worst_bus = max(nodal, key=nodal.get)
         st.warning(f'{n} 个已执行段中，{count} 段出现失负荷。最大缺口在 '
                    f'{_clock(peak)}–{_clock(peak+1)}，全网 {shortages[peak]:,.2f} MW，'
-                   f'其中节点 {worst_bus} 为 {nodal[worst_bus]:,.2f} MW。')
+                   f'其中节点 {worst_bus} 为 {nodal[worst_bus]:,.2f} MW。这些失负荷时段的采用节点价和现金待核。')
     elif result['money']['data_quality'] != 'verified':
         st.info('已执行段未出现失负荷。计价覆盖和待核原因见「收入与对照」。')
     else:

@@ -310,10 +310,8 @@ def _results(name, results, root, receipts, draft):
     st.caption(f"当前回放：{SCENARIOS[inputs['scenario']]} · {STRATEGIES[results['company']['strategy']]} · "
                f"种子 {inputs['seed']} · 实时 00:00–{_end_label(n-1)}（{n}/96 段） · {name}")
     differences = _draft_changes(inputs, draft)
-    if differences:
+    if differences and st.session_state.get('dadu_draft_modified'):
         st.caption('待运行设置与当前回放不同：'+'；'.join(differences)+'。可在运行设置中打开匹配的已存结果。')
-    if summary['max_slack_mw'] > 1e-5 or results['money']['data_quality'] != 'verified':
-        st.warning('本次运行存在实时计价或完整性缺项，请核对小时收入与价格质量。')
     if summary.get('risk_active'):
         trigger = {'dry_routine':'枯水期常态缓解','wet_power':'丰水期电力供需比触发',
                    'wet_energy':'丰水期电量供需比触发'}.get(results['policy']['trigger'],'研究缓解')
@@ -332,6 +330,7 @@ def _results(name, results, root, receipts, draft):
         focus['dadu_focus_run'] = name
     left,right = st.columns(2)
     uid = left.selectbox('查看厂站', names, format_func=lambda s:stations[s]['name'], key=station_key,
+                         help='可输入站名搜索。切换归档时保留所选厂站和时段。',
                          on_change=_remember_focus, args=('station', station_key))
     worst = max(range(n),key=lambda q:fsum(rt[q]['shed'].values()))
     if fsum(rt[worst]['shed'].values())>1e-5:
@@ -361,6 +360,10 @@ def _results(name, results, root, receipts, draft):
         st.caption('日前预出清没有结算现金。这里以实时计量估算电能量收入；当前档案未给出完整合同、补偿和企业实际成本，利润留空。')
         render_cash_detail(results)
         render_pair(root, receipts, results, stations[uid], quarter)
+
+
+def _mark_draft_modified():
+    st.session_state['dadu_draft_modified'] = True
 
 
 def _draft_changes(inputs, draft):
@@ -478,20 +481,20 @@ def render_dadu(root):
     with st.expander('运行设置与新算例', expanded=not saved_names):
         left, mid, right = st.columns(3)
         scenario = left.selectbox('市场场景', list(SCENARIOS), index=list(SCENARIOS).index(defaults.get('scenario','wet_low')),
-                                  format_func=SCENARIOS.get, key='dadu_scenario')
+                                  format_func=SCENARIOS.get, key='dadu_scenario', on_change=_mark_draft_modified)
         strategy = mid.selectbox('公司报价策略', list(STRATEGIES), index=list(STRATEGIES).index(defaults.get('strategy','water_value')),
-                                 format_func=STRATEGIES.get, key='dadu_strategy')
-        periods = right.selectbox('实时执行范围', (96,4), index=(96,4).index(defaults.get('periods',96)), key='dadu_periods',
+                                 format_func=STRATEGIES.get, key='dadu_strategy', on_change=_mark_draft_modified)
+        periods = right.selectbox('实时执行范围', (96,4), index=(96,4).index(defaults.get('periods',96)), key='dadu_periods', on_change=_mark_draft_modified,
                                  format_func=lambda n:'全天（96 段）' if n==96 else '首小时（4 段）')
         with st.expander('装机与灵敏度设置'):
-            seed = int(st.number_input('合成数据种子', min_value=0, max_value=2**31-1, value=defaults.get('seed',39), key='dadu_seed'))
+            seed = int(st.number_input('合成数据种子', min_value=0, max_value=2**31-1, value=defaults.get('seed',39), key='dadu_seed', on_change=_mark_draft_modified))
             st.caption('设计装机合计 35,276 MW。水电 22,056 MW，煤电 3,200 MW，气电 1,200 MW，光伏 8,820 MW。'
                        '光伏按普通集中式项目报量报价；气电按非市场保供计划运行。')
             first, second, third = st.columns(3)
             sensitivity = {
-                'water_value_scale':first.slider('公司期末水价值倍率', .5, 2., defaults.get('water_value_scale',1.), .05, key='dadu_water_scale'),
-                'corridor_scale':second.slider('T25-37 通道限额倍率', .6, 1.2, defaults.get('corridor_scale',1.), .05, key='dadu_line_scale'),
-                'gas_plan_scale':third.slider('气电保供计划倍率', 0., 1., defaults.get('gas_plan_scale',1.), .05, key='dadu_gas_scale'),
+                'water_value_scale':first.slider('公司期末水价值倍率', .5, 2., defaults.get('water_value_scale',1.), .05, key='dadu_water_scale', on_change=_mark_draft_modified),
+                'corridor_scale':second.slider('T25-37 通道限额倍率', .6, 1.2, defaults.get('corridor_scale',1.), .05, key='dadu_line_scale', on_change=_mark_draft_modified),
+                'gas_plan_scale':third.slider('气电保供计划倍率', 0., 1., defaults.get('gas_plan_scale',1.), .05, key='dadu_gas_scale', on_change=_mark_draft_modified),
             }
         draft = dict(scenario=scenario,strategy=strategy,periods=periods,seed=seed,**sensitivity)
         open_result, new_run = st.columns(2)
