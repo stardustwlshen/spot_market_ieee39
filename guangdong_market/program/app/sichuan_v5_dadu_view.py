@@ -466,6 +466,7 @@ def render_dadu(root):
                 '期初库容 m³':row['initial_storage_m3'], '最小库容 m³':row['storage_min_m3'],
                 '最大库容 m³':row['storage_max_m3'], '期末下限 m³':row['terminal_min_m3'],
                 '期末上限 m³':row['terminal_max_m3'], '最小总下泄 m³/s':row['min_release_m3s'],
+                '最大总下泄 m³/s':row['max_release_m3s'], '最大弃水 m³/s':row['max_spill_m3s'],
                 '最小旁泄 m³/s':row['min_bypass_m3s'], '耗水率 m³/kWh':company['offers'][row['id']]['consumption_m3_kwh']})
         st.dataframe(records, hide_index=True, width='stretch')
     with reaches:
