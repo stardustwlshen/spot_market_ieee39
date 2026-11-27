@@ -1,30 +1,16 @@
-name: Verify the Sichuan V5.0 consultation source
+name: Read operative provisions in the verified V5.0 draft
 on:
   push:
     branches: ['review/dadu19-basin-progress']
 permissions:
   contents: read
 jobs:
-  source:
+  clauses:
     runs-on: ubuntu-latest
     timeout-minutes: 4
     steps:
-      - name: Inspect the PDF named in the study
-        run: |
+      - uses: actions/checkout@v4
+      - run: |
           python -m pip install -q pymupdf
-          curl --fail --location --max-time 40 --retry 1 'https://mfs.mysteelcdn.com/group1/M00/7A/DB/rBL64GrqyT-AcGDEACBH_hBshK8829.pdf' -o /tmp/cons.pdf
-          python - <<'PY'
-          from pathlib import Path
-          import hashlib, pymupdf
-          path=Path('/tmp/cons.pdf')
-          doc=pymupdf.open(path)
-          text=[''.join(p.get_text().split()) for p in doc]
-          print('PDF_IDENT',len(doc),path.stat().st_size,hashlib.sha256(path.read_bytes()).hexdigest(),text[0][:48])
-          for term in ('日前预出清','不作为结算依据','不用于结算','节点边际电价','燃气','库容式','段间','备用','调频'):
-              found=[(i+1, p.find(term), p) for i,p in enumerate(text) if term in p]
-              print('SECTION',term,[j for j,_,_ in found[:12]])
-              if term in ('日前预出清','不作为结算依据','不用于结算') and found:
-                  page,i,s=found[-1]
-                  print('CONTEXT',page,s[max(0,i-15):i+20])
-          assert len(doc)>10 and any('四川' in p for p in text)
-          PY
+          curl --fail --location --max-time 40 --retry 1 'https://mfs.mysteelcdn.com/group1/M00/7A/DB/rBL64GrqyT-AcGDEACBH_hBshK8829.pdf' -o /tmp/consult.pdf
+          python .github/dadu-draft-probe.py /tmp/consult.pdf
