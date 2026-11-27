@@ -31,7 +31,8 @@ def load_archive(page, run, quarter):
     expect(receipt.first).to_be_visible(timeout=90000)
     name = f"dadu_q_{run}"
     choose(page, name, f"第 {quarter + 1} 段")
-    expect(page.locator(".st-key-" + name)).to_contain_text(f"第 {quarter + 1} 段")
+    expect(page.locator(".st-key-" + name).get_by_role("combobox")).to_have_value(
+        re.compile(rf"第 {quarter + 1} 段$"), timeout=30000)
     page.keyboard.press("Escape")
 
 
