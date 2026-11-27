@@ -25,8 +25,20 @@ with sync_playwright() as pw:
         def choose(key, text):
             shell = page.locator(".st-key-"+key)
             print('Selecting',key,text,flush=True)
-            shell.get_by_role("combobox").click()
-            page.get_by_role("option").filter(has_text=text).last.click()
+            combo = shell.get_by_role("combobox")
+            option = page.get_by_role("option").filter(has_text=text)
+            for attempt in range(3):
+                combo.click()
+                combo.fill(text)
+                try:
+                    option.last.wait_for(state="visible",timeout=4500)
+                    option.last.click(timeout=4500)
+                    break
+                except Exception:
+                    if attempt==2:
+                        print("Options",page.get_by_role("option").all_text_contents(),flush=True)
+                        raise
+                    combo.press("Escape")
         def selected(key, value):
             selector = ".st-key-"+key
             try:
