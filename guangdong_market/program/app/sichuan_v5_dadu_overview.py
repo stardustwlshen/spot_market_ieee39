@@ -99,11 +99,13 @@ def _pair_evidence(result):
 
 
 def matched_pair(left, right):
-    evidence = _pair_evidence(left)
+    from sichuan_v5_dadu_run import source_hashes_match
+    evidence, other = _pair_evidence(left), _pair_evidence(right)
     left_bid = left.get('summary', {}).get('bid_hash')
     right_bid = right.get('summary', {}).get('bid_hash')
     return (bool(left_bid and right_bid) and all(v is not None and v != '' for v in evidence)
-            and bool(evidence[3]) and evidence == _pair_evidence(right)
+            and source_hashes_match(evidence[3], other[3])
+            and evidence[:3] == other[:3] and evidence[4:] == other[4:]
             and {left.get('company', {}).get('strategy'), right.get('company', {}).get('strategy')} == {'water_value','naive'}
             and left_bid != right_bid)
 

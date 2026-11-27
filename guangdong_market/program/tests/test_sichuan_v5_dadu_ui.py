@@ -31,8 +31,10 @@ def test_bidder_operator_and_settlement_views_share_frozen_result(tmp_path, monk
     app.selectbox(key='dadu_q_'+name).select(3).run()
     assert not app.error and not app.exception
     assert any('安谷' in metric.label for metric in app.metric)
-    bids = next(table.value for table in app.dataframe if '申报价（元/MWh）' in table.value)
-    assert bids.iloc[-1]['终点 MW'] == result['inputs']['stations'][-1]['capacity_mw']
+    from sichuan_v5_dadu_portfolio import portfolio_offers
+    stations, offers = portfolio_offers(result, 3)
+    assert len(stations) == 19 and offers[offers['电站']=='安谷'].iloc[-1]['终点 MW'] == result['inputs']['stations'][-1]['capacity_mw']
+    assert any('公司冻结申报' in node.value for node in app.subheader)
     gas = next(table.value for table in app.dataframe if {'计划 MW','实发 MW'} <= set(table.value))
     assert len(gas) == 8 and (gas['计划 MW'] == gas['实发 MW']).all()
     grid = next(table.value for table in app.dataframe if '使用率 %' in table.value)
@@ -91,7 +93,8 @@ def test_matching_comparison_archives_are_read_without_solver(tmp_path, monkeypa
     calls = []
     def load(root, name):
         calls.append(name)
-        return {'rt':[{}]*4, 'inputs':dict(receipts[name], source_hashes={'current':'abc'}),
+        return {'rt':[{}]*4, 'inputs':dict(receipts[name], source_hashes={'current':'abc'},
+                                           market_base_sha=backend.BASE_COMMIT, hydro_source_sha=backend.DATA_COMMIT),
                  'company':{'strategy':receipts[name]['strategy'],'company_forecast_sha256':'forecast'},
                 'money':{'portfolio':[{'energy_mwh':5}]},
                 'summary':{'issued_boundary_hash':'issue','bid_hash':receipts[name]['strategy'],'max_slack_mw':0., 'company_revenue':100., 'water_spill_m3':0., 'solar_curtail_mwh':0.,
@@ -115,8 +118,8 @@ def test_matching_comparison_archives_are_read_without_solver(tmp_path, monkeypa
             result['summary']['issued_boundary_hash'] = 'different'
         return result
     monkeypatch.setattr(backend,'read_dadu',mismatched)
-    app.button(key='dadu_compare').click().run()
-    assert any('可比档案' in message.value for message in app.error)
+    app.button(key='dadu_compare_saved').click().run()
+    assert any('可比档案' in message.value for message in app.info)
     assert not app.dataframe
 
 
@@ -135,7 +138,8 @@ def test_stale_source_rejected_failure_has_no_partial_or_previous_comparison(tmp
     monkeypatch.setattr(backend, 'source_hashes', lambda:{'current':'new'})
     monkeypatch.setattr(backend, 'read_dadu', lambda root,name:{'inputs':dict(controls, source_hashes={'current':'old'})})
     calls=[]
-    def failed_run(root, **kw):
+    def failed_run(root, *, progress, **kw):
+        assert callable(progress)
         calls.append(kw)
         raise ValueError('测试缺少实际出清结果')
     monkeypatch.setattr(backend,'run_dadu',failed_run)

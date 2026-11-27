@@ -10,10 +10,12 @@ from threading import Lock
 import pyomo.environ as p
 
 if __package__:
+    from .sichuan_v5_dadu_progress import report
     from .sichuan_v5_energy import DT, PERIODS, ClearingError
     from .sichuan_v5_hydro import STEP_SECONDS, attach_cascade_constraints, validate_cascade
     from .sichuan_v5_segments import validate_curve
 else:
+    from sichuan_v5_dadu_progress import report
     from sichuan_v5_energy import DT, PERIODS, ClearingError
     from sichuan_v5_hydro import STEP_SECONDS, attach_cascade_constraints, validate_cascade
     from sichuan_v5_segments import validate_curve
@@ -134,7 +136,7 @@ def _company_model(case, rs, prices, water_values):
     return model, solver
 
 
-def _physical_capabilities(model, solver, ids, available, physics_key):
+def _physical_capabilities(model, solver, ids, available, physics_key, progress=None):
     """Exact marginal capability per station; individual extrema need not coincide.
 
     Joint LP witnesses certify many bounds in one solve. Unresolved intervals
@@ -145,8 +147,10 @@ def _physical_capabilities(model, solver, ids, available, physics_key):
 
     with _CACHE_LOCK:
         cached = _CAPABILITY_CACHE.get(physics_key)
-        if cached is not None:
-            return json.loads(cached)
+    if cached is not None:
+        capabilities = json.loads(cached)
+        report(progress, "company", len(capabilities), len(ids), "按相同水力边界复用已核定的逐站能力")
+        return capabilities
     model.objective.deactivate()
     model.firm = p.Var(domain=p.NonNegativeReals)
     model.cap_objective = p.Objective(expr=model.firm, sense=p.maximize)
@@ -164,6 +168,12 @@ def _physical_capabilities(model, solver, ids, available, physics_key):
         if solution.termination_condition != TerminationCondition.optimal:
             raise ClearingError(f"公司物理能力校核失败：{solution.termination_condition}")
         values = solver.get_primals(variables)
+        if progress is not None:
+            nonlocal solved_lps
+            solved_lps += 1
+            if solved_lps == 1 or solved_lps % 8 == 0:
+                report(progress, "company", len(capabilities), len(ids),
+                       f"正在核定 {r}，本站已解 {solved_lps} 个能力线性规划")
         return [max(0., float(values[v])) for v in variables]
 
     def extrema(variables, bounds, witness, sign):
@@ -190,6 +200,8 @@ def _physical_capabilities(model, solver, ids, available, physics_key):
 
     capabilities = {}
     for r in ids:
+        solved_lps = 0
+        report(progress, "company", len(capabilities), len(ids), f"正在核定 {r} 的逐段和连续3小时能力")
         variables = [model.power[r, t] for t in range(PERIODS)]
         high_day = optimize(sum(variables), variables)
         low_day = optimize(-sum(variables), variables)
@@ -212,6 +224,7 @@ def _physical_capabilities(model, solver, ids, available, physics_key):
                 best, best_start = value, start
         capabilities[r] = dict(minimum_mw=lower, available_mw=upper, daily_energy_mwh=DT * sum(high_day),
                                sustained_3h_mw=best, sustained_start_quarter=best_start)
+        report(progress, "company", len(capabilities), len(ids), f"已核定 {r} 的96点能力、日能量与连续3小时能力")
     with _CACHE_LOCK:
         _CAPABILITY_CACHE[physics_key] = json.dumps(capabilities, allow_nan=False)
         if len(_CAPABILITY_CACHE) > 8:
@@ -220,7 +233,7 @@ def _physical_capabilities(model, solver, ids, available, physics_key):
 
 
 def prepare_company_submission(company_case, expected_price_yuan_mwh, water_value_yuan_m3,
-                               *, strategy="water_value", as_of="D-1"):
+                               *, strategy="water_value", as_of="D-1", progress=None):
     """Produce a signed public offer and separate private D-1 operating analysis.
 
     Prices are exogenous, indexed by quarter then station. Water values in
@@ -245,6 +258,7 @@ def prepare_company_submission(company_case, expected_price_yuan_mwh, water_valu
     availability = {r: [row.get(r, rs[r].capacity_mw) for row in case.available] for r in ids}
     if any(not _number(v) or not 0 <= v <= rs[r].capacity_mw for r in ids for v in availability[r]):
         raise ClearingError("公司可用容量须在额定容量范围内")
+    report(progress, "company", 0, len(ids), "正在求解全梯级事前用水计划")
     model, solver = _company_model(case, rs, prices, water_value_yuan_m3)
     reduced_costs = solver.get_reduced_costs(list(model.power.values()))
     plan = [{r: max(0., float(p.value(model.power[r, t]))) for r in ids} for t in range(PERIODS)]
@@ -256,7 +270,7 @@ def prepare_company_submission(company_case, expected_price_yuan_mwh, water_valu
     physical_hash = _digest(dict(hydraulics=asdict(case.cascade),
                         units=[(r, rs[r].capacity_mw, rs[r].initial_mw, rs[r].ramp_mw_15min) for r in ids],
                         available=availability))
-    capabilities = _physical_capabilities(model, solver, ids, availability, physical_hash)
+    capabilities = _physical_capabilities(model, solver, ids, availability, physical_hash, progress)
     offers = {}
     targets = {}
     for r in ids:

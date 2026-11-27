@@ -13,6 +13,7 @@ from sichuan_v5_ancillary import Award, prepare_energy_boundary
 from sichuan_v5_company import apply_company_submission, prepare_company_submission
 from sichuan_v5_dadu_case import build_case, company_snapshot, forecast_callback
 from sichuan_v5_dadu_policy import effective_offer, market_power_policy, operator_hydro_envelope, settle_realtime
+from sichuan_v5_dadu_progress import report, source_hashes_match
 from sichuan_v5_energy import DT, PERIODS, ClearingError, day_ahead, realtime, validate
 
 
@@ -39,8 +40,8 @@ def _assumptions(case, corridor_scale, gas_scale):
     return replace(case, lines=lines, fixed_schedule=schedule)
 
 
-def _policy(case, month):
-    water_mw, water_mwh = operator_hydro_envelope(case)
+def _policy(case, month, *, progress=None):
+    water_mw, water_mwh = operator_hydro_envelope(case, **({"progress": progress} if progress is not None else {}))
     other_market = [u for u in case.resources if u.kind in ("thermal", "renewable")]
     other_mw = [sum(row.get(u.id, u.capacity_mw) for u in other_market) for row in case.available]
     supply = [hydro + other for hydro, other in zip(water_mw, other_mw)]
@@ -216,20 +217,19 @@ def run_dadu(root, *, scenario="wet_low", strategy="water_value", periods=96,
                               (corridor_scale,.6,1.2,"通道限额倍数"),(gas_plan_scale,0.,1.,"气电计划倍数")):
         if type(value) not in (float,int) or not math.isfinite(value) or not lo <= value <= hi:
             raise ValueError(f"{label}须在 {lo} 至 {hi} 范围内")
-    tell = progress if progress is not None else lambda _:None
+    progress_options = {"progress": progress} if progress is not None else {}
     scenario = {"wet":"wet_low","dry":"dry_peak","error":"forecast_error"}.get(scenario,scenario)
-    tell("正在载入19站水情与独立的市场边界")
+    report(progress, "inputs", 0, 1, "正在载入19站水情与独立的市场边界")
     base, meta = build_case(scenario,seed)
     public = company_snapshot(base,meta)
     water_values = {k:float(v)*water_value_scale for k,v in meta["water_value_yuan_m3"].items()}
-    tell("公司正在跨站优化用水并冻结申报")
+    report(progress, "inputs", 1, 1, "公司预测与市场输入已载入")
     company = prepare_company_submission(public, meta["expected_price_yuan_mwh"],water_values,
-        strategy=strategy, as_of="D-1 09:45 Asia/Shanghai")
+        strategy=strategy, as_of="D-1 09:45 Asia/Shanghai", **progress_options)
     operator = _assumptions(base,corridor_scale,gas_plan_scale)
     validate(operator)
     approved = apply_company_submission(operator,company)
-    tell("市场正在核定水量可供电量、有效报价与风险缓解上限")
-    policy = _policy(operator,meta["month"])
+    policy = _policy(operator,meta["month"], **progress_options)
     market,raw,effective,kinds = _market_offers(approved,policy)
     da_market, forecast_margin = _uncertainty_boundary(market, scenario)
     known = {r.id:r for r in market.resources}
@@ -270,14 +270,22 @@ def run_dadu(root, *, scenario="wet_low", strategy="water_value", periods=96,
     frozen = {k:company[k] for k in ("schema","strategy","as_of","offers","submission_sha256")}
     (folder/"frozen_bids.json").write_bytes(_bytes(frozen))
     try:
-        tell("正在进行日前96点机组组合与固定组合经济调度")
-        da = day_ahead(da_market)
+        da_steps = 4 if records else 2
+        def clear_ahead(offset, **options):
+            message = "正在求解日前96点机组组合 SCUC" if offset == 0 else "正在按辅助服务占位复核固定组合"
+            report(progress, "da", offset, da_steps, message)
+            if progress is not None:
+                options["on_commitment_solved"] = lambda: report(
+                    progress, "da", offset + 1, da_steps, "机组组合已解，正在求解固定组合 SCED 并计算节点价")
+            return day_ahead(da_market, **options)
+
+        da = clear_ahead(0)
         if records:
-            tell("正在按调频和备用占位重算日前参考")
-            da = day_ahead(da_market,fixed_commitment=da,holds=holds,spot_disabled=disabled)
+            da = clear_ahead(2, fixed_commitment=da, holds=holds, spot_disabled=disabled)
         if any(_slack(row)>1e-5 for row in da):
             first = next(r for r in da if _slack(r)>1e-5)
             raise ClearingError(f"日前第 {first['quarter']+1} 段有 {_slack(first):.2f} MW 可靠性松弛")
+        report(progress, "da", da_steps, da_steps, "日前96点预出清与可靠性检查已完成")
         base_forecast = forecast_callback(meta)
         hydraulic_static_sha = _hash(dict(
             reservoirs=[asdict(r) for r in market.cascade.reservoirs],
@@ -287,14 +295,17 @@ def run_dadu(root, *, scenario="wet_low", strategy="water_value", periods=96,
         inputs["hydraulic_static_sha256"] = hydraulic_static_sha
         issued = []
         def window_inputs(day,t,stop):
-            if t % 8 == 0 or t+1 == periods:
-                tell(f"实时执行第 {t+1}/{periods} 段")
+            if t:
+                report(progress, "rt", t, periods, f"已执行 {t} 段并交接水量，正在求解第 {t+1} 段")
             current = base_forecast(day,t,stop)
             issued.append(_issued_window(current,t,stop,holds,hydraulic_static_sha))
             return current
 
+        report(progress, "rt", 0, periods, "正在求解首个实时窗口")
         rt = realtime(market, da, executed_periods=periods, holds=holds, spot_disabled=disabled,
                       window_inputs=window_inputs)
+        report(progress, "rt", len(rt), periods, "实时执行与末段梯级水量交接已完成")
+        report(progress, "archive", 0, 2, "正在核算实发、缺供和收入")
         for row in rt:
             row["system_shortfalls"] = _system_shortfalls(row)
         resources = [dict(id=u.id,bus=u.bus,kind=kinds[u.id]) for u in market.resources]
@@ -318,6 +329,7 @@ def run_dadu(root, *, scenario="wet_low", strategy="water_value", periods=96,
         result = dict(schema=SCHEMA,run=name,inputs=inputs,company=company,policy=policy,
                       raw_offers=raw,effective_offers=effective,issued_forecasts=issued,
                       da=da,rt=rt,money=money,summary=summary)
+        report(progress, "archive", 1, 2, "已核算执行结果，正在写入完整档案与校验收据")
         packed = gzip.compress(_bytes(result),compresslevel=4,mtime=0)
         (folder/"result.json.gz").write_bytes(packed)
         receipt = dict(schema=SCHEMA,run=name,sha256=hashlib.sha256(packed).hexdigest(),
@@ -327,6 +339,7 @@ def run_dadu(root, *, scenario="wet_low", strategy="water_value", periods=96,
         temp = folder/"receipt.tmp"
         temp.write_bytes(_bytes(receipt))
         temp.replace(folder/"receipt.json")
+        report(progress, "archive", 2, 2, "运行档案与校验收据已写入")
         return name, result
     except Exception as exc:
         (folder/"failure.json").write_bytes(_bytes(dict(run=name,scenario=scenario,strategy=strategy,

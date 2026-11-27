@@ -274,14 +274,20 @@ def _source_version(market_sha, hydro_sha, files):
     return (market_sha, hydro_sha, tuple(sorted(files.items())))
 
 
-def _record_cohort(matches, result):
+def _record_cohort(matches, result, current_version=None):
+    from sichuan_v5_dadu_progress import source_hashes_match
     inputs, company, summary = result["inputs"], result["company"], result["summary"]
     version = _source_version(inputs["market_base_sha"], inputs["hydro_source_sha"], inputs["source_hashes"])
+    if (current_version is not None and version[:2] == current_version[:2]
+            and source_hashes_match(inputs["source_hashes"], dict(current_version[2]))):
+        version = current_version
     assert inputs["boundary_hash"] == summary["boundary_hash"]
     if "issued_boundary_hash" in summary:
         issued = json.dumps(result["issued_forecasts"], sort_keys=True, ensure_ascii=False,
                             separators=(",", ":"), allow_nan=False).encode("utf-8")
         assert sha256(issued).hexdigest() == summary["issued_boundary_hash"]
+    if not summary.get("issued_boundary_hash") or not company.get("company_forecast_sha256"):
+        return
     knobs = (inputs["seed"], inputs["periods"], inputs["water_value_scale"],
              inputs["corridor_scale"], inputs["gas_plan_scale"])
     # Physical/valuation and issued RT boundaries must agree within each
@@ -303,13 +309,19 @@ def test_executed_run_replay(modules, request):
         assert names, "No completed Dadu archives were found"
     else:
         root = request.getfixturevalue("tmp_path")
-        name, _ = runs.run_dadu(root, scenario="wet_low", strategy="water_value", periods=4)
+        events = []
+        name, _ = runs.run_dadu(root, scenario="wet_low", strategy="water_value", periods=4, progress=events.append)
+        assert list(dict.fromkeys(e.stage for e in events)) == ["inputs", "company", "market", "da", "rt", "archive"]
+        assert [e.completed for e in events if e.stage == "da"] == [0, 1, 2]
+        assert [e.completed for e in events if e.stage == "rt"] == [0, 1, 2, 3, 4]
+        assert events[-1].stage == "archive" and events[-1].completed == events[-1].total
         names = [name]
+    current = _source_version(runs.BASE_COMMIT, runs.DATA_COMMIT, runs.source_hashes())
     matches = defaultdict(dict)
     failures = []
     for name in names:
         result = runs.read_dadu(root, name)
-        _record_cohort(matches, result)
+        _record_cohort(matches, result, current)
         try:
             audit_archive(result)
         except AssertionError as exc:
@@ -320,7 +332,6 @@ def test_executed_run_replay(modules, request):
             assert pair["naive"] != pair["water_value"]
             complete[version, knobs].add(scenario)
     if os.environ.get("DADU_REQUIRE_MATRIX") == "1":
-        current = _source_version(runs.BASE_COMMIT, runs.DATA_COMMIT, runs.source_hashes())
         missing = set(SCENARIOS) - complete[current, (39,96,1.,1.,1.)]
         assert not missing, f"当前源码版本缺少同边界的完整策略对：{sorted(missing)}"
     assert not failures, "\n".join(failures)

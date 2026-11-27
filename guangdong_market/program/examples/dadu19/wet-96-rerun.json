@@ -1,0 +1,47 @@
+{
+  "run": "dadu19_20261127T141536Z_db886d27def7",
+  "compared_with": "dadu19_20261127T095231Z_f92c9001a30f",
+  "scenario": "wet_low",
+  "strategy": "water_value",
+  "seed": 39,
+  "quarter_hours": 96,
+  "elapsed_seconds": 139.154,
+  "stage_seconds": {
+    "inputs": 0.015,
+    "company": 8.514,
+    "market": 2.476,
+    "da": 35.601,
+    "rt": 92.321,
+    "archive": 0.226
+  },
+  "matched_power_values": {
+    "da": 2784,
+    "rt": 2784
+  },
+  "max_abs_power_difference_mw": {
+    "da": 0,
+    "rt": 0
+  },
+  "matching_sections": [
+    "company",
+    "da",
+    "effective_offers",
+    "issued_forecasts",
+    "money",
+    "policy",
+    "raw_offers",
+    "rt",
+    "schema"
+  ],
+  "different_input_fields": [
+    "source_hashes"
+  ],
+  "different_summary_fields": [
+    "input_hash"
+  ],
+  "max_slack_mw": 0,
+  "unserved_energy_mwh": 0,
+  "gas_mwh": 3647.3793597230324,
+  "company_revenue_yuan": 19357417.920778446,
+  "bid_sha256": "fa39e7a4a37d45a25a442a67afeb0b92d695442a3bc8e3ff0bbf48ec67e3cbeb"
+}

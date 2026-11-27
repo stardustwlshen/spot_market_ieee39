@@ -138,7 +138,8 @@ def comparison_row(scenario, strategy, result):
         mwh = .25 * fsum(r['power'][i] for r in result['rt'] for i in members)
     shortfalls = [fsum(r['shed'].values()) for r in result['rt'] if 'shed' in r]
     income = summary['company_revenue']
-    complete = len(result['rt']) == 96 and summary['max_slack_mw']<=1e-5
+    complete = (len(result['rt']) == 96 and summary['max_slack_mw']<=1e-5 and income is not None
+                and result['money'].get('data_quality', 'verified')=='verified')
     return {'场景': SCENARIOS[scenario], '报价策略': STRATEGIES[strategy],
             '已执行时段': len(result['rt']),
             '实时可靠性': ('压力场景出现松弛' if scenario=='forecast_error' else '基准未通过')
@@ -177,16 +178,16 @@ def _company_tab(results, station):
     _chart(series, 'MW')
     st.caption(f"内部计划日电量 {_number(.25*sum(series['公司内部发电计划']))} MWh。"
                '逐时、全日和连续三小时能力分别计算，各站独立最大值同时实现还须通过梯级联合校验。')
-    left, right = st.columns(2)
-    with left:
-        st.markdown('**冻结分段申报**')
-        st.dataframe(_submitted(offer['segments']), hide_index=True, placeholder="—")
-    with right:
-        st.markdown('**报价依据**')
-        _chart({'事前预期节点价': [r[uid] for r in company['expected_price_yuan_mwh']],
-                '水的边际机会成本': [r[uid] for r in company['marginal_water_cost_yuan_mwh']]},
-               '元/MWh')
-    st.caption('申报按站提交。内部计划用于生成报价，调度按冻结申报和独立运行边界出清。')
+    prices = {}
+    for field, label in (('expected_price_yuan_mwh', '事前预期节点价'),
+                         ('marginal_water_cost_yuan_mwh', '水的边际机会成本')):
+        records = company.get(field) or []
+        if len(records) == len(company['internal_plan_mw']):
+            prices[label] = [r.get(uid) for r in records]
+    if prices:
+        _chart(prices, '元/MWh')
+    if len(prices) < 2:
+        st.caption('这份归档缺少完整的事前预期价或边际水机会成本。')
     with st.expander('核对申报版本和站名'):
         st.write({'签发时刻':company.get('as_of'), '申报摘要':results['summary']['bid_hash'],
                   '工程名':station.get('engineering_name'), '名称匹配':station.get('match'),
@@ -198,20 +199,8 @@ def _company_tab(results, station):
 
 def _market_tab(results, station, quarter):
     inputs, da = results['inputs'], results['da']
-    groups = _asset_groups(inputs['assets'])
-    st.markdown('**日前各类型出力**')
-    _chart({kind: [_total(row, ids) for row in da] for kind, ids in groups.items()}, 'MW', area=True)
-    st.caption(f"所选时段系统负荷：日前 {_number(sum(da[quarter]['demand'].values()))} MW，"
-               f"实时 {_number(sum(results['rt'][quarter]['demand'].values()))} MW。")
+    st.markdown('**逐资源日前申报与预出清**')
     name_by_id = {a['id']:a for a in inputs['assets']}
-    snapshot = []
-    for kind, ids in groups.items():
-        snapshot.append({'类型':kind,
-                         '设计装机 MW':sum(name_by_id[a]['capacity_mw'] for a in ids),
-                         '日前可用 MW':sum(inputs['available'][quarter].get(a, name_by_id[a]['capacity_mw']) for a in ids),
-                         '日前预出清 MW':_total(da[quarter], ids),
-                         '实时实发 MW':_total(results['rt'][quarter], ids)})
-    st.dataframe(snapshot, hide_index=True, placeholder="—")
     resource_ids = list(name_by_id)
     uid = st.selectbox('查看电源的日前量价', resource_ids, index=resource_ids.index(station['id']),
                        key=f"dadu_market_{results['run']}_{station['id']}",
@@ -306,7 +295,11 @@ def _results(name, results, root, receipts, draft):
     from sichuan_v5_dadu_grid_results import render_grid_detail
     from sichuan_v5_dadu_water_results import render_water_detail
     from sichuan_v5_dadu_overview import render_overview, render_node_prices, render_pair
-    inputs, summary = results['inputs'], results['summary']
+    from sichuan_v5_dadu_portfolio import render_company_portfolio
+    from sichuan_v5_dadu_bid_decision import render_bid_decision
+    from sichuan_v5_dadu_market_stages import render_day_ahead, render_real_time
+    from sichuan_v5_dadu_basin import render_basin
+    inputs = results['inputs']
     rt = results['rt']
     n = len(rt)
     st.subheader('运行结果')
@@ -315,12 +308,6 @@ def _results(name, results, root, receipts, draft):
     differences = _draft_changes(inputs, draft)
     if differences and st.session_state.get('dadu_draft_modified'):
         st.caption('待运行设置与当前回放不同：'+'；'.join(differences)+'。可在运行设置中打开匹配的已存结果。')
-    if summary.get('risk_active'):
-        trigger = {'dry_routine':'枯水期常态缓解','wet_power':'丰水期电力供需比触发',
-                   'wet_energy':'丰水期电量供需比触发'}.get(results['policy']['trigger'],'研究缓解')
-        st.caption(f"本场景触发市场力缓解研究条件，出清使用经处理的有效报价，研究限价 "
-                   f"{_number(results['policy']['cap'])} 元/MWh（{trigger}）。")
-    render_overview(results)
     stations = {s['id']:s for s in inputs['stations']}
     names = list(stations)
     station_key, quarter_key = 'dadu_unit_'+name, 'dadu_q_'+name
@@ -335,34 +322,73 @@ def _results(name, results, root, receipts, draft):
     uid = left.selectbox('查看厂站', names, format_func=lambda s:stations[s]['name'], key=station_key,
                          help='可输入站名搜索。切换归档时保留所选厂站和时段。',
                          on_change=_remember_focus, args=('station', station_key))
-    worst = max(range(n),key=lambda q:fsum(rt[q]['shed'].values()))
-    if fsum(rt[worst]['shed'].values())>1e-5:
-        right.button('跳到最大失负荷时段', key='dadu_worst_'+name,
-                     on_click=_set_quarter, args=(name,worst))
+    def period_label(t):
+        return f"{'00:00' if t == 0 else _end_label(t-1)}–{_end_label(t)} · 第 {t+1} 段"
+
     quarter = right.selectbox('查看已执行时段（北京时间）', range(n),
-                              format_func=lambda t:f"{'00:00' if t==0 else _end_label(t-1)}–{_end_label(t)} · 第 {t+1} 段",
+                              format_func=period_label,
                               key=quarter_key, on_change=_remember_focus, args=('quarter',quarter_key))
     if preferred >= n:
         right.caption(f'原选时段超出本次已执行范围，显示最后一段（{_end_label(n-1)}）。')
-    company, market, dispatch, water, cash = st.tabs(('公司报价', '市场中标', '实时实发', '梯级水量', '收入与对照'), key='dadu_role_tabs')
+    day_quarter = quarter
+    day_count = min(len(results['da']), len(results['company']['internal_plan_mw']))
+    if n < day_count and st.toggle('单独预览公司与日前时段', key='dadu_day_preview_'+name,
+                                   help='实时出清、水账和收入继续跟随已执行时段。'):
+        preview_key = 'dadu_day_q_'+name
+        if preview_key not in focus:
+            focus[preview_key] = quarter
+        day_quarter = st.selectbox('公司与日前预览时段（北京时间）', range(day_count),
+                                   format_func=period_label, key=preview_key)
+    company, market, dispatch, water, cash = st.tabs(
+        ('公司报量报价', '日前预出清', '实时出清与执行', '全流域水情', '收入与对照'), key='dadu_role_tabs')
+    station = stations[uid]
     with company:
-        _company_tab(results, stations[uid])
-        render_company_detail(results, stations[uid], quarter)
+        render_company_portfolio(results, day_quarter)
+        render_bid_decision(results, station, day_quarter)
+        with st.expander(f"{station['name']}的全日计划、申报边界与预期价格"):
+            _company_tab(results, station)
     with market:
-        _market_tab(results, stations[uid], quarter)
-        render_node_prices(results, stations[uid], quarter)
+        render_day_ahead(results, station, day_quarter)
+        with st.expander('机组曲线与节点参考价'):
+            policy = results.get('policy', {})
+            trigger = {'dry_routine': '枯水期按季节常态触发',
+                       'wet_power': f"丰水期电力供需比 {_number(policy.get('power_ratio'), 3)} ≤ 1.01",
+                       'wet_energy': f"丰水期电量供需比 {_number(policy.get('energy_ratio'), 3)} ≤ 1.25",
+                       'none': '市场力缓解条件未触发'}.get(policy.get('trigger'), '触发原因待核')
+            st.caption(f"有效报价依据为{trigger}。本日研究限价 {_number(policy.get('cap'))} 元/MWh。"
+                       "分段表按功率起止点对照冻结申报与市场采用价，相同时合并显示。")
+            _market_tab(results, station, day_quarter)
+            with st.expander('39 节点日前参考价'):
+                prices = results['da'][day_quarter]['raw_nodal_prices']
+                st.caption(f'{period_label(day_quarter)} · 日前固定组合 SCED 节点参考价')
+                st.dataframe([{'节点': int(bus), '日前节点参考价（元/MWh）': value}
+                              for bus, value in sorted(prices.items(), key=lambda item: int(item[0]))],
+                             hide_index=True, placeholder='待核')
     with dispatch:
+        render_real_time(results, station, quarter)
+        render_overview(results)
+        worst = max(range(n),key=lambda q:fsum(rt[q]['shed'].values()))
+        if fsum(rt[worst]['shed'].values())>1e-5:
+            st.button('跳到最大失负荷时段', key='dadu_worst_'+name,
+                         on_click=_set_quarter, args=(name,worst))
         render_grid_detail(results, quarter)
-        _realtime_tab(results, stations[uid], quarter)
+        with st.expander('分站实发、偏差、节点价与明细'):
+            _realtime_tab(results, station, quarter)
+            render_node_prices(results, station, quarter)
     with water:
-        if stations[uid]['model']=='reservoir':
-            _chart({'日前计划库容':[r['hydro'][uid]['storage_m3']/1e6 for r in results['da']],
-                    '实际库存':[r['hydro'][uid]['storage_m3']/1e6 for r in rt]}, '百万 m³')
-        render_water_detail(results, stations[uid], quarter)
+        render_basin(results, quarter)
+        st.subheader('逐站与河段水账')
+        if station['model']=='reservoir':
+            with st.expander(f"{station['name']}日前与实时库容曲线"):
+                _chart({'日前计划库容':[r['hydro'][uid]['storage_m3']/1e6 for r in results['da']],
+                        '实际库存':[r['hydro'][uid]['storage_m3']/1e6 for r in rt]}, '百万 m³')
+        render_water_detail(results, station, quarter)
     with cash:
-        st.caption('日前预出清没有结算现金。这里以实时计量估算电能量收入；当前档案未给出完整合同、补偿和企业实际成本，利润留空。')
+        st.subheader('实时电能量收入')
+        st.caption('日前预出清只用于参照。收入按计量和采用的实时节点价核算；缺少有效价格的时段单列待核电量。')
         render_cash_detail(results)
-        render_pair(root, receipts, results, stations[uid], quarter)
+        render_company_detail(results, station, quarter)
+        render_pair(root, receipts, results, station, quarter)
 
 
 def _mark_draft_modified():
@@ -382,7 +408,7 @@ def _draft_changes(inputs, draft):
 
 
 def _find_draft_archive(root, receipts, draft):
-    from sichuan_v5_dadu_run import read_dadu, source_hashes
+    from sichuan_v5_dadu_run import read_dadu, source_hashes, source_hashes_match
     model_sources = source_hashes()
     for name, receipt in receipts.items():
         if any(receipt.get(k)!=v for k,v in draft.items()):
@@ -391,7 +417,7 @@ def _find_draft_archive(root, receipts, draft):
             archived = read_dadu(root, name)['inputs']
         except (ValueError, OSError, KeyError):
             continue
-        if (archived.get('source_hashes')==model_sources and not archived.get('awards')
+        if (source_hashes_match(archived.get('source_hashes'), model_sources) and not archived.get('awards')
                 and all(archived.get(k)==v for k,v in draft.items())):
             return name
     return None
@@ -399,77 +425,111 @@ def _find_draft_archive(root, receipts, draft):
 
 def _comparison(root, seed, periods, sensitivity, receipts):
     from sichuan_v5_dadu_overview import matched_pair
-    from sichuan_v5_dadu_run import read_dadu, run_dadu, source_hashes
-
-    def candidate(result, scenario, strategy):
-        # Keep only the pairing evidence and scores when multiple archives share settings.
-        inputs, company, summary = result['inputs'], result['company'], result['summary']
-        evidence = {'inputs': {k:inputs.get(k) for k in ('scenario','seed','source_hashes')},
-                    'company': {k:company.get(k) for k in ('strategy','company_forecast_sha256')},
-                    'summary': {k:summary.get(k) for k in ('boundary_hash','issued_boundary_hash','bid_hash')},
-                    'rt': range(len(result['rt']))}
-        return evidence, comparison_row(scenario, strategy, result)
-
+    from sichuan_v5_dadu_live import solve_visible
+    from sichuan_v5_dadu_run import BASE_COMMIT, DATA_COMMIT, read_dadu, run_dadu, source_hashes, source_hashes_match
     with st.expander('三类场景下的两种报价策略'):
-        st.caption('六组采用当前种子、执行范围和灵敏度。场景内核对模型版本、日前边界、公司预测及实时预测签发后再比较。'
-                   '完整单日且实时无可靠性松弛时，列示计入库存和在途水价值变化的研究收益。')
-        if st.button('查看或补算六个对照算例', key='dadu_compare'):
-            st.session_state.pop('dadu_pair_results', None)
+        st.caption('两种策略须采用同一源码、公司预测、市场边界和逐窗签发的实时预测。')
+        left,right=st.columns(2)
+        view_saved=left.button('查看已保存的六组对照',key='dadu_compare_saved')
+        calculate=right.button('补算缺少的对照',key='dadu_compare')
+        saved=st.session_state.get('dadu_pair_results')
+        if not (saved or view_saved or calculate):
+            return
+        sources=source_hashes()
+        controls=dict(seed=seed,periods=periods,**sensitivity)
+        request=dict(controls=controls,sources=sources,market=BASE_COMMIT,hydro=DATA_COMMIT)
+        if saved and (not isinstance(saved,dict) or saved.get('request')!=request):
+            st.session_state.pop('dadu_pair_results',None)
+            if not (view_saved or calculate):
+                st.info('当前参数已改变。查看已保存结果或按当前条件补算。')
+        if view_saved or calculate:
+            tracker = st.progress(0., text='正在核对三类场景的冻结档案')
+            detail = st.empty()
+            st.session_state.pop('dadu_pair_results',None)
             rows = []
             try:
-                sources = source_hashes()
-                with st.status('正在生成对照', expanded=False) as status:
-                    for scenario in SCENARIOS:
-                        alternatives = {}
-                        for strategy in STRATEGIES:
-                            status.update(label=f'{SCENARIOS[scenario]} · {STRATEGIES[strategy]}')
-                            settings = dict(scenario=scenario, strategy=strategy, seed=seed, periods=periods, **sensitivity)
-                            found = []
-                            for name, receipt in receipts.items():
-                                if not all(receipt.get(k, v)==v for k,v in settings.items()):
-                                    continue
-                                try:
-                                    result = read_dadu(root, name)
-                                    inputs = result['inputs']
-                                    if (inputs.get('source_hashes')==sources and not inputs.get('awards')
-                                            and all(inputs.get(k)==v for k,v in settings.items())):
-                                        found.append(candidate(result, scenario, strategy))
-                                except (ValueError, OSError, KeyError):
-                                    continue
-                            if not found:
-                                _, result = run_dadu(root, **settings)
-                                found.append(candidate(result, scenario, strategy))
-                            alternatives[strategy] = found
-                        pair = next(((w[1], n[1]) for w in alternatives['water_value'] for n in alternatives['naive']
-                                     if matched_pair(w[0], n[0])), None)
-                        if pair is None:
-                            raise ValueError(f'{SCENARIOS[scenario]} 缺少同边界、同预测签发且分别冻结报价的可比档案。')
-                        rows.extend(pair)
-                    status.update(label='六个对照运行完成', state='complete')
-                st.session_state['dadu_pair_results'] = (seed, periods, dict(sensitivity), rows)
+                with st.spinner('正在核对六组对照', show_time=True):
+                    for index, scenario in enumerate(SCENARIOS):
+                        tracker.progress(index / len(SCENARIOS), text=f'{SCENARIOS[scenario]} · 已核对 {index} / {len(SCENARIOS)} 个场景')
+                        # Keep IDs rather than all full-day archives in memory.
+                        candidates={strategy:{} for strategy in STRATEGIES}
+                        pair={}
+                        for name, receipt in receipts.items():
+                            if receipt.get('scenario')!=scenario or receipt.get('strategy') not in STRATEGIES:
+                                continue
+                            if any(receipt.get(k,v)!=v for k,v in controls.items()):
+                                continue
+                            try:
+                                existing=read_dadu(root,name)
+                            except (ValueError,OSError,KeyError):
+                                continue
+                            inputs=existing['inputs']
+                            strategy=receipt['strategy']
+                            settings=dict(scenario=scenario,strategy=strategy,**controls)
+                            if (not source_hashes_match(inputs.get('source_hashes'), sources) or inputs.get('awards')
+                                    or inputs.get('market_base_sha')!=BASE_COMMIT or inputs.get('hydro_source_sha')!=DATA_COMMIT
+                                    or any(inputs.get(k)!=v for k,v in settings.items())):
+                                continue
+                            summary=existing['summary']
+                            forecast_key=(summary.get('boundary_hash'),summary.get('issued_boundary_hash'),
+                                          existing['company'].get('company_forecast_sha256'))
+                            if not all(forecast_key):
+                                continue
+                            candidates[strategy].setdefault(forecast_key,name)
+                            other='naive' if strategy=='water_value' else 'water_value'
+                            companion_name=candidates[other].get(forecast_key)
+                            if companion_name:
+                                companion=read_dadu(root,companion_name)
+                                if matched_pair(existing,companion):
+                                    pair={strategy:existing,other:companion}
+                                    break
+                        if not pair:
+                            if not calculate:
+                                tracker.empty()
+                                st.info(f'{SCENARIOS[scenario]} 缺少可比档案。可按当前设置补算，然后核对两策略的冻结申报和实时预测签发。')
+                                return
+                            # Two incompatible existing strategies require a fresh pair.
+                            recompute_both=all(candidates.values())
+                            for strategy in STRATEGIES:
+                                if candidates[strategy] and not recompute_both:
+                                    pair[strategy]=read_dadu(root,next(iter(candidates[strategy].values())))
+                                else:
+                                    settings = dict(scenario=scenario, strategy=strategy, **controls)
+                                    _, pair[strategy] = solve_visible(run_dadu, root, settings, detail.container(),
+                                                                     f'{SCENARIOS[scenario]} · {STRATEGIES[strategy]}')
+                        if not matched_pair(pair['water_value'],pair['naive']):
+                            raise ValueError(f'{SCENARIOS[scenario]} 的两次运行未通过预测、版本、市场边界及冻结申报配对校验')
+                        rows.extend(comparison_row(scenario,strategy,pair[strategy]) for strategy in STRATEGIES)
+                    tracker.progress(1., text='三类场景、六组报价均已核对')
+                st.session_state['dadu_pair_results'] = dict(request=request,rows=rows)
             except (ValueError, RuntimeError, OSError, KeyError) as error:
+                tracker.empty()
                 st.error(f'对照未完成：{error}')
         saved = st.session_state.get('dadu_pair_results')
         if saved:
-            pair_seed, pair_periods, settings, rows = saved
-            if (pair_seed, pair_periods, settings) != (seed, periods, sensitivity):
-                st.info('当前参数已改变。点击「查看或补算六个对照算例」生成对应的对照表。')
-                return
-            st.caption(f'已完成对照 · 种子 {pair_seed} · 每个算例执行 {pair_periods}/96 段 · '
-                       f"水价值 ×{settings['water_value_scale']:g} · 通道 ×{settings['corridor_scale']:g} · "
-                       f"气电计划 ×{settings['gas_plan_scale']:g}")
-            st.dataframe([{k:v for k,v in row.items() if k!='边界摘要'} for row in rows], hide_index=True, placeholder="—")
+            st.caption(f'已完成对照 · 种子 {seed} · 每个算例执行 {periods}/96 段 · '
+                       f"水价值 ×{sensitivity['water_value_scale']:g} · 通道 ×{sensitivity['corridor_scale']:g} · "
+                       f"气电计划 ×{sensitivity['gas_plan_scale']:g}")
+            st.dataframe([{k:v for k,v in row.items() if k!='边界摘要'} for row in saved['rows']], hide_index=True)
 
 
 def render_dadu(root):
     from sichuan_v5_dadu_run import list_dadu, read_dadu, run_dadu
+    from sichuan_v5_dadu_live import solve_visible
+    from sichuan_v5_dadu_style import apply_dadu_style
+    apply_dadu_style()
     st.title('大渡河梯级与四川 V5.0 现货市场')
     st.caption('19 座水电站按厂站独立申报，由同一模拟公司优化。台账业主单独保留。市场运行在合成 IEEE39 电网上。')
     saved_names = list_dadu(root)
     receipts = {key:_receipt(root, key) for key in saved_names}
+    full_days = [key for key in saved_names if receipts[key].get('periods') == 96]
+    first_run = next((key for key in full_days if receipts[key].get('scenario') == 'wet_low'
+                      and receipts[key].get('strategy') == 'water_value' and receipts[key].get('seed') == 39
+                      and all(receipts[key].get(k, 1.) == 1. for k in ('water_value_scale', 'corridor_scale', 'gas_plan_scale'))),
+                     next(iter(full_days or saved_names), None))
     selected = None
     if 'dadu_initial_controls' not in st.session_state:
-        initial = receipts.get(st.session_state.get('dadu_saved') or (saved_names[0] if saved_names else None), {})
+        initial = receipts.get(st.session_state.get('dadu_saved') or first_run, {})
         valid = {}
         for field, choices in (('scenario', SCENARIOS), ('strategy', STRATEGIES), ('periods', (4, 96))):
             if initial.get(field) in choices:
@@ -500,27 +560,28 @@ def render_dadu(root):
                 'gas_plan_scale':third.slider('气电保供计划倍率', 0., 1., defaults.get('gas_plan_scale',1.), .05, key='dadu_gas_scale', on_change=_mark_draft_modified),
             }
         draft = dict(scenario=scenario,strategy=strategy,periods=periods,seed=seed,**sensitivity)
-        open_result, new_run = st.columns(2)
-        if open_result.button('打开匹配的已有结果', key='dadu_open_existing', disabled=not bool(receipts)):
-            selected = _find_draft_archive(root, receipts, draft)
-            if selected is None:
-                st.info('尚无同版本、同设置的归档。可点击「生成公司报价并运行市场」计算这一组。')
-        clicked = new_run.button('生成公司报价并运行市场', type='primary', key='dadu_run')
-    if clicked:
+    st.caption(f'本次运行设置 · {SCENARIOS[scenario]} · {STRATEGIES[strategy]} · '
+               f'日前 96 段 / 实时 {periods} 段。可直接打开已有结果，或按这组设置重新计算。')
+    open_result, new_run = st.columns(2)
+    if open_result.button('打开匹配的已有结果', key='dadu_open_existing', disabled=not bool(receipts)):
+        selected = _find_draft_archive(root, receipts, draft)
+        if selected is None:
+            st.info('尚无同版本、同设置的归档。可点击「生成公司报价并运行市场」计算这一组。')
+    if new_run.button('生成公司报价并运行市场', type='primary', key='dadu_run'):
         try:
-            with st.status('正在优化公司报价', expanded=False) as status:
-                selected, _ = run_dadu(root, scenario=scenario, strategy=strategy, seed=seed, periods=periods,
-                                       progress=lambda message:status.update(label=message), **sensitivity)
-                status.update(label='已保存本次运行', state='complete')
-        except (ValueError, RuntimeError, OSError) as error:
-            st.error(f'本次运行未完成：{error}')
+            selected, _ = solve_visible(run_dadu, root, draft, st.container(), '本次计算')
+        except (ValueError, RuntimeError, OSError):
+            return
     names = list_dadu(root) if selected else saved_names
     if selected and selected not in receipts:
         receipts[selected] = _receipt(root, selected)
     if selected and selected in names:
         st.session_state['dadu_saved'] = selected
-    name = st.selectbox('查看大渡河运行记录（北京时间）', [None,*names], index=1 if names else 0,
-                        key='dadu_saved', format_func=lambda x:_archive_label(x,receipts.get(x,{})))
+    elif 'dadu_saved' not in st.session_state:
+        st.session_state['dadu_saved'] = first_run
+    name = st.selectbox('查看大渡河运行记录（北京时间）', [None,*names],
+                        key='dadu_saved', format_func=lambda x:_archive_label(x,receipts.get(x,{})),
+                        help='首次优先打开丰水低负荷、水价值报价的完整日。可随时切换到其他场景，查看已存结果无需计算。')
     if name:
         try:
             _results(name, read_dadu(root, name), root, receipts, draft)

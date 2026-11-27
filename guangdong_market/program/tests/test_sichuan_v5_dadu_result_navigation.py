@@ -56,8 +56,8 @@ def test_archives_through_five_result_areas(tmp_path, monkeypatch):
     def check():
         assert not app.error and not app.exception,([e.value for e in app.error],[e.value for e in app.exception])
         tabs = [tab.label for tab in app.tabs]
-        for label in ('公司报价','市场中标','实时实发','梯级水量','收入与对照'):
-            assert tabs.count(label)==1
+        stages = ['公司报量报价','日前预出清','实时出清与执行','全流域水情','收入与对照']
+        assert [label for label in tabs if label in stages] == stages
     def pair_table():
         return next((d.value for d in app.dataframe if '水价值减朴素' in d.value),None)
     check()

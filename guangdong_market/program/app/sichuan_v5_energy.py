@@ -517,13 +517,15 @@ def _tie_allocate(model, case, time_limit_s):
 
 
 def day_ahead(case, *, fixed_commitment=None, holds=(), spot_disabled=(), time_limit_s=3600,
-              equal_offer_priority=False):
+              equal_offer_priority=False, on_commitment_solved=None):
     """Return 96 DA reference quarters, never a monetary settlement."""
     validate(case)
     _validate_ancillary(case, holds, spot_disabled)
     m=_build(case,0,PERIODS,da_mode=fixed_commitment,holds=holds,spot_disabled=spot_disabled)
     # Fixed thermal commitment still leaves derived binary transition variables.
     _solve(m,mip=True,time_limit_s=time_limit_s)
+    if on_commitment_solved is not None:
+        on_commitment_solved()
     _pricing(m,time_limit_s=time_limit_s)
     priced=_rows(m,case,0,PERIODS)
     if not equal_offer_priority:

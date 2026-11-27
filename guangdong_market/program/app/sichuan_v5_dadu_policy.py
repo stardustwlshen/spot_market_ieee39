@@ -9,11 +9,13 @@ from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 from math import fsum
 
 if __package__:
+    from .sichuan_v5_dadu_progress import report
     from .sichuan_v5_hydro import attach_cascade_constraints
     from .sichuan_v5_rules import classify_seasons, spot_clear_bounds
     from .sichuan_v5_segments import validate_curve
     from .sichuan_v5_settlement import SettlementInput, UniformPriceInput, settle_quarter, uniform_price
 else:
+    from sichuan_v5_dadu_progress import report
     from sichuan_v5_hydro import attach_cascade_constraints
     from sichuan_v5_rules import classify_seasons, spot_clear_bounds
     from sichuan_v5_segments import validate_curve
@@ -57,7 +59,7 @@ def _marginal_cost(size, fraction, coal_price):
     return (low + (high - low) * fraction) * coal_price / 1000.
 
 
-def operator_hydro_envelope(case):
+def operator_hydro_envelope(case, *, progress=None):
     """Independent DA hydraulic capability for the 96 power ratios and daily energy.
 
     Each MW value maximizes all stations' *simultaneous* output in its quarter
@@ -106,11 +108,15 @@ def operator_hydro_envelope(case):
             raise ValueError(f"市场侧水电{label}无法核定：{solved.termination_condition}")
         return float(solved.best_feasible_objective)
 
+    checks = 1 + len(ticks)
+    report(progress, "market", 0, checks, "正在核定市场侧全日可发电量")
     energy = maximum("全日可发电量")
+    report(progress, "market", 1, checks, "市场侧全日可发电量已核定")
     envelope = []
     for t in ticks:
         model.criterion.set_value(total[t])
         envelope.append(maximum(f"第{t + 1}段可达出力"))
+        report(progress, "market", t + 2, checks, f"市场已核定第 {t + 1} 段全梯级同时可达出力")
     return envelope, energy
 
 
