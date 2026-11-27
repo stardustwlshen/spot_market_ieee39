@@ -111,4 +111,7 @@ def test_real_short_archive_shows_last_day_ahead_period_and_preserves_first_exec
     assert metrics["瀑布沟实发"] == f"{r['rt'][0]['power']['D10']:,.2f} MW"
     stations = next(d.value for d in app.dataframe if "当段内部计划 MW" in d.value)
     assert stations.set_index("电站").loc["瀑布沟","当段内部计划 MW"] == r["company"]["internal_plan_mw"][95]["D10"]
-    assert any("23:45–24:00 为何这样报" in m.value for m in app.markdown)
+    if r['company']['strategy'] == 'default':
+        assert not any("为何这样报" in m.value for m in app.markdown)
+    else:
+        assert any("23:45–24:00 为何这样报" in m.value for m in app.markdown)

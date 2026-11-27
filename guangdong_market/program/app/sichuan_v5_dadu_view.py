@@ -310,6 +310,8 @@ def _results(name, results, root, receipts, draft):
     st.subheader('运行结果')
     st.caption(f"当前回放：{SCENARIOS[inputs['scenario']]} · {STRATEGIES[results['company']['strategy']]} · "
                f"种子 {inputs['seed']} · 实时 00:00–{_end_label(n-1)}（{n}/96 段） · {name}")
+    if n < 96:
+        st.info(f'部分日 · 实时已执行 {n}/96 段。日前可以查看全天，未执行段的实发与收入留空。')
     differences = _draft_changes(inputs, draft)
     if differences and st.session_state.get('dadu_draft_modified'):
         st.caption('待运行设置与当前回放不同：'+'；'.join(differences)+'。可在运行设置中打开匹配的已存结果。')
