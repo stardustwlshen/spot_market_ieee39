@@ -6,6 +6,8 @@ from numbers import Real
 import pandas as pd
 import streamlit as st
 
+from sichuan_v5_dadu_charts import time_chart
+
 
 SECONDS = 900
 DAY_QUARTERS = 96
@@ -275,10 +277,17 @@ def render_water_detail(result, station, quarter):
         st.dataframe(_frame(subset, STATION_LABELS), hide_index=True)
         chosen = [r for r in accounts if r['id'] == uid]
         if chosen:
-            trace = _frame(chosen, {'interval_end':'时段末','natural_inflow_m3s':'区间来水',
+            trace = _frame(chosen, {'interval_end':'时段末','natural_inflow_m3s':'执行区间来水',
                 'upstream_arrival_m3s':'上游到水','release_m3s':'总下泄'})
+            firm = ((result.get('company') or {}).get('offers') or {}).get(uid, {}).get('natural_inflow_m3s', [])
+            market = _cascade(result).get('natural_inflow_m3s', [])
+            if firm:
+                trace['公司申报时区间预测'] = [firm[q['quarter']] if q['quarter'] < len(firm) else None for q in chosen]
+            if market:
+                trace['市场日前区间预测'] = [market[q['quarter']].get(uid) if q['quarter'] < len(market) else None
+                                            for q in chosen]
             st.markdown(f'**{chosen[0]["name"]}来水与下泄**')
-            st.line_chart(trace.set_index('时段末'), x_label='北京时间（时段末）', y_label='m³/s', height=205)
+            time_chart(trace.set_index('时段末'), 'm³/s', height=225)
         st.caption('守恒残差＝期末库容－期初库容－区间来水量－上游到达水量＋总下泄量。'
                    '每段 900 秒，缺少原始字段时留空。')
         _download(_frame(accounts, STATION_LABELS), '下载全部已执行厂站水账',
@@ -295,12 +304,31 @@ def render_water_detail(result, station, quarter):
         st.dataframe(_frame(current, REACH_LABELS), hide_index=True)
         names = [r['reach'] for r in current]
         index = next((i for i, r in enumerate(current) if r['upstream'] == uid), 0)
+        if not any(r['upstream'] == uid for r in current):
+            index = next((i for i, r in enumerate(current) if r['downstream'] == uid), 0)
         chosen = st.selectbox('查看河段', names, index=index, key=f'dadu_water_reach_{tag}_{uid}')
         link = next(r for r in current if r['reach'] == chosen)
+        lag = link['lag_quarters']
+        if isinstance(lag, int) and lag >= 0:
+            arrival_q = selected + lag
+            arrival_index = next((i for i, row in enumerate(rt) if _period(row, i) == arrival_q), None)
+            volume = link['release_entered_m3']
+            amount = f'{volume/1e4:,.2f} 万 m³' if volume is not None else '水量待核'
+            reach_name = _stations(result).get(link['downstream'], {}).get('name',link['downstream'])
+            st.caption(f"本段入河 {amount}，河段时滞 {lag} 段，预计于 {_clock(arrival_q)}–{_clock(arrival_q+1)} 到达{reach_name}。")
+            unit_key, time_key = 'dadu_unit_'+tag, 'dadu_q_'+tag
+            if arrival_index is None:
+                st.caption('到达时段超出本档案的执行范围，暂保留预计到时和队列。')
+            elif unit_key in st.session_state and time_key in st.session_state:
+                destination = {unit_key:link['downstream'], time_key:arrival_index,
+                               f"dadu_water_reach_{tag}_{link['downstream']}":chosen,
+                               'dadu_focus_station':link['downstream'], 'dadu_focus_quarter':arrival_index}
+                st.button(f'查看{reach_name}到水时段', key='dadu_arrival_'+tag,
+                          on_click=st.session_state.update, args=(destination,))
         history = _frame([r for r in rows if r['reach'] == chosen],
                          {'interval_end':'时段末', 'release_entered_m3':'上游送入量',
                           'arrival_recorded_m3':'下游实到量'})
-        st.line_chart(history.set_index('时段末'), x_label='已执行时段末', y_label='m³/时段', height=180)
+        time_chart(history.set_index('时段末'), 'm³/时段', height=190)
         queue = link['next_arrivals_m3']
         if queue is not None:
             st.markdown('**所选时段末仍在河道中的水量**')

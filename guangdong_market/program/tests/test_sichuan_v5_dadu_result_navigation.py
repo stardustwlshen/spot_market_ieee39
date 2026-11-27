@@ -76,6 +76,16 @@ def test_archives_through_five_result_areas(tmp_path, monkeypatch):
     delta = .25 * (fsum(fsum(q['shed'].values()) for q in water['rt'])
                    -fsum(fsum(q['shed'].values()) for q in naive['rt']))
     assert pair.loc['失负荷（MWh）','水价值减朴素']==pytest.approx(delta)
+    app.selectbox(key='dadu_unit_'+naive_id).select('D10').run()
+    origin = naive['rt'][peak]['hydro']['D10']['release_m3s'] * 900
+    app.button(key='dadu_arrival_'+naive_id).click().run()
+    check()
+    reached = app.selectbox(key='dadu_q_'+naive_id).value
+    assert app.selectbox(key='dadu_unit_'+naive_id).value=='D11'
+    assert reached==peak+5
+    assert naive['rt'][reached]['hydro']['D11']['upstream_arrival_m3']==pytest.approx(origin)
+    assert app.selectbox(key=f'dadu_water_reach_{naive_id}_D11').value=='瀑布沟 → 深溪沟'
+    app.button(key='dadu_worst_'+naive_id).click().run()
     for station, asset in [('D10','COAL1'),('D19','GAS1')]:
         app.selectbox(key='dadu_unit_'+naive_id).select(station).run()
         app.selectbox(key=f'dadu_market_{naive_id}_{station}').select(asset).run()
