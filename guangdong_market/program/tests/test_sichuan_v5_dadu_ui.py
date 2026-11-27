@@ -60,9 +60,11 @@ def test_six_case_comparison_passes_common_controls_and_checks_boundary(tmp_path
     calls = []
     def simulated_run(root, **kw):
         calls.append(kw)
-        return 'test', {'rt':[{}]*kw['periods'], 'money':{'portfolio':[{'energy_mwh':5}]},
+        return 'test', {'rt':[{}]*kw['periods'], 'inputs':dict(kw,source_hashes={'model':'test'}),
+                        'company':{'strategy':kw['strategy'],'company_forecast_sha256':'forecast'}, 'money':{'portfolio':[{'energy_mwh':5}]},
                         'summary':{'max_slack_mw':0, 'company_revenue':300, 'water_spill_m3':0,
-                        'solar_curtail_mwh':3, 'gas_mwh':20, 'boundary_hash':kw['scenario']}}
+                        'solar_curtail_mwh':3, 'gas_mwh':20, 'boundary_hash':kw['scenario'],
+                        'issued_boundary_hash':'issue','bid_hash':kw['strategy']}}
     monkeypatch.setattr(sichuan_v5_dadu_run, 'run_dadu', simulated_run)
     app = AppTest.from_file(str(PROGRAM/'app/四川.py'), default_timeout=30).run()
     app.slider(key='dadu_gas_scale').set_value(.5)
@@ -73,6 +75,9 @@ def test_six_case_comparison_passes_common_controls_and_checks_boundary(tmp_path
     assert all(k['periods']==4 and k['gas_plan_scale']==.5 for k in calls)
     table = next(table.value for table in app.dataframe if '报价策略' in table.value)
     assert len(table) == 6
+    app.number_input(key='dadu_seed').set_value(40).run()
+    assert not any('报价策略' in frame.value for frame in app.dataframe)
+    assert any('当前参数已改变' in notice.value for notice in app.info)
 
 
 def test_matching_comparison_archives_are_read_without_solver(tmp_path, monkeypatch):
@@ -87,8 +92,9 @@ def test_matching_comparison_archives_are_read_without_solver(tmp_path, monkeypa
     def load(root, name):
         calls.append(name)
         return {'rt':[{}]*4, 'inputs':dict(receipts[name], source_hashes={'current':'abc'}),
+                 'company':{'strategy':receipts[name]['strategy'],'company_forecast_sha256':'forecast'},
                 'money':{'portfolio':[{'energy_mwh':5}]},
-                'summary':{'max_slack_mw':0., 'company_revenue':100., 'water_spill_m3':0., 'solar_curtail_mwh':0.,
+                'summary':{'issued_boundary_hash':'issue','bid_hash':receipts[name]['strategy'],'max_slack_mw':0., 'company_revenue':100., 'water_spill_m3':0., 'solar_curtail_mwh':0.,
                            'gas_mwh':20., 'boundary_hash':receipts[name]['scenario']}}
     monkeypatch.setattr(backend, 'read_dadu', load)
     monkeypatch.setattr(backend, 'source_hashes', lambda:{'current':'abc'})
@@ -102,6 +108,16 @@ def test_matching_comparison_archives_are_read_without_solver(tmp_path, monkeypa
     app.button(key='dadu_compare').click().run()
     assert not app.error and not app.exception
     assert set(calls) == set(receipts)
+    original = load
+    def mismatched(root, name):
+        result = original(root, name)
+        if receipts[name]['strategy']=='naive':
+            result['summary']['issued_boundary_hash'] = 'different'
+        return result
+    monkeypatch.setattr(backend,'read_dadu',mismatched)
+    app.button(key='dadu_compare').click().run()
+    assert any('可比档案' in message.value for message in app.error)
+    assert not app.dataframe
 
 
 def test_stale_source_rejected_failure_has_no_partial_or_previous_comparison(tmp_path, monkeypatch):

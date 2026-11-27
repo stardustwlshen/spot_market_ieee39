@@ -1,5 +1,9 @@
 """A fresh folder should diagnose missing package data and broken native runtime."""
 from pathlib import Path
+import errno
+import hashlib
+
+import pytest
 from types import SimpleNamespace
 
 from scripts import launch_sichuan as launcher
@@ -76,7 +80,7 @@ def test_post_probe_failure_is_streamlit_failure_and_legacy_is_unaffected(monkey
         return 1
     monkeypatch.setattr(launch.subprocess,'call',lost_race)
     probes=[]
-    monkeypatch.setattr(launch,'check_port',lambda port:probes.append(port))
+    monkeypatch.setattr(launch,'_bind_loopback',lambda port:probes.append(port))
     assert launch.main([])==1
     first=capsys.readouterr()
     assert 'http://' not in first.out
@@ -84,3 +88,80 @@ def test_post_probe_failure_is_streamlit_failure_and_legacy_is_unaffected(monkey
     assert launch.main(['--profile','guangdong'])==1
     assert probes==[8501]
     assert [Path(cmd[4]).name for cmd in calls]==['四川.py','主页.py']
+
+
+def test_default_port_skips_only_occupied_listeners_and_identifies_checkout(monkeypatch, capsys):
+    probes, launches = [], []
+    def simulated_bind(port):
+        probes.append(port)
+        if port in (8501,8502):
+            raise OSError(errno.EADDRINUSE, 'occupied')
+
+    monkeypatch.setattr(launcher, '_bind_loopback', simulated_bind)
+    monkeypatch.setattr(launcher, 'check', lambda *_:[])
+    monkeypatch.setattr(launcher, 'python_for', lambda root,python,platform:python)
+    monkeypatch.setattr(launcher.subprocess, 'call', lambda cmd, **kw: launches.append((cmd,kw)) or 0)
+    assert launcher.main([]) == 0
+    assert probes == [8501,8502,8503]
+    [(cmd, kw)] = launches
+    assert cmd[cmd.index('--server.port')+1] == '8503'
+    assert cmd[cmd.index('--server.address')+1] == '127.0.0.1'
+    assert Path(cmd[4]) == kw['cwd'] / 'app' / '四川.py'
+    expected = launcher.view_source_id(kw['cwd'])
+    assert kw['env']['SICHUAN_UI_SOURCE_ID'] == expected
+    messages = capsys.readouterr()
+    assert expected in messages.out and str(Path(cmd[4])) in messages.out
+    assert '8503' in messages.out and 'http://' not in messages.out
+
+
+def test_permission_error_does_not_trigger_port_search(monkeypatch):
+    seen = []
+    def denied(port):
+        seen.append(port)
+        raise PermissionError(errno.EACCES, 'restricted by policy')
+    monkeypatch.setattr(launcher, '_bind_loopback', denied)
+    with pytest.raises(ValueError, match='无法绑定本机端口 8501'):
+        launcher.choose_sichuan_port(None)
+    assert seen == [8501]
+
+
+def test_all_default_ports_occupied_bounded_and_explicit_ports_not_replaced(monkeypatch):
+    seen = []
+    def busy(port):
+        seen.append(port)
+        raise OSError(errno.EADDRINUSE, 'occupied')
+    monkeypatch.setattr(launcher, '_bind_loopback', busy)
+    with pytest.raises(ValueError, match='8501–8510'):
+        launcher.choose_sichuan_port(None)
+    assert seen == list(range(8501,8511))
+    seen.clear()
+    with pytest.raises(ValueError, match='8504 已被占用'):
+        launcher.choose_sichuan_port(8504)
+    assert seen == [8504]
+    seen.clear()
+    with pytest.raises(ValueError, match='1–65535'):
+        launcher.choose_sichuan_port(0)
+    assert seen == []
+
+
+def test_view_source_id_is_cross_platform_and_tracks_content(tmp_path):
+    view = tmp_path/'app'/'sichuan_v5_dadu_view.py'
+    view.parent.mkdir()
+    view.write_bytes(b'new view\r\n')
+    expected = hashlib.sha256(b'new view\n').hexdigest()[:12]
+    assert launcher.view_source_id(tmp_path) == expected
+    view.write_bytes(b'new view\n')
+    assert launcher.view_source_id(tmp_path) == expected
+    view.write_bytes(b'older view\n')
+    assert launcher.view_source_id(tmp_path) != expected
+
+
+def test_check_reports_view_identity_without_a_port_probe(monkeypatch, capsys):
+    monkeypatch.setattr(launcher, 'check', lambda *_:[])
+    monkeypatch.setattr(launcher, 'python_for', lambda root,python,platform:python)
+    def forbidden(*_args, **_kw):
+        raise AssertionError('preflight must not bind or launch')
+    monkeypatch.setattr(launcher, '_bind_loopback', forbidden)
+    monkeypatch.setattr(launcher.subprocess, 'call', forbidden)
+    assert launcher.main(['--check']) == 0
+    assert '结果视图版本 · ' in capsys.readouterr().out
