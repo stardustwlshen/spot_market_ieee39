@@ -1,29 +1,57 @@
-name: Confirm matching rules clauses
+name: Verify rule provenance and Sichuan replay
 on:
   push:
     branches: ['review/dadu19-basin-progress']
 permissions:
   contents: read
 jobs:
-  read:
+  check:
     runs-on: ubuntu-latest
-    timeout-minutes: 3
+    timeout-minutes: 18
+    defaults:
+      run:
+        working-directory: guangdong_market/program
     steps:
-      - run: |
-          python -m pip install -q pymupdf
-          curl -fsSL --max-time 40 --retry 1 'https://mfs.mysteelcdn.com/group1/M00/7A/DB/rBL64GrqyT-AcGDEACBH_hBshK8829.pdf' -o /tmp/rules.pdf
-          python - <<'PY'
-          import pymupdf,re,hashlib
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - run: python -m pip install -q -r requirements-runtime.txt pytest
+      - name: Recompute first hour and inspect signed metadata
+        run: |
+          PYTHONPATH=app python - <<'PY'
           from pathlib import Path
-          p=Path('/tmp/rules.pdf')
-          assert hashlib.sha256(p.read_bytes()).hexdigest()=='05cda5cabc552a8c8b8e5a58686f3a79684d8e24bf97255d00d8b3246d16e0b5'
-          d=pymupdf.open(p)
-          for n in (63,64,68,69,70,71,72,79,80,81,83,88,89,107,108):
-              s=''.join(d[n-1].get_text().split())
-              predicates=('不结算','不进行结算','结算依据','不参与市场结算','不参与结算','生产运行','出清价格','燃气机组','径流式','申报段数','个报价段','报价曲线','滚动出清','耦合优化','不超过10','5段','10段','20元','150元')
-              hits=0
-              for t in predicates:
-                  k=s.find(t)
-                  if k>=0 and hits<5:
-                      print('READ',n,t,s[max(0,k-44):k+46]); hits+=1
+          from sichuan_v5_dadu_run import run_dadu,read_dadu
+          root=Path('/tmp/dadu-verified-pdf')
+          name,_=run_dadu(root,periods=4)
+          r=read_dadu(root,name)
+          assert r['inputs']['assumptions']['rules_pdf_sha256']=='05cda5cabc552a8c8b8e5a58686f3a79684d8e24bf97255d00d8b3246d16e0b5'
+          print('RUN',name,'DA',len(r['da']),'RT',len(r['rt']),'bid',r['summary']['bid_hash'])
+          PY
+      - name: Run Dadu regressions and provenance checks
+        run: |
+          DADU_NAVIGATION_SHORT_RUNS=/tmp/dadu-verified-pdf python -m pytest -q tests/test_sichuan_v5_dadu*.py tests/test_sichuan_v5_release_preflight.py
+  legacy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      matrix:
+        shard: [0, 1, 2, 3]
+    defaults:
+      run:
+        working-directory: guangdong_market/program
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - run: python -m pip install -q -r requirements-runtime.txt pytest
+      - run: |
+          python - <<'PY'
+          from pathlib import Path
+          import subprocess,sys
+          fs=sorted(p for p in Path('tests').glob('test_sichuan*.py') if 'dadu' not in p.name and 'release_preflight' not in p.name)
+          subprocess.run([sys.executable,'-m','pytest','-q',*fs[${{ matrix.shard }}::4]],check=True)
           PY

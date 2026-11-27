@@ -189,6 +189,11 @@ def _company_tab(results, station):
     if len(prices) < 2:
         st.caption('这份归档缺少完整的事前预期价或边际水机会成本。')
     with st.expander('核对申报版本和站名'):
+        from sichuan_v5_dadu_case import RULE_PDF_SHA256
+        recorded = results['inputs'].get('assumptions', {}).get('rules_pdf_sha256')
+        st.caption('本归档的规则文件摘要（SHA-256）：' + (recorded or '未记录'))
+        if recorded != RULE_PDF_SHA256:
+            st.caption('该归档保留早期规则来源记录。当前复核的合订稿为 ' + RULE_PDF_SHA256 + '。')
         st.write({'签发时刻':company.get('as_of'), '申报摘要':results['summary']['bid_hash'],
                   '工程名':station.get('engineering_name'), '名称匹配':station.get('match'),
                   '工程调节性能':station.get('regulation'),
@@ -425,6 +430,7 @@ def _find_draft_archive(root, receipts, draft):
 
 def _comparison(root, seed, periods, sensitivity, receipts):
     from sichuan_v5_dadu_overview import matched_pair
+    from sichuan_v5_dadu_case import RULE_PDF_SHA256
     from sichuan_v5_dadu_live import solve_visible
     from sichuan_v5_dadu_run import BASE_COMMIT, DATA_COMMIT, read_dadu, run_dadu, source_hashes, source_hashes_match
     with st.expander('三类场景下的两种报价策略'):
@@ -475,6 +481,7 @@ def _comparison(root, seed, periods, sensitivity, receipts):
                                           existing['company'].get('company_forecast_sha256'))
                             if not all(forecast_key):
                                 continue
+                            forecast_key += (inputs.get('assumptions', {}).get('rules_pdf_sha256'),)
                             candidates[strategy].setdefault(forecast_key,name)
                             other='naive' if strategy=='water_value' else 'water_value'
                             companion_name=candidates[other].get(forecast_key)
@@ -491,8 +498,10 @@ def _comparison(root, seed, periods, sensitivity, receipts):
                             # Two incompatible existing strategies require a fresh pair.
                             recompute_both=all(candidates.values())
                             for strategy in STRATEGIES:
-                                if candidates[strategy] and not recompute_both:
-                                    pair[strategy]=read_dadu(root,next(iter(candidates[strategy].values())))
+                                usable = next((name for key, name in candidates[strategy].items()
+                                               if key[-1] == RULE_PDF_SHA256), None)
+                                if usable is not None and not recompute_both:
+                                    pair[strategy]=read_dadu(root,usable)
                                 else:
                                     settings = dict(scenario=scenario, strategy=strategy, **controls)
                                     _, pair[strategy] = solve_visible(run_dadu, root, settings, detail.container(),
