@@ -433,7 +433,7 @@ def render_dadu(root):
     from sichuan_v5_dadu_portfolio import render_company_portfolio
     from sichuan_v5_dadu_style import apply_dadu_style
     apply_dadu_style()
-    st.title('大渡河梯级机组申报')
+    st.title('大渡河梯级机组申报 · 四川 V5.0')
     page = st.radio('工作区', ['机组申报','市场结果'], horizontal=True, key='dadu_workspace')
     if page == '市场结果':
         names = list_dadu(root)
