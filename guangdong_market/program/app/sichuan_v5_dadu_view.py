@@ -429,12 +429,12 @@ def _find_draft_archive(root, receipts, draft):
 
 
 def _comparison(root, seed, periods, sensitivity, receipts):
-    from sichuan_v5_dadu_overview import matched_pair
+    from sichuan_v5_dadu_overview import matched_pair, rule_pdf_fingerprint
     from sichuan_v5_dadu_case import RULE_PDF_SHA256
     from sichuan_v5_dadu_live import solve_visible
     from sichuan_v5_dadu_run import BASE_COMMIT, DATA_COMMIT, read_dadu, run_dadu, source_hashes, source_hashes_match
     with st.expander('三类场景下的两种报价策略'):
-        st.caption('两种策略须采用同一源码、公司预测、市场边界和逐窗签发的实时预测。')
+        st.caption('两种策略须采用相同的规则文件、可比版本、公司预测、市场边界和逐窗签发的实时预测。')
         left,right=st.columns(2)
         view_saved=left.button('查看已保存的六组对照',key='dadu_compare_saved')
         calculate=right.button('补算缺少的对照',key='dadu_compare')
@@ -478,10 +478,10 @@ def _comparison(root, seed, periods, sensitivity, receipts):
                                 continue
                             summary=existing['summary']
                             forecast_key=(summary.get('boundary_hash'),summary.get('issued_boundary_hash'),
-                                          existing['company'].get('company_forecast_sha256'))
+                                          existing['company'].get('company_forecast_sha256'),
+                                          rule_pdf_fingerprint(inputs))
                             if not all(forecast_key):
                                 continue
-                            forecast_key += (inputs.get('assumptions', {}).get('rules_pdf_sha256'),)
                             candidates[strategy].setdefault(forecast_key,name)
                             other='naive' if strategy=='water_value' else 'water_value'
                             companion_name=candidates[other].get(forecast_key)

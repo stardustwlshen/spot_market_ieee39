@@ -1,5 +1,6 @@
 """Read-only summaries, nodal prices and paired comparisons of archived executions."""
 from math import fsum
+import re
 
 import pandas as pd
 import streamlit as st
@@ -92,10 +93,16 @@ def render_node_prices(result, station, quarter):
                            f"bus{uid}-prices.csv",'text/csv',key=f"dadu_prices_csv_{result['run']}_{uid}")
 
 
+def rule_pdf_fingerprint(inputs):
+    value = (inputs.get('assumptions') or {}).get('rules_pdf_sha256')
+    return value if isinstance(value, str) and re.fullmatch(r'[0-9a-f]{64}', value) else None
+
+
 def _pair_evidence(result):
     a, c, s = result.get('inputs', {}), result.get('company', {}), result.get('summary', {})
     return (a.get('scenario'), a.get('seed'), len(result['rt']), a.get('source_hashes'),
-            s.get('boundary_hash'), s.get('issued_boundary_hash'), c.get('company_forecast_sha256'))
+            s.get('boundary_hash'), s.get('issued_boundary_hash'), c.get('company_forecast_sha256'),
+            rule_pdf_fingerprint(a))
 
 
 def matched_pair(left, right):
@@ -105,8 +112,6 @@ def matched_pair(left, right):
     right_bid = right.get('summary', {}).get('bid_hash')
     return (bool(left_bid and right_bid) and all(v is not None and v != '' for v in evidence)
             and source_hashes_match(evidence[3], other[3])
-            and left.get('inputs', {}).get('assumptions', {}).get('rules_pdf_sha256')
-                == right.get('inputs', {}).get('assumptions', {}).get('rules_pdf_sha256')
             and evidence[:3] == other[:3] and evidence[4:] == other[4:]
             and {left.get('company', {}).get('strategy'), right.get('company', {}).get('strategy')} == {'water_value','naive'}
             and left_bid != right_bid)

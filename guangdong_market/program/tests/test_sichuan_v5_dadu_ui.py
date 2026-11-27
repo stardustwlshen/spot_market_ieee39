@@ -62,7 +62,8 @@ def test_six_case_comparison_passes_common_controls_and_checks_boundary(tmp_path
     calls = []
     def simulated_run(root, **kw):
         calls.append(kw)
-        return 'test', {'rt':[{}]*kw['periods'], 'inputs':dict(kw,source_hashes={'model':'test'}),
+        return 'test', {'rt':[{}]*kw['periods'], 'inputs':dict(kw,source_hashes={'model':'test'},
+                        assumptions={'rules_pdf_sha256':'a'*64}),
                         'company':{'strategy':kw['strategy'],'company_forecast_sha256':'forecast'}, 'money':{'portfolio':[{'energy_mwh':5}]},
                         'summary':{'max_slack_mw':0, 'company_revenue':300, 'water_spill_m3':0,
                         'solar_curtail_mwh':3, 'gas_mwh':20, 'boundary_hash':kw['scenario'],
@@ -94,6 +95,7 @@ def test_matching_comparison_archives_are_read_without_solver(tmp_path, monkeypa
     def load(root, name):
         calls.append(name)
         return {'rt':[{}]*4, 'inputs':dict(receipts[name], source_hashes={'current':'abc'},
+                                           assumptions={'rules_pdf_sha256':'a'*64},
                                            market_base_sha=backend.BASE_COMMIT, hydro_source_sha=backend.DATA_COMMIT),
                  'company':{'strategy':receipts[name]['strategy'],'company_forecast_sha256':'forecast'},
                 'money':{'portfolio':[{'energy_mwh':5}]},
@@ -111,6 +113,17 @@ def test_matching_comparison_archives_are_read_without_solver(tmp_path, monkeypa
     app.button(key='dadu_compare').click().run()
     assert not app.error and not app.exception
     assert set(calls) == set(receipts)
+    from sichuan_v5_dadu_overview import matched_pair
+    a, b = (load(tmp_path, 'wet_low_'+s) for s in ('water_value', 'naive'))
+    assert matched_pair(a, b)
+    b['inputs']['assumptions']['rules_pdf_sha256'] = 'b'*64
+    assert not matched_pair(a, b)
+    for run in (a, b):
+        run['inputs']['assumptions']['rules_pdf_sha256'] = 'invalid'
+    assert not matched_pair(a, b)
+    for run in (a, b):
+        del run['inputs']['assumptions']['rules_pdf_sha256']
+    assert not matched_pair(a, b)
     original = load
     def mismatched(root, name):
         result = original(root, name)

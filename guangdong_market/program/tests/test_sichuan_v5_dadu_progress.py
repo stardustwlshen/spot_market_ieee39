@@ -82,6 +82,7 @@ def test_matrix_keeps_versions_and_signed_boundaries_separate():
     version = _source_version("market", "hydro", new)
     run = {"inputs": dict(market_base_sha="market", hydro_source_sha="hydro", source_hashes=old,
                           scenario="wet_low", seed=39, periods=96, boundary_hash="da",
+                          assumptions={"rules_pdf_sha256": "8e8ee5bebadb0f0ae1873315790b47ed8694a68b8ca4d1e160ec669e74c42ad5"},
                           water_value_scale=1., corridor_scale=1., gas_plan_scale=1.),
            "company": dict(strategy="naive", submission_sha256="bid1", company_forecast_sha256="forecast"),
            "summary": {"boundary_hash": "da", "issued_boundary_hash": sha256(b"[]").hexdigest()},
@@ -96,6 +97,8 @@ def test_matrix_keeps_versions_and_signed_boundaries_separate():
 
     for area, field, value in (("inputs", "market_base_sha", "unknown-market"),
                                 ("inputs", "source_hashes", {path: "different-code"}),
+                                ("inputs", "assumptions", {"rules_pdf_sha256":
+                                 "05cda5cabc552a8c8b8e5a58686f3a79684d8e24bf97255d00d8b3246d16e0b5"}),
                                 ("company", "company_forecast_sha256", "other-forecast")):
         mismatch = deepcopy(other)
         mismatch[area][field] = value
@@ -110,3 +113,15 @@ def test_matrix_keeps_versions_and_signed_boundaries_separate():
         missing = defaultdict(dict)
         _record_cohort(missing, mismatch, version)
         assert not missing
+
+    # Matching snapshots and bids still require evidence of the rules document on both sides.
+    for assumptions in (None, {}, {"rules_pdf_sha256": ""}, {"rules_pdf_sha256": "unknown"}):
+        unidentified = defaultdict(dict)
+        for known in (run, other):
+            copy = deepcopy(known)
+            if assumptions is None:
+                del copy["inputs"]["assumptions"]
+            else:
+                copy["inputs"]["assumptions"] = assumptions
+            _record_cohort(unidentified, copy, version)
+        assert not unidentified

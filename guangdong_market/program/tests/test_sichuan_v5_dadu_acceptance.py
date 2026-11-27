@@ -7,6 +7,7 @@ from hashlib import sha256
 import json
 import math
 import os
+import re
 
 import pytest
 
@@ -286,14 +287,16 @@ def _record_cohort(matches, result, current_version=None):
         issued = json.dumps(result["issued_forecasts"], sort_keys=True, ensure_ascii=False,
                             separators=(",", ":"), allow_nan=False).encode("utf-8")
         assert sha256(issued).hexdigest() == summary["issued_boundary_hash"]
-    if not summary.get("issued_boundary_hash") or not company.get("company_forecast_sha256"):
+    rule_pdf = (inputs.get("assumptions") or {}).get("rules_pdf_sha256")
+    if (not summary.get("issued_boundary_hash") or not company.get("company_forecast_sha256")
+            or not isinstance(rule_pdf, str) or re.fullmatch(r"[0-9a-f]{64}", rule_pdf) is None):
         return
     knobs = (inputs["seed"], inputs["periods"], inputs["water_value_scale"],
              inputs["corridor_scale"], inputs["gas_plan_scale"])
     # Physical/valuation and issued RT boundaries must agree within each
     # treatment pair. The three scenarios intentionally have different water.
     key = (version, knobs, inputs["scenario"], summary["boundary_hash"],
-           company["company_forecast_sha256"], summary.get("issued_boundary_hash"))
+           company["company_forecast_sha256"], summary["issued_boundary_hash"], rule_pdf)
     runs = matches[key]
     bid = company["submission_sha256"]
     assert runs.setdefault(company["strategy"], bid) == bid
