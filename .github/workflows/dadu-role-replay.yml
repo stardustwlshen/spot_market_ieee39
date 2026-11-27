@@ -1,0 +1,37 @@
+name: Verify Dadu role replay
+on:
+  push:
+    branches: ['review/dadu19-role-replay']
+permissions:
+  contents: read
+jobs:
+  replay:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    defaults:
+      run:
+        working-directory: guangdong_market/program
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install simulation and browser test dependencies
+        run: python -m pip install -q -r requirements-runtime.txt pytest playwright
+      - name: Open five result areas in Chrome on desktop and phone
+        run: |
+          python scripts/launch_sichuan.py --port 8519 > /tmp/dadu-streamlit.log 2>&1 &
+          app_pid=$!
+          trap 'kill "$app_pid" 2>/dev/null || true' EXIT
+          for i in $(seq 1 45); do curl -fsS http://127.0.0.1:8519/_stcore/health && break || sleep 1; done
+          python ../../.github/dadu-browser-check.py || { cat /tmp/dadu-streamlit.log; exit 1; }
+      - name: Replay complete archives and one new short run
+        if: success() || failure()
+        run: |
+          PYTHONPATH=app python -c "from pathlib import Path; from sichuan_v5_dadu_run import run_dadu; run_dadu(Path('/tmp/dadu-short'),periods=4)"
+          DADU_NAVIGATION_SHORT_RUNS=/tmp/dadu-short python -m pytest -q tests/test_sichuan_v5_dadu_ui.py tests/test_sichuan_v5_dadu_company_results.py tests/test_sichuan_v5_dadu_grid_results.py tests/test_sichuan_v5_dadu_water_results.py tests/test_sichuan_v5_dadu_result_navigation.py tests/test_sichuan_v5_release_preflight.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: browser-evidence
+          path: guangdong_market/program/evidence/

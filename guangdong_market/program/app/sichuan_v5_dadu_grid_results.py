@@ -202,7 +202,7 @@ def _period_review(result, main, lines, quarter):
                     (later,"下一个异常时段","next",after[0] if after else None)):
                 container.button(caption if target is None else f"{caption} · {_time(target)}",
                                  key=f"grid_issue_{token}_{key}",disabled=target is None,
-                                 on_click=st.session_state.update,args=({shared_key:target},))
+                                 on_click=st.session_state.update,args=({shared_key:target, "dadu_focus_quarter":target},))
 
 
 def render_grid_detail(result, quarter):

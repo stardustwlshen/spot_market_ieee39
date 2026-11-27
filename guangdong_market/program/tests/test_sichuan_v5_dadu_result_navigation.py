@@ -5,6 +5,7 @@ import os
 from pathlib import Path
 from shutil import copytree
 
+import pandas as pd
 import pytest
 from streamlit.testing.v1 import AppTest
 
@@ -67,6 +68,10 @@ def test_archives_through_five_result_areas(tmp_path, monkeypatch):
     check()
     assert app.selectbox(key='dadu_q_'+naive_id).value==peak
     assert any('系统失负荷' in row.value for row in app.warning)
+    slot = pair_table().set_index('指标')
+    assert slot.loc['系统失负荷（MW）','朴素报价'] == pytest.approx(fsum(naive['rt'][peak]['shed'].values()))
+    assert pd.isna(slot.loc['本站采用节点价（元/MWh）','朴素报价'])
+    app.radio(key='dadu_pair_scope').set_value('已执行累计').run()
     pair = pair_table().set_index('指标')
     delta = .25 * (fsum(fsum(q['shed'].values()) for q in water['rt'])
                    -fsum(fsum(q['shed'].values()) for q in naive['rt']))
@@ -79,8 +84,11 @@ def test_archives_through_five_result_areas(tmp_path, monkeypatch):
     assert any('气电执行保供计划' in c.value for c in app.caption)
     app.radio(key='grid_area_'+naive_id).set_value('线路与备用').run()
     check()
-    app.selectbox(key='dadu_saved').select(water_id).run()
+    app.button(key='dadu_switch_pair_'+naive_id).click().run()
     check()
+    assert app.selectbox(key='dadu_saved').value==water_id
+    assert app.selectbox(key='dadu_unit_'+water_id).value=='D19'
+    assert app.selectbox(key='dadu_q_'+water_id).value==peak
     assert pair_table() is not None
     excluded.add(water_id)
     app.selectbox(key='dadu_saved').select(naive_id).run()
@@ -90,7 +98,22 @@ def test_archives_through_five_result_areas(tmp_path, monkeypatch):
     check()
     n=len(short_run['rt'])
     assert len(app.selectbox(key='dadu_q_'+short_id).options)==n
+    assert app.selectbox(key='dadu_q_'+short_id).value==n-1
+    assert app.selectbox(key='dadu_unit_'+short_id).value=='D19'
     assert any('部分日' in c.value and f'{n}/96' in c.value for c in app.info)
     cash=next(d.value for d in app.dataframe if '含水价值研究收益 元' in d.value)
     assert cash['含水价值研究收益 元'].isna().all()
+    app.selectbox(key='dadu_periods').select(96)
+    app.selectbox(key='dadu_scenario').select('forecast_error')
+    app.selectbox(key='dadu_strategy').select('naive')
+    app.number_input(key='dadu_seed').set_value(40)
+    app.button(key='dadu_open_existing').click().run()
+    check()
+    assert app.selectbox(key='dadu_saved').value==short_id
+    assert any('尚无同版本、同设置' in v.value for v in app.info)
+    app.number_input(key='dadu_seed').set_value(39)
+    app.button(key='dadu_open_existing').click().run()
+    check()
+    assert app.selectbox(key='dadu_saved').value==naive_id
+    assert app.selectbox(key='dadu_q_'+naive_id).value==peak
     assert set(visible(local))=={name for _,name in chosen}
