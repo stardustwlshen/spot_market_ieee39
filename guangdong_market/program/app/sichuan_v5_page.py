@@ -333,6 +333,15 @@ def _render_results(root, name, results):
 
 def render():
     st.set_page_config(page_title=SICHUAN_V5.display_name,layout='wide')
+    from sichuan_v5_dadu_view import render_dadu
+    dadu, historical = st.tabs(('大渡河 19 站', '原四川示例与历史档案'))
+    with dadu:
+        render_dadu(SICHUAN_V5.default_results(Path(__file__).resolve().parents[1]))
+    with historical:
+        _render_original()
+
+
+def _render_original():
     st.title(SICHUAN_V5.display_name)
     st.caption('选择场景 → 设置报价与开关 → 日前预出清 → 15分钟实时滚动 → 查看量价和模拟电费')
     st.info('使用 IEEE39 合成数据，验证四川征求稿规则的研究实现。不是已生效规则、真实四川系统、正式账单或生产调度工具。')

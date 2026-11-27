@@ -2,10 +2,10 @@
 from dataclasses import dataclass
 from math import isfinite
 if __package__:
-    from .sichuan_v5_hydro import Cascade, advance_cascade, attach_cascade_constraints, initial_cascade_state, validate_cascade
+    from .sichuan_v5_hydro import STEP_SECONDS, Cascade, advance_cascade, attach_cascade_constraints, initial_cascade_state, validate_cascade
     from .sichuan_v5_intraday import amended_case
 else:
-    from sichuan_v5_hydro import Cascade, advance_cascade, attach_cascade_constraints, initial_cascade_state, validate_cascade
+    from sichuan_v5_hydro import STEP_SECONDS, Cascade, advance_cascade, attach_cascade_constraints, initial_cascade_state, validate_cascade
     from sichuan_v5_intraday import amended_case
 
 DT = .25
@@ -43,6 +43,7 @@ class Resource:
     charge_efficiency: float = .9
     discharge_efficiency: float = .9
     segments: tuple = () # (upper segment width MW, energy offer yuan/MWh)
+    online_cost_yuan_hour: float = 0.
 
 
 @dataclass(frozen=True)
@@ -56,6 +57,7 @@ class Case:
     reserve_mw: float = 0. # explicit research reliability requirement, not a service award
     unmet_load_yuan_mwh: float = 10000. # synthetic reliability proxy, not a market cap
     cascade: Cascade | None = None
+    fixed_schedule: tuple = ()  # absolute-day indexed non-market injections (MW)
 
 
 class ClearingError(ValueError):
@@ -99,8 +101,9 @@ def validate(case):
     if case.cascade is not None:
         validate_cascade(case.cascade)
         hydro={r.id for r in case.resources if r.kind=='hydro'}
+        hydraulic_ids={r.id for r in case.cascade.reservoirs}
         if (len(case.cascade.natural_inflow_m3s)!=PERIODS
-                or not {r.id for r in case.cascade.reservoirs}<=hydro):
+                or not hydraulic_ids<=hydro or case.cascade.require_all_hydro and hydraulic_ids!=hydro):
             raise ClearingError('合成梯级水库与水电资源/96段边界不匹配')
     for r in case.resources:
         if (r.bus not in buses or r.kind not in ('thermal','renewable','hydro','fixed','storage')
@@ -108,6 +111,8 @@ def validate(case):
             or not _num(r.minimum_mw, 0., r.capacity_mw) or not _num(r.initial_mw, 0., r.capacity_mw)
             or r.ramp_mw_15min is not None and not _num(r.ramp_mw_15min, 1e-9)
             or not _num(r.startup_yuan)
+            or not _num(r.online_cost_yuan_hour)
+            or r.kind!='thermal' and r.online_cost_yuan_hour!=0.
             or not all(type(x) is int and x >= 1 for x in (r.min_up_quarters, r.min_down_quarters, r.initial_state_age_quarters))):
             raise ClearingError('资源参数无效：'+r.id)
         if r.kind == 'storage' and (not _num(r.energy_mwh, 1e-9)
@@ -139,8 +144,19 @@ def validate(case):
             raise ClearingError('节点负荷缺项或无效')
         if any(x not in rs or not _num(v, 0., rs[x].capacity_mw) for x, v in a.items()):
             raise ClearingError('资源可用功率越界')
+        if case.cascade is not None and case.cascade.require_all_hydro and set(a)!=set(rs):
+            raise ClearingError('完整梯级场景每时段必须显式列出每个电源的可用容量')
         if any(r.id not in a for r in case.resources if r.kind in ('renewable','fixed')):
             raise ClearingError('新能源预测或固定计划缺项')
+    if case.fixed_schedule:
+        fixed={r.id for r in case.resources if r.kind=='fixed'}
+        if len(case.fixed_schedule)!=PERIODS:
+            raise ClearingError('非市场计划须有96段')
+        for t, row in enumerate(case.fixed_schedule):
+            if set(row)!=fixed or any(not _num(v, 0., case.available[t][r]) for r,v in row.items()):
+                raise ClearingError(f'非市场计划缺项或超过可用容量：时段 {t+1}')
+    elif case.cascade is not None and case.cascade.require_all_hydro and any(r.kind=='fixed' for r in case.resources):
+        raise ClearingError('完整梯级场景须分别提供非市场计划和可用容量')
 
 
 def _build(case, begin, stop, *, carry=None, da_mode=None, holds=(), spot_disabled=()):
@@ -194,7 +210,7 @@ def _build(case, begin, stop, *, carry=None, da_mode=None, holds=(), spot_disabl
             if v.segments:
                 m.phys.add(g == sum(m.segment[r,i,t] for i in range(len(v.segments))))
             if v.kind == 'fixed':
-                g.fix(cap)
+                g.fix(case.fixed_schedule[t][r] if case.fixed_schedule else cap)
             if r in th:
                 u,y,z=m.online[r,t],m.started[r,t],m.stopped[r,t]
                 initial = int(v.initial_mw > 0) if carry is None else carry['online'][r]
@@ -214,8 +230,17 @@ def _build(case, begin, stop, *, carry=None, da_mode=None, holds=(), spot_disabl
                 up,down = holds[t].get(r, (0.,0.)) if holds else (0.,0.)
                 m.phys.add(g+m.reserve[r,t] <= cap*u-up)
                 m.phys.add(g >= v.minimum_mw*u+down)
-                m.phys.add(sum(m.started[r,k] for k in range(max(begin,t-v.min_up_quarters+1),t+1)) <= u)
-                m.phys.add(sum(m.stopped[r,k] for k in range(max(begin,t-v.min_down_quarters+1),t+1)) <= 1-u)
+                # When the opposite state's minimum duration covers the whole
+                # horizon, a return to the initial state is physically impossible.
+                # The transition equation and initial residual obligation above
+                # then imply every minimum-time inequality, without dense sums.
+                if initial and v.min_down_quarters>=stop-begin:
+                    m.phys.add(y==0)
+                elif not initial and v.min_up_quarters>=stop-begin:
+                    m.phys.add(z==0)
+                else:
+                    m.phys.add(sum(m.started[r,k] for k in range(max(begin,t-v.min_up_quarters+1),t+1)) <= u)
+                    m.phys.add(sum(m.stopped[r,k] for k in range(max(begin,t-v.min_down_quarters+1),t+1)) <= 1-u)
                 if v.ramp_mw_15min is not None:
                     prev_g=(v.initial_mw if carry is None else carry['power'][r]) if t == begin else m.power[r,t-1]
                     m.phys.add(g-prev_g <= v.ramp_mw_15min+v.minimum_mw*y)
@@ -226,6 +251,9 @@ def _build(case, begin, stop, *, carry=None, da_mode=None, holds=(), spot_disabl
                 if up or down:
                     m.phys.add(g<=cap-up)
                     m.phys.add(g>=v.minimum_mw+down)
+            if v.kind == 'hydro' and v.ramp_mw_15min is not None:
+                previous=(v.initial_mw if carry is None else carry['power'][r]) if t==begin else m.power[r,t-1]
+                m.phys.add(p.inequality(-v.ramp_mw_15min,g-previous,v.ramp_mw_15min))
             if r in st:
                 ch,e,mode=m.charge[r,t],m.energy[r,t],m.mode[r,t]
                 e.setub(v.energy_mwh)
@@ -249,13 +277,33 @@ def _build(case, begin, stop, *, carry=None, da_mode=None, holds=(), spot_disabl
         m.phys.add(DT*sum(m.power[r,t] for t in times) <= max(0.,budget-after))
     spill_cost=0
     if case.cascade is not None:
-        attach_cascade_constraints(m,case.cascade,begin,stop,lambda r,t:m.power[r,t],
+        # A water-only continuation proves that the last physical stock target
+        # can still be met. Its releases are neither executed nor priced.
+        hydraulic_ids=tuple(s.id for s in case.cascade.reservoirs)
+        has_target=any(s.terminal_min_m3 is not None or s.terminal_max_m3 is not None
+                       for s in case.cascade.reservoirs)
+        water_stop=PERIODS if has_target else stop
+        tail=range(stop,water_stop)
+        def tail_bounds(_,r,t):
+            up,down=holds[t].get(r,(0.,0.)) if holds else (0.,0.)
+            return (rs[r].minimum_mw+down if down else 0.,
+                    case.available[t].get(r,rs[r].capacity_mw)-up)
+        m.water_tail_power=p.Var(hydraulic_ids,tail,domain=p.NonNegativeReals,bounds=tail_bounds)
+        def water_power(r,t):
+            return m.power[r,t] if t<stop else m.water_tail_power[r,t]
+        for r in hydraulic_ids:
+            rate=rs[r].ramp_mw_15min
+            if rate is not None:
+                for t in tail:
+                    m.phys.add(p.inequality(-rate,water_power(r,t)-water_power(r,t-1),rate))
+        attach_cascade_constraints(m,case.cascade,begin,water_stop,water_power,
                                    state=None if carry is None else carry['cascade_state'])
         # Modest synthetic coefficient, not the official numerical water penalty.
-        spill_cost=.02*sum(m.cascade_spill.values())
+        spill_cost=.02*sum(m.cascade_spill[r,t] for r in hydraulic_ids for t in times)
     m.objective = p.Objective(expr=spill_cost+DT*sum(
         sum(rs[r].offer_yuan_mwh*m.power[r,t] for r in rs if not rs[r].segments)
         +sum(price*m.segment[r,i,t] for (r,i),(_,price) in segments.items())
+        +sum(rs[r].online_cost_yuan_hour*m.online[r,t] for r in th)
         +sum(.01*m.charge[r,t] for r in st)
         +case.unmet_load_yuan_mwh*(sum(m.shed[b,t]+m.spill[b,t] for b in case.buses)+m.reserve_short[t])
         for t in times)+sum(rs[r].startup_yuan*m.started[r,t] for r in th for t in times))
@@ -302,6 +350,10 @@ def _rows(model, case, begin, stop, *, prices=True):
              **({'hydro':{r.id:{'storage_m3':q(model.cascade_volume[r.id,t]),
                                   'turbine_m3s':q(model.cascade_turbine[r.id,t]),
                                   'water_spill_m3s':q(model.cascade_spill[r.id,t]),
+                                  'eco_bypass_m3s':r.min_bypass_m3s,
+                                  'non_turbine_m3s':r.min_bypass_m3s+q(model.cascade_spill[r.id,t]),
+                                  'release_m3s':q(model.cascade_release[r.id,t]),
+                                  'regulation':r.regulation,
                                   'upstream_arrival_m3':q(model.cascade_arrival[r.id,t]),
                                   'natural_inflow_m3s':q(model.cascade_natural[r.id,t])}
                            for r in case.cascade.reservoirs}} if case.cascade is not None else {}),
@@ -498,6 +550,17 @@ def realtime(case, da, *, executed_periods=PERIODS, window_quarters=WINDOW,
                 intraday_result(t,carry,planned)
         stop=min(PERIODS,t+window_quarters)
         current=base_case if window_inputs is None else window_inputs(base_case,t,stop)
+        if current is not base_case:
+            if (current.resources!=base_case.resources or current.lines!=base_case.lines
+                    or current.buses!=base_case.buses or current.fixed_schedule!=base_case.fixed_schedule
+                    or current.reserve_mw!=base_case.reserve_mw
+                    or (current.cascade is None)!=(base_case.cascade is None)
+                    or current.cascade is not None and
+                        (current.cascade.reservoirs!=base_case.cascade.reservoirs
+                         or current.cascade.reaches!=base_case.cascade.reaches
+                         or current.cascade.require_all_hydro!=base_case.cascade.require_all_hydro)):
+                raise ClearingError('实时预测更新不可替换已冻结的报价、固定计划或物理网络')
+            validate(current)
         m=_build(current,t,stop,carry=carry,da_mode=schedule,holds=holds,spot_disabled=spot_disabled)
         # The U values are fixed; derive starts/stops solely from fixed commitments.
         for r in (v.id for v in case.resources if v.kind == 'thermal'):
@@ -529,6 +592,18 @@ def realtime(case, da, *, executed_periods=PERIODS, window_quarters=WINDOW,
                 if (abs(solved.state.volume_m3[r]-z['storage_m3'])>1e-5
                         or abs(solved.upstream_arrival_m3[r]-z['upstream_arrival_m3'])>1e-5):
                     raise ClearingError('实时水量状态与独立守恒核验不一致')
+            prior_water=water
             water=solved.state
             carry['cascade_state']=water
+            if case.cascade.require_all_hydro:
+                # Close the whole modeled basin, including water still moving
+                # between stations. Downstream passage is counted only on exit.
+                net_input=STEP_SECONDS*sum(z['natural_inflow_m3s'] for z in reservoirs.values())-sum(solved.downstream_exit_m3.values())
+                basin_error=water.total_water_m3-prior_water.total_water_m3-net_input
+                if abs(basin_error)>1e-4:
+                    raise ClearingError('含在途水量的流域执行总账不守恒')
+                row['water_handoff']={'next_quarter':water.period,'storage_m3':dict(water.volume_m3),
+                    'in_transit':[{'upstream':u,'downstream':d,'next_arrivals_m3':list(queue)}
+                                  for (u,d),queue in water.in_transit_m3.items()],
+                    'basin_exit_m3':dict(solved.downstream_exit_m3),'basin_residual_m3':basin_error}
     return results

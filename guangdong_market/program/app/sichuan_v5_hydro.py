@@ -25,6 +25,10 @@ class Reservoir:
     max_spill_m3s: float
     min_release_m3s: float = 0.0
     max_release_m3s: float | None = None
+    regulation: str = 'reservoir'
+    terminal_min_m3: float | None = None
+    terminal_max_m3: float | None = None
+    min_bypass_m3s: float = 0.0  # separate mandatory non-turbine release
 
 
 @dataclass(frozen=True)
@@ -42,6 +46,7 @@ class Cascade:
     reservoirs: tuple
     reaches: tuple
     natural_inflow_m3s: tuple  # absolute-day indexed, per reservoir
+    require_all_hydro: bool = False
 
 
 @dataclass(frozen=True)
@@ -49,6 +54,10 @@ class CascadeState:
     period: int  # start of the next period to commit
     volume_m3: Mapping
     in_transit_m3: Mapping  # (upstream, downstream) -> next quarters' arrivals
+
+    @property
+    def total_water_m3(self):
+        return sum(self.volume_m3.values()) + sum(sum(q) for q in self.in_transit_m3.values())
 
 
 @dataclass(frozen=True)
@@ -93,13 +102,22 @@ def validate_cascade(cascade):
         lower = _number(r.storage_min_m3, r.id + " 库容下限无效")
         upper = _number(r.storage_max_m3, r.id + " 库容上限无效", low=lower)
         _number(r.initial_storage_m3, r.id + " 初始库容越界", low=lower, high=upper)
+        if r.regulation not in ('run_of_river', 'reservoir'):
+            raise ValueError(r.id + ' 水电调节方式无效')
+        if r.regulation == 'run_of_river' and lower != upper:
+            raise ValueError(r.id + ' 径流式近似须固定库存，逐时水量守恒')
+        terminal_min = lower if r.terminal_min_m3 is None else _number(
+            r.terminal_min_m3, r.id + ' 日末库容下限无效', low=lower, high=upper)
+        if r.terminal_max_m3 is not None:
+            _number(r.terminal_max_m3, r.id + ' 日末库容上限无效', low=terminal_min, high=upper)
         factor = _number(r.generation_m3s_per_mw, r.id + " 发电耗水系数无效")
         if factor == 0:
             raise ValueError(r.id + " 发电耗水系数须为正")
         _number(r.max_spill_m3s, r.id + " 最大弃水流量无效")
         min_release = _number(r.min_release_m3s, r.id + " 总出流下限无效")
+        mandatory = _number(r.min_bypass_m3s, r.id + ' 专用生态泄放量无效')
         if r.max_release_m3s is not None:
-            _number(r.max_release_m3s, r.id + " 总出流上限无效", low=min_release)
+            _number(r.max_release_m3s, r.id + " 总出流上限无效", low=max(min_release, mandatory))
     if not cascade.natural_inflow_m3s:
         raise ValueError("须提供显式分时区间来水")
     for row in cascade.natural_inflow_m3s:
@@ -164,7 +182,7 @@ def advance_cascade(cascade, state, power_mw, spill_m3s):
     spill = _rate_map(spill_m3s, rs, "弃水流量无效")
     inflow = cascade.natural_inflow_m3s[state.period]
     turbine = {r: power[r] * rs[r].generation_m3s_per_mw for r in rs}
-    release = {r: turbine[r] + spill[r] for r in rs}
+    release = {r: turbine[r] + rs[r].min_bypass_m3s + spill[r] for r in rs}
     arrival = dict.fromkeys(rs, 0.0)
     queue = {}
     for z in cascade.reaches:
@@ -180,6 +198,11 @@ def advance_cascade(cascade, state, power_mw, spill_m3s):
         volume[r] = state.volume_m3[r] + STEP_SECONDS * (inflow[r] - release[r]) + arrival[r]
         _number(volume[r], r + " 期末库容超限，不能提交此水力状态",
                 low=v.storage_min_m3 - VOLUME_TOL, high=v.storage_max_m3 + VOLUME_TOL)
+        if state.period + 1 == len(cascade.natural_inflow_m3s):
+            lower = v.storage_min_m3 if v.terminal_min_m3 is None else v.terminal_min_m3
+            upper = v.storage_max_m3 if v.terminal_max_m3 is None else v.terminal_max_m3
+            _number(volume[r], r + ' 日末库存越界',
+                    low=lower - VOLUME_TOL, high=upper + VOLUME_TOL)
     exits = set(rs) - {z.upstream for z in cascade.reaches}
     return CascadeStep(CascadeState(state.period + 1, volume, queue), turbine, spill, arrival,
                        {r: STEP_SECONDS * release[r] for r in sorted(exits)})
@@ -210,7 +233,7 @@ def attach_cascade_constraints(model, cascade, begin, stop, power_at, *, state=N
     model.cascade_turbine = p.Expression(tuple(rs), times,
         rule=lambda _, r, t: rs[r].generation_m3s_per_mw * power_at(r, t))
     model.cascade_release = p.Expression(tuple(rs), times,
-        rule=lambda m, r, t: m.cascade_turbine[r, t] + m.cascade_spill[r, t])
+        rule=lambda m, r, t: m.cascade_turbine[r, t] + rs[r].min_bypass_m3s + m.cascade_spill[r, t])
 
     inbound = {r: [z for z in cascade.reaches if z.downstream == r] for r in rs}
 
@@ -233,3 +256,11 @@ def attach_cascade_constraints(model, cascade, begin, stop, power_at, *, state=N
     model.cascade_release_bounds = p.Constraint(tuple(rs), times,
         rule=lambda m, r, t: p.inequality(rs[r].min_release_m3s, m.cascade_release[r, t],
                                          rs[r].max_release_m3s))
+    if stop == len(cascade.natural_inflow_m3s):
+        model.cascade_terminal = p.ConstraintList()
+        for r, station in rs.items():
+            final = model.cascade_volume[r, stop - 1]
+            if station.terminal_min_m3 is not None:
+                model.cascade_terminal.add(final >= station.terminal_min_m3)
+            if station.terminal_max_m3 is not None:
+                model.cascade_terminal.add(final <= station.terminal_max_m3)

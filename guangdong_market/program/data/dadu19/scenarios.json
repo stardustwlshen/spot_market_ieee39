@@ -1,0 +1,134 @@
+{
+  "schema": 1,
+  "market_source_commit": "633e42a490ac58368b659017e0e27c72a022b912",
+  "atlas_source_commit": "012e603f979541efe4ed72c169cd29976fe87b6d",
+  "atlas_blobs": {
+    "workbook.js": "3ee8436aa39d8137d779a071b35353f66edbb38d",
+    "company.js": "309119ef2a0094244164c6f61fbb439f9534bc52",
+    "cascade-data.js": "41a8e50dc99edf6be0291296de9ad72022c76a0c"
+  },
+  "hydrology": "采用多年平均断面差作为净区间均值，首站输入头水；尼日河等引水包含在净差中。",
+  "study": "IEEE39 研究算例，全站设计装机情景；投产、检修和真实市场准入未经核实。业主按资料保留，十九站统一报价为模拟组合。",
+  "network": {
+    "design_peak_mw": 15000,
+    "gen_radial_fraction": 0.92,
+    "scale_rule": "统一平行回路等值，限额乘设计峰/原负荷，电抗同倍反比；单端发电母线另按接入设计容量92%设置合成送出尺度。"
+  },
+  "scenarios": {
+    "wet_low": {
+      "label": "丰水低负荷",
+      "month": 8,
+      "energy_gwh": 250,
+      "peak_mw": 13500,
+      "runoff_scale": 1.35,
+      "pv_peak_pu": 0.88,
+      "storage_start_pu": 0.78,
+      "season_storage_max_pu": 0.9,
+      "terminal_drawdown_days": 0.16,
+      "terminal_fill_days": 0.4,
+      "reference_yuan_mwh": 138,
+      "gas_base_mw": 65,
+      "gas_peak_mw": 125
+    },
+    "dry_peak": {
+      "label": "枯水晚峰",
+      "month": 1,
+      "energy_gwh": 260,
+      "peak_mw": 15000,
+      "runoff_scale": 0.65,
+      "pv_peak_pu": 0.7,
+      "storage_start_pu": 0.53,
+      "season_storage_max_pu": 0.98,
+      "terminal_drawdown_days": 0.7,
+      "terminal_fill_days": 0.3,
+      "reference_yuan_mwh": 255,
+      "gas_base_mw": 225,
+      "gas_peak_mw": 525
+    },
+    "forecast_error": {
+      "label": "预测偏差",
+      "month": 10,
+      "energy_gwh": 254,
+      "peak_mw": 14200,
+      "runoff_scale": 1,
+      "pv_peak_pu": 0.82,
+      "storage_start_pu": 0.62,
+      "season_storage_max_pu": 0.94,
+      "terminal_drawdown_days": 0.45,
+      "terminal_fill_days": 0.3,
+      "reference_yuan_mwh": 195,
+      "gas_base_mw": 125,
+      "gas_peak_mw": 350
+    }
+  },
+  "coal": [
+    [
+      "COAL1",
+      "燃煤一号",
+      31,
+      600,
+      288
+    ],
+    [
+      "COAL2",
+      "燃煤二号",
+      31,
+      600,
+      302
+    ],
+    [
+      "COAL3",
+      "燃煤三号",
+      39,
+      1000,
+      298
+    ],
+    [
+      "COAL4",
+      "燃煤四号",
+      39,
+      1000,
+      315
+    ]
+  ],
+  "gas": [
+    [
+      "GAS1",
+      "保供气电一号",
+      34,
+      600
+    ],
+    [
+      "GAS2",
+      "保供气电二号",
+      34,
+      600
+    ]
+  ],
+  "pv": [
+    [
+      "PV1",
+      "集中式光伏一",
+      4,
+      2205
+    ],
+    [
+      "PV2",
+      "集中式光伏二",
+      15,
+      2205
+    ],
+    [
+      "PV3",
+      "集中式光伏三",
+      21,
+      2205
+    ],
+    [
+      "PV4",
+      "集中式光伏四",
+      27,
+      2205
+    ]
+  ]
+}
