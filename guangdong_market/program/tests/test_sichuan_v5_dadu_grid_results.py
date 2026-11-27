@@ -57,3 +57,38 @@ def test_render_older_partial_archive_and_all_three_selectors(monkeypatch):
     app.radio(key="grid_area_example").set_value("煤机与气电").run()
     assert not app.exception
     assert any("煤一" in row.value["机组"].tolist() for row in app.dataframe if "机组" in row.value)
+
+
+def test_selected_evidence_aligns_physical_time_and_omits_unexecuted_neighbors(monkeypatch):
+    monkeypatch.syspath_prepend(str(Path(__file__).resolve().parents[1]/"app"))
+    from sichuan_v5_dadu_grid_results import dispatch_period_evidence, grid_tables
+    result = archive()
+    result["inputs"]["available"][0].update(C=15.)
+    result["rt"][0].update(flows={"X":-100.})
+    main,_,lines = grid_tables(result)
+    table = dispatch_period_evidence(result,main,lines,0).set_index("核查项")
+    assert list(table) == ["选中 · 00:15"]
+    selected = table.iloc[:,0]
+    assert selected["系统负荷（日前 → 实时，MW）"] == "21.0 → 23.0"
+    assert selected["煤机在线台数 / 按日前能力合计 MW"] == "1 / 15.0"
+    assert selected["失供节点与当地失供量"] == "1（2.0 MW）"
+    assert selected["达到限额的实时线路"] == "1 条 · X"
+    assert selected["实时价格可靠性标记"] == "可靠性校核未通过"
+    assert dispatch_period_evidence(result,main,lines,1).empty
+
+
+def test_neighboring_issue_button_updates_shared_result_quarter(monkeypatch):
+    monkeypatch.syspath_prepend(str(Path(__file__).resolve().parents[1]/"app"))
+    result = archive()
+    result["rt"].append(dict(result["rt"][0], quarter=1))
+    app = AppTest.from_string(
+        "import streamlit as st\nfrom sichuan_v5_dadu_grid_results import render_grid_detail\n"
+        "q=st.selectbox('时段',range(2),key='dadu_q_example')\n"
+        f"render_grid_detail({result!r},q)"
+    ).run()
+    assert not app.exception
+    app.button(key="grid_issue_next_example").click().run()
+    assert not app.exception and app.selectbox(key="dadu_q_example").value == 1
+    review = next(f.value for f in app.dataframe if "核查项" in f.value)
+    assert list(review) == ["核查项","上一段 · 00:15","选中 · 00:30"]
+    assert app.button(key="grid_issue_next_example").disabled

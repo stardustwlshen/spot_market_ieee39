@@ -122,6 +122,89 @@ def _download(frame, suffix, result):
                        file_name=f"{name}-{suffix}.csv",mime="text/csv",key=f"grid_csv_{suffix}_{name}")
 
 
+def _only_observed(review, columns):
+    return any(pd.notna(review.get(c)) and review[c] > 1.e-5 for c in columns)
+
+
+def dispatch_period_evidence(result, main, lines, quarter):
+    """Put the same operating instant on one column; omit unexecuted neighbors."""
+    executed = {r["quarter"]:r for r in result.get("rt", ())}
+    if quarter not in executed:
+        return pd.DataFrame()
+    inputs = result.get("inputs", {})
+    coal_ids = [a["id"] for a in inputs.get("assets", ()) if a.get("kind") == "thermal"]
+    system = main.set_index("时段末")
+    columns = {}
+    for t, stage in ((quarter-1,"上一段"),(quarter,"选中"),(quarter+1,"下一段")):
+        if t not in executed:
+            continue
+        rt = executed[t]
+        at = _time(t)
+        row = system.loc[at]
+        def pair(a, b):
+            return f"{_format(row[a])} → {_format(row[b])}"
+        active = rt.get("online", {})
+        on = _sum(active, coal_ids)
+        available = _row(inputs.get("available", ()), t)
+        online_cap = (math.fsum(available[r] for r in coal_ids if active[r])
+                      if on is not None and all(r in available for r in coal_ids) else None)
+        limit_lines = lines.loc[lines["时段末"]==at].dropna(subset=["实时基态 %"]) if not lines.empty else lines
+        cap_lines = sorted(limit_lines.loc[limit_lines["实时基态 %"]>=99.9999, "支路"]) if not limit_lines.empty else []
+        if limit_lines.empty:
+            stress = "未记录"
+        elif cap_lines:
+            stress = f"{len(cap_lines)} 条 · " + "、".join(cap_lines)
+        else:
+            stress = f"0 条 · 最高 {row['实时基态支路']} {_format(row['实时基态最高 %'])}%"
+        lost = rt.get("shed")
+        if lost is None:
+            locations = "未记录"
+        else:
+            victims = sorted(((str(b),v) for b,v in lost.items() if v>1.e-5),key=lambda item:(-item[1],item[0]))
+            locations = "、".join(f"{b}（{v:,.1f} MW）" for b,v in victims) or "无"
+        reliable = row["实时计价可靠"]
+        price_status = "未记录" if pd.isna(reliable) else ("可靠性校核通过" if reliable else "可靠性校核未通过")
+        columns[f"{stage} · {at}"] = {
+            "系统负荷（日前 → 实时，MW）": pair("日前负荷","实时负荷"),
+            "煤电出力（日前 → 实发，MW）": pair("日前煤电","实发煤电"),
+            "煤机在线台数 / 按日前能力合计 MW": f"{_format(on,0)} / {_format(online_cap)}",
+            "水电出力（日前 → 实发，MW）": pair("日前水电","实发水电"),
+            "光伏出力（日前 → 实发，MW）": pair("日前光伏","实发光伏"),
+            "保供气电（计划 → 实发，MW）": pair("保供计划","实发气电"),
+            "日前备用送达校验（MW）": _format(row["日前模拟激活"]),
+            "实时备用要求 / 缺额（MW）": f"{_format(row['实时备用要求'])} / {_format(row['实时备用缺额'])}",
+            "全网失供 / 过剩（MW）": f"{_format(row['实时失供'])} / {_format(row['实时过剩'])}",
+            "失供节点与当地失供量": locations,
+            "达到限额的实时线路": stress,
+            "实时价格可靠性标记": price_status,
+        }
+    return pd.DataFrame(columns).rename_axis("核查项").reset_index()
+
+
+def _period_review(result, main, lines, quarter):
+    evidence = dispatch_period_evidence(result, main, lines, quarter)
+    if evidence.empty:
+        return
+    key = str(result.get("run","dadu19"))
+    by_time = main.set_index("时段末")
+    issue = ["实时失供","实时过剩","实时备用缺额"]
+    affected = sorted(r["quarter"] for r in result["rt"] if _only_observed(by_time.loc[_time(r["quarter"])], issue))
+    with st.expander(f"{_time(quarter)} 系统运行对照 · 当段与前后 15 分钟", expanded=quarter in affected):
+        st.dataframe(evidence,hide_index=True,height="content")
+        st.caption("日前送达校验使用日前运行点，实时备用缺额按当段要求计算。达到线限只说明该断面的潮流已到边界；归因需结合调度约束及反事实复算。")
+        shared_key = "dadu_q_"+key
+        if len(affected)>1 and shared_key in st.session_state:
+            before = [q for q in affected if q < quarter]
+            after = [q for q in affected if q > quarter]
+            earlier, later = st.columns(2)
+            for container, caption, token, target in (
+                    (earlier,"上一个异常时段","prev",before[-1] if before else None),
+                    (later,"下一个异常时段","next",after[0] if after else None)):
+                container.button(caption if target is None else f"{caption} · {_time(target)}",
+                                 key=f"grid_issue_{token}_{key}",disabled=target is None,
+                                 on_click=st.session_state.update,args=({shared_key:target},))
+
+
 def render_grid_detail(result, quarter):
     """Render the operator drilldown for the zero-based quarter selected on the results page."""
     main, coal, lines = grid_tables(result)
@@ -131,6 +214,7 @@ def render_grid_detail(result, quarter):
     key = str(result.get("run","dadu19"))
     label = _time(quarter)
     selected = main.loc[main["时段末"]==label]
+    _period_review(result, main, lines, quarter)
     area = st.radio("调度复核", ("供需与偏差","煤机与气电","线路与备用"),
                     horizontal=True,key="grid_area_"+key)
     if area == "供需与偏差":

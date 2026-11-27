@@ -62,3 +62,20 @@ def test_portfolio_adds_cash_and_values_to_receiving_station_only_on_valid_full_
     result['money']['hourly'][0]['executed_revenue']=500
     _, sums = views.portfolio_reconciliation(result)
     assert sums['cash']==500 and sums['water_change'] is None and sums['combined'] is None
+
+
+def test_priced_subtotal_preserves_unverified_energy_and_missing_meter(views):
+    result = {'money':{'quarters':[
+            {'quarter':0,'reliable':True,'effective_price_by_bus':{1:100,2:None}},
+            {'quarter':1,'reliable':False,'effective_price_by_bus':{1:950,2:85}},
+            {'quarter':2,'reliable':True,'effective_price_by_bus':{1:200,2:40}}]},
+        'rt':[{'quarter':0,'power':{'A':20,'B':0}},
+              {'quarter':1,'power':{'A':10,'B':30}},
+              {'quarter':2,'power':{'A':2,'B':4},'metered_mw':{'B':4}}]}
+    coverage = views.priced_coverage(result,[{'id':'A','bus':1},{'id':'B','bus':2}])
+    assert coverage == {'complete_quarters':1,'executed_quarters':3,'priced_mwh':6.,
+                        'priced_cash':540.,'pending_mwh':10.,'missing_meters':1}
+    # All suppressed intervals retain real executed energy; their absent cash stays missing.
+    result['rt'] = result['rt'][1:2]
+    all_invalid = views.priced_coverage(result,[{'id':'A','bus':1},{'id':'B','bus':2}])
+    assert all_invalid['priced_cash'] is None and all_invalid['pending_mwh']==10.

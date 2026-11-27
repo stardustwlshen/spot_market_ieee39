@@ -34,6 +34,47 @@ def _block_at(blocks, power):
     return None
 
 
+def _delivery(frame, record, uid, bus):
+    q = frame['quarter']
+    meter = frame.get('metered_mw', frame['power']).get(uid)
+    energy = Decimal(str(meter))*Decimal('.25') if meter is not None and meter>=0 else None
+    prices = record.get('effective_price_by_bus',{})
+    price = prices.get(bus, prices.get(str(bus))) if record.get('reliable') is True else None
+    cash = None
+    if record.get('reliable') is True and energy is not None:
+        amount = settle_quarter(SettlementInput(q,uid,'generator',energy,Decimal(0),
+                                None if price is None else Decimal(str(price)))).net_amount
+        if amount is not None:
+            cash = float(amount)
+    return None if energy is None else float(energy), price, cash
+
+
+def priced_coverage(results, stations):
+    pricing = {r['quarter']:r for r in results['money']['quarters']}
+    known = []
+    pending = []
+    missing = 0
+    complete = 0
+    for frame in results['rt']:
+        record = pricing.get(frame['quarter'],{})
+        all_priced = True
+        for s in stations:
+            energy, _, cash = _delivery(frame,record,s['id'],s['bus'])
+            if cash is None:
+                all_priced = False
+                if energy is None:
+                    missing += 1
+                else:
+                    pending.append(energy)
+            else:
+                known.append((energy,cash))
+        complete += int(all_priced)
+    return {'complete_quarters':complete,'executed_quarters':len(results['rt']),
+            'priced_mwh':fsum(energy for energy,_ in known),
+            'priced_cash':fsum(cash for _,cash in known) if known else None,
+            'pending_mwh':fsum(pending), 'missing_meters':missing}
+
+
 def station_reconciliation(results, station):
     uid, bus = station['id'], station['bus']
     company, money = results['company'], results['money']
@@ -48,18 +89,9 @@ def station_reconciliation(results, station):
         internal = company['internal_plan_mw'][q][uid]
         preclear = da[q]['power'][uid]
         actual = frame['power'][uid]
-        meter = frame.get('metered_mw',frame['power']).get(uid)
         record = pricing.get(q,{})
-        prices = record.get('effective_price_by_bus',{})
-        price = prices.get(bus, prices.get(str(bus)))
-        cash, price_effect = None, None
-        energy = float(Decimal(str(meter))*Decimal('.25')) if meter is not None and meter>=0 else None
-        if record.get('reliable') is True and energy is not None:
-            cash_ledger = settle_quarter(SettlementInput(q,uid,'generator',Decimal(str(energy)),Decimal(0),
-                                        None if price is None else Decimal(str(price))))
-            if cash_ledger.net_amount is not None:
-                cash = float(cash_ledger.net_amount)
-                price_effect = cash - energy*forecast
+        energy,price,cash = _delivery(frame,record,uid,bus)
+        price_effect = cash-energy*forecast if cash is not None else None
         rows.append({'时段末': _end(q), '事前预期价':forecast,
                      '水机会成本':company['marginal_water_cost_yuan_mwh'][q][uid],
                      '内部计划 MW': internal, '日前 MW':preclear, '实发 MW':actual, '计量 MWh':energy,
@@ -127,12 +159,40 @@ def portfolio_reconciliation(results):
                   'water_change':water_change, 'combined':_complete_sum((cash,water_change))}
 
 
-def render_company_detail(results, station):
+def render_company_detail(results, station, quarter=None):
     company = results['company']
     uid = station['id']
     rows, residual = station_reconciliation(results,station)
+    if quarter is None:
+        quarter = st.session_state.get('dadu_q_'+results.get('run',''),0)
+    selected = next((row for frame,row in zip(results['rt'],rows) if frame['quarter']==quarter),None)
     assumptions = results['inputs'].get('assumptions',{})
     stamp = assumptions.get('issued_at',{}).get('company_price_forecast','档案未记录')
+    if selected is not None:
+        st.markdown(f"**{station['name']} · {_end(quarter-1)}–{_end(quarter)} 成交与现金**")
+        raw, effective = selected['日前出力对应申报价'], selected['日前出力对应有效报价']
+        if raw is None:
+            tranche = '日前出力未落入申报段'
+        else:
+            tranche = f'对应申报价 {_fmt(raw)} 元/MWh'
+            if effective != raw:
+                tranche += f'，有效报价 {_fmt(effective)} 元/MWh'
+        st.write(f"日前中标 {_fmt(selected['日前 MW'])} MW（{tranche}）。实时实发 {_fmt(selected['实发 MW'])} MW，"
+                 f"该段计量 {_fmt(selected['计量 MWh'])} MWh。")
+        if selected['已执行现金 元'] is None:
+            frame = next(f for f in results['rt'] if f['quarter']==quarter)
+            shed = fsum(frame.get('shed',{}).values())
+            spill = fsum(frame.get('spill',{}).values())
+            reserve = frame.get('reliability_reserve_short_mw',0.)
+            issues = [f'{label} {_fmt(value)} MW' for label,value in
+                      (('全网失负荷',shed),('电力过剩',spill),('备用缺额',reserve)) if value>1e-5]
+            reason = '、'.join(issues) or ('计量缺失' if selected['计量 MWh'] is None else '价格或执行量未核验')
+            st.warning(f'本时段现金待核，{reason}。')
+        elif selected['计量 MWh']==0:
+            st.caption('本时段上网电量为零，现金为 0 元。')
+        else:
+            st.caption(f"本时段现金 {_fmt(selected['已执行现金 元'])} 元 = "
+                       f"{_fmt(selected['计量 MWh'])} MWh × 有效实时节点价 {_fmt(selected['有效实时节点价'])} 元/MWh（显示值已舍入）。")
     with st.expander(station['name']+'的事前判断与成交对账'):
         st.caption(f"预期价格签发于 {stamp}，报价冻结于 {company['as_of']}。"
                    "合成预期价由季节参考价、早晚峰加价、白天光照折减及节点扰动构成。"
@@ -144,13 +204,18 @@ def render_company_detail(results, station):
         else:
             st.caption('朴素策略采用固定分段报价。公司内部水电计划仍受来水、库存、时滞和期末边界约束。')
         columns = ('预期现金 元','日前数量影响 元','实时数量影响 元','实时价格影响 元','已执行现金 元')
-        st.dataframe([{k:_complete_sum(row[k] for row in rows) for k in columns}], hide_index=True)
+        bridge = [{'范围':f'已执行 {len(rows)} 段', **{k:_complete_sum(row[k] for row in rows) for k in columns}}]
+        if selected is not None:
+            bridge.insert(0,{'范围':f"所选段末 {selected['时段末']}",**{k:selected[k] for k in columns}})
+        st.dataframe(bridge, hide_index=True)
         st.caption('同一执行范围内，内部计划按预期价估值，先加日前与内部计划的数量差，再加实时计量与日前的'
                    '数量差，最后加实发电量按实时价与预期价的价差。后面三项用于解释现金变化。日前预出清不结算。')
         if len(rows)<96:
             st.info(f'部分日，仅对账已执行的 {len(rows)}/96 个时段。')
         if residual is None:
-            st.warning('部分计量或结算价格无效，现金对账留空。可在下表定位缺项。')
+            priced = [r for r in rows if r['已执行现金 元'] is not None]
+            st.warning(f"本站现金待核。{len(priced)}/{len(rows)} 段已计价，已核价小计 "
+                       f"{_fmt(_complete_sum(r['已执行现金 元'] for r in priced))} 元。下表保留各段计量与价格。")
         elif abs(residual)>0.01:
             st.warning(f'逐时段复算与小时现金账相差 {_fmt(residual)} 元。')
         else:
@@ -163,6 +228,15 @@ def render_company_detail(results, station):
 def render_cash_detail(results):
     rows, totals = portfolio_reconciliation(results)
     n = len(results['rt'])
+    members = set(results['money']['portfolio_members'])
+    eligible = [s for s in results['inputs']['stations'] if s['id'] in members]
+    cover = priced_coverage(results,eligible)
+    if cover['complete_quarters']<n:
+        awaiting = f"有计量待核 {_fmt(cover['pending_mwh'])} MWh"
+        if cover['missing_meters']:
+            awaiting += f"，另有 {cover['missing_meters']} 个厂站时段缺少计量"
+        st.write(f"**组合现金待核。** {cover['complete_quarters']}/{n} 个执行时段全部厂站已计价。"
+                 f"已核价部分 {_fmt(cover['priced_cash'])} 元（{_fmt(cover['priced_mwh'])} MWh），{awaiting}。")
     with st.expander('各站现货现金与期末存水价值'):
         if not totals['complete_day']:
             st.info(f'当前仅执行 {n}/96 段。现金列限于已执行量，日末存水估值和全天研究收益留空。')
