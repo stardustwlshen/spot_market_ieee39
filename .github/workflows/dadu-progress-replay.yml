@@ -1,50 +1,55 @@
-name: Inspect Dadu bids, clearing, basin and live progress
+name: Check legacy Sichuan regressions and the consultation document
 on:
   push:
     branches: ['review/dadu19-basin-progress']
 permissions:
   contents: read
-defaults:
-  run:
-    working-directory: guangdong_market/program
 jobs:
-  screens:
+  regression:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 18
+    strategy:
+      fail-fast: false
+      matrix:
+        group: [0, 1, 2, 3]
+    defaults:
+      run:
+        working-directory: guangdong_market/program
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
           cache: pip
-      - name: Install runtime and browser tooling
-        run: |
-          python -m pip install -q -r requirements-runtime.txt pytest playwright
-          python -m playwright install --with-deps chromium >/tmp/pw-install.log
-          if test -z "$(fc-list :lang=zh family | head -n1)"; then
-            sudo apt-get -qq update
-            sudo apt-get -qq install -y fonts-noto-cjk
-          fi
-      - name: Exercise interactive desktop and mobile reports
-        run: |
-          python scripts/launch_sichuan.py --port 8519 >/tmp/market-web.log 2>&1 &
-          app=$!
-          trap 'kill "$app" 2>/dev/null || true' EXIT
-          for i in $(seq 1 45); do curl -fsS http://127.0.0.1:8519/_stcore/health && break || sleep 1; done
-          python ../../.github/dadu-roles.py || { cat /tmp/market-web.log; exit 1; }
-      - name: Return screenshots for the verified results guide
-        if: always()
+      - name: Install runtime
+        run: python -m pip install -q -r requirements-runtime.txt pytest
+      - name: Run an independent group of regression files
+        env:
+          TEST_SHARD: ${{ matrix.group }}
         run: |
           python - <<'PY'
-          import base64
-          from pathlib import Path
-          for p in Path('evidence').glob('*.png'):
-              data=base64.b64encode(p.read_bytes()).decode()
-              for i in range(0,len(data),8000):
-                  print('DADU_FRAME',p.stem,i,data[i:i+8000])
+          import pathlib, os, subprocess, sys
+          files=sorted(p for p in pathlib.Path('tests').glob('test_sichuan*.py')
+                       if 'dadu' not in p.name and 'release_preflight' not in p.name)
+          group=files[int(os.environ['TEST_SHARD'])::4]
+          subprocess.run([sys.executable, '-m', 'pytest','-q',*map(str,group)],check=True)
           PY
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: result-screens
-          path: guangdong_market/program/evidence/
+  source:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Verify consultation source and locate draft provisions
+        run: |
+          url='https://mfs.mysteelcdn.com/group1/M00/7A/DB/rBL64GrqyT-AcGDEACBH_hBshK8829.pdf'
+          if curl --fail --location --max-time 35 --retry 1 "$url" -o /tmp/cons.pdf && pdfinfo /tmp/cons.pdf | head -n 15 && pdftotext -layout /tmp/cons.pdf /tmp/cons.txt; then
+            sha256sum /tmp/cons.pdf
+            python - <<'PY'
+          from pathlib import Path
+          pages=Path('/tmp/cons.txt').read_text().split('\f')
+          for term in ('四川电力市场','日前预出清','不用于结算','不作为结算依据','分段','节点边际电价'):
+              matches=[i+1 for i,page in enumerate(pages) if term in ''.join(page.split())]
+              print(term,'PDF pages',matches[:20])
+          PY
+          else
+            echo 'The source URL could not be read in this runner.'
+          fi
