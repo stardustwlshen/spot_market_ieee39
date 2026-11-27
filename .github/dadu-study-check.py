@@ -12,7 +12,9 @@ root = Path("runs_sichuan_v5_consultation")
 base = run.read_dadu(root, "dadu19_20261127T095040Z_4639b392a04a")
 assert base["inputs"]["scenario"]=="dry_peak" and base["company"]["strategy"]=="naive"
 directory = Path("/tmp/dadu-sensitivity")/key
-if key=="corridor":
+if key=="baseline":
+    _, case = run.run_dadu(directory, scenario="dry_peak",strategy="naive",seed=39,periods=96)
+elif key=="corridor":
     _, case = run.run_dadu(directory, scenario="dry_peak",strategy="naive",seed=39,periods=96,corridor_scale=1.2)
 elif key=="horizon":
     with patch.object(run,"realtime",partial(realtime,window_quarters=16)):

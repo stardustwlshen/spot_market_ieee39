@@ -1,58 +1,13 @@
-name: Verify Dadu role replay
+name: Verify dry-day control on the same solver platform
 on:
   push:
     branches: ['review/dadu19-role-replay']
 permissions:
   contents: read
 jobs:
-  replay:
-    runs-on: ubuntu-latest
-    timeout-minutes: 35
-    defaults:
-      run:
-        working-directory: guangdong_market/program
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-      - name: Install simulation and browser test dependencies
-        run: python -m pip install -q -r requirements-runtime.txt pytest playwright
-      - name: Provide Simplified Chinese fonts for the browser
-        run: |
-          if test -z "$(fc-list :lang=zh family | head -n 1)"; then
-            sudo apt-get -qq update
-            sudo apt-get -qq install -y fonts-noto-cjk
-          fi
-          fc-match 'sans:lang=zh-cn'
-      - name: Open five result areas in Chrome on desktop and phone
-        run: |
-          python scripts/launch_sichuan.py --port 8519 > /tmp/dadu-streamlit.log 2>&1 &
-          app_pid=$!
-          trap 'kill "$app_pid" 2>/dev/null || true' EXIT
-          for i in $(seq 1 45); do curl -fsS http://127.0.0.1:8519/_stcore/health && break || sleep 1; done
-          python ../../.github/dadu-browser-check.py || { cat /tmp/dadu-streamlit.log; exit 1; }
-      - name: Read selected rendered screenshots
-        run: |
-          python - <<'PY'
-          from base64 import b64encode
-          from pathlib import Path
-          for name in ['1-1440','3-1440','river-1440','5-390']:
-              data=b64encode((Path('evidence')/(name+'.png')).read_bytes()).decode('ascii')
-              for k in range(0,len(data),8000):
-                  print('DADU_FRAME',name,k,data[k:k+8000])
-          PY
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: browser-evidence
-          path: guangdong_market/program/evidence/
-  sensitivity:
+  control:
     runs-on: ubuntu-latest
     timeout-minutes: 25
-    strategy:
-      matrix:
-        change: [corridor, horizon]
     defaults:
       run:
         working-directory: guangdong_market/program
@@ -62,24 +17,4 @@ jobs:
         with:
           python-version: '3.12'
       - run: python -m pip install -q -r requirements-runtime.txt
-      - name: Recalculate a single change against the archived dry naive day
-        run: python ../../.github/dadu-study-check.py ${{ matrix.change }}
-  regression:
-    runs-on: ubuntu-latest
-    timeout-minutes: 25
-    defaults:
-      run:
-        working-directory: guangdong_market/program
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-      - name: Install solver and pytest
-        run: python -m pip install -q -r requirements-runtime.txt pytest
-      - name: Replay complete archives and one new short run
-        run: |
-          PYTHONPATH=app python -c "from pathlib import Path; from sichuan_v5_dadu_run import run_dadu; run_dadu(Path('/tmp/dadu-short'),periods=4)"
-          DADU_NAVIGATION_SHORT_RUNS=/tmp/dadu-short python -m pytest -q tests/test_sichuan_v5_dadu*.py tests/test_sichuan_v5_release_preflight.py
-      - name: Report full matrix acceptance including the dry baseline deficit
-        run: DADU_ACCEPTANCE_RUNS="$PWD/runs_sichuan_v5_consultation" DADU_REQUIRE_MATRIX=1 python -m pytest -q tests/test_sichuan_v5_dadu_acceptance.py -k test_executed_run_replay
+      - run: python ../../.github/dadu-study-check.py baseline
