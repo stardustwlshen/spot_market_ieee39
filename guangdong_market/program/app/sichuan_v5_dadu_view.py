@@ -414,29 +414,14 @@ def _draft_changes(inputs, draft):
     return result
 
 
-def _find_draft_archive(root, receipts, draft):
-    from sichuan_v5_dadu_run import read_dadu, source_hashes, source_hashes_match
-    model_sources = source_hashes()
-    for name, receipt in receipts.items():
-        if any(receipt.get(k)!=v for k,v in draft.items()):
-            continue
-        try:
-            archived = read_dadu(root, name)['inputs']
-        except (ValueError, OSError, KeyError):
-            continue
-        if (source_hashes_match(archived.get('source_hashes'), model_sources) and not archived.get('awards')
-                and all(archived.get(k)==v for k,v in draft.items())):
-            return name
-    return None
-
-
 @st.cache_data(show_spinner=False)
 def _load_sheet(scenario):
     from sichuan_v5_dadu_case import build_case
     from sichuan_v5_dadu_run import default_declaration
     case, meta = build_case(scenario, 39)
     company = default_declaration(case, meta)
-    return dict(run='draft_'+scenario, company=company, inputs=dict(stations=meta['stations'],
+    return dict(run='draft_'+scenario, company=company, inputs=dict(stations=meta['stations'], assets=meta['assets'],
+                available=case.available, fixed_schedule=case.fixed_schedule,
                 market_case={'cascade':company['hydraulic_declaration']}))
 
 
@@ -480,8 +465,8 @@ def render_dadu(root):
             records.append({'电站':names[row['id']], '调节方式':'库容式' if row['regulation']=='reservoir' else '径流式',
                 '期初库容 m³':row['initial_storage_m3'], '最小库容 m³':row['storage_min_m3'],
                 '最大库容 m³':row['storage_max_m3'], '期末下限 m³':row['terminal_min_m3'],
-                '期末上限 m³':row['terminal_max_m3'], '最小总下泄 m³/s':row['min_release_m3'],
-                '最小旁泄 m³/s':row['min_bypass_m3'], '耗水率 m³/kWh':company['offers'][row['id']]['consumption_m3_kwh']})
+                '期末上限 m³':row['terminal_max_m3'], '最小总下泄 m³/s':row['min_release_m3s'],
+                '最小旁泄 m³/s':row['min_bypass_m3s'], '耗水率 m³/kWh':company['offers'][row['id']]['consumption_m3_kwh']})
         st.dataframe(records, hide_index=True, width='stretch')
     with reaches:
         st.dataframe([{'上游':names[r['upstream']], '下游':names[r['downstream']],
@@ -494,6 +479,16 @@ def render_dadu(root):
                        '起始时刻':f"{o['sustained_start_quarter']//4:02}:{15*(o['sustained_start_quarter']%4):02}"}
                       for u,o in company['offers'].items()], hide_index=True, width='stretch')
         st.caption('逐站能力分别核定。能否同时实现取决于梯级水量和电网约束。')
+    with st.expander('全网机组台账与当段可用容量'):
+        owners = {s['id']:s.get('group') for s in sheet['inputs']['stations']}
+        roles = {'hydro':'水电耦合申报','thermal':'煤电量价申报','renewable':'集中式光伏量价申报','fixed':'气电保供计划'}
+        base_inputs = sheet['inputs']
+        st.dataframe([{'机组':a['name'],'登记集团':owners.get(a['id']), '市场身份':roles[a['kind']],
+                       'IEEE39 节点':a['bus'],'设计装机 MW':a['capacity_mw'],
+                       '当段可用 MW':base_inputs['available'][quarter].get(a['id'],a['capacity_mw']),
+                       '当段保供计划 MW':base_inputs['fixed_schedule'][quarter].get(a['id'])}
+                      for a in base_inputs['assets']], hide_index=True,width='stretch')
+        st.caption('19 站统一申报为研究设定，登记集团按厂站列示。其余电源沿用各自的模拟市场身份。')
     receipt = declaration_record(company)
     st.download_button('下载本次完整申报单', json.dumps(receipt,ensure_ascii=False), scenario+'-declaration.json','application/json')
     if st.button('确认并冻结 19 站申报', type='primary', key='dadu_freeze'):

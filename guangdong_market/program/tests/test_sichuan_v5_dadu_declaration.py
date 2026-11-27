@@ -37,5 +37,7 @@ def test_submission_workspace(tmp_path, monkeypatch):
     assert archive['company']['declaration_sha256']==sheet['declaration_sha256']
     assert len(archive['da'])==96 and len(archive['rt'])==4
     assert len(sheet['hydraulic_declaration']['reaches'])==18
+    assert len(sheet['hydraulic_declaration']['reservoirs'])==19
+    assert all(archive['da'][q]['hydro'] and archive['rt'][q]['water_handoff'] for q in range(4))
     app.radio(key='dadu_workspace').set_value('市场结果').run()
     assert not app.exception and not app.error
