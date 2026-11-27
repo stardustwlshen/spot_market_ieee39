@@ -113,8 +113,7 @@ def _total(row, ids):
     return sum(row['power'][uid] for uid in ids)
 
 
-def _submitted(curve):
-    start = 0.
+def _submitted(curve, start=0.):
     rows = []
     for width, price in curve:
         stop = start + float(width)
@@ -133,6 +132,10 @@ def comparison_row(scenario, strategy, result):
     portfolio = result['money']['portfolio']
     volumes = [hour['energy_mwh'] for hour in portfolio]
     mwh = sum(volumes) if all(value is not None for value in volumes) else None
+    if result.get('inputs',{}).get('stations'):
+        members = [s['id'] for s in result['inputs']['stations']]
+        mwh = .25 * fsum(r['power'][i] for r in result['rt'] for i in members)
+    shortfalls = [fsum(r['shed'].values()) for r in result['rt'] if 'shed' in r]
     income = summary['company_revenue']
     complete = len(result['rt']) == 96 and summary['max_slack_mw']<=1e-5
     return {'场景': SCENARIOS[scenario], '报价策略': STRATEGIES[strategy],
@@ -142,7 +145,10 @@ def comparison_row(scenario, strategy, result):
             '库存及在途水估值变化（元）': summary.get('water_stock_value_change') if complete else None,
             '全天含水库存估值的研究收益（元）': summary.get('water_adjusted_value') if complete else None,
             '各站弃水之和（m³）': summary['water_spill_m3'], '光伏弃电（MWh）': summary['solar_curtail_mwh'],
-            '气电保供（MWh）': summary['gas_mwh'], '边界摘要': _boundary_digest(summary)}
+            '气电保供（MWh）': summary['gas_mwh'],
+            '失负荷（MWh）':.25*fsum(shortfalls) if shortfalls else None,
+            '失负荷段数':sum(v>1e-5 for v in shortfalls) if shortfalls else None,
+            '边界摘要': _boundary_digest(summary)}
 
 
 def _company_tab(results, station):
@@ -225,11 +231,12 @@ def _market_tab(results, station, quarter):
             raw = results['raw_offers'][uid]
             effective = results['effective_offers'][uid]
             curves = [('申报及有效', raw)] if raw == effective else [('原申报', raw), ('有效', effective)]
-            st.dataframe([dict(曲线=label, **row) for label,curve in curves for row in _submitted(curve)],
+            resources = inputs['market_case']['resources']
+            minimum = next((u['minimum_mw'] for u in resources if u['id']==uid),0.) if asset['kind']=='thermal' else 0.
+            st.dataframe([dict(曲线=label, **row) for label,curve in curves for row in _submitted(curve, minimum)],
                          hide_index=True)
             if asset['kind'] == 'thermal':
-                st.caption('煤机模型从零出力起列示成本段。最低稳定出力以下按合成成本计入目标，'
-                           '正式分段申报从机组的最低稳定出力起算。')
+                st.caption(f'分段申报从最低稳定出力 {minimum:g} MW 起算。最低出力以下的运行成本单独计入优化目标。')
     with right:
         _chart({'日前参考节点价（原始对偶）':price}, '元/MWh')
     st.caption('日前为 96 点预出清，电量和节点价供对照。研究收入使用实时执行量和相应的实时价格。')
@@ -263,16 +270,6 @@ def _realtime_tab(results, station, quarter):
     _chart({'原始实时节点价': [_bus_value(r['raw_price_by_bus'], bus) for r in money['quarters']],
             '采用的实时节点价': [_bus_value(r['effective_price_by_bus'], bus) for r in money['quarters']],
             '统一结算点电价': [r['uniform_price'] for r in money['quarters']]}, '元/MWh')
-    water = [row['hydro'][uid] for row in rt]
-    st.markdown('**'+station['name']+'逐时段水量**')
-    _chart({'区间天然来水': [v['natural_inflow_m3s'] for v in water],
-            '上游到达': [v['upstream_arrival_m3']/900 for v in water],
-            '过机流量': [v['turbine_m3s'] for v in water],
-            '生态专用旁泄': [v['eco_bypass_m3s'] for v in water],
-            '弃水': [v['water_spill_m3s'] for v in water]}, 'm³/s')
-    st.caption(f"所选时段末库容 {_number(water[quarter]['storage_m3']/1e6, 4)} 百万 m³。"
-               '上游到达量按 900 秒折为本时段平均流量。径流式近似按时段水量守恒。')
-    _chart({'期末库存': [v['storage_m3']/1e6 for v in water]}, '百万 m³')
     with st.expander('气电非市场计划与保供'):
         gas = ids['气电保供']
         st.dataframe([{'时段末':_end_label(t), '机组':g, '计划 MW':inputs['fixed_schedule'][t][g],
@@ -289,17 +286,11 @@ def _realtime_tab(results, station, quarter):
         loading = [{'线路':key, '所选时段潮流 MW':round(value, 3), '限额 MW':round(limits[key], 3),
                     '使用率 %':round(100*abs(value)/limits[key], 2)} for key,value in flows.items()]
         st.dataframe(sorted(loading, key=lambda r:r['使用率 %'], reverse=True), hide_index=True)
-    with st.expander('在途水量与首段交接'):
-        handoff = rt[quarter]['water_handoff']
-        st.caption(f"本段流域出口水量 {_number(sum(handoff['basin_exit_m3'].values()))} m³，"
-                   f"全流域守恒残差 {_number(handoff.get('basin_residual_m3'),6)} m³。")
-        routes = [reach for reach in handoff['in_transit'] if uid in (reach['upstream'],reach['downstream'])]
-        st.dataframe([{'上游':reach['upstream'], '下游':reach['downstream'], '距到达时段数':offset+1,
-                       '到达水量 m³':round(volume, 2)} for reach in routes
-                      for offset, volume in enumerate(reach['next_arrivals_m3'])], hide_index=True)
-
-
-def _results(name, results):
+def _results(name, results, root, receipts):
+    from sichuan_v5_dadu_company_results import render_company_detail, render_cash_detail
+    from sichuan_v5_dadu_grid_results import render_grid_detail
+    from sichuan_v5_dadu_water_results import render_water_detail
+    from sichuan_v5_dadu_overview import render_overview, render_node_prices, render_pair
     inputs, summary = results['inputs'], results['summary']
     rt = results['rt']
     n = len(rt)
@@ -313,24 +304,36 @@ def _results(name, results):
                    'wet_energy':'丰水期电量供需比触发'}.get(results['policy']['trigger'],'研究缓解')
         st.caption(f"本场景触发市场力缓解研究条件，出清使用经处理的有效报价，研究限价 "
                    f"{_number(results['policy']['cap'])} 元/MWh（{trigger}）。")
-    cols = st.columns(3)
-    cols[0].metric('组合现货毛收入', _number(summary['company_revenue'])+' 元')
-    cols[1].metric('各站弃水量之和', _number(summary['water_spill_m3']/1e6, 3)+' 百万 m³')
-    cols[2].metric('气电保供电量', _number(summary['gas_mwh'])+' MWh')
-    st.caption('各站弃水可在下游再利用。同一股水途经多站时可被多次统计，流域出口水量见各段交接。')
+    render_overview(results)
     stations = {s['id']:s for s in inputs['stations']}
     names = list(stations)
     left,right = st.columns(2)
     uid = left.selectbox('查看厂站', names, index=names.index('D10') if 'D10' in names else 0,
                          format_func=lambda s:stations[s]['name'], key='dadu_unit_'+name)
+    worst = max(range(n),key=lambda q:fsum(rt[q]['shed'].values()))
+    if fsum(rt[worst]['shed'].values())>1e-5:
+        right.button('跳到最大失负荷时段', key='dadu_worst_'+name,
+                     on_click=lambda:st.session_state.update({'dadu_q_'+name:worst}))
     quarter = right.selectbox('查看已执行时段（时段末）', range(n), format_func=_end_label, key='dadu_q_'+name)
-    company, market, dispatch = st.tabs(('公司报价', '市场中标', '实时实发'))
+    company, market, dispatch, water, cash = st.tabs(('公司报价', '市场中标', '实时实发', '梯级水量', '收入与对照'))
     with company:
         _company_tab(results, stations[uid])
+        render_company_detail(results, stations[uid])
     with market:
         _market_tab(results, stations[uid], quarter)
+        render_node_prices(results, stations[uid], quarter)
     with dispatch:
         _realtime_tab(results, stations[uid], quarter)
+        render_grid_detail(results, quarter)
+    with water:
+        if stations[uid]['model']=='reservoir':
+            _chart({'日前计划库容':[r['hydro'][uid]['storage_m3']/1e6 for r in results['da']],
+                    '实际库存':[r['hydro'][uid]['storage_m3']/1e6 for r in rt]}, '百万 m³')
+        render_water_detail(results, stations[uid], quarter)
+    with cash:
+        st.caption('日前预出清没有结算现金。这里以实时计量估算电能量收入；当前档案未给出完整合同、补偿和企业实际成本，利润留空。')
+        render_cash_detail(results)
+        render_pair(root, receipts, results, stations[uid])
 
 
 def _comparison(root, seed, periods, sensitivity, receipts):
@@ -385,7 +388,8 @@ def render_dadu(root):
     from sichuan_v5_dadu_run import list_dadu, read_dadu, run_dadu
     st.title('大渡河梯级与四川 V5.0 现货市场')
     st.caption('19 座水电站按厂站独立申报，由同一模拟公司优化。台账业主单独保留。市场运行在合成 IEEE39 电网上。')
-    with st.container():
+    saved_names = list_dadu(root)
+    with st.expander('运行设置与新算例', expanded=not saved_names):
         left, mid, right = st.columns(3)
         scenario = left.selectbox('市场场景', list(SCENARIOS), format_func=SCENARIOS.get, key='dadu_scenario')
         strategy = mid.selectbox('公司报价策略', list(STRATEGIES), format_func=STRATEGIES.get, key='dadu_strategy')
@@ -411,7 +415,7 @@ def render_dadu(root):
                 status.update(label='已保存本次运行', state='complete')
         except (ValueError, RuntimeError, OSError) as error:
             st.error(f'本次运行未完成：{error}')
-    names = list_dadu(root)
+    names = list_dadu(root) if selected else saved_names
     receipts = {key:_receipt(root, key) for key in names}
     if selected and selected in names:
         st.session_state['dadu_saved'] = selected
@@ -419,7 +423,7 @@ def render_dadu(root):
                         key='dadu_saved', format_func=lambda x:_archive_label(x,receipts.get(x,{})))
     if name:
         try:
-            _results(name, read_dadu(root, name))
+            _results(name, read_dadu(root, name), root, receipts)
         except (ValueError, RuntimeError, OSError, KeyError) as error:
             st.error(f'无法完整读取运行结果：{error}')
     else:

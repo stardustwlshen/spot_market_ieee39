@@ -5,6 +5,7 @@ from decimal import Decimal, ROUND_HALF_UP
 from pathlib import Path
 from hashlib import sha256
 import json
+import math
 import os
 
 import pytest
@@ -17,6 +18,7 @@ GAS = {"GAS1", "GAS2"}
 PV = {f"PV{i}" for i in range(1, 5)}
 ALL = HYDRO | COAL | GAS | PV
 SCENARIOS = ("wet_low", "dry_peak", "forecast_error")
+SLACK_TOL = 1e-5
 
 
 @pytest.fixture
@@ -71,11 +73,20 @@ def _audit_physics(inputs, rows, *, executed):
     plants = {s["id"]: s for s in cascade["reservoirs"]}
     volumes = {s:v["initial_storage_m3"] for s,v in plants.items()}
     queues = {(r["upstream"], r["downstream"]):deque(r["initial_arrivals_m3"]) for r in cascade["reaches"]}
+    diagnostics = []
     for t, row in enumerate(rows):
         assert row["quarter"] == t and set(row["power"]) == ALL
         flow = row["flows"]
-        buses = {int(b) for b in row["demand"]}
-        balance = {int(b): -v for b,v in row["demand"].items()}
+        buses = set(inputs["market_case"]["buses"])
+        demand = {int(b): v for b, v in row["demand"].items()}
+        shed = {int(b): v for b, v in row["shed"].items()}
+        excess = {int(b): v for b, v in row["spill"].items()}
+        assert set(demand) == set(shed) == set(excess) == buses
+        assert all(math.isfinite(v) and v >= -1e-7 for v in (*shed.values(), *excess.values(),
+                                                               row["reliability_reserve_short_mw"]))
+        assert all(shed[b] <= demand[b] + .0001 for b in buses)
+        balance = {b: shed[b] - excess[b] - demand[b] for b in buses}
+        assert set(flow) == {line["id"] for line in lines}
         edges = defaultdict(list)
         for unit, mw in row["power"].items():
             assert -.0001 <= mw <= units[unit]["capacity_mw"] + .0001
@@ -88,9 +99,15 @@ def _audit_physics(inputs, rows, *, executed):
             drop = f * line["reactance"] / 100
             edges[a].append((b, -drop))
             edges[b].append((a, drop))
-        assert max(abs(v) for v in balance.values()) < .0001
-        assert all(abs(v) < 1e-5 for field in ("shed", "spill") for v in row[field].values())
-        assert abs(row["reliability_reserve_short_mw"]) < 1e-5
+        assert max(abs(v) for v in balance.values()) < .0001, f"第{t+1}段节点功率平衡不闭合"
+        short = {"unserved_load_mw": sum(max(0., v) for v in shed.values()),
+                 "excess_injection_mw": sum(max(0., v) for v in excess.values()),
+                 "reserve_short_mw": max(0., row["reliability_reserve_short_mw"])}
+        if "system_shortfalls" in row:
+            assert row["system_shortfalls"] == pytest.approx(short, abs=1e-7)
+        if not executed or inputs["scenario"] != "forecast_error":
+            assert max(short.values()) <= SLACK_TOL, f"基准或日前第{t+1}段出现可靠性松弛"
+        diagnostics.append(short)
         angles = {min(buses): 0.}
         pending = deque(angles)
         while pending:
@@ -124,6 +141,8 @@ def _audit_physics(inputs, rows, *, executed):
         if executed:
             handoff = row["water_handoff"]
             assert handoff["next_quarter"] == t+1
+            assert handoff["storage_m3"] == pytest.approx(volumes, abs=.01, rel=0)
+            assert abs(handoff["basin_residual_m3"]) < .01
             published = {(r["upstream"], r["downstream"]):r["next_arrivals_m3"] for r in handoff["in_transit"]}
             assert set(published) == set(queues)
             for link, queue in queues.items():
@@ -131,6 +150,7 @@ def _audit_physics(inputs, rows, *, executed):
         if t == 95:
             for i in RESERVOIRS:
                 assert plants[i]["terminal_min_m3"] - .01 <= volumes[i] <= plants[i]["terminal_max_m3"] + .01
+    return diagnostics
 
 
 def audit_archive(result):
@@ -154,24 +174,126 @@ def audit_archive(result):
         assert all(20 <= y[1]-x[1] <= 150 for x,y in zip(blocks,blocks[1:]))
         assert sum(w for w,_ in blocks) == pytest.approx(rating)
     _audit_physics(inputs, result["da"], executed=False)
-    _audit_physics(inputs, result["rt"], executed=True)
+    diagnostics = _audit_physics(inputs, result["rt"], executed=True)
     assert set(money["eligible"]) == ALL - GAS
     assert set(money["portfolio_members"]) == HYDRO
-    rt_revenue = 0.
-    for row, price in zip(result["rt"], money["quarters"]):
-        assert price["quarter"] == row["quarter"] and price["price_source"] == "rt_sced"
+    n = len(result["rt"])
+    assert money["executed_quarters"] == n
+    assert money["complete_day"] == (n == 96)
+    summary = result["summary"]
+    assert summary["max_slack_mw"] == pytest.approx(max(max(s.values()) for s in diagnostics), abs=1e-7)
+    unserved = .25 * sum(s["unserved_load_mw"] for s in diagnostics)
+    if "unserved_energy_mwh" in summary:
+        assert summary["unserved_energy_mwh"] == pytest.approx(unserved, abs=1e-7)
+    quantities, amounts = defaultdict(float), defaultdict(float)
+    bad_hours = set()
+    eligible = ALL - GAS
+    buses = set(inputs["market_case"]["buses"])
+    for row, price, short in zip(result["rt"], money["quarters"], diagnostics):
+        clean = max(short.values()) <= SLACK_TOL
+        t = row["quarter"]
+        hour = 1 + t // 4
+        assert price["quarter"] == t and price["reliable"] is clean
+        assert price["cap"] == result["policy"]["cap"]
+        assert price["price_source"] == ("rt_sced" if clean else "withheld")
         assert row["online"] == result["da"][row["quarter"]]["online"]
-        for bus, raw in row["raw_nodal_prices"].items():
-            expected = max(Decimal(0), min(Decimal(str(price["cap"])), Decimal(str(raw))))
-            expected = expected.quantize(Decimal(".01"), rounding=ROUND_HALF_UP)
-            assert price["effective_price_by_bus"][bus] == pytest.approx(float(expected))
-        for i in HYDRO:
-            rt_revenue += row["power"][i] * .25 * price["effective_price_by_bus"][assets[i]["bus"]]
-    # Each 15-minute station amount is rounded to cents before being accumulated.
-    assert abs(rt_revenue - result["summary"]["company_revenue"]) <= .0051 * len(HYDRO) * len(result["rt"])
+        raw_lmp = {int(b): v for b, v in row["raw_nodal_prices"].items()}
+        raw_copy = {int(b): v for b, v in price["raw_price_by_bus"].items()}
+        effective = {int(b): v for b, v in price["effective_price_by_bus"].items()}
+        assert set(raw_lmp) == set(raw_copy) == set(effective) == buses
+        assert all(math.isfinite(val) for val in raw_lmp.values())
+        assert raw_copy == raw_lmp
+        for bus, raw in raw_lmp.items():
+            if clean:
+                expected = max(Decimal(0), min(Decimal(str(price["cap"])), Decimal(str(raw))))
+                expected = expected.quantize(Decimal(".01"), rounding=ROUND_HALF_UP)
+                assert effective[bus] == pytest.approx(float(expected))
+            else:
+                assert effective[bus] is None
+        total = sum(.25 * row["power"][i] for i in eligible)
+        assert price["uniform_weight_mwh"] == pytest.approx(total, abs=1e-7)
+        uniform_amount = 0.
+        for i in eligible:
+            mwh = .25 * row["power"][i]
+            quantities[hour, i] += mwh
+            if clean:
+                value = mwh * effective[assets[i]["bus"]]
+                amounts[hour, i] += value
+                uniform_amount += value
+        if not clean:
+            bad_hours.add(hour)
+            assert "dispatch_not_verified" in price["issues"]
+        if clean and total > 0:
+            assert price["uniform_price"] == pytest.approx(uniform_amount / total)
+        else:
+            assert price["uniform_price"] is None
+
+    hours = range(1, (n+3)//4 + 1)
+    indexed = {(v["hour"], v["resource_id"]): v for v in money["hourly"]}
+    assert len(indexed) == len(money["hourly"]) == len(hours)*len(eligible)
+    port = {v["hour"]:v for v in money["portfolio"]}
+    assert set(port) == set(hours)
+    def check_leg(record, hour, energy, cash):
+        assert record["energy_mwh"] == pytest.approx(energy, abs=1e-7)
+        if hour in bad_hours:
+            assert "dispatch_not_verified" in record["issues"]
+            assert record["executed_revenue"] is None
+        else:
+            assert record["executed_revenue"] == pytest.approx(cash, rel=1e-10, abs=1e-6)
+        if hour in bad_hours or 4*hour > n:
+            assert record["revenue"] is None and record["rt_nodal_price"] is None
+        else:
+            assert record["revenue"] == pytest.approx(cash, rel=1e-10, abs=1e-6)
+            if energy == 0:
+                assert record["rt_nodal_price"] is None
+            else:
+                assert record["rt_nodal_price"] == pytest.approx(cash / energy)
+    for h in hours:
+        for i in eligible:
+            check_leg(indexed[h, i], h, quantities[h, i], amounts[h, i])
+        check_leg(port[h], h, sum(quantities[h, i] for i in HYDRO), sum(amounts[h, i] for i in HYDRO))
+    if bad_hours:
+        assert money["data_quality"] == "incomplete"
+        assert money["executed_portfolio_revenue"] is money["total_revenue"] is money["market_total_revenue"] is None
+        assert summary["company_revenue"] is None
+        if "water_adjusted_value" in summary:
+            assert summary["water_adjusted_value"] is None
+    else:
+        company_cash = sum(amounts[h, i] for h in hours for i in HYDRO)
+        assert money["executed_portfolio_revenue"] == pytest.approx(company_cash)
+        assert summary["company_revenue"] == pytest.approx(company_cash)
+        if n % 4:
+            assert money["total_revenue"] is money["market_total_revenue"] is None
+        else:
+            assert money["total_revenue"] == pytest.approx(company_cash)
+            assert money["market_total_revenue"] == pytest.approx(sum(amounts.values()))
 
 
-def test_executed_run_replay(modules, tmp_path):
+def _source_version(market_sha, hydro_sha, files):
+    assert market_sha and hydro_sha and files
+    return (market_sha, hydro_sha, tuple(sorted(files.items())))
+
+
+def _record_cohort(matches, result):
+    inputs, company, summary = result["inputs"], result["company"], result["summary"]
+    version = _source_version(inputs["market_base_sha"], inputs["hydro_source_sha"], inputs["source_hashes"])
+    assert inputs["boundary_hash"] == summary["boundary_hash"]
+    if "issued_boundary_hash" in summary:
+        issued = json.dumps(result["issued_forecasts"], sort_keys=True, ensure_ascii=False,
+                            separators=(",", ":"), allow_nan=False).encode("utf-8")
+        assert sha256(issued).hexdigest() == summary["issued_boundary_hash"]
+    knobs = (inputs["seed"], inputs["periods"], inputs["water_value_scale"],
+             inputs["corridor_scale"], inputs["gas_plan_scale"])
+    # Physical/valuation and issued RT boundaries must agree within each
+    # treatment pair. The three scenarios intentionally have different water.
+    key = (version, knobs, inputs["scenario"], summary["boundary_hash"],
+           company["company_forecast_sha256"], summary.get("issued_boundary_hash"))
+    runs = matches[key]
+    bid = company["submission_sha256"]
+    assert runs.setdefault(company["strategy"], bid) == bid
+
+
+def test_executed_run_replay(modules, request):
     # CI runs a short, genuine solve. Point at completed archives to recheck full
     # runs without invoking a second solver (including both bidding strategies).
     _, runs = modules
@@ -180,23 +302,20 @@ def test_executed_run_replay(modules, tmp_path):
         names = runs.list_dadu(root)
         assert names, "No completed Dadu archives were found"
     else:
-        root = tmp_path
+        root = request.getfixturevalue("tmp_path")
         name, _ = runs.run_dadu(root, scenario="wet_low", strategy="water_value", periods=4)
         names = [name]
     matches = defaultdict(dict)
     for name in names:
         result = runs.read_dadu(root, name)
         audit_archive(result)
-        inputs, company = result["inputs"], result["company"]
-        key = (inputs["scenario"], inputs["seed"], inputs["periods"], inputs["water_value_scale"],
-               inputs["corridor_scale"], inputs["gas_plan_scale"])
-        matches[key][company["strategy"]] = (result["summary"]["boundary_hash"],
-                                              company["company_forecast_sha256"],
-                                              company["submission_sha256"])
-    for pair in matches.values():
+        _record_cohort(matches, result)
+    complete = defaultdict(set)
+    for (version, knobs, scenario, *_), pair in matches.items():
         if {"naive","water_value"} <= set(pair):
-            assert pair["naive"][:2] == pair["water_value"][:2]
-            assert pair["naive"][2] != pair["water_value"][2]
+            assert pair["naive"] != pair["water_value"]
+            complete[version, knobs].add(scenario)
     if os.environ.get("DADU_REQUIRE_MATRIX") == "1":
-        for scenario in SCENARIOS:
-            assert matches[(scenario,39,96,1.,1.,1.)].keys() == {"naive","water_value"}
+        current = _source_version(runs.BASE_COMMIT, runs.DATA_COMMIT, runs.source_hashes())
+        missing = set(SCENARIOS) - complete[current, (39,96,1.,1.,1.)]
+        assert not missing, f"当前源码版本缺少同边界的完整策略对：{sorted(missing)}"
