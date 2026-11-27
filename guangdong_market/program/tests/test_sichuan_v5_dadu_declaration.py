@@ -20,9 +20,12 @@ def test_submission_workspace(tmp_path, monkeypatch):
         app.selectbox(key='dadu_scenario').select(scenario).run()
         assert not app.exception and not app.error
         assert not app.multiselect and not backend.list_dadu(tmp_path)
-        headings = [h.value for h in app.subheader]
-        assert all(h in headings for h in ('电能量交易申报','19 站报送总览'))
-        assert any(len(table.value)==96 for table in app.dataframe)
+        from sichuan_v5_dadu_view import _load_sheet
+        sheet = _load_sheet(scenario)
+        assert len(sheet['company']['offers']) == 19
+        assert all(len(o['available_mw']) == len(o['minimum_mw']) == len(o['natural_inflow_m3s']) == 96
+                   for o in sheet['company']['offers'].values())
+        assert app.button(key='dadu_freeze')
     case, meta = backend.build_case('wet_low',39)
     sheet = backend.default_declaration(case,meta)
     with pytest.raises(ValueError, match='已确认|确认的'):

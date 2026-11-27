@@ -433,7 +433,14 @@ def render_dadu(root):
     from sichuan_v5_dadu_portfolio import render_company_portfolio
     from sichuan_v5_dadu_style import apply_dadu_style
     apply_dadu_style()
-    st.title('大渡河梯级机组申报 · 四川 V5.0')
+    st.html("""<style>
+    .st-key-filing_controls{background:#f3f5f1;border:1px solid #cedbd7;border-radius:8px;padding:.45rem .8rem}
+    .st-key-dadu_freeze button{background:#173746;border-color:#173746;color:white}
+    div[data-testid="stMainBlockContainer"]:has(.st-key-filing_controls){max-width:1540px;padding-top:2.3rem}
+    .st-key-filing_controls [data-testid="stHorizontalBlock"]{align-items:flex-end}
+    @media(max-width:700px){.st-key-filing_controls [data-testid="stHorizontalBlock"]{gap:.3rem}}
+    </style>""")
+    st.title('四川 V5.0 · 大渡河现货申报')
     page = st.radio('工作区', ['机组申报','市场结果'], horizontal=True, key='dadu_workspace')
     if page == '市场结果':
         names = list_dadu(root)
@@ -445,7 +452,9 @@ def render_dadu(root):
                             format_func=lambda n:_archive_label(n,receipts[n]))
         _results(name,read_dadu(root,name),root,receipts,{})
         return
-    scenario = st.selectbox('申报场景', list(SCENARIOS), format_func=SCENARIOS.get, key='dadu_scenario')
+    controls = st.container(key='filing_controls')
+    scenario_col, download, confirm = controls.columns([2,1,1], vertical_alignment='bottom')
+    scenario = scenario_col.selectbox('申报场景', list(SCENARIOS), format_func=SCENARIOS.get, key='dadu_scenario')
     try:
         sheet = _load_sheet(scenario)
     except (ValueError,OSError) as exc:
@@ -454,9 +463,8 @@ def render_dadu(root):
     company = sheet['company']
     from sichuan_v5_declaration_sheet import render_sheet
     receipt = declaration_record(company)
-    download, confirm = st.columns(2)
-    download.download_button('下载本次完整申报单', json.dumps(receipt,ensure_ascii=False), scenario+'-declaration.json','application/json')
-    if confirm.button('确认并冻结 19 站申报', type='primary', key='dadu_freeze'):
+    download.download_button('下载申报单', json.dumps(receipt,ensure_ascii=False), scenario+'-declaration.json','application/json',width='stretch')
+    if confirm.button('确认并冻结 19 站申报', type='primary', key='dadu_freeze',width='stretch'):
         try:
             freeze_declaration(root,company)
         except (OSError,ValueError) as exc:
@@ -466,7 +474,7 @@ def render_dadu(root):
     if submitted:
         st.success(f'默认申报已冻结 · 19 站 · 单号 {company["declaration_sha256"][:12]}。可离开页面，稍后执行市场出清。')
     else:
-        st.caption('待确认 · 确认只保存本场景的机组申报单。')
+        st.caption('待确认　·　竞价日 09:45 前报送　·　冻结只保存申报单，市场出清单独执行。')
     render_sheet(sheet, SCENARIOS[scenario])
     with st.expander('市场计算'):
         periods = st.selectbox('提交后实时执行范围', (4,96), format_func=lambda n:'首小时（4 段）' if n==4 else '全天（96 段）', key='dadu_periods')
