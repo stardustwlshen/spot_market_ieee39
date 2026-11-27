@@ -22,7 +22,7 @@ def test_widget_reopen_package_and_readback(tmp_path, monkeypatch):
     original = st.download_button
 
     def capture(label, *args, **kw):
-        if kw['mime']=='application/zip':
+        if label=='下载原始档案 ZIP' and kw.get('mime')=='application/zip':
             captured[kw['file_name']]=kw['data']
         return original(label, *args, **kw)
 
