@@ -1,16 +1,29 @@
-name: Read operative provisions in the verified V5.0 draft
+name: Confirm matching rules clauses
 on:
   push:
     branches: ['review/dadu19-basin-progress']
 permissions:
   contents: read
 jobs:
-  clauses:
+  read:
     runs-on: ubuntu-latest
-    timeout-minutes: 4
+    timeout-minutes: 3
     steps:
-      - uses: actions/checkout@v4
       - run: |
           python -m pip install -q pymupdf
-          curl --fail --location --max-time 40 --retry 1 'https://mfs.mysteelcdn.com/group1/M00/7A/DB/rBL64GrqyT-AcGDEACBH_hBshK8829.pdf' -o /tmp/consult.pdf
-          python .github/dadu-draft-probe.py /tmp/consult.pdf
+          curl -fsSL --max-time 40 --retry 1 'https://mfs.mysteelcdn.com/group1/M00/7A/DB/rBL64GrqyT-AcGDEACBH_hBshK8829.pdf' -o /tmp/rules.pdf
+          python - <<'PY'
+          import pymupdf,re,hashlib
+          from pathlib import Path
+          p=Path('/tmp/rules.pdf')
+          assert hashlib.sha256(p.read_bytes()).hexdigest()=='05cda5cabc552a8c8b8e5a58686f3a79684d8e24bf97255d00d8b3246d16e0b5'
+          d=pymupdf.open(p)
+          for n in (63,64,68,69,70,71,72,79,80,81,83,88,89,107,108):
+              s=''.join(d[n-1].get_text().split())
+              predicates=('不结算','不进行结算','结算依据','不参与市场结算','不参与结算','生产运行','出清价格','燃气机组','径流式','申报段数','个报价段','报价曲线','滚动出清','耦合优化','不超过10','5段','10段','20元','150元')
+              hits=0
+              for t in predicates:
+                  k=s.find(t)
+                  if k>=0 and hits<5:
+                      print('READ',n,t,s[max(0,k-44):k+46]); hits+=1
+          PY
