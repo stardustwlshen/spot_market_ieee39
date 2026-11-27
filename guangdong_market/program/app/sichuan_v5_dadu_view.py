@@ -445,53 +445,15 @@ def render_dadu(root):
                             format_func=lambda n:_archive_label(n,receipts[n]))
         _results(name,read_dadu(root,name),root,receipts,{})
         return
-    st.caption('19 站按水电耦合方式申报。使用场景预置的量价、来水和参考计划，确认时一并冻结水库与河段参数。')
-    left, right = st.columns(2)
-    scenario = left.selectbox('申报场景', list(SCENARIOS), format_func=SCENARIOS.get, key='dadu_scenario')
-    quarter = right.selectbox('核对时段（北京时间）', range(96),
-                              format_func=lambda q:f'{q//4:02}:{15*(q%4):02}–{_end_label(q)}')
+    scenario = st.selectbox('申报场景', list(SCENARIOS), format_func=SCENARIOS.get, key='dadu_scenario')
     try:
         sheet = _load_sheet(scenario)
     except (ValueError,OSError) as exc:
         st.error(f'申报单载入失败：{exc}')
         return
     company = sheet['company']
-    coupling = company['hydraulic_declaration']
-    names = {s['id']:s['name'] for s in sheet['inputs']['stations']}
-    render_company_portfolio(sheet, quarter)
-    st.subheader('耦合申报参数')
-    reservoirs, reaches, capability = st.tabs(['水库与径流边界','河段与在途水量','机组持续出力'])
-    with reservoirs:
-        records = []
-        for row in coupling['reservoirs']:
-            records.append({'电站':names[row['id']], '调节方式':'库容式' if row['regulation']=='reservoir' else '径流式',
-                '期初库容 m³':row['initial_storage_m3'], '最小库容 m³':row['storage_min_m3'],
-                '最大库容 m³':row['storage_max_m3'], '期末下限 m³':row['terminal_min_m3'],
-                '期末上限 m³':row['terminal_max_m3'], '最小总下泄 m³/s':row['min_release_m3s'],
-                '最大总下泄 m³/s':row['max_release_m3s'], '最大弃水 m³/s':row['max_spill_m3s'],
-                '最小旁泄 m³/s':row['min_bypass_m3s'], '耗水率 m³/kWh':company['offers'][row['id']]['consumption_m3_kwh']})
-        st.dataframe(records, hide_index=True, width='stretch')
-    with reaches:
-        st.dataframe([{'上游':names[r['upstream']], '下游':names[r['downstream']],
-                       '传播分钟':15*r['travel_quarters'],'期初在途合计 m³':sum(r['initial_arrivals_m3']),
-                       '逐段预计到水 m³':list(r['initial_arrivals_m3'])} for r in coupling['reaches']],
-                     hide_index=True, width='stretch')
-    with capability:
-        st.dataframe([{'电站':names[u], '日最大可发 MWh':o['daily_energy_mwh'],
-                       '连续三小时出力 MW':o['sustained_3h_mw'],
-                       '起始时刻':f"{o['sustained_start_quarter']//4:02}:{15*(o['sustained_start_quarter']%4):02}"}
-                      for u,o in company['offers'].items()], hide_index=True, width='stretch')
-        st.caption('逐站能力分别核定。能否同时实现取决于梯级水量和电网约束。')
-    with st.expander('全网机组台账与当段可用容量'):
-        owners = {s['id']:s.get('group') for s in sheet['inputs']['stations']}
-        roles = {'hydro':'水电耦合申报','thermal':'煤电量价申报','renewable':'集中式光伏量价申报','fixed':'气电保供计划'}
-        base_inputs = sheet['inputs']
-        st.dataframe([{'机组':a['name'],'登记集团':owners.get(a['id']), '市场身份':roles[a['kind']],
-                       'IEEE39 节点':a['bus'],'设计装机 MW':a['capacity_mw'],
-                       '当段可用 MW':base_inputs['available'][quarter].get(a['id'],a['capacity_mw']),
-                       '当段保供计划 MW':base_inputs['fixed_schedule'][quarter].get(a['id'])}
-                      for a in base_inputs['assets']], hide_index=True,width='stretch')
-        st.caption('19 站统一申报为研究设定，登记集团按厂站列示。其余电源沿用各自的模拟市场身份。')
+    from sichuan_v5_declaration_sheet import render_sheet
+    render_sheet(sheet, SCENARIOS[scenario])
     receipt = declaration_record(company)
     st.download_button('下载本次完整申报单', json.dumps(receipt,ensure_ascii=False), scenario+'-declaration.json','application/json')
     if st.button('确认并冻结 19 站申报', type='primary', key='dadu_freeze'):
@@ -505,13 +467,14 @@ def render_dadu(root):
         st.success(f'默认申报已冻结 · 19 站 · 单号 {company["declaration_sha256"][:12]}。可离开页面，稍后执行市场出清。')
     else:
         st.caption('待确认 · 确认只保存本场景的机组申报单。')
-    periods = st.selectbox('提交后实时执行范围', (4,96), format_func=lambda n:'首小时（4 段）' if n==4 else '全天（96 段）', key='dadu_periods')
-    st.caption('运行市场时先执行日前 96 点 SCUC → SCED，再按选定范围滚动执行实时市场。')
-    if st.button('使用已冻结申报运行市场', disabled=not submitted, key='dadu_run'):
-        try:
-            name,_ = solve_visible(run_dadu,root,dict(scenario=scenario, strategy='default', periods=periods,
-                                   declaration_sha256=company['declaration_sha256']),st.container(),'市场计算')
-        except (ValueError,RuntimeError,OSError):
-            return
-        st.session_state['dadu_saved'] = name
-        st.success('已保存本次出清。切换至「市场结果」即可核对已冻结申报与中标量。')
+    with st.expander('市场计算'):
+        periods = st.selectbox('提交后实时执行范围', (4,96), format_func=lambda n:'首小时（4 段）' if n==4 else '全天（96 段）', key='dadu_periods')
+        st.caption('运行市场时先执行日前 96 点 SCUC → SCED，再按选定范围滚动执行实时市场。')
+        if st.button('使用已冻结申报运行市场', disabled=not submitted, key='dadu_run'):
+            try:
+                name,_ = solve_visible(run_dadu,root,dict(scenario=scenario, strategy='default', periods=periods,
+                                       declaration_sha256=company['declaration_sha256']),st.container(),'市场计算')
+            except (ValueError,RuntimeError,OSError):
+                return
+            st.session_state['dadu_saved'] = name
+            st.success('已保存本次出清。切换至「市场结果」即可核对已冻结申报与中标量。')

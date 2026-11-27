@@ -19,10 +19,10 @@ def test_submission_workspace(tmp_path, monkeypatch):
     for scenario in ('dry_peak','forecast_error','wet_low'):
         app.selectbox(key='dadu_scenario').select(scenario).run()
         assert not app.exception and not app.error
-        selection = next(w for w in app.multiselect if w.key.startswith('river_compare_'))
-        assert len(selection.options)==19 and len(selection.value)==4
-        selection.set_value(['D10','D11']).run()
-        assert not app.exception and not backend.list_dadu(tmp_path)
+        assert not app.multiselect and not backend.list_dadu(tmp_path)
+        headings = [h.value for h in app.subheader]
+        assert all(h in headings for h in ('分站量价申报','可发能力与预测来水','水库与下泄边界','河段传播与期初在途水量'))
+        assert any(len(table.value)==19*96 for table in app.dataframe)
     case, meta = backend.build_case('wet_low',39)
     sheet = backend.default_declaration(case,meta)
     with pytest.raises(ValueError, match='已确认|确认的'):
