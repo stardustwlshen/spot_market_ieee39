@@ -106,6 +106,7 @@ def capture(page, folder, name, anchor, lower, draw=None, colored=False):
     expect(page.get_by_role("listbox")).to_have_count(0)
     expect(page.locator('[role="dialog"]:visible')).to_have_count(0)
     expect(page.locator('[data-testid="stSpinner"]:visible')).to_have_count(0, timeout=30000)
+    expect(page.get_by_role("button", name="Stop", exact=True)).to_have_count(0, timeout=45000)
     for element in (anchor, lower):
         clear = element.evaluate("""el => {
           const r=el.getBoundingClientRect(), y=r.top+Math.min(15,r.height/2);
@@ -154,14 +155,14 @@ def desktop_views(page, folder):
 def market_views(page, folder):
     load_archive(page, ERROR, 78)
     plan = tab(page, "日前预出清")
-    expect(plan.get_by_text(re.compile(r"19:30–19:45.*组合"))).to_be_visible()
+    expect(plan.get_by_text("优化覆盖 96 个时段。当前显示 19:30–19:45 的组合。", exact=True).first).to_be_visible()
     scuc = plan.get_by_text(re.compile(r"日前 SCUC.*煤机开停")).first
     expect(plan.get_by_text(re.compile(r"日前 SCED.*固定煤机组合"))).to_be_visible()
     groups = plan.locator('[data-testid="stDataFrame"]:visible').first
     capture(page, folder, "day-ahead", scuc, groups, groups.locator("canvas:visible").first)
     rt = tab(page, "实时出清与执行")
     roll = rt.get_by_text(re.compile(r"实时滚动 SCED.*每次执行首段")).first
-    expect(rt.get_by_text(re.compile(r"执行 19:30–19:45"))).to_be_visible()
+    expect(rt.get_by_text(re.compile(r"^本次预测窗口 19:30–.*执行 19:30–19:45")).first).to_be_visible()
     withheld = rt.get_by_text(re.compile(r"原始实时价.*失负荷.*收入暂停")).first
     expect(withheld).to_be_visible()
     capture(page, folder, "real-time", roll, withheld)
