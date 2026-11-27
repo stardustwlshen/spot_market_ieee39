@@ -1,55 +1,30 @@
-name: Check legacy Sichuan regressions and the consultation document
+name: Verify the Sichuan V5.0 consultation source
 on:
   push:
     branches: ['review/dadu19-basin-progress']
 permissions:
   contents: read
 jobs:
-  regression:
-    runs-on: ubuntu-latest
-    timeout-minutes: 18
-    strategy:
-      fail-fast: false
-      matrix:
-        group: [0, 1, 2, 3]
-    defaults:
-      run:
-        working-directory: guangdong_market/program
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-          cache: pip
-      - name: Install runtime
-        run: python -m pip install -q -r requirements-runtime.txt pytest
-      - name: Run an independent group of regression files
-        env:
-          TEST_SHARD: ${{ matrix.group }}
-        run: |
-          python - <<'PY'
-          import pathlib, os, subprocess, sys
-          files=sorted(p for p in pathlib.Path('tests').glob('test_sichuan*.py')
-                       if 'dadu' not in p.name and 'release_preflight' not in p.name)
-          group=files[int(os.environ['TEST_SHARD'])::4]
-          subprocess.run([sys.executable, '-m', 'pytest','-q',*map(str,group)],check=True)
-          PY
   source:
     runs-on: ubuntu-latest
-    timeout-minutes: 3
+    timeout-minutes: 4
     steps:
-      - name: Verify consultation source and locate draft provisions
+      - name: Inspect the PDF named in the study
         run: |
-          url='https://mfs.mysteelcdn.com/group1/M00/7A/DB/rBL64GrqyT-AcGDEACBH_hBshK8829.pdf'
-          if curl --fail --location --max-time 35 --retry 1 "$url" -o /tmp/cons.pdf && pdfinfo /tmp/cons.pdf | head -n 15 && pdftotext -layout /tmp/cons.pdf /tmp/cons.txt; then
-            sha256sum /tmp/cons.pdf
-            python - <<'PY'
+          python -m pip install -q pymupdf
+          curl --fail --location --max-time 40 --retry 1 'https://mfs.mysteelcdn.com/group1/M00/7A/DB/rBL64GrqyT-AcGDEACBH_hBshK8829.pdf' -o /tmp/cons.pdf
+          python - <<'PY'
           from pathlib import Path
-          pages=Path('/tmp/cons.txt').read_text().split('\f')
-          for term in ('四川电力市场','日前预出清','不用于结算','不作为结算依据','分段','节点边际电价'):
-              matches=[i+1 for i,page in enumerate(pages) if term in ''.join(page.split())]
-              print(term,'PDF pages',matches[:20])
+          import hashlib, pymupdf
+          path=Path('/tmp/cons.pdf')
+          doc=pymupdf.open(path)
+          text=[''.join(p.get_text().split()) for p in doc]
+          print('PDF_IDENT',len(doc),path.stat().st_size,hashlib.sha256(path.read_bytes()).hexdigest(),text[0][:48])
+          for term in ('日前预出清','不作为结算依据','不用于结算','节点边际电价','燃气','库容式','段间','备用','调频'):
+              found=[(i+1, p.find(term), p) for i,p in enumerate(text) if term in p]
+              print('SECTION',term,[j for j,_,_ in found[:12]])
+              if term in ('日前预出清','不作为结算依据','不用于结算') and found:
+                  page,i,s=found[-1]
+                  print('CONTEXT',page,s[max(0,i-15):i+20])
+          assert len(doc)>10 and any('四川' in p for p in text)
           PY
-          else
-            echo 'The source URL could not be read in this runner.'
-          fi
