@@ -21,8 +21,8 @@ def test_submission_workspace(tmp_path, monkeypatch):
         assert not app.exception and not app.error
         assert not app.multiselect and not backend.list_dadu(tmp_path)
         headings = [h.value for h in app.subheader]
-        assert all(h in headings for h in ('分站量价申报','可发能力与预测来水','水库与下泄边界','河段传播与期初在途水量'))
-        assert any(len(table.value)==19*96 for table in app.dataframe)
+        assert all(h in headings for h in ('电能量交易申报','19 站报送总览'))
+        assert any(len(table.value)==96 for table in app.dataframe)
     case, meta = backend.build_case('wet_low',39)
     sheet = backend.default_declaration(case,meta)
     with pytest.raises(ValueError, match='已确认|确认的'):
