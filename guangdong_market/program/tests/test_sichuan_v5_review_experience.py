@@ -17,7 +17,8 @@ def test_review_and_reconcile_on_native_sichuan_page(tmp_path,monkeypatch):
     payloads={}
     render_download=st.download_button
     def capture(label,*args,**kwargs):
-        payloads[label]=json.loads(kwargs['data'])
+        if label in ('下载实时估值 JSON', '下载实时量价对账 JSON'):
+            payloads[label]=json.loads(kwargs['data'])
         return render_download(label,*args,**kwargs)
     monkeypatch.setattr(st,'download_button',capture)
     app=AppTest.from_file(str(PROGRAM/'app/四川.py'),default_timeout=90).run()
