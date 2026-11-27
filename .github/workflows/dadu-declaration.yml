@@ -1,0 +1,21 @@
+name: Package pre-market default sheets
+on:
+  push:
+    branches: ['review/dadu19-basin-progress']
+jobs:
+  extract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - working-directory: guangdong_market/program
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import gzip,json,base64
+          for scene,end in [('wet_low','f92c9001a30f'),('dry_peak','cda4af81a8f5'),('forecast_error','9a78ae68318c')]:
+              p=next(Path('runs_sichuan_v5_consultation/dadu19').glob('*'+end))
+              c=json.loads(gzip.decompress((p/'result.json.gz').read_bytes()))['company']
+              d=dict(source_run=p.name,reference_plan_mw=c['internal_plan_mw'],physical_sha256=c['company_physical_forecast_sha256'])
+              s=base64.b64encode(gzip.compress(json.dumps(d,separators=(',',':')).encode(),mtime=0)).decode()
+              for i in range(0,len(s),500):print('DATA',scene,i,s[i:i+500])
+          PY
