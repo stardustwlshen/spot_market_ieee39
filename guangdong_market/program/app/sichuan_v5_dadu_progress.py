@@ -18,9 +18,13 @@ def report(sink, stage, completed, total, label):
         sink(ProgressEvent(stage, completed, total, label))
 
 
-# SHA-256 of the exact pre/post telemetry revisions. Receipts retain the raw
+# Exact telemetry and citation-only revisions. Receipts retain the raw
 # source hashes. Any other change to code or data requires fresh comparison runs.
 _PROGRESS_REVISIONS = {
+    "app/sichuan_v5_dadu_case.py": {
+        "e4923cdf18cebfc8a65a1575cf5307aa139870da9242af7610746a41ecddd887",
+        "07f8394f6d9a0e6a6d2bdde2bebc66dcb888381a9d5a96ad966ebdd50641a488",
+    },
     "app/sichuan_v5_company.py": {
         "20ce4656e4cf1bc87b1a3b0ec2facc7398687564d00c9708e7d8d2bfa1ec7423",
         "010bddcc13729aacba0c40c349c5277fac2c4fee3a618cd2fde76020d1d89e89",
@@ -41,7 +45,7 @@ _PROGRESS_REVISIONS = {
 
 
 def source_hashes_match(left, right):
-    """Allow exact manifests and the audited progress-only source differences."""
+    """Allow exact manifests and the audited telemetry or document-citation source revisions."""
     if not isinstance(left, dict) or not isinstance(right, dict) or not left or left.keys() != right.keys():
         return False
     for path, a in left.items():

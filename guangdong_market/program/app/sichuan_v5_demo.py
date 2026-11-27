@@ -15,7 +15,7 @@ from sichuan_v5_segments import research_curve
 from sichuan_v5_settlement import SettlementInput, UniformPriceInput, settle_quarter, uniform_price
 
 TOPOLOGY = Path(__file__).resolve().parents[1] / 'data/case39'
-RULE_PDF_SHA256 = '8e8ee5bebadb0f0ae1873315790b47ed8694a68b8ca4d1e160ec669e74c42ad5'
+RULE_PDF_SHA256 = '05cda5cabc552a8c8b8e5a58686f3a79684d8e24bf97255d00d8b3246d16e0b5'
 D = Decimal
 CATEGORY = {
     'public_coal': 'public_coal',
