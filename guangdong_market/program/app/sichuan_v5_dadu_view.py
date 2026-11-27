@@ -453,10 +453,10 @@ def render_dadu(root):
         return
     company = sheet['company']
     from sichuan_v5_declaration_sheet import render_sheet
-    render_sheet(sheet, SCENARIOS[scenario])
     receipt = declaration_record(company)
-    st.download_button('下载本次完整申报单', json.dumps(receipt,ensure_ascii=False), scenario+'-declaration.json','application/json')
-    if st.button('确认并冻结 19 站申报', type='primary', key='dadu_freeze'):
+    download, confirm = st.columns(2)
+    download.download_button('下载本次完整申报单', json.dumps(receipt,ensure_ascii=False), scenario+'-declaration.json','application/json')
+    if confirm.button('确认并冻结 19 站申报', type='primary', key='dadu_freeze'):
         try:
             freeze_declaration(root,company)
         except (OSError,ValueError) as exc:
@@ -467,6 +467,7 @@ def render_dadu(root):
         st.success(f'默认申报已冻结 · 19 站 · 单号 {company["declaration_sha256"][:12]}。可离开页面，稍后执行市场出清。')
     else:
         st.caption('待确认 · 确认只保存本场景的机组申报单。')
+    render_sheet(sheet, SCENARIOS[scenario])
     with st.expander('市场计算'):
         periods = st.selectbox('提交后实时执行范围', (4,96), format_func=lambda n:'首小时（4 段）' if n==4 else '全天（96 段）', key='dadu_periods')
         st.caption('运行市场时先执行日前 96 点 SCUC → SCED，再按选定范围滚动执行实时市场。')
