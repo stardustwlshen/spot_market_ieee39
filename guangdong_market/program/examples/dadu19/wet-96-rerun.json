@@ -1,47 +1,118 @@
 {
   "run": "dadu19_20261127T141536Z_db886d27def7",
-  "compared_with": "dadu19_20261127T095231Z_f92c9001a30f",
-  "scenario": "wet_low",
-  "strategy": "water_value",
-  "seed": 39,
-  "quarter_hours": 96,
-  "elapsed_seconds": 139.154,
-  "stage_seconds": {
-    "inputs": 0.015,
-    "company": 8.514,
-    "market": 2.476,
-    "da": 35.601,
-    "rt": 92.321,
-    "archive": 0.226
+  "old_run": "dadu19_20261127T095231Z_f92c9001a30f",
+  "seconds": 139.154,
+  "phases": {
+    "inputs": {
+      "seconds": 0.015,
+      "count": 2,
+      "start": 0,
+      "end": 1,
+      "total": 1
+    },
+    "company": {
+      "seconds": 8.514,
+      "count": 141,
+      "start": 0,
+      "end": 19,
+      "total": 19
+    },
+    "market": {
+      "seconds": 2.476,
+      "count": 98,
+      "start": 0,
+      "end": 97,
+      "total": 97
+    },
+    "da": {
+      "seconds": 35.601,
+      "count": 3,
+      "start": 0,
+      "end": 2,
+      "total": 2
+    },
+    "rt": {
+      "seconds": 92.321,
+      "count": 97,
+      "start": 0,
+      "end": 96,
+      "total": 96
+    },
+    "archive": {
+      "seconds": 0.226,
+      "count": 3,
+      "start": 0,
+      "end": 2,
+      "total": 2
+    }
   },
-  "matched_power_values": {
-    "da": 2784,
-    "rt": 2784
+  "da_events": [
+    {
+      "seconds": 11.005259900004603,
+      "stage": "da",
+      "completed": 0,
+      "total": 2,
+      "label": "正在求解日前96点机组组合 SCUC"
+    },
+    {
+      "seconds": 40.36401559994556,
+      "stage": "da",
+      "completed": 1,
+      "total": 2,
+      "label": "机组组合已解，正在求解固定组合 SCED 并计算节点价"
+    },
+    {
+      "seconds": 46.604672600049525,
+      "stage": "da",
+      "completed": 2,
+      "total": 2,
+      "label": "日前96点预出清与可靠性检查已完成"
+    }
+  ],
+  "powers": {
+    "da": {
+      "values": 2784,
+      "unequal": 0,
+      "max_abs_mw": 0.0
+    },
+    "rt": {
+      "values": 2784,
+      "unequal": 0,
+      "max_abs_mw": 0.0
+    }
   },
-  "max_abs_power_difference_mw": {
-    "da": 0,
-    "rt": 0
+  "same_sections": {
+    "company": true,
+    "da": true,
+    "effective_offers": true,
+    "inputs": false,
+    "issued_forecasts": true,
+    "money": true,
+    "policy": true,
+    "raw_offers": true,
+    "rt": true,
+    "schema": true,
+    "summary": false
   },
-  "matching_sections": [
-    "company",
-    "da",
-    "effective_offers",
-    "issued_forecasts",
-    "money",
-    "policy",
-    "raw_offers",
-    "rt",
-    "schema"
-  ],
-  "different_input_fields": [
-    "source_hashes"
-  ],
-  "different_summary_fields": [
-    "input_hash"
-  ],
-  "max_slack_mw": 0,
-  "unserved_energy_mwh": 0,
-  "gas_mwh": 3647.3793597230324,
-  "company_revenue_yuan": 19357417.920778446,
-  "bid_sha256": "fa39e7a4a37d45a25a442a67afeb0b92d695442a3bc8e3ff0bbf48ec67e3cbeb"
+  "changed": {
+    "inputs": [
+      "source_hashes"
+    ],
+    "summary": [
+      "input_hash"
+    ]
+  },
+  "compatible_code": true,
+  "day_boundary": "c6a2e1967c9e281e2bdc57c49553dab7864f8b4a86dca581ab4922ff0603380a",
+  "issued": "bc694c5183d565d1c4583348463b0a54173a40561ef5ed028096aa5263cebdca",
+  "bid": "fa39e7a4a37d45a25a442a67afeb0b92d695442a3bc8e3ff0bbf48ec67e3cbeb",
+  "company_forecast": "d1b1f0ff4684ed58ccac750b38ea0226f6c316f19e1f898d523e774cb6580db5",
+  "diagnostics": {
+    "max_slack_mw": 0.0,
+    "unserved_energy_mwh": 0.0,
+    "company_revenue": 19357417.920778446,
+    "gas_mwh": 3647.3793597230324,
+    "water_spill_m3": 803813167.720477,
+    "water_adjusted_value": 29253541.615773853
+  }
 }

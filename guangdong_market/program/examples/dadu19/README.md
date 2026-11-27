@@ -60,6 +60,18 @@
 
 若查看 **预测偏差、水价值报价** 的同一站、同一时段，可核对本站实发同为 2,361.01 MW，而全网失供降为零。应同时查看系统水电、煤电和其他站的水量空间分布。
 
+## 新版工作台实测
+
+![瀑布沟事前用水计划、冻结分段与计划落点](screens/bid-decision.png)
+
+丰水低负荷日 00:00–00:15，瀑布沟内部计划为 1,920.40 MW，落在第 6 段。该段原始目标为 142.94 元/MWh，经全曲线价格间距约束后，冻结为 141 元/MWh。日前采用报价及中标量可在同一站的「日前预出清」查看。
+
+[手机上查看报价依据](screens/bid-decision-mobile.png) · [实时计算进度](screens/live-progress.png) · [日前预出清](screens/day-ahead.png) · [实时出清与执行](screens/real-time.png) · [全流域出力与库容](screens/basin-overview.png) · [全流域收支与在途水量](screens/basin-balance.png) · [实发较日前的全流域偏差](screens/basin-deviation.png)
+
+本机从头重算丰水低负荷、水价值、种子 39 的 96 段，耗时 139.15 秒，其中日前约 35.60 秒、实时约 92.32 秒。与随库完整日逐项对照，29 个资源 × 96 段的日前出力及实时出力各有 2,784 个值，对应最大绝对差均为 0 MW。节点价格、水量交接、冻结报价与实时电能量账也一致。耗时取决于场景与运行环境。[完整复算核对记录](wet-96-rerun.json)
+
+[浏览器首小时实算与 72 项回归](https://github.com/stardustwlshen/spot_market_ieee39/actions/runs/46015696979/job/140562118047)
+
 ## 上一版浏览器操作记录
 
 [报价员的分段申报与当段成交](screens/company.png) · [电网调度三时段对照](screens/dispatch.png) · [瀑布沟至深溪沟的在途与到水](screens/water.png) · [手机上核对组合现金与两种报价](screens/settlement-mobile.png)
