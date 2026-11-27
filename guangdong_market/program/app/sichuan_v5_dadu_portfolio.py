@@ -15,7 +15,7 @@ def render_river_offers(result, quarter, table, segments):
     reaches = result['inputs'].get('market_case', {}).get('cascade', {}).get('reaches', [])
     downstream = {r['upstream']: r for r in reaches}
     st.subheader('大渡河梯级与多站日前计划')
-    st.write('公司按全流域来水、库存和传输时滞联合安排用水，再按电站分别提交日分段量价曲线及分时出力边界。日前市场按冻结申报和独立水电边界预出清；实时假设梯级选择水电耦合并通过审核。')
+    st.caption('各站提交日分段量价和分时能力。市场在独立预测下检查梯级水量、库存、时滞与送出条件。')
     st.caption('沿干流从上游向下游阅读。深蓝为库容式，浅色为径流式；箭头旁为模拟河段传播时间。')
     chips = []
     for station in stations:
@@ -92,8 +92,8 @@ def render_company_portfolio(result, quarter):
     table, segments = portfolio_offers(result, quarter)
     total = fsum(table['内部计划日电量 MWh'])
     price = segments['冻结申报价 元/MWh']
-    st.subheader('公司冻结申报')
-    st.caption(f"{company['as_of']} 签发 · {len(table)} 站分别向市场提交日分段曲线。全组合由同一模拟报价团队统筹。")
+    st.subheader('厂站申报总览' if result['run'].startswith('draft_') else '公司冻结申报')
+    st.caption(f"{company['as_of']} 模拟申报时点 · {len(table)} 站分别向市场提交日分段曲线。全组合由同一模拟报价团队统筹。")
     c = st.columns(3)
     c[0].metric('组合内部计划电量', f'{total/1000:,.2f} GWh')
     c[1].metric('各站提交的报价段', f'{len(segments)} 段')

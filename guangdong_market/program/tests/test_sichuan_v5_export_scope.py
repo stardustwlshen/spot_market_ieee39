@@ -18,7 +18,8 @@ def test_first_offer_recovery_and_result_download_scope(tmp_path, monkeypatch):
     render_download = st.download_button
 
     def capture(label, *args, **kwargs):
-        payloads[label] = (kwargs['file_name'], json.loads(kwargs['data']))
+        if label in ('下载实时估值 JSON', '下载实时量价对账 JSON'):
+            payloads[label] = (kwargs['file_name'], json.loads(kwargs['data']))
         return render_download(label, *args, **kwargs)
 
     monkeypatch.setattr(st, 'download_button', capture)

@@ -53,10 +53,11 @@ def test_archives_through_five_result_areas(tmp_path, monkeypatch):
     excluded=set()
     monkeypatch.setattr(backend,'list_dadu',lambda directory:[n for n in visible(directory) if n not in excluded])
     app = AppTest.from_file(str(PROGRAM/'app/四川.py'),default_timeout=90).run()
+    app.radio(key='dadu_workspace').set_value('市场结果').run()
     def check():
         assert not app.error and not app.exception,([e.value for e in app.error],[e.value for e in app.exception])
         tabs = [tab.label for tab in app.tabs]
-        stages = ['公司报量报价','日前预出清','实时出清与执行','全流域水情','收入与对照']
+        stages = ['已冻结申报','日前预出清','实时出清与执行','全流域水情','收入与对照']
         assert [label for label in tabs if label in stages] == stages
     def pair_table():
         return next((d.value for d in app.dataframe if '水价值减朴素' in d.value),None)
@@ -113,17 +114,4 @@ def test_archives_through_five_result_areas(tmp_path, monkeypatch):
     assert any('部分日' in c.value and f'{n}/96' in c.value for c in app.info)
     cash=next(d.value for d in app.dataframe if '含水价值研究收益 元' in d.value)
     assert cash['含水价值研究收益 元'].isna().all()
-    app.selectbox(key='dadu_periods').select(96)
-    app.selectbox(key='dadu_scenario').select('forecast_error')
-    app.selectbox(key='dadu_strategy').select('naive')
-    app.number_input(key='dadu_seed').set_value(40)
-    app.button(key='dadu_open_existing').click().run()
-    check()
-    assert app.selectbox(key='dadu_saved').value==short_id
-    assert any('尚无同版本、同设置' in v.value for v in app.info)
-    app.number_input(key='dadu_seed').set_value(39)
-    app.button(key='dadu_open_existing').click().run()
-    check()
-    assert app.selectbox(key='dadu_saved').value==naive_id
-    assert app.selectbox(key='dadu_q_'+naive_id).value==peak
     assert set(visible(local))=={name for _,name in chosen}

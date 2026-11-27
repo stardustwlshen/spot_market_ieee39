@@ -7,7 +7,7 @@ import streamlit as st
 # Backend counters count different units. Stage order is shared by 4- and 96-period runs.
 _STAGES = {
     'inputs': (1, '载入事前数据', '项输入'),
-    'company': (2, '公司报量报价', '座电站'),
+    'company': (2, '核验机组申报', '座电站'),
     'market': (3, '核定市场边界', '项校核'),
     'da': (4, '日前预出清', '项求解'),
     'rt': (5, '实时出清与执行', '个时段'),
