@@ -58,6 +58,7 @@ class Case:
     unmet_load_yuan_mwh: float = 10000. # synthetic reliability proxy, not a market cap
     cascade: Cascade | None = None
     fixed_schedule: tuple = ()  # absolute-day indexed non-market injections (MW)
+    deliverable_up_mw: float = 0. # D-1 forecast exposure distributed by nodal load
 
 
 class ClearingError(ValueError):
@@ -75,7 +76,8 @@ def validate(case):
         raise ClearingError('节点必须唯一且非空')
     if len(case.demand) != PERIODS or len(case.available) != PERIODS:
         raise ClearingError('场景必须包含96个完整15分钟段')
-    if not _num(case.reserve_mw) or not _num(case.unmet_load_yuan_mwh, 1.):
+    if (not _num(case.reserve_mw) or not _num(case.unmet_load_yuan_mwh, 1.)
+            or not _num(case.deliverable_up_mw, 0., case.reserve_mw)):
         raise ClearingError('可靠性设定无效')
     line_ids = {l.id for l in case.lines}
     if len(line_ids) != len(case.lines):
@@ -159,6 +161,42 @@ def validate(case):
         raise ClearingError('完整梯级场景须分别提供非市场计划和可用容量')
 
 
+def _delivery_test(model, case, thermal, times):
+    """Require simultaneous D-1 forecast reserve activation on the same DC network."""
+    import numpy as np
+    import pyomo.environ as p
+    buses = {b:i for i,b in enumerate(case.buses)}
+    positions = {u.id:buses[u.bus] for u in case.resources if u.id in thermal}
+    line_ids = [l.id for l in case.lines]
+    incidence = np.zeros((len(case.lines), len(buses)))
+    for i, edge in enumerate(case.lines):
+        incidence[i, buses[edge.source]] = 1.
+        incidence[i, buses[edge.target]] = -1.
+    bline = np.array([1./l.reactance for l in case.lines])
+    weighted = bline[:,None] * incidence
+    shift = weighted @ np.linalg.pinv(incidence.T @ weighted)
+    model.forecast_activation = p.Var(thermal, times, domain=p.NonNegativeReals)
+    model.forecast_security = p.ConstraintList()
+    model.forecast_stress_flow = p.Expression(line_ids, times)
+    for t in times:
+        load = np.array([case.demand[t][b] for b in case.buses])
+        if load.sum() <= 0.:
+            raise ClearingError('负荷为零，无法按节点负荷分摊日前预测裕度')
+        sink = shift @ (load/load.sum())
+        quantity = sum(model.forecast_activation[r,t] for r in thermal)
+        # Any shortfall remains visible as the existing reliability slack.
+        model.forecast_security.add(quantity+model.reserve_short[t]>=case.deliverable_up_mw)
+        if thermal:
+            model.forecast_security.add(quantity<=case.deliverable_up_mw)
+        for r in thermal:
+            model.forecast_security.add(model.forecast_activation[r,t]<=model.reserve[r,t])
+        for i, edge in enumerate(case.lines):
+            flow = model.flow[edge.id,t] + sum(float(shift[i,positions[r]]-sink[i]) *
+                                                model.forecast_activation[r,t] for r in thermal)
+            model.forecast_stress_flow[edge.id,t] = flow
+            model.forecast_security.add(p.inequality(-edge.limit_mw, flow, edge.limit_mw))
+
+
 def _build(case, begin, stop, *, carry=None, da_mode=None, holds=(), spot_disabled=()):
     import pyomo.environ as p
     rs = {r.id: r for r in case.resources}
@@ -198,6 +236,8 @@ def _build(case, begin, stop, *, carry=None, da_mode=None, holds=(), spot_disabl
         +m.shed[b,t]-m.spill[b,t]-sum(m.flow[l,t] for l in out[b])
         +sum(m.flow[l,t] for l in into[b]) == case.demand[t][b])
     m.phys = p.ConstraintList()
+    if case.deliverable_up_mw:
+        _delivery_test(m, case, th, times)
     for t in times:
         m.angle[case.buses[0],t].fix(0.)
         for b in case.buses:
@@ -341,6 +381,9 @@ def _rows(model, case, begin, stop, *, prices=True):
              curtailed_mw={r:max(0.,case.available[t][r]-q(model.power[r,t]))
                            for r in rs if rs[r].kind=='renewable'},
              thermal_reliability_reserve_mw={r:q(model.reserve[r,t]) for r in th},
+             **(dict(forecast_activation_mw={r:q(model.forecast_activation[r,t]) for r in th},
+                     forecast_stress_flows_mw={l.id:q(model.forecast_stress_flow[l.id,t]) for l in case.lines})
+                if case.deliverable_up_mw else {}),
              ancillary_holds_mw={r:list(values) for r,values in model.ancillary_holds[t].items()},
              shed={b:q(model.shed[b,t]) for b in case.buses},
              demand={b:float(case.demand[t][b]) for b in case.buses},
@@ -553,7 +596,7 @@ def realtime(case, da, *, executed_periods=PERIODS, window_quarters=WINDOW,
         if current is not base_case:
             if (current.resources!=base_case.resources or current.lines!=base_case.lines
                     or current.buses!=base_case.buses or current.fixed_schedule!=base_case.fixed_schedule
-                    or current.reserve_mw!=base_case.reserve_mw
+                    or current.reserve_mw!=base_case.reserve_mw or current.deliverable_up_mw!=base_case.deliverable_up_mw
                     or (current.cascade is None)!=(base_case.cascade is None)
                     or current.cascade is not None and
                         (current.cascade.reservoirs!=base_case.cascade.reservoirs

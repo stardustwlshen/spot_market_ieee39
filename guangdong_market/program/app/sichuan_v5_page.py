@@ -222,7 +222,7 @@ def _render_results(root, name, results):
     st.caption('两个 JSON 分别提供实时量价对账和实时估值，均覆盖全部已执行段，'
                '不包含完整的出清输入、支路潮流、辅助服务占位或梯级水库记录。')
     st.caption(f'如需保留完整原始复核资料，请备份程序目录下的 '
-               f'`{SICHUAN_V5.results_folder}/{name}/`，不要只保存下载的 JSON。')
+               f'`{Path(SICHUAN_V5.results_folder) / name}`，不要只保存下载的 JSON。')
     st.download_button('下载实时估值 JSON', data=json_bytes({
         'rules':receipt['rules'],'formal_settlement':False,'status':receipt['status'],'quarters':results.get('reviewed_values',results['values']),'original_quarters':results['values'],
         'price_reviews':results.get('price_reviews',[]),'provenance':provenance}),

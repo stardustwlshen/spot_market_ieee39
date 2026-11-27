@@ -202,8 +202,9 @@ def _uncertainty_boundary(market, scenario):
                   rt_requirement_mw=market.reserve_mw,
                   basis="事前合成净负荷误差尺度占预测峰值3%，单侧正态95%设计分位并向上取整至10 MW。"
                         "仅预测偏差场景使用；未用当日误差校准，亦非四川备用规则或实测覆盖率。"
-                        "在线煤机按15分钟爬坡和剩余容量留足日前裕度，实时允许调用。")
-    return replace(market, reserve_mw=market.reserve_mw+extra), report
+                        "在线煤机按15分钟爬坡和剩余容量留足日前裕度；按各节点日前负荷占比分摊的"
+                        "同步激活潮流须满足线路限额，实时允许调用。")
+    return replace(market, reserve_mw=market.reserve_mw+extra, deliverable_up_mw=extra), report
 
 
 def run_dadu(root, *, scenario="wet_low", strategy="water_value", periods=96,
