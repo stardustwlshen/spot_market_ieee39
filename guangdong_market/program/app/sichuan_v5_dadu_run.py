@@ -153,6 +153,13 @@ def read_dadu(root, name):
             or _hash(result["company"]["offers"]) != result["summary"]["offer_hash"]):
         raise ValueError("大渡河运行档案内容不完整")
     public = {k:result["company"][k] for k in ("schema","strategy","as_of","offers","submission_sha256")}
+    if public["strategy"] == "default":
+        coupled = result["company"]["hydraulic_declaration"]
+        payload = {k:v for k,v in public.items() if k!="submission_sha256"}
+        signature = _hash(dict(submission=payload, hydraulic=coupled))
+        if signature != result["company"]["declaration_sha256"]:
+            raise ValueError("水电耦合申报摘要校验失败")
+        public.update(hydraulic_declaration=coupled, declaration_sha256=signature)
     if (json.loads((folder/"frozen_bids.json").read_bytes()) != public
             or public["submission_sha256"] != receipt.get("bid_hash")):
         raise ValueError("单独留存的公司冻结申报与执行档案不一致")
@@ -173,6 +180,7 @@ def source_hashes():
              app/"sichuan_v5_hydro.py", app/"sichuan_v5_company.py", app/"sichuan_v5_rules.py",
              app/"sichuan_v5_segments.py", app/"sichuan_v5_settlement.py",
              app/"sichuan_v5_ancillary.py"]
+    files.extend(sorted((app.parent/"data"/"dadu19"/"declarations").glob("*")))
     data = app.parent/"data"
     files.extend(f for directory in (data/"dadu19", data/"case39") for f in directory.glob("*") if f.is_file())
     return {f.relative_to(app.parent).as_posix():hashlib.sha256(f.read_bytes()).hexdigest()
@@ -208,9 +216,33 @@ def _uncertainty_boundary(market, scenario):
     return replace(market, reserve_mw=market.reserve_mw+extra, deliverable_up_mw=extra), report
 
 
-def run_dadu(root, *, scenario="wet_low", strategy="water_value", periods=96,
+def default_declaration(base, meta):
+    """Read frozen pre-market values only. Validate the complete forecast and fleet."""
+    public = company_snapshot(base, meta)
+    folder = Path(__file__).resolve().parents[1]/"data"/"dadu19"/"declarations"
+    scenario = meta["scenario"]
+    template = json.loads(gzip.decompress((folder/(scenario+".json.gz")).read_bytes()))
+    archived = json.loads((folder/(scenario+"-offers.json")).read_bytes())
+    if _hash({k:v for k,v in archived.items() if k!="submission_sha256"}) != archived["submission_sha256"]:
+        raise ValueError("默认量价申报文件校验失败")
+    units = sorted((u for u in public.resources if u.kind=="hydro"), key=lambda u:u.id)
+    hydraulic = asdict(public.cascade)
+    physics = dict(hydraulics=hydraulic, units=[(u.id,u.capacity_mw,u.initial_mw,u.ramp_mw_15min) for u in units],
+                   available={u.id:[t.get(u.id,u.capacity_mw) for t in public.available] for u in units})
+    if _hash(physics) != template["physical_sha256"]:
+        raise ValueError("默认申报与当前水情或机组能力不匹配，请使用配套场景和种子 39")
+    payload = dict(schema=archived["schema"], strategy="default", as_of=archived["as_of"], offers=archived["offers"])
+    coupled = dict(mode="coupled", scenario=scenario, reservoirs=hydraulic["reservoirs"],
+                   reaches=hydraulic["reaches"], physical_sha256=_hash(physics))
+    return dict(**payload, submission_sha256=_hash(payload), hydraulic_declaration=coupled,
+                declaration_sha256=_hash(dict(submission=payload, hydraulic=coupled)),
+                water_value_yuan_m3=meta["water_value_yuan_m3"], internal_plan_mw=template["reference_plan_mw"], source_run=template["source_run"],
+                company_forecast_sha256=template["physical_sha256"])
+
+
+def run_dadu(root, *, scenario="wet_low", strategy="default", periods=96,
              seed=39, progress=None, water_value_scale=1., corridor_scale=1.,
-             gas_plan_scale=1., awards=()):
+             gas_plan_scale=1., awards=(), declaration_sha256=None):
     if type(periods) is not int or not 1 <= periods <= PERIODS:
         raise ValueError("实时执行时段范围须为1至96")
     for value,lo,hi,label in ((water_value_scale,.5,2.,"水价值倍数"),
@@ -224,8 +256,15 @@ def run_dadu(root, *, scenario="wet_low", strategy="water_value", periods=96,
     public = company_snapshot(base,meta)
     water_values = {k:float(v)*water_value_scale for k,v in meta["water_value_yuan_m3"].items()}
     report(progress, "inputs", 1, 1, "公司预测与市场输入已载入")
-    company = prepare_company_submission(public, meta["expected_price_yuan_mwh"],water_values,
-        strategy=strategy, as_of="D-1 09:45 Asia/Shanghai", **progress_options)
+    if strategy == "default":
+        company = default_declaration(base, meta)
+        company["water_value_yuan_m3"] = water_values
+        if declaration_sha256 is not None and declaration_sha256 != company["declaration_sha256"]:
+            raise ValueError("待出清申报与本次确认的水电耦合申报不一致")
+        report(progress, "company", 19, 19, "19 站默认量价与梯级水力申报已冻结")
+    else:
+        company = prepare_company_submission(public, meta["expected_price_yuan_mwh"],water_values,
+            strategy=strategy, as_of="D-1 09:45 Asia/Shanghai", **progress_options)
     operator = _assumptions(base,corridor_scale,gas_plan_scale)
     validate(operator)
     approved = apply_company_submission(operator,company)
@@ -268,6 +307,8 @@ def run_dadu(root, *, scenario="wet_low", strategy="water_value", periods=96,
     folder = rootdir/name
     folder.mkdir()
     frozen = {k:company[k] for k in ("schema","strategy","as_of","offers","submission_sha256")}
+    if strategy == "default":
+        frozen.update(hydraulic_declaration=company["hydraulic_declaration"], declaration_sha256=company["declaration_sha256"])
     (folder/"frozen_bids.json").write_bytes(_bytes(frozen))
     try:
         da_steps = 4 if records else 2
