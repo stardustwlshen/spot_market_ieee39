@@ -478,10 +478,10 @@ def _comparison(root, seed, periods, sensitivity, receipts):
                                 continue
                             summary=existing['summary']
                             forecast_key=(summary.get('boundary_hash'),summary.get('issued_boundary_hash'),
-                                          existing['company'].get('company_forecast_sha256'))
+                                          existing['company'].get('company_forecast_sha256'),
+                                          inputs.get('assumptions', {}).get('rules_pdf_sha256'))
                             if not all(forecast_key):
                                 continue
-                            forecast_key += (inputs.get('assumptions', {}).get('rules_pdf_sha256'),)
                             candidates[strategy].setdefault(forecast_key,name)
                             other='naive' if strategy=='water_value' else 'water_value'
                             companion_name=candidates[other].get(forecast_key)
