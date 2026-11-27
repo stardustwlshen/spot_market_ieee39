@@ -1,0 +1,94 @@
+name: Inspect Dadu bids, clearing, basin and live progress
+on:
+  push:
+    branches: ['review/dadu19-basin-progress']
+permissions:
+  contents: read
+defaults:
+  run:
+    working-directory: guangdong_market/program
+jobs:
+  screens:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - name: Install runtime and browser tooling
+        run: |
+          python -m pip install -q -r requirements-runtime.txt pytest playwright
+          python -m playwright install --with-deps chromium >/tmp/pw-install.log
+          if test -z "$(fc-list :lang=zh family | head -n1)"; then
+            sudo apt-get -qq update
+            sudo apt-get -qq install -y fonts-noto-cjk
+          fi
+      - name: Exercise interactive desktop and mobile reports
+        run: |
+          python scripts/launch_sichuan.py --port 8519 >/tmp/market-web.log 2>&1 &
+          app=$!
+          trap 'kill "$app" 2>/dev/null || true' EXIT
+          for i in $(seq 1 45); do curl -fsS http://127.0.0.1:8519/_stcore/health && break || sleep 1; done
+          python ../../.github/dadu-roles.py || { cat /tmp/market-web.log; exit 1; }
+      - name: Return screenshots for the verified results guide
+        if: always()
+        run: |
+          python - <<'PY'
+          import base64
+          from pathlib import Path
+          for p in Path('evidence').glob('*.png'):
+              data=base64.b64encode(p.read_bytes()).decode()
+              for i in range(0,len(data),8000):
+                  print('DADU_FRAME',p.stem,i,data[i:i+8000])
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: result-screens
+          path: guangdong_market/program/evidence/
+  compute:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - name: Install runtime and browser tooling
+        run: |
+          python -m pip install -q -r requirements-runtime.txt pytest playwright
+          python -m playwright install --with-deps chromium >/tmp/pw-install.log
+          if test -z "$(fc-list :lang=zh family | head -n1)"; then
+            sudo apt-get -qq update
+            sudo apt-get -qq install -y fonts-noto-cjk
+          fi
+      - name: Run real first-hour clearing from the browser
+        run: |
+          python scripts/launch_sichuan.py --port 8519 >/tmp/market-live.log 2>&1 &
+          app=$!
+          trap 'kill "$app" 2>/dev/null || true' EXIT
+          for i in $(seq 1 45); do curl -fsS http://127.0.0.1:8519/_stcore/health && break || sleep 1; done
+          python ../../.github/dadu-live.py || { cat /tmp/market-live.log; exit 1; }
+      - name: Return progress screenshot
+        if: always()
+        run: |
+          python - <<'PY'
+          import base64
+          from pathlib import Path
+          f=Path('evidence/progress.png')
+          if f.exists():
+              data=base64.b64encode(f.read_bytes()).decode()
+              for i in range(0,len(data),8000):
+                  print('DADU_FRAME','progress',i,data[i:i+8000])
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: progress-observations
+          path: guangdong_market/program/evidence/
+      - name: Test physical accounting, company and operator modules
+        run: |
+          DADU_NAVIGATION_SHORT_RUNS="$PWD/runs_sichuan_v5_consultation" python -m pytest -q tests/test_sichuan_v5_dadu*.py tests/test_sichuan_v5_release_preflight.py
