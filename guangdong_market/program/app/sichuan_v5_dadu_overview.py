@@ -1,5 +1,6 @@
 """Read-only summaries, nodal prices and paired comparisons of archived executions."""
 from math import fsum
+import re
 
 import pandas as pd
 import streamlit as st
@@ -92,11 +93,16 @@ def render_node_prices(result, station, quarter):
                            f"bus{uid}-prices.csv",'text/csv',key=f"dadu_prices_csv_{result['run']}_{uid}")
 
 
+def rule_pdf_fingerprint(inputs):
+    value = (inputs.get('assumptions') or {}).get('rules_pdf_sha256')
+    return value if isinstance(value, str) and re.fullmatch(r'[0-9a-f]{64}', value) else None
+
+
 def _pair_evidence(result):
     a, c, s = result.get('inputs', {}), result.get('company', {}), result.get('summary', {})
     return (a.get('scenario'), a.get('seed'), len(result['rt']), a.get('source_hashes'),
             s.get('boundary_hash'), s.get('issued_boundary_hash'), c.get('company_forecast_sha256'),
-            a.get('assumptions', {}).get('rules_pdf_sha256'))
+            rule_pdf_fingerprint(a))
 
 
 def matched_pair(left, right):

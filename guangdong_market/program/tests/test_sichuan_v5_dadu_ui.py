@@ -119,6 +119,9 @@ def test_matching_comparison_archives_are_read_without_solver(tmp_path, monkeypa
     b['inputs']['assumptions']['rules_pdf_sha256'] = 'b'*64
     assert not matched_pair(a, b)
     for run in (a, b):
+        run['inputs']['assumptions']['rules_pdf_sha256'] = 'invalid'
+    assert not matched_pair(a, b)
+    for run in (a, b):
         del run['inputs']['assumptions']['rules_pdf_sha256']
     assert not matched_pair(a, b)
     original = load
