@@ -20,7 +20,7 @@ def test_real_widget_flow_first_hour_quantity_price_and_exclusions(tmp_path,monk
     raw=(root/name/'RT_RESEARCH_VALUES.json').read_bytes()
     first=json.loads(raw)[0]['uniform_price']
     assert len(first.split('.')[1])>2
-    assert app.metric[0].value==f'{float(first):,.2f}'
+    assert next(m for m in app.metric if m.label=='实时统一结算点研究价（元/MWh）').value==f'{float(first):,.2f}'
     assert any('本次覆盖 00:00–01:00（4/96' in c.value for c in app.caption)
     assert any('没有已记录的调频或备用容量占位' in c.value for c in app.caption)
     app.selectbox(key='scv5_period_'+name).select(3).run()
