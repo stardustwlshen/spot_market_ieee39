@@ -15,4 +15,28 @@ jobs:
           python-version: '3.12'
           cache: pip
       - run: pip install -q -r requirements-runtime.txt pytest
-      - run: python -m pytest -qx tests/test_sichuan_v5_dadu_declaration.py
+      - run: python -m pytest -qx tests/test_sichuan_v5_dadu_declaration.py tests/test_sichuan_v5_dadu_ui.py
+      - name: Inspect actual submission page in Chrome
+        run: |
+          pip -q install selenium
+          python -m streamlit run app/四川.py --server.port 8512 --server.headless true >/tmp/dadu.log 2>&1 &
+          python - <<'PY'
+          import time
+          from selenium import webdriver
+          from selenium.webdriver.support.ui import WebDriverWait
+          o=webdriver.ChromeOptions()
+          o.add_argument('--headless=new')
+          o.add_argument('--no-sandbox')
+          o.add_argument('--window-size=1440,1100')
+          with webdriver.Chrome(options=o) as d:
+              for i in range(25):
+                  try: d.get('http://localhost:8512'); break
+                  except Exception: time.sleep(1)
+              WebDriverWait(d,70).until(lambda d:d.find_elements('css selector','[class*=st-key-river_compare_] input') and d.find_elements('css selector','.vega-embed canvas,.vega-embed svg'))
+              d.execute_script("document.querySelector('[class*=st-key-river_compare_]').scrollIntoView({block:'center'})")
+              d.save_screenshot('/tmp/declaration.png')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: declaration-page
+          path: /tmp/declaration.png

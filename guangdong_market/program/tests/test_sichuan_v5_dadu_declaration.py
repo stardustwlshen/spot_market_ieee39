@@ -27,6 +27,9 @@ def test_submission_workspace(tmp_path, monkeypatch):
     sheet = backend.default_declaration(case,meta)
     with pytest.raises(ValueError, match='已确认|确认的'):
         backend.run_dadu(tmp_path,declaration_sha256='mismatch',periods=4)
+    assert app.button(key='dadu_run').disabled
+    app.button(key='dadu_freeze').click().run()
+    assert not backend.list_dadu(tmp_path) and not app.button(key='dadu_run').disabled
     app.button(key='dadu_run').click().run()
     assert not app.exception and not app.error
     name, = backend.list_dadu(tmp_path)

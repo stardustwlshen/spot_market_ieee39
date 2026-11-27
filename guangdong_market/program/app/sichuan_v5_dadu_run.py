@@ -229,7 +229,14 @@ def default_declaration(base, meta):
     hydraulic = asdict(public.cascade)
     physics = dict(hydraulics=hydraulic, units=[(u.id,u.capacity_mw,u.initial_mw,u.ramp_mw_15min) for u in units],
                    available={u.id:[t.get(u.id,u.capacity_mw) for t in public.available] for u in units})
-    if _hash(physics) != template["physical_sha256"]:
+    # Published quantities are portable across platforms whose libm differs by a few ULPs.
+    def same_forecast(u):
+        offer = archived["offers"][u.id]
+        expected = (offer["technical_available_mw"], offer["natural_inflow_m3s"])
+        current = (physics["available"][u.id], [q[u.id] for q in public.cascade.natural_inflow_m3s])
+        return all(len(a)==len(b)==PERIODS and all(math.isclose(x,y,rel_tol=1e-12,abs_tol=1e-9)
+                   for x,y in zip(a,b)) for a,b in zip(expected,current))
+    if meta["seed"] != 39 or not all(same_forecast(u) for u in units):
         raise ValueError("默认申报与当前水情或机组能力不匹配，请使用配套场景和种子 39")
     payload = dict(schema=archived["schema"], strategy="default", as_of=archived["as_of"], offers=archived["offers"])
     coupled = dict(mode="coupled", scenario=scenario, reservoirs=hydraulic["reservoirs"],
@@ -238,6 +245,32 @@ def default_declaration(base, meta):
                 declaration_sha256=_hash(dict(submission=payload, hydraulic=coupled)),
                 water_value_yuan_m3=meta["water_value_yuan_m3"], internal_plan_mw=template["reference_plan_mw"], source_run=template["source_run"],
                 company_forecast_sha256=template["physical_sha256"])
+
+
+def declaration_record(company):
+    return {k:company[k] for k in ("schema","strategy","as_of","offers","hydraulic_declaration",
+                                   "submission_sha256","declaration_sha256")}
+
+
+def declaration_path(root, company):
+    return Path(root)/"dadu19_declarations"/(company["declaration_sha256"]+".json")
+
+
+def freeze_declaration(root, company):
+    path = declaration_path(root, company)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    payload = _bytes(declaration_record(company))
+    if path.exists():
+        if path.read_bytes() != payload:
+            raise ValueError("已存申报与当前申报摘要不符")
+        return path
+    temporary = path.with_suffix("."+uuid.uuid4().hex+".tmp")
+    try:
+        temporary.write_bytes(payload)
+        temporary.replace(path)
+    finally:
+        temporary.unlink(missing_ok=True)
+    return path
 
 
 def run_dadu(root, *, scenario="wet_low", strategy="default", periods=96,
@@ -261,12 +294,24 @@ def run_dadu(root, *, scenario="wet_low", strategy="default", periods=96,
         company["water_value_yuan_m3"] = water_values
         if declaration_sha256 is not None and declaration_sha256 != company["declaration_sha256"]:
             raise ValueError("待出清申报与本次确认的水电耦合申报不一致")
+        if declaration_sha256 is not None:
+            path = declaration_path(root, company)
+            if not path.is_file() or path.read_bytes() != _bytes(declaration_record(company)):
+                raise ValueError("未找到已确认的完整机组申报")
+        else:
+            freeze_declaration(root, company)
         report(progress, "company", 19, 19, "19 站默认量价与梯级水力申报已冻结")
     else:
         company = prepare_company_submission(public, meta["expected_price_yuan_mwh"],water_values,
             strategy=strategy, as_of="D-1 09:45 Asia/Shanghai", **progress_options)
     operator = _assumptions(base,corridor_scale,gas_plan_scale)
     validate(operator)
+    if strategy == "default":
+        # Static hydraulic terms must match the operator-approved case; forecasts remain independently issued.
+        hydraulic = asdict(operator.cascade)
+        for field in ("reservoirs","reaches"):
+            if _hash(hydraulic[field]) != _hash(company["hydraulic_declaration"][field]):
+                raise ValueError("申报水库或河段与市场核准边界不符")
     approved = apply_company_submission(operator,company)
     policy = _policy(operator,meta["month"], **progress_options)
     market,raw,effective,kinds = _market_offers(approved,policy)

@@ -441,7 +441,7 @@ def _load_sheet(scenario):
 
 
 def render_dadu(root):
-    from sichuan_v5_dadu_run import list_dadu, read_dadu, run_dadu
+    from sichuan_v5_dadu_run import declaration_record, declaration_path, freeze_declaration, list_dadu, read_dadu, run_dadu
     from sichuan_v5_dadu_live import solve_visible
     from sichuan_v5_dadu_portfolio import render_company_portfolio
     from sichuan_v5_dadu_style import apply_dadu_style
@@ -463,7 +463,11 @@ def render_dadu(root):
     scenario = left.selectbox('申报场景', list(SCENARIOS), format_func=SCENARIOS.get, key='dadu_scenario')
     quarter = right.selectbox('核对时段（北京时间）', range(96),
                               format_func=lambda q:f'{q//4:02}:{15*(q%4):02}–{_end_label(q)}')
-    sheet = _load_sheet(scenario)
+    try:
+        sheet = _load_sheet(scenario)
+    except (ValueError,OSError) as exc:
+        st.error(f'申报单载入失败：{exc}')
+        return
     company = sheet['company']
     coupling = company['hydraulic_declaration']
     names = {s['id']:s['name'] for s in sheet['inputs']['stations']}
@@ -490,12 +494,22 @@ def render_dadu(root):
                        '起始时刻':f"{o['sustained_start_quarter']//4:02}:{15*(o['sustained_start_quarter']%4):02}"}
                       for u,o in company['offers'].items()], hide_index=True, width='stretch')
         st.caption('逐站能力分别核定。能否同时实现取决于梯级水量和电网约束。')
-    receipt = {k:company[k] for k in ('schema','as_of','strategy','offers','hydraulic_declaration',
-                                       'submission_sha256','declaration_sha256')}
+    receipt = declaration_record(company)
     st.download_button('下载本次完整申报单', json.dumps(receipt,ensure_ascii=False), scenario+'-declaration.json','application/json')
+    if st.button('确认并冻结 19 站申报', type='primary', key='dadu_freeze'):
+        try:
+            freeze_declaration(root,company)
+        except (OSError,ValueError) as exc:
+            st.error(f'申报保存失败：{exc}')
+            return
+    submitted = declaration_path(root,company).is_file()
+    if submitted:
+        st.success(f'默认申报已冻结 · 19 站 · 单号 {company["declaration_sha256"][:12]}。可离开页面，稍后执行市场出清。')
+    else:
+        st.caption('待确认 · 确认只保存本场景的机组申报单。')
     periods = st.selectbox('提交后实时执行范围', (4,96), format_func=lambda n:'首小时（4 段）' if n==4 else '全天（96 段）', key='dadu_periods')
-    st.caption('确认后先执行日前 96 点 SCUC → SCED，再按选定范围滚动执行实时市场。')
-    if st.button('确认耦合申报并运行市场', type='primary', key='dadu_run'):
+    st.caption('运行市场时先执行日前 96 点 SCUC → SCED，再按选定范围滚动执行实时市场。')
+    if st.button('使用已冻结申报运行市场', disabled=not submitted, key='dadu_run'):
         try:
             name,_ = solve_visible(run_dadu,root,dict(scenario=scenario, strategy='default', periods=periods,
                                    declaration_sha256=company['declaration_sha256']),st.container(),'市场计算')
