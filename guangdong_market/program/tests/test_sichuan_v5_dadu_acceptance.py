@@ -106,7 +106,7 @@ def _audit_physics(inputs, rows, *, executed):
         if "system_shortfalls" in row:
             assert row["system_shortfalls"] == pytest.approx(short, abs=1e-7)
         if not executed or inputs["scenario"] != "forecast_error":
-            assert max(short.values()) <= SLACK_TOL, f"基准或日前第{t+1}段出现可靠性松弛"
+            assert max(short.values()) <= SLACK_TOL, f"{'实时' if executed else '日前'}第{t+1}段出现可靠性松弛，{max(short.values()):.2f} MW"
         diagnostics.append(short)
         angles = {min(buses): 0.}
         pending = deque(angles)
@@ -306,10 +306,14 @@ def test_executed_run_replay(modules, request):
         name, _ = runs.run_dadu(root, scenario="wet_low", strategy="water_value", periods=4)
         names = [name]
     matches = defaultdict(dict)
+    failures = []
     for name in names:
         result = runs.read_dadu(root, name)
-        audit_archive(result)
         _record_cohort(matches, result)
+        try:
+            audit_archive(result)
+        except AssertionError as exc:
+            failures.append(f"{result['inputs']['scenario']} / {result['company']['strategy']} / {name}: {exc}")
     complete = defaultdict(set)
     for (version, knobs, scenario, *_), pair in matches.items():
         if {"naive","water_value"} <= set(pair):
@@ -319,3 +323,4 @@ def test_executed_run_replay(modules, request):
         current = _source_version(runs.BASE_COMMIT, runs.DATA_COMMIT, runs.source_hashes())
         missing = set(SCENARIOS) - complete[current, (39,96,1.,1.,1.)]
         assert not missing, f"当前源码版本缺少同边界的完整策略对：{sorted(missing)}"
+    assert not failures, "\n".join(failures)

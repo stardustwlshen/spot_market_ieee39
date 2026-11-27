@@ -16,7 +16,7 @@ with sync_playwright() as pw:
             expect(page.get_by_role("tab", name=tab, exact=True)).to_have_count(1)
         print("Initial tabs",page.get_by_role("tab").all_text_contents(),flush=True)
         def bring_to_top(target):
-            target.evaluate("(el)=>el.scrollIntoView({block:'start',behavior:'instant'})")
+            target.evaluate("(el)=>{el.style.scrollMarginTop='82px';el.scrollIntoView({block:'start',behavior:'instant'})}")
             page.evaluate("document.fonts.ready")
         def select_tab(name):
             group = page.get_by_role("tablist").filter(has=page.get_by_role("tab",name="公司报价",exact=True))

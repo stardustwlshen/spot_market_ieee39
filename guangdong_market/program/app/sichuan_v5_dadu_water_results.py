@@ -274,7 +274,6 @@ def render_water_detail(result, station, quarter):
         residual = f'{max(residuals):.3g} m³' if residuals else '缺记录'
         st.caption(f'{_clock(selected + 1)} · 可复核 {len(residuals)}/{len(subset)} 站 · '
                    f'本段最大绝对守恒残差 {residual}。总下泄由过机、专用生态旁泄和弃水组成。')
-        st.dataframe(_frame(subset, STATION_LABELS), hide_index=True)
         chosen = [r for r in accounts if r['id'] == uid]
         if chosen:
             trace = _frame(chosen, {'interval_end':'时段末','natural_inflow_m3s':'执行区间来水',
@@ -290,6 +289,8 @@ def render_water_detail(result, station, quarter):
             time_chart(trace.set_index('时段末'), 'm³/s', height=225)
         st.caption('守恒残差＝期末库容－期初库容－区间来水量－上游到达水量＋总下泄量。'
                    '每段 900 秒，缺少原始字段时留空。')
+        with st.expander(f'所选时段全部 {len(subset)} 站水账'):
+            st.dataframe(_frame(subset, STATION_LABELS), hide_index=True)
         _download(_frame(accounts, STATION_LABELS), '下载全部已执行厂站水账',
                   f'{tag}-station-water.csv', 'dadu_water_station_csv_' + tag)
     with reserve_tab:
@@ -301,7 +302,6 @@ def render_water_detail(result, station, quarter):
             st.caption('本档案未保存河段或交接队列。')
             return
         st.caption('时滞以 15 分钟为一刻。入河量来自上游本段下泄，实到量取自下游本段水账。')
-        st.dataframe(_frame(current, REACH_LABELS), hide_index=True)
         names = [r['reach'] for r in current]
         index = next((i for i, r in enumerate(current) if r['upstream'] == uid), 0)
         if not any(r['upstream'] == uid for r in current):
@@ -339,5 +339,7 @@ def render_water_detail(result, station, quarter):
             st.caption('队列来自已执行的上游下泄。首格在下一时段到达，超过 24:00 的水量继续计入次日在途。')
         else:
             st.caption('缺少本时段末的逐格在途队列。')
+        with st.expander(f'所选时段全部 {len(current)} 条河段水账'):
+            st.dataframe(_frame(current, REACH_LABELS), hide_index=True)
         _download(_frame(rows, REACH_LABELS), '下载全部已执行河段水账',
                   f'{tag}-reach-water.csv', 'dadu_water_reach_csv_' + tag)

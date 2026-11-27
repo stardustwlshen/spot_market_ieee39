@@ -4,6 +4,8 @@ import math
 import pandas as pd
 import streamlit as st
 
+from sichuan_v5_dadu_charts import time_chart
+
 
 _LABELS = {"hydro": "水电", "thermal": "煤电", "renewable": "光伏", "fixed": "气电"}
 
@@ -113,7 +115,7 @@ def grid_tables(result):
 def _plot(frame, names, unit):
     valid = [key for key in names if key in frame and frame[key].notna().any()]
     if valid:
-        st.line_chart(frame.set_index("时段末")[valid], y_label=unit, x_label="时段末", height=240)
+        time_chart(frame.set_index("时段末")[valid], unit, height=255)
 
 
 def _download(frame, suffix, result):

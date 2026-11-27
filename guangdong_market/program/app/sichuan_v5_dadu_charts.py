@@ -40,7 +40,9 @@ def time_chart(frame, unit, *, area=False, height=255):
         'encoding':{
             'x':{'field':'minute','type':'quantitative','scale':{'domain':[0,max(times)],'nice':False},'axis':axis},
             'y':y, 'color':{'field':'系列','type':'nominal','title':None,
-                            'sort':list(frame.columns),'legend':{'orient':'bottom','columns':2}},
+                            'sort':list(frame.columns),
+                            'scale':{'range':['#1769aa','#bd510c','#167858','#754c9b','#844754','#56616e']},
+                            'legend':{'orient':'bottom','columns':2}},
             'detail':{'field':'segment','type':'nominal'},
             'tooltip':[{'field':'时段末','type':'nominal'}, {'field':'系列','type':'nominal'},
                        {'field':'数值','type':'quantitative','title':unit,'format':',.2f'}],

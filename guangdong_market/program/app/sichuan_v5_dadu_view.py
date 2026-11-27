@@ -140,7 +140,10 @@ def comparison_row(scenario, strategy, result):
     income = summary['company_revenue']
     complete = len(result['rt']) == 96 and summary['max_slack_mw']<=1e-5
     return {'场景': SCENARIOS[scenario], '报价策略': STRATEGIES[strategy],
-            '已执行时段': len(result['rt']), '水电实发（MWh）': mwh,
+            '已执行时段': len(result['rt']),
+            '实时可靠性': ('压力场景出现松弛' if scenario=='forecast_error' else '基准未通过')
+                        if summary['max_slack_mw']>1e-5 else '已执行段无松弛',
+            '水电实发（MWh）': mwh,
             '实发加权价（元/MWh）':income/mwh if mwh and income is not None else None,
             '组合现货毛收入（元）': income,
             '库存及在途水估值变化（元）': summary.get('water_stock_value_change') if complete else None,

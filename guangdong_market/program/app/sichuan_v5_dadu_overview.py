@@ -49,7 +49,9 @@ def render_overview(result):
     if count:
         nodal = rt[peak]['shed']
         worst_bus = max(nodal, key=nodal.get)
-        st.warning(f'{n} 个已执行段中，{count} 段出现失负荷。最大缺口在 '
+        requirement = ('该压力场景保留失供记录。' if result['inputs'].get('scenario')=='forecast_error'
+                       else '该基准场景要求零失负荷，本次未通过。')
+        st.warning(f'{n} 个已执行段中，{count} 段出现失负荷。{requirement}最大缺口在 '
                    f'{_clock(peak)}–{_clock(peak+1)}，全网 {shortages[peak]:,.2f} MW，'
                    f'其中节点 {worst_bus} 为 {nodal[worst_bus]:,.2f} MW。这些失负荷时段的采用节点价和现金待核。')
     elif result['money']['data_quality'] != 'verified':
@@ -179,7 +181,9 @@ def render_pair(root, receipts, result, station, quarter):
         wm, nm = pair_metrics(w), pair_metrics(n)
     rows = [{'指标':k, '水价值报价':v, '朴素报价':nm[k], '水价值减朴素':
              v-nm[k] if v is not None and nm[k] is not None else None} for k,v in wm.items()]
-    st.dataframe(rows, hide_index=True)
+    display = pd.DataFrame(rows).style.format({key:'{:,.2f}' for key in ('水价值报价','朴素报价','水价值减朴素')},
+                                             na_rep='待核')
+    st.dataframe(display, hide_index=True)
     st.button('回放另一策略的同站同时段', on_click=_switch_run, args=(companion['run'],),
               key='dadu_switch_pair_'+result['run'])
     uid = station['id']
