@@ -192,7 +192,7 @@ def _period_review(result, main, lines, quarter):
     issue = ["实时失供","实时过剩","实时备用缺额"]
     affected = sorted(r["quarter"] for r in result["rt"] if _only_observed(by_time.loc[_time(r["quarter"])], issue))
     with st.expander(f"{_time(quarter)} 系统运行对照 · 当段与前后 15 分钟", expanded=quarter in affected):
-        st.dataframe(evidence,hide_index=True,height="content")
+        st.dataframe(evidence,hide_index=True, placeholder="—",height="content")
         st.caption("日前送达校验使用日前运行点，实时备用缺额按当段要求计算。达到线限只说明该断面的潮流已到边界；归因需结合调度约束及反事实复算。")
         shared_key = "dadu_q_"+key
         if len(affected)>1 and shared_key in st.session_state:
@@ -227,7 +227,7 @@ def render_grid_detail(result, quarter):
             _plot(main,["负荷偏差","光伏可发偏差","净负荷偏差（扣光伏可发）","实时失供"],"MW")
             st.caption("偏差为实时段初边界减日前预测。光伏可发等于实发加弃光。功率平衡残差为总发电加失供，减去负荷与过剩。")
             values = main[["时段末","负荷偏差","光伏可发偏差","净负荷偏差（扣光伏可发）","实时失供","实时过剩","功率平衡残差","实时计价可靠"]]
-            st.dataframe(values,hide_index=True)
+            st.dataframe(values,hide_index=True, placeholder="—")
             _download(main,"system",result)
     elif area == "煤机与气电":
         _plot(main,["保供计划","实发气电","气电计划偏差"],"MW")
@@ -236,10 +236,10 @@ def render_grid_detail(result, quarter):
             unit = st.selectbox("查看煤机",coal["机组"].unique(),key="grid_coal_"+key)
             one = coal[coal["机组"]==unit]
             _plot(one,["日前 MW","实发 MW"],"MW")
-            st.dataframe(coal[coal["时段末"]==label],hide_index=True)
+            st.dataframe(coal[coal["时段末"]==label],hide_index=True, placeholder="—")
             with st.expander("煤机逐段开停与爬坡明细"):
                 st.caption("变幅按连续执行段计算，首段与初始出力比较。启停段允许变幅含模型采用的最小稳定出力修正。")
-                st.dataframe(one,hide_index=True)
+                st.dataframe(one,hide_index=True, placeholder="—")
                 _download(coal,"coal",result)
     else:
         _plot(main,["日前基态最高 %","日前激活后最高 %","实时基态最高 %"],"线路使用率 %")
@@ -251,10 +251,10 @@ def render_grid_detail(result, quarter):
         if not lines.empty:
             snap = lines[lines["时段末"]==label].sort_values("实时基态 %",ascending=False)
             with st.expander(f"{label} 各支路潮流与利用率",expanded=True):
-                st.dataframe(snap,hide_index=True,height=235)
+                st.dataframe(snap,hide_index=True, placeholder="—",height=235)
             with st.expander("全天负载最高时段与支路"):
                 ranking = main.dropna(subset=["实时基态最高 %"]).sort_values("实时基态最高 %",ascending=False)
-                st.dataframe(ranking[["时段末","实时基态支路","实时基态最高 %","日前激活后支路","日前激活后最高 %","实时失供","实时备用缺额"]],hide_index=True,height=235)
+                st.dataframe(ranking[["时段末","实时基态支路","实时基态最高 %","日前激活后支路","日前激活后最高 %","实时失供","实时备用缺额"]],hide_index=True, placeholder="—",height=235)
                 st.caption("使用率按潮流绝对值除以限额，潮流正负沿档案支路方向。高使用率时段用于定位复核，价格及失供原因需要结合约束和反事实试算判断。")
                 _download(lines,"lines",result)
     if not selected.empty:

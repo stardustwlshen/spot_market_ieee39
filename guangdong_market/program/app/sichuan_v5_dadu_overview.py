@@ -84,7 +84,7 @@ def render_node_prices(result, station, quarter):
                                '实时原始节点价':_value(p['raw_price_by_bus'],b),
                                '实时采用节点价':_value(p['effective_price_by_bus'],b)}
                               for b in buses])
-        st.dataframe(table, hide_index=True)
+        st.dataframe(table, hide_index=True, placeholder='待核')
         policy = result['policy']
         st.caption(f"所选段末 {_clock(quarter+1)}。研究限价 {policy['cap']:.2f} 元/MWh。"
                    "日前节点价用于参考，收入取有效实时节点价；零价显示为 0，暂停计价留空。")
@@ -183,7 +183,7 @@ def render_pair(root, receipts, result, station, quarter):
              v-nm[k] if v is not None and nm[k] is not None else None} for k,v in wm.items()]
     display = pd.DataFrame(rows).style.format({key:'{:,.2f}' for key in ('水价值报价','朴素报价','水价值减朴素')},
                                              na_rep='待核')
-    st.dataframe(display, hide_index=True)
+    st.dataframe(display, hide_index=True, placeholder='待核')
     st.button('回放另一策略的同站同时段', on_click=_switch_run, args=(companion['run'],),
               key='dadu_switch_pair_'+result['run'])
     uid = station['id']

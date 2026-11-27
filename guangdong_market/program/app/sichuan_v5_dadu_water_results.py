@@ -251,7 +251,7 @@ def _reservoir_view(result, quarter):
         frame[key] = pd.to_numeric(frame[key], errors='coerce') / 1e6
     st.caption(f'库容单位为百万 m³。已执行末库容对应 {rows[0]["last_executed_end"]}。'
                '可降、可蓄空间相对当前季节运行边界；日末目标余度仅在完整日执行后计算。')
-    st.dataframe(frame, hide_index=True)
+    st.dataframe(frame, hide_index=True, placeholder="—")
 
 
 def render_water_detail(result, station, quarter):
@@ -290,7 +290,7 @@ def render_water_detail(result, station, quarter):
         st.caption('守恒残差＝期末库容－期初库容－区间来水量－上游到达水量＋总下泄量。'
                    '每段 900 秒，缺少原始字段时留空。')
         with st.expander(f'所选时段全部 {len(subset)} 站水账'):
-            st.dataframe(_frame(subset, STATION_LABELS), hide_index=True)
+            st.dataframe(_frame(subset, STATION_LABELS), hide_index=True, placeholder="—")
         _download(_frame(accounts, STATION_LABELS), '下载全部已执行厂站水账',
                   f'{tag}-station-water.csv', 'dadu_water_station_csv_' + tag)
     with reserve_tab:
@@ -340,6 +340,6 @@ def render_water_detail(result, station, quarter):
         else:
             st.caption('缺少本时段末的逐格在途队列。')
         with st.expander(f'所选时段全部 {len(current)} 条河段水账'):
-            st.dataframe(_frame(current, REACH_LABELS), hide_index=True)
+            st.dataframe(_frame(current, REACH_LABELS), hide_index=True, placeholder="—")
         _download(_frame(rows, REACH_LABELS), '下载全部已执行河段水账',
                   f'{tag}-reach-water.csv', 'dadu_water_reach_csv_' + tag)

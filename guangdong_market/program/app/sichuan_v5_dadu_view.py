@@ -180,7 +180,7 @@ def _company_tab(results, station):
     left, right = st.columns(2)
     with left:
         st.markdown('**冻结分段申报**')
-        st.dataframe(_submitted(offer['segments']), hide_index=True)
+        st.dataframe(_submitted(offer['segments']), hide_index=True, placeholder="—")
     with right:
         st.markdown('**报价依据**')
         _chart({'事前预期节点价': [r[uid] for r in company['expected_price_yuan_mwh']],
@@ -211,7 +211,7 @@ def _market_tab(results, station, quarter):
                          '日前可用 MW':sum(inputs['available'][quarter].get(a, name_by_id[a]['capacity_mw']) for a in ids),
                          '日前预出清 MW':_total(da[quarter], ids),
                          '实时实发 MW':_total(results['rt'][quarter], ids)})
-    st.dataframe(snapshot, hide_index=True)
+    st.dataframe(snapshot, hide_index=True, placeholder="—")
     resource_ids = list(name_by_id)
     uid = st.selectbox('查看电源的日前量价', resource_ids, index=resource_ids.index(station['id']),
                        key=f"dadu_market_{results['run']}_{station['id']}",
@@ -258,7 +258,7 @@ def _realtime_tab(results, station, quarter):
                        f"{_number(affected['系统失负荷 MW'])} MW，过剩 {_number(affected['系统过剩 MW'])} MW，"
                        f"备用缺额 {_number(affected['备用缺额 MW'])} MW。")
         with st.expander(f'实时异常时段与计价原因（{len(diagnostics)} 段）',expanded=bool(affected)):
-            st.dataframe(diagnostics, hide_index=True)
+            st.dataframe(diagnostics, hide_index=True, placeholder="—")
             st.caption('系统失负荷和过剩分别对所有节点求和；节点列单列当地最大值。'
                        '可靠性松弛时暂停该段研究计价，并影响所在小时的收入。')
     st.markdown('**实时各类型出力**')
@@ -282,14 +282,14 @@ def _realtime_tab(results, station, quarter):
     with st.expander('小时能量收入与价格质量'):
         values = [{'小时':r['hour'], '上网电量 MWh':r['energy_mwh'], '实时加权价 元/MWh':r['rt_nodal_price'],
                    '研究收入 元':r['revenue']} for r in money['hourly'] if r['resource_id']==uid]
-        st.dataframe(values, hide_index=True)
+        st.dataframe(values, hide_index=True, placeholder="—")
         st.caption('零电量时加权均价留空。收入受价格缺失或可靠性松弛影响时保留缺项。')
     with st.expander('线路潮流与运行边界'):
         flows = rt[quarter]['flows']
         limits = {line['id']:line['limit_mw'] for line in inputs['lines']}
         loading = [{'线路':key, '所选时段潮流 MW':round(value, 3), '限额 MW':round(limits[key], 3),
                     '使用率 %':round(100*abs(value)/limits[key], 2)} for key,value in flows.items()]
-        st.dataframe(sorted(loading, key=lambda r:r['使用率 %'], reverse=True), hide_index=True)
+        st.dataframe(sorted(loading, key=lambda r:r['使用率 %'], reverse=True), hide_index=True, placeholder="—")
 
 
 def _remember_focus(field, widget):
@@ -458,7 +458,7 @@ def _comparison(root, seed, periods, sensitivity, receipts):
             st.caption(f'已完成对照 · 种子 {pair_seed} · 每个算例执行 {pair_periods}/96 段 · '
                        f"水价值 ×{settings['water_value_scale']:g} · 通道 ×{settings['corridor_scale']:g} · "
                        f"气电计划 ×{settings['gas_plan_scale']:g}")
-            st.dataframe([{k:v for k,v in row.items() if k!='边界摘要'} for row in rows], hide_index=True)
+            st.dataframe([{k:v for k,v in row.items() if k!='边界摘要'} for row in rows], hide_index=True, placeholder="—")
 
 
 def render_dadu(root):

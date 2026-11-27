@@ -207,7 +207,7 @@ def render_company_detail(results, station, quarter=None):
         bridge = [{'范围':f'已执行 {len(rows)} 段', **{k:_complete_sum(row[k] for row in rows) for k in columns}}]
         if selected is not None:
             bridge.insert(0,{'范围':f"所选段末 {selected['时段末']}",**{k:selected[k] for k in columns}})
-        st.dataframe(bridge, hide_index=True)
+        st.dataframe(bridge, hide_index=True, placeholder="—")
         st.caption('同一执行范围内，内部计划按预期价估值，先加日前与内部计划的数量差，再加实时计量与日前的'
                    '数量差，最后加实发电量按实时价与预期价的价差。后面三项用于解释现金变化。日前预出清不结算。')
         if len(rows)<96:
@@ -220,7 +220,7 @@ def render_company_detail(results, station, quarter=None):
             st.warning(f'逐时段复算与小时现金账相差 {_fmt(residual)} 元。')
         else:
             st.caption('逐时段复算与小时现金账差额 '+_fmt(residual)+' 元。')
-        st.dataframe(rows, hide_index=True)
+        st.dataframe(rows, hide_index=True, placeholder="—")
         st.caption('表中报价和价格单位为元/MWh。按日前出力定位报价段；零出力时不显示对应段价。'
                    '现金使用实发对应的合成计量和有效实时节点价。')
 
@@ -242,7 +242,7 @@ def render_cash_detail(results):
             st.info(f'当前仅执行 {n}/96 段。现金列限于已执行量，日末存水估值和全天研究收益留空。')
         elif not totals['reliable']:
             st.warning('本日存在可靠性松弛或价格缺项。受影响的现金留空，暂停全天含水估值比较。')
-        st.dataframe(rows, hide_index=True)
+        st.dataframe(rows, hide_index=True, placeholder="—")
         st.caption('组合只纳入模拟报价水电站。加权价用本站已执行现金除以上网电量。库水按本站事前水价值'
                    '估值，在途水按到达站的事前水价值估值，均扣除期初价值。库水及在途估值属于研究收益，'
                    '分别列在现货毛收入之外。机组成本、中长期合约差价、辅助服务及补偿费用另有口径。')
@@ -253,6 +253,6 @@ def render_cash_detail(results):
         checks = [{'项目':label,'各站合计 元':observed,'组合账 元':expected if observed is not None else None,
                    '差额 元':observed-expected if observed is not None and expected is not None else None}
                   for label,observed,expected in reference]
-        st.dataframe(checks,hide_index=True)
+        st.dataframe(checks,hide_index=True, placeholder="—")
         if any(r['差额 元'] is not None and abs(r['差额 元'])>.01 for r in checks):
             st.warning('各站复核合计与组合账相差超过 0.01 元，请复核归档。')
