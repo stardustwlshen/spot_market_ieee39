@@ -26,6 +26,24 @@ function timeline(title,unit,series,q){
     graph(paths,max*1.04,96,[[0,"00:00"],[24,"06:00"],[48,"12:00"],[72,"18:00"],[96,"24:00"]],q+.5)+
     legend(series.map(s=>s[0]))+'<div class="hint">'+reading+'</div></section>';
 }
+function parameterGuide(s, stations, edge) {
+  const idx = stations.findIndex(station => station.id === s.id);
+  const upstreamMean = idx > 0 ? stations[idx - 1].meanFlow : 0;
+  const reservoir = s.kind === 'reservoir';
+  const storage = reservoir
+    ? '台账调节库容 '+fmt(s.referenceStorage/1e8,3)+' 亿 m³。按场景折算，期初 '+fmt(s.initialStock/1e8,3)+' 亿 m³，运行上限 '+fmt(s.storageMax/1e8,3)+' 亿 m³，日末须落在 '+fmt(s.terminalLow/1e8,3)+'–'+fmt(s.terminalHigh/1e8,3)+' 亿 m³。期初和运行上限按台账库容的场景比例取值。期末区间由期初加减允许蓄放的水量确定，蓄放水量按场景断面流量 × 允许天数 × 86,400 秒折算，并截在运行边界内。'
+    : '本站按零可调库容近似。每 15 分钟，区间来水加上延迟到达的上游下泄，必须由过机、专用旁泄和弃水消化。该近似忽略本站可能具备的小库调节能力。';
+  const entries = [
+    ['装机与能力上下限', '设计装机 '+fmt(s.capacity,0)+' MW，首段技术可用上限 '+fmt(s.technical[0],2)+' MW，由装机乘场景可用系数（91.5%–94.5%）得到。原申报在全梯级水账和爬坡约束下，分别寻找本站每段最低、最高可行出力。', '申报曲线供核对。当前 SCUC/SCED 按市场侧技术可用上限、爬坡、网络及联合水账确定实际可行出力。这些极值分别求得，不能把每个时段的上限拼成一条可执行计划。'],
+    ['三小时顶峰', '在全日 85 个连续 12 段窗口中，寻找本站可以每段都达到的最高功率。本站 '+fmt(s.peak,1)+' MW，对应一个可行窗口 '+clock(s.start)+'–'+clock(s.start+12)+'。', '作为能力参考归档。出清没有必须连续三小时发足该值的约束，也没有把它自动计为中标备用。'],
+    ['次日发电耗水率', esc(s.rateMethod)+'。本站固定采用 '+fmt(s.rate,4)+' m³/kWh。以 100 MW 发 15 分钟为例，发电量 25 MWh，过机水量约 '+fmt(25000*s.rate,0)+' m³。', '水量约束直接采用 Q过机 = P × 耗水率 / 3.6。专用生态旁泄和弃水另计，两者均不产生电量。'],
+    ['区间来水', '多年平均断面流量差为 '+fmt(s.meanFlow,0)+' − '+fmt(upstreamMean,0)+' = '+fmt(s.meanFlow-upstreamMean,0)+' m³/s。首站以上游基数零计。按丰水、枯水、预测偏差场景分别乘 1.35、0.65、1.00，再叠加日内变化和公司预测扰动。', '图中是公司事前预测，日均值为 96 点平均。市场另用独立来水预测逐段做水量平衡；上游到水按河道队列另计。'],
+    [reservoir?'库容与期末库存':'径流式水量守恒',storage,reservoir?'提前发电会降低后续库存。较贵时段能否增加出力，取决于当时存水、流量边界及期末库存是否仍可达。':'本站不能自行留水到晚峰。来水较多时仍可能受设备或线路限制而弃水。'],
+    ['生态下泄与河段时滞','总下泄下限 '+fmt(s.minimumRelease,2)+' m³/s、其中专用旁泄 '+fmt(s.bypass,2)+' m³/s，分别按场景断面流量的 9.5%、0.6% 设定。河段以资料距离、合成流速 3.5 m/s 换算并离散到 15 分钟；当前所示河段 '+edge.minutes+' 分钟。','总下泄含过机、旁泄与弃水，延迟后进入下游。实时每轮只执行首段，将执行后的库存和仍在途的水交给下一窗口。'],
+    ['分段量价','使用已冻结的事前模板。原模板按装机分 '+s.segments.length+' 段，将事前联合优化得到的边际水机会成本排序、分组取中点样本，再拟合段价。本页不重新优化报价。','各段被接受的电量乘市场采用价进入出清成本；触发市场力缓解时采用价可能低于申报价。节点价来自固定组合 SCED 的节点平衡对偶。']
+  ];
+  return '<details class="summary parameter-guide"><summary>这些参数怎样确定，怎样进入出清？</summary><dl>'+entries.map(([label,origin,effect])=>'<dt>'+label+'</dt><dd><b>取值依据</b> '+origin+'</dd><dd><b>出清作用</b> '+effect+'</dd>').join('')+'</dl></details>';
+}
 export default function({parentElement,data}){
   const el=parentElement.querySelector('.atlas');
   const stations=data.stations, byId=new Map(stations.map(s=>[s.id,s]));
@@ -36,6 +54,7 @@ export default function({parentElement,data}){
     '<button type="button" class="station '+(s.kind==='reservoir'?'res':'')+'" data-id="'+esc(s.id)+'"><i></i><span>'+esc(s.name)+'</span><small>'+(s.kind==='reservoir'?'库容':'径流')+'</small></button>').join('')+'</nav></aside><article class="main"></article></div>';
   const main=el.querySelector('.main'),select=el.querySelector('select');
   function draw(){
+    const guideWasOpen = main.querySelector(".parameter-guide")?.open || false;
     const s=byId.get(state.uid), q=state.q;
     const edge=data.reaches.find(r=>r.up===s.id)||data.reaches.find(r=>r.down===s.id);
     const peer=byId.get(edge.up===s.id?edge.down:edge.up);
@@ -50,11 +69,13 @@ export default function({parentElement,data}){
     main.innerHTML='<header class="mast"><div><div class="kicker">'+esc(data.scenario)+'　/　次日生产运行报送</div><h2>'+esc(s.name)+'</h2></div><div class="meta"><b>'+rel+'</b>模拟传播 '+edge.minutes+' 分钟</div></header>'+
       '<div class="metrics">'+stat('三小时顶峰能力',fmt(s.peak),'MW',clock(s.start)+'–'+clock(s.start+12))+stat('平均发电耗水率',fmt(s.rate,3),'m³/kWh','次日固定值')+
       stat('区间来水日均值',fmt(s.inflow.reduce((a,b)=>a+b,0)/96),'m³/s','96 点预测均值')+'</div>'+
+      '<p class="logic"><b>'+(s.kind==='reservoir'?'库容式':'径流式近似')+'</b>　'+(s.kind==='reservoir'?'本场景从 '+fmt(s.initialStock/1e8,2)+' 亿 m³ 调节库容起步，可把水留到晚峰，日末须满足库存区间。':'可调库容按零处理。每 15 分钟，要把区间来水和上游到水分配给发电、专用旁泄与弃水。')+'</p>'+parameterGuide(s,stations,edge)+
       '<div class="timebar"><label>核对时段<output></output></label><input type="range" min="0" max="95" step="1" aria-label="核对时段"></div><div class="plots"></div>'+
       '<section class="bid"><div class="plothead"><h3>电能量交易申报</h3><span class="hint">全天 '+bands.length+' 段</span></div><div class="bidgrid"><div><div class="hint">报价（元/MWh）</div>'+price+'<div class="hint" style="text-align:right">累计出力（MW）</div></div><div>'+table(['段','出力范围（MW）','元/MWh'],bands.map(([i,a,b,p])=>[i,fmt(a,2)+' – '+fmt(b,2),fmt(p,0)]))+'</div></div></section>'+
       '<details class="summary"><summary>本站 96 点原始报送数值</summary><div class="scroller">'+table(['时段','下限 MW','上限 MW','区间来水 m³/s'],s.low.map((v,i)=>[clock(i)+'–'+clock(i+1),fmt(v,2),fmt(s.high[i],2),fmt(s.inflow[i],2)]))+'</div></details>'+
       '<details class="summary"><summary>19 站报送总览</summary><div class="scroller">'+table(['电站','三小时顶峰 MW','耗水率 m³/kWh','日均区间来水 m³/s'],stations.map(r=>[r.name,fmt(r.peak,1),fmt(r.rate,3),fmt(r.inflow.reduce((a,b)=>a+b,0)/96,1)]))+'</div></details>'+
       '<p class="note">模拟日前纳入 19 站，实时选择参加并假设审核通过。特殊运行控制需求未单列。水位—库容及 NHQ 曲线未完整建模。</p>';
+    main.querySelector('.parameter-guide').open = guideWasOpen;
     const slider=main.querySelector('input');
     function update(){
       const q=Number(slider.value); state.q=q;
