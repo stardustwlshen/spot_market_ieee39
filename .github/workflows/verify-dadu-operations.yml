@@ -1,0 +1,26 @@
+name: Verify Dadu day-ahead changes
+on:
+  push:
+    branches: [verify/dadu-dayahead-operations]
+permissions:
+  contents: read
+jobs:
+  hydro:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    defaults:
+      run:
+        working-directory: guangdong_market/program
+    env:
+      STREAMLIT_BROWSER_GATHER_USAGE_STATS: 'false'
+      PYTHONUTF8: '1'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          sparse-checkout: guangdong_market/program
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install -r requirements-dev.txt
+      - run: python -m pytest -q tests/test_sichuan_v5_dadu_declaration.py
