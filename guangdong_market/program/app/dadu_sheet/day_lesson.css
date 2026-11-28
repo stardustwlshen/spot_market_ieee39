@@ -1,0 +1,28 @@
+.day-lesson{color:#193c35;background:#f6f7f1;border:1px solid #cadbd1;border-radius:16px;overflow:hidden;font:16px/1.65 system-ui,"Microsoft YaHei",sans-serif;color-scheme:light}
+.day-lesson *{box-sizing:border-box}
+.day-lesson h2,.day-lesson h3,.day-lesson p{margin:0;color:inherit;letter-spacing:normal}
+.day-lesson h2{font-size:clamp(24px,3.2vw,38px);line-height:1.25}
+.day-lesson h3{font-size:clamp(18px,2vw,23px);line-height:1.4}
+.day-lesson header{padding:clamp(18px,3vw,32px);background:#16463c;color:white;display:grid;gap:8px}
+.day-lesson header p{color:#d4e9dc;max-width:58em}
+.day-lesson .lesson-controls{display:flex;align-items:end;gap:14px;flex-wrap:wrap;background:#eaf2ea;padding:14px clamp(14px,3vw,30px)}
+.day-lesson label{display:grid;gap:4px;font-weight:650;font-size:13px}
+.day-lesson select,.day-lesson button{font:inherit;color:#18483c;background:white;border:1px solid #9ab7a6;border-radius:7px;padding:7px 11px}
+.day-lesson button,.day-lesson summary{cursor:pointer}.day-lesson button:hover{background:#e6f0e8}.day-lesson :focus-visible{outline:3px solid #d58e39;outline-offset:2px}
+.day-lesson .lesson-body{display:grid;gap:14px;padding:clamp(12px,2.3vw,25px)}
+.day-lesson section{min-width:0;display:grid;align-content:start;gap:9px;border:1px solid #d6e1d8;background:white;border-radius:11px;padding:clamp(14px,2.1vw,23px)}
+.day-lesson .lesson-small,.day-lesson footer{color:#4b655a;font-size:14px}
+.day-lesson .lesson-columns{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.day-lesson .lesson-meter{display:grid;grid-template-columns:8em 1fr 7em;align-items:center;gap:8px;font-size:14px}
+.day-lesson .lesson-meter b{text-align:right;font-variant-numeric:tabular-nums}
+.day-lesson .track{height:10px;border-radius:6px;background:#edf2ed;overflow:hidden}.day-lesson .track i{display:block;height:100%;background:#76a38b}
+.day-lesson .equation{padding:10px 13px;border-left:3px solid #c48036;background:#fbf2df;font-variant-numeric:tabular-nums}
+.day-lesson .question{margin-top:4px;padding-top:8px;border-top:1px solid #d9e4dc}.day-lesson .question button{font-size:14px;margin:4px 4px 3px 0}.day-lesson .question button[aria-pressed=true]{background:#205244;color:white}
+.day-lesson .feedback{display:block;color:#285542;font-weight:600;font-size:14px}
+.day-lesson details{border-top:1px solid #dce6dd;padding-top:6px}
+.day-lesson summary{font-weight:650;color:#225842}
+.day-lesson .table-wrap{overflow:auto}.day-lesson table{border-collapse:collapse;width:100%;font-size:14px}
+.day-lesson td,.day-lesson th{text-align:right;padding:5px 8px;border-bottom:1px solid #dce6dd}.day-lesson td:first-child,.day-lesson th:first-child{text-align:left}
+.day-lesson footer{padding:0 clamp(12px,2.3vw,25px) 15px}
+@media(max-width:740px){.day-lesson .lesson-columns{grid-template-columns:1fr}.day-lesson .lesson-controls{gap:7px}.day-lesson .lesson-meter{grid-template-columns:6.5em 1fr 6.2em;gap:5px}.day-lesson{font-size:15px}}
+.day-lesson .lesson-controls+p{padding:10px clamp(14px,3vw,30px) 0}.day-lesson .river-links{display:flex;gap:8px;flex-wrap:wrap}

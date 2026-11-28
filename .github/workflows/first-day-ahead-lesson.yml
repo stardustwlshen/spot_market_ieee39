@@ -1,0 +1,41 @@
+name: Verify first day-ahead lesson
+on:
+  push:
+    branches: [sichuan-v5]
+    paths:
+      - 'guangdong_market/program/app/sichuan_v5_dadu_lesson.py'
+      - 'guangdong_market/program/app/sichuan_v5_dadu_da_view.py'
+      - 'guangdong_market/program/app/dadu_sheet/day_lesson.*'
+      - 'guangdong_market/program/tests/*first_lesson.py'
+      - 'guangdong_market/program/scripts/export_dadu_da_review.py'
+      - '.github/workflows/first-day-ahead-lesson.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  lesson:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: guangdong_market/program
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install -r requirements-dev.txt playwright
+      - run: python -m playwright install --with-deps chromium
+      - run: python -m pytest -q tests/test_sichuan_v5_first_lesson.py tests/test_sichuan_v5_dadu_da_review.py
+      - run: python scripts/export_dadu_da_review.py --beginner first-day-ahead.html
+      - name: Exercise classroom and offline workbook in Chromium
+        run: |
+          python -m streamlit run app/四川.py --server.port 8509 --server.headless true --browser.gatherUsageStats false > "$RUNNER_TEMP/classroom.log" 2>&1 &
+          server=$!
+          trap 'kill "$server" || true' EXIT
+          curl --retry 15 --retry-connrefused --retry-delay 1 --fail http://127.0.0.1:8509/_stcore/health
+          python tests/browser_first_lesson.py first-day-ahead.html --live http://127.0.0.1:8509/
+      - uses: actions/upload-artifact@v4
+        with:
+          name: first-day-ahead
+          path: guangdong_market/program/first-day-ahead.html

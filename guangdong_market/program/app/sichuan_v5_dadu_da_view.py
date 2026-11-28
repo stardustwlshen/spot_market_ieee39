@@ -16,6 +16,7 @@ from sichuan_v5_da_review import station_quarters, system_quarters
 from sichuan_v5_dadu_da import (DAY_SCENARIOS, ERROR_LEVELS, LEGACY_SCENARIOS, NET_ERROR_SIGMA,
                                 SEASONS, SEASON_TEMPLATE, list_days, read_day, run_day)
 from sichuan_v5_dadu_live import solve_visible
+from sichuan_v5_dadu_lesson import lesson_html, packed_lesson, render_lesson
 from sichuan_v5_dadu_operations import DayOperations, LABELS, UNITS, with_operations
 from sichuan_v5_pumped_storage import build_day_case
 from sichuan_v5_dadu_run import declaration_path, declaration_record, freeze_declaration
@@ -392,6 +393,27 @@ def edit_operations(root,sheet):
     return with_operations(base,entries),pointer
 
 
+@st.cache_data(show_spinner=False, max_entries=6)
+def _lesson_archive(root, name, label):
+    return packed_lesson(root, name, label)
+
+
+def beginner_workspace(root, scenario):
+    names = list_days(root, scenario)
+    if names:
+        try:
+            case = _lesson_archive(str(root), names[0], scenario_label(scenario))
+            render_lesson(case, key='lesson_'+names[0])
+            st.download_button('下载这一课，离线练习', lesson_html([case]), scenario+'-日前入门.html','text/html')
+        except (OSError, ValueError) as exc:
+            st.error(f'打开教学算例失败：{exc}')
+    else:
+        st.info('这个场景还没有日前结果。先使用默认申报运行一次，出清后即可在这里练习。')
+    if st.button('用这个场景自己申报', key='da_lesson_file'):
+        st.session_state['da_next_page'] = '机组申报'
+        st.rerun()
+
+
 def workspace(root):
     from sichuan_v5_dadu_style import apply_dadu_style
     apply_dadu_style()
@@ -410,12 +432,14 @@ def workspace(root):
             st.rerun()
         published_days(root,requested)
         return
-    if 'dadu_workspace' not in st.session_state and st.query_params.get('stage') == 'da':
-        st.session_state['dadu_workspace'] = '日前预出清'
+    pages = {'learn':'入门体验', 'filing':'机组申报', 'da':'日前预出清'}
+    if 'dadu_workspace' not in st.session_state:
+        default = 'learn' if list_days(root, requested if requested in DAY_SCENARIOS else 'wet_normal') else 'filing'
+        st.session_state['dadu_workspace'] = pages.get(st.query_params.get('stage'), pages[default])
     initial_season, initial_level = DAY_SCENARIOS.get(requested, ('wet','normal'))
     if 'da_next_page' in st.session_state:
         st.session_state['dadu_workspace'] = st.session_state.pop('da_next_page')
-    page = st.radio('工作区',['机组申报','日前预出清'],horizontal=True,key='dadu_workspace')
+    page = st.radio('工作区',list(pages.values()),horizontal=True,key='dadu_workspace')
     left, right = st.columns(2)
     st.session_state.setdefault('da_season', initial_season)
     st.session_state.setdefault('da_error_level', initial_level)
@@ -423,15 +447,19 @@ def workspace(root):
     level = right.radio('预测误差',list(ERROR_LEVELS),format_func=lambda k:'正常' if k=='normal' else '极端',
                         horizontal=True,key='da_error_level')
     scenario = f'{season}_{level}'
-    stage = 'da' if page == '日前预出清' else 'filing'
+    stage = next(k for k, v in pages.items() if v == page)
     if (st.query_params.get('scenario'), st.query_params.get('stage')) != (scenario,stage):
         st.query_params.from_dict({'scenario':scenario,'stage':stage})
+    if page == '入门体验':
+        beginner_workspace(root,scenario)
+        return
     if page == '日前预出清':
         published_days(root,scenario)
         return
     template = SEASON_TEMPLATE[season]
     sheet = _load_sheet(template)
     st.caption(f'同一水期共用来水、负荷预测和机组申报。本组合按负荷峰值的 {NET_ERROR_SIGMA[level]:.0%} 模拟净负荷预测误差标准差，用于确定日前向上裕度。')
+    st.caption('第一次动手可以直接用默认参数：先点“确认并冻结 19 站申报”，保存这次提交的内容；再点“运行日前预出清”，查看市场排出的明日计划。')
     company,pointer = edit_operations(root,sheet)
     ops = DayOperations(company,sheet['inputs']['stations'])
     submitted = declaration_path(root,company).is_file()
