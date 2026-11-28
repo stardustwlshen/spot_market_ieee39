@@ -67,20 +67,20 @@ export default function({parentElement,data}){
     const price=graph([steps],Math.max(1,...bands.map(b=>b[3]))*1.05,last,[[0,'0'],[last/2,fmt(last/2,0)],[last,fmt(last,0)]],null);
     const stat=(label,value,unit,extra)=>'<div><small>'+label+'</small><b>'+value+'</b><span class="unit">'+unit+'</span><small>'+extra+'</small></div>';
     main.innerHTML='<header class="mast"><div><div class="kicker">'+esc(data.scenario)+'　/　次日生产运行报送</div><h2>'+esc(s.name)+'</h2></div><div class="meta"><b>'+rel+'</b>模拟传播 '+edge.minutes+' 分钟</div></header>'+
-      '<div class="metrics">'+stat('三小时顶峰能力',fmt(s.peak),'MW',clock(s.start)+'–'+clock(s.start+12))+stat('平均发电耗水率',fmt(s.rate,3),'m³/kWh','次日固定值')+
+      '<div class="metrics">'+stat('原申报三小时顶峰能力',fmt(s.peak),'MW',clock(s.start)+'–'+clock(s.start+12))+stat('平均发电耗水率',fmt(s.rate,3),'m³/kWh','次日固定值')+
       stat('区间来水日均值',fmt(s.inflow.reduce((a,b)=>a+b,0)/96),'m³/s','96 点预测均值')+'</div>'+
       '<p class="logic"><b>'+(s.kind==='reservoir'?'库容式':'径流式近似')+'</b>　'+(s.kind==='reservoir'?'本场景从 '+fmt(s.initialStock/1e8,2)+' 亿 m³ 调节库容起步，可把水留到晚峰，日末须满足库存区间。':'可调库容按零处理。每 15 分钟，要把区间来水和上游到水分配给发电、专用旁泄与弃水。')+'</p>'+parameterGuide(s,stations,edge)+
       '<div class="timebar"><label>核对时段<output></output></label><input type="range" min="0" max="95" step="1" aria-label="核对时段"></div><div class="plots"></div>'+
       '<section class="bid"><div class="plothead"><h3>电能量交易申报</h3><span class="hint">全天 '+bands.length+' 段</span></div><div class="bidgrid"><div><div class="hint">报价（元/MWh）</div>'+price+'<div class="hint" style="text-align:right">累计出力（MW）</div></div><div>'+table(['段','出力范围（MW）','元/MWh'],bands.map(([i,a,b,p])=>[i,fmt(a,2)+' – '+fmt(b,2),fmt(p,0)]))+'</div></div></section>'+
-      '<details class="summary"><summary>本站 96 点原始报送数值</summary><div class="scroller">'+table(['时段','下限 MW','上限 MW','区间来水 m³/s'],s.low.map((v,i)=>[clock(i)+'–'+clock(i+1),fmt(v,2),fmt(s.high[i],2),fmt(s.inflow[i],2)]))+'</div></details>'+
+      '<details class="summary"><summary>本站 96 点工况与申报数值</summary><div class="scroller">'+table(['时段','工况','并网下限 MW','并网上限 MW','区间来水 m³/s'],s.low.map((v,i)=>[clock(i)+'–'+clock(i+1),esc(s.status[i]),fmt(v,2),fmt(s.high[i],2),fmt(s.inflow[i],2)]))+'</div></details>'+
       '<details class="summary"><summary>19 站报送总览</summary><div class="scroller">'+table(['电站','三小时顶峰 MW','耗水率 m³/kWh','日均区间来水 m³/s'],stations.map(r=>[r.name,fmt(r.peak,1),fmt(r.rate,3),fmt(r.inflow.reduce((a,b)=>a+b,0)/96,1)]))+'</div></details>'+
-      '<p class="note">19 站组成模拟联合申报组合，实际业主分别登记。特殊运行控制需求未单列。水位—库容及 NHQ 曲线未完整建模。</p>';
+      '<p class="note">19 站组成模拟联合申报组合，实际业主分别登记。'+(data.hasOperations?'并网能力曲线已叠加工况与出力要求。水位控制采用线性库容换算，耗水率为次日定值。':'本版本仅含基础申报。')+'</p>';
     main.querySelector('.parameter-guide').open = guideWasOpen;
     const slider=main.querySelector('input');
     function update(){
       const q=Number(slider.value); state.q=q;
       const stamp=clock(q)+'–'+clock(q+1);
-      main.querySelector('output').textContent=stamp;
+      main.querySelector('output').textContent=stamp+' · '+s.status[q];
       slider.setAttribute('aria-valuetext',stamp);
       main.querySelector('.plots').innerHTML=timeline('发电能力','MW',[[s.name+'上限',s.high],[peer.name+'上限',peer.high],[s.name+'下限',s.low]],q)+
         timeline('区间天然来水','m³/s',[[s.name,s.inflow],[peer.name,peer.inflow]],q);
