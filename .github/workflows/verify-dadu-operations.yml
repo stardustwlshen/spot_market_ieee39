@@ -24,3 +24,16 @@ jobs:
           python-version: '3.12'
       - run: python -m pip install -r requirements-dev.txt
       - run: python -m pytest -q tests/test_sichuan_v5_dadu_declaration.py
+      - name: Run four seasonal and uncertainty combinations
+        run: python verify_scenarios.py
+      - name: Exercise filing and published results in Chromium
+        run: |
+          python -m pip install playwright
+          python verify_browser.py
+      - name: Save reviewed filings, complete runs and browser views
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dadu-dayahead-evidence
+          path: guangdong_market/program/qa-results
+          if-no-files-found: ignore
