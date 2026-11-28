@@ -14,7 +14,7 @@ PROGRAM=Path(__file__).resolve().parents[1]
 
 def test_new_default_no_legacy_fallback():
     cmd=command(PROGRAM,'python',8501)
-    assert Path(cmd[4]).name=='四川.py'
+    assert Path(cmd[4]).name=='四川历史.py'
     assert cmd[cmd.index('--server.showEmailPrompt')+1]=='false'
     assert cmd[cmd.index('--client.showSidebarNavigation')+1]=='false'
     assert '--server.showEmailPrompt' not in command(PROGRAM,'python',8501,'guangdong')
@@ -30,7 +30,7 @@ def test_native_entry_run_then_read_only_archive_and_tamper(tmp_path, monkeypatc
     monkeypatch.setattr(market_rule_profile.MarketProfile,'default_results',
         lambda self, _:tmp_path/self.results_folder)
     root=market_rule_profile.SICHUAN_V5.default_results(tmp_path)
-    app=AppTest.from_file(str(PROGRAM/'app/四川.py'),default_timeout=100).run()
+    app=AppTest.from_file(str(PROGRAM/'app/四川历史.py'),default_timeout=100).run()
     assert not app.exception and not app.error
     assert '四川 V5.0' in app.title[0].value
     app.selectbox(key='scv5_month').select(5)
@@ -48,7 +48,7 @@ def test_native_entry_run_then_read_only_archive_and_tamper(tmp_path, monkeypatc
     assert inputs['coal_offer']==360 and inputs['month']==5
     assert len(json.loads((paths[0]/'DA_PRECLEAR.json').read_bytes()))==96
     assert not (tmp_path/'runs').exists()
-    fresh=AppTest.from_file(str(PROGRAM/'app/四川.py'),default_timeout=30).run()
+    fresh=AppTest.from_file(str(PROGRAM/'app/四川历史.py'),default_timeout=30).run()
     fresh.selectbox(key='scv5_archive').select(name).run()
     assert fresh.button(key='scv5_run').disabled
     assert not fresh.error
@@ -174,7 +174,7 @@ def test_native_full_staged_agc_then_reserve_and_archive_evidence(tmp_path,monke
     assert [da[q]['ancillary_holds_mw']['H1'] for q in (47,48)]==[[92.,12.],[78.,18.]]
     assert load(root,name)['agc']==a
     monkeypatch.setattr(SICHUAN_V5.__class__,'default_results',lambda self,_:root)
-    fresh=AppTest.from_file(str(PROGRAM/'app/四川.py'),default_timeout=30).run()
+    fresh=AppTest.from_file(str(PROGRAM/'app/四川历史.py'),default_timeout=30).run()
     fresh.selectbox(key='scv5_archive').select(name).run()
     assert fresh.button(key='scv5_run').disabled and not fresh.error and not fresh.exception
     for q,expected in ((47,(92.,12.)),(48,(78.,18.))):
@@ -198,7 +198,7 @@ def test_segmented_agc_widget_selection_and_readonly_archive(tmp_path,monkeypatc
     monkeypatch.setattr(market_rule_profile.MarketProfile,'default_results',
         lambda self, _:tmp_path/self.results_folder)
     root=market_rule_profile.SICHUAN_V5.default_results(tmp_path)
-    app=AppTest.from_file(str(PROGRAM/'app/四川.py'),default_timeout=120).run()
+    app=AppTest.from_file(str(PROGRAM/'app/四川历史.py'),default_timeout=120).run()
     app.checkbox(key='scv5_reserve_demo').check().run()
     app.checkbox(key='scv5_agc_demo').check().run()
     assert not any('已声明调频' in n.label for n in app.number_input)
@@ -209,7 +209,7 @@ def test_segmented_agc_widget_selection_and_readonly_archive(tmp_path,monkeypatc
     summary=next(d.value for d in app.dataframe if '抵扣后备用需求（MW）' in d.value)
     assert list(summary['时段'])==['00:00–12:00','12:00–24:00']
     assert list(map(D,summary['抵扣后备用需求（MW）']))==[D(80),D(60)]
-    fresh=AppTest.from_file(str(PROGRAM/'app/四川.py'),default_timeout=30).run()
+    fresh=AppTest.from_file(str(PROGRAM/'app/四川历史.py'),default_timeout=30).run()
     fresh.selectbox(key='scv5_archive').select(name).run()
     assert not fresh.error and fresh.button(key='scv5_run').disabled
     assert len(list(root.iterdir()))==1

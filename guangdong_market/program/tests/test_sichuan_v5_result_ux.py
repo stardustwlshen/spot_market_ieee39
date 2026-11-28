@@ -13,7 +13,7 @@ def test_real_widget_flow_first_hour_quantity_price_and_exclusions(tmp_path,monk
     monkeypatch.setattr(market_rule_profile.MarketProfile,'default_results',
                         lambda self, _:tmp_path/self.results_folder)
     root=market_rule_profile.SICHUAN_V5.default_results(tmp_path)
-    app=AppTest.from_file(str(PROGRAM/'app/四川.py'),default_timeout=100).run()
+    app=AppTest.from_file(str(PROGRAM/'app/四川历史.py'),default_timeout=100).run()
     app.button(key='scv5_run').click().run()
     assert not app.error and not app.exception
     name=next(root.iterdir()).name
@@ -43,7 +43,7 @@ def test_submitted_bid_and_failure_keeps_previous_success(tmp_path,monkeypatch):
     monkeypatch.setattr(market_rule_profile.MarketProfile,'default_results',
                         lambda self,_:tmp_path/self.results_folder)
     root=market_rule_profile.SICHUAN_V5.default_results(tmp_path)
-    app=AppTest.from_file(str(PROGRAM/'app/四川.py'),default_timeout=90).run()
+    app=AppTest.from_file(str(PROGRAM/'app/四川历史.py'),default_timeout=90).run()
     app.number_input(key='scv5_bid').set_value(365)
     app.button(key='scv5_run').click().run()
     assert not app.exception and not app.error
@@ -75,7 +75,7 @@ def test_saved_storage_choice_and_pv_mode_do_not_follow_new_task_defaults(tmp_pa
     monkeypatch.setattr(market_rule_profile.MarketProfile,'default_results',
                         lambda self, _:tmp_path/self.results_folder)
     root=market_rule_profile.SICHUAN_V5.default_results(tmp_path)
-    app=AppTest.from_file(str(PROGRAM/'app/四川.py'),default_timeout=100).run()
+    app=AppTest.from_file(str(PROGRAM/'app/四川历史.py'),default_timeout=100).run()
     storage=next(r for r in app.radio if r.label=='独立储能选择')
     storage.set_value('none').run()
     app.selectbox(key='scv5_month').select(5)
@@ -90,7 +90,7 @@ def test_saved_storage_choice_and_pv_mode_do_not_follow_new_task_defaults(tmp_pa
     assert initial['storage_product']=='none'
     assert initial['declared_participation']['PV1']=='quantity_only'
     assert all(row['power']['ES1']==row['charge']['ES1']==0 for row in json.loads(old_rt))
-    other=AppTest.from_file(str(PROGRAM/'app/四川.py'),default_timeout=90).run()
+    other=AppTest.from_file(str(PROGRAM/'app/四川历史.py'),default_timeout=90).run()
     other.selectbox(key='scv5_archive').select(saved.name).run()
     assert next(r.value for r in other.radio if r.label=='独立储能选择')=='spot'
     assert any('本任务参与方式：独立储能：不参与（零充放电） · 竞价光伏 PV1：报量不报价' in c.value

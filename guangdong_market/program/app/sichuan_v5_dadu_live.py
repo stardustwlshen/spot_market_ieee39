@@ -16,7 +16,9 @@ _STAGES = {
 
 
 class LiveProgress:
-    def __init__(self, container, label):
+    def __init__(self, container, label, day_only=False):
+        self.stages = ({**{k:v for k,v in _STAGES.items() if k in ('inputs','company','market','da')},
+                        'publish':(5,'校核并发布','项')} if day_only else _STAGES)
         self.label = label
         self.started = monotonic()
         self.last_message = None
@@ -33,8 +35,8 @@ class LiveProgress:
         if self.last_message == marker:
             return
         self.last_message = marker
-        phase = _STAGES.get(stage)
-        self.last_stage = f'阶段 {phase[0]}/{len(_STAGES)} · {phase[1]}' if phase else ''
+        phase = self.stages.get(stage)
+        self.last_stage = f'阶段 {phase[0]}/{len(self.stages)} · {phase[1]}' if phase else ''
         heading = ' · '.join(filter(None, (self.label, self.last_stage)))
         self.stage.markdown(f'**{heading}** · {message}')
         if type(done) is int and type(total) is int and 0 <= done <= total and total > 0:
@@ -54,8 +56,8 @@ class LiveProgress:
         self.stage.error(f'{self.label}中断于「{where}」 · 用时 {monotonic()-self.started:.1f} 秒。{error}')
 
 
-def solve_visible(run, root, settings, container, label):
-    display = LiveProgress(container, label)
+def solve_visible(run, root, settings, container, label, *, day_only=False):
+    display = LiveProgress(container, label, day_only=True) if day_only else LiveProgress(container, label)
     with container:
         try:
             with st.spinner('正在计算 · 总用时', show_time=True):

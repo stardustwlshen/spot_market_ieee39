@@ -333,12 +333,8 @@ def _render_results(root, name, results):
 
 def render():
     st.set_page_config(page_title=SICHUAN_V5.display_name,layout='wide')
-    from sichuan_v5_dadu_view import render_dadu
-    dadu, historical = st.tabs(('大渡河 19 站', '原四川示例与历史档案'))
-    with dadu:
-        render_dadu(SICHUAN_V5.default_results(Path(__file__).resolve().parents[1]))
-    with historical:
-        _render_original()
+    from sichuan_v5_dadu_da_view import workspace
+    workspace(SICHUAN_V5.default_results(Path(__file__).resolve().parents[1]))
 
 
 def _render_original():

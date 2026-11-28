@@ -27,7 +27,7 @@ def test_widget_reopen_package_and_readback(tmp_path, monkeypatch):
         return original(label, *args, **kw)
 
     monkeypatch.setattr(st,'download_button',capture)
-    page = str(PROGRAM/'app/四川.py')
+    page = str(PROGRAM/'app/四川历史.py')
     first = AppTest.from_file(page,default_timeout=90).run()
     first.button(key='scv5_run').click().run()
     assert not first.error and not first.exception

@@ -13,7 +13,7 @@ def test_bidder_operator_and_settlement_views_share_frozen_result(tmp_path, monk
     from sichuan_v5_dadu_run import list_dadu, read_dadu
 
     monkeypatch.setattr(market_rule_profile.MarketProfile, 'default_results', lambda self, _:tmp_path)
-    app = AppTest.from_file(str(PROGRAM/'app/四川.py'), default_timeout=180).run()
+    app = AppTest.from_file(str(PROGRAM/'app/四川历史.py'), default_timeout=180).run()
     assert not app.exception
     assert '大渡河' in app.title[0].value
     assert app.button(key='scv5_run')  # Historical launcher still accessible in its own tab.
@@ -47,7 +47,7 @@ def test_bidder_operator_and_settlement_views_share_frozen_result(tmp_path, monk
     app.selectbox(key=market_asset).select('GAS1').run()
     assert any('气电执行保供计划，没有竞价申报' in text.value for text in app.caption)
     assert len(list_dadu(tmp_path)) == 1
-    fresh = AppTest.from_file(str(PROGRAM/'app/四川.py'), default_timeout=60).run()
+    fresh = AppTest.from_file(str(PROGRAM/'app/四川历史.py'), default_timeout=60).run()
     fresh.radio(key='dadu_workspace').set_value('市场结果').run()
     fresh.selectbox(key='dadu_saved').select(name).run()
     assert not fresh.error and not fresh.exception

@@ -52,7 +52,7 @@ def test_archives_through_five_result_areas(tmp_path, monkeypatch):
     visible=backend.list_dadu
     excluded=set()
     monkeypatch.setattr(backend,'list_dadu',lambda directory:[n for n in visible(directory) if n not in excluded])
-    app = AppTest.from_file(str(PROGRAM/'app/四川.py'),default_timeout=90).run()
+    app = AppTest.from_file(str(PROGRAM/'app/四川历史.py'),default_timeout=90).run()
     app.radio(key='dadu_workspace').set_value('市场结果').run()
     def check():
         assert not app.error and not app.exception,([e.value for e in app.error],[e.value for e in app.exception])

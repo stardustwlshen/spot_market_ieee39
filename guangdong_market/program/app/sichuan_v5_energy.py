@@ -358,14 +358,21 @@ def _solve(model, *, mip, time_limit_s):
     solver.options.update({'time_limit':time_limit_s,'threads':1})
     if mip:
         solver.options['mip_rel_gap']=.01
-    result=solver.solve(model, load_solutions=False)
+    # Eager import is needed for HiGHS to populate the reduced-cost suffix.
+    load_suffixes = hasattr(model, 'rc')
+    from pyomo.contrib.solver.common.util import NoFeasibleSolutionError
+    try:
+        result=solver.solve(model, load_solutions=load_suffixes)
+    except NoFeasibleSolutionError as exc:
+        raise ClearingError('求解器未找到可行解，请核对申报和运行边界') from exc
     condition=result.solver.termination_condition
     if condition != p.TerminationCondition.optimal:
         raise ClearingError(f'HiGHS 未完成可验收的{"机组组合" if mip else "定价"}：{condition}')
-    model.solutions.load_from(result)
+    if not load_suffixes:
+        model.solutions.load_from(result)
 
 
-def _rows(model, case, begin, stop, *, prices=True):
+def _rows(model, case, begin, stop, *, prices=True, segment_dispatch=False):
     import pyomo.environ as p
     rs={r.id:r for r in case.resources}
     th=[r for r in rs if rs[r].kind == 'thermal']
@@ -375,6 +382,8 @@ def _rows(model, case, begin, stop, *, prices=True):
     return [
         dict(quarter=t,
              power={r:q(model.power[r,t]) for r in rs},
+             **({'accepted_segments_mw':{r:[q(model.segment[r,i,t]) for i in range(len(u.segments))]
+                                         for r,u in rs.items() if u.segments}} if segment_dispatch else {}),
              charge={r:q(model.charge[r,t]) for r in st},
              energy={r:q(model.energy[r,t]) for r in st},
              online={r:round(val(model.online[r,t])) for r in th},
@@ -430,6 +439,22 @@ def _validate_ancillary(case, holds, spot_disabled):
 
 
 
+def _fix_optimal_face(model):
+    """Preserve the LP objective via complementary slackness without a dense cost row."""
+    import pyomo.environ as p
+    # Nonzero reduced costs pin variable bounds; nonzero duals pin row bounds.
+    # Equality rows already hold throughout the feasible region.
+    for var, cost in model.rc.items():
+        if not var.fixed and cost != 0.:
+            bounds = [x for x in (var.lb, var.ub) if x is not None]
+            var.fix(min(bounds, key=lambda x: abs(x-var.value)))
+    for con, dual in list(model.dual.items()):
+        if not con.equality and dual != 0.:
+            bounds = [p.value(x) for x in (con.lower, con.upper) if x is not None]
+            bound = min(bounds, key=lambda x: abs(x-p.value(con.body)))
+            con.set_value((bound, con.body, bound))
+
+
 def _tie_allocate(model, case, time_limit_s):
     """Apply optional DA lexicographic allocation on a clone of the priced LP.
 
@@ -461,9 +486,8 @@ def _tie_allocate(model, case, time_limit_s):
 
     opt=float(p.value(model.objective))
     lp=model.clone()
-    lp.del_component(lp.dual) # dispatch-only solves cannot overwrite original nodal duals
+    _fix_optimal_face(lp)
     lp.tie_constraints=p.ConstraintList()
-    lp.tie_constraints.add(lp.objective.expr==opt)
     lp.objective.deactivate()
     # Primary model represents emergency shortfalls via finite penalties;
     # a secondary solve must not introduce or relocate emergency slack.
@@ -475,7 +499,7 @@ def _tie_allocate(model, case, time_limit_s):
         lp.clean_priority=p.Objective(expr=expr,sense=p.maximize)
         _solve(lp,mip=False,time_limit_s=time_limit_s)
         best_clean=float(p.value(expr))
-        lp.tie_constraints.add(expr>=best_clean-1e-7)
+        _fix_optimal_face(lp)
         lp.clean_priority.deactivate()
     if same_type:
         from collections import defaultdict
@@ -497,9 +521,12 @@ def _tie_allocate(model, case, time_limit_s):
                 lp.tie_constraints.add(-delta<=lp.quota_error[g,r,t])
         lp.share_priority=p.Objective(expr=sum(lp.quota_error.values()))
         _solve(lp,mip=False,time_limit_s=time_limit_s)
-    if abs(float(p.value(lp.objective.expr))-opt)>1e-5:
-        raise ClearingError('同价分配未保持原始经济目标，本次不发布')
-    rows=_rows(lp,case,0,PERIODS,prices=False)
+    if clean and p.value(expr) < best_clean-1e-5:
+        raise ClearingError('同价分配未保持清洁能源优先目标')
+    cost_difference = float(p.value(lp.objective.expr)) - opt
+    if abs(cost_difference) > 1e-5:
+        raise ClearingError(f'同价分配未保持原始经济目标，差额 {cost_difference:.9g} 元')
+    rows=_rows(lp,case,0,PERIODS,prices=False,segment_dispatch=True)
     for t,row in enumerate(rows):
         deviations=[]
         for price,kind,role,group in same_type:
@@ -517,17 +544,39 @@ def _tie_allocate(model, case, time_limit_s):
 
 
 def day_ahead(case, *, fixed_commitment=None, holds=(), spot_disabled=(), time_limit_s=3600,
-              equal_offer_priority=False, on_commitment_solved=None):
+              equal_offer_priority=False, on_commitment_solved=None, hydro_bounds=None,
+              on_scuc_dispatch=None):
     """Return 96 DA reference quarters, never a monetary settlement."""
     validate(case)
     _validate_ancillary(case, holds, spot_disabled)
     m=_build(case,0,PERIODS,da_mode=fixed_commitment,holds=holds,spot_disabled=spot_disabled)
+    if hydro_bounds is not None:
+        hydro = {r.id for r in case.resources if r.kind == 'hydro'}
+        if len(hydro_bounds) != PERIODS:
+            raise ClearingError('水电审核边界须覆盖日前96段')
+        for t, bounds in enumerate(hydro_bounds):
+            if set(bounds) != hydro:
+                raise ClearingError(f'第 {t+1} 段水电审核机组不完整')
+            for uid, (low, high) in bounds.items():
+                g = m.power[uid, t]
+                if not _num(low) or not _num(high, low, g.ub):
+                    raise ClearingError(f'{uid} 第 {t+1} 段水电审核边界无效')
+                up, down = holds[t].get(uid,(0.,0.)) if holds else (0.,0.)
+                if low + down > high - up:
+                    raise ClearingError(f'{uid} 第 {t+1} 段辅助服务占位超过核准水电调节区间')
+                g.setlb(low + down)
+                g.setub(high - up)
     # Fixed thermal commitment still leaves derived binary transition variables.
     _solve(m,mip=True,time_limit_s=time_limit_s)
     if on_commitment_solved is not None:
         on_commitment_solved()
+    if on_scuc_dispatch is not None:
+        on_scuc_dispatch(_rows(m,case,0,PERIODS,prices=False))
+    if equal_offer_priority:
+        import pyomo.environ as p
+        m.rc = p.Suffix(direction=p.Suffix.IMPORT)
     _pricing(m,time_limit_s=time_limit_s)
-    priced=_rows(m,case,0,PERIODS)
+    priced=_rows(m,case,0,PERIODS,segment_dispatch=equal_offer_priority)
     if not equal_offer_priority:
         return priced
     allocated=_tie_allocate(m,case,time_limit_s)

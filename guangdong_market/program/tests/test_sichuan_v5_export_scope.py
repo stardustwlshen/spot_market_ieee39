@@ -23,7 +23,7 @@ def test_first_offer_recovery_and_result_download_scope(tmp_path, monkeypatch):
         return render_download(label, *args, **kwargs)
 
     monkeypatch.setattr(st, 'download_button', capture)
-    app = AppTest.from_file(str(PROGRAM / 'app/四川.py'), default_timeout=100).run()
+    app = AppTest.from_file(str(PROGRAM / 'app/四川历史.py'), default_timeout=100).run()
     app.checkbox(key='scv5_id_enabled').check().run()
     app.selectbox(key='scv5_month').select(5)
     app.number_input(key='scv5_bid').set_value(405)
@@ -57,7 +57,7 @@ def test_first_offer_recovery_and_result_download_scope(tmp_path, monkeypatch):
     # A new session restores the same data, even if the recipient renames
     # the download. The original RT digest binds actual archive bytes.
     initial_payloads = dict(payloads)
-    fresh = AppTest.from_file(str(PROGRAM / 'app/四川.py'), default_timeout=30).run()
+    fresh = AppTest.from_file(str(PROGRAM / 'app/四川历史.py'), default_timeout=30).run()
     fresh.selectbox(key='scv5_archive').select(archive.name).run()
     assert fresh.button(key='scv5_run').disabled
     fresh.selectbox(key='scv5_period_' + archive.name).select(3).run()

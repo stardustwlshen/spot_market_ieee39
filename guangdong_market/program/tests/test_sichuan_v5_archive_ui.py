@@ -83,7 +83,7 @@ def test_actual_two_run_picker_disambiguates_scenarios_and_preserves_archive(tmp
     import market_rule_profile as profile
     monkeypatch.setattr(profile.MarketProfile,'default_results',lambda self,_:tmp_path/self.results_folder)
     root=tmp_path/SICHUAN_V5.results_folder
-    page=Path(__file__).resolve().parents[1]/'app/四川.py'
+    page=Path(__file__).resolve().parents[1]/'app/四川历史.py'
     def start():
         return AppTest.from_file(str(page),default_timeout=100).run()
     app=start()
@@ -134,7 +134,7 @@ def test_full_id_reopens_old_verified_run_without_resetting_current_draft(tmp_pa
 
     monkeypatch.setattr(MarketProfile,'default_results',lambda self,_:tmp_path/self.results_folder)
     root=tmp_path/SICHUAN_V5.results_folder
-    page=Path(__file__).resolve().parents[1]/'app/四川.py'
+    page=Path(__file__).resolve().parents[1]/'app/四川历史.py'
     app=AppTest.from_file(str(page),default_timeout=100).run()
     app.selectbox(key='scv5_month').select(5).run()
     app.number_input(key='scv5_bid').set_value(355).run()

@@ -21,7 +21,7 @@ def test_review_and_reconcile_on_native_sichuan_page(tmp_path,monkeypatch):
             payloads[label]=json.loads(kwargs['data'])
         return render_download(label,*args,**kwargs)
     monkeypatch.setattr(st,'download_button',capture)
-    app=AppTest.from_file(str(PROGRAM/'app/四川.py'),default_timeout=90).run()
+    app=AppTest.from_file(str(PROGRAM/'app/四川历史.py'),default_timeout=90).run()
     assert app.checkbox(key='scv5_equal_offer').value
     app.button(key='scv5_run').click().run()
     assert not app.exception and not app.error
@@ -42,7 +42,7 @@ def test_review_and_reconcile_on_native_sichuan_page(tmp_path,monkeypatch):
     sidecar,=archived.glob('RT_PRICE_REVIEW*.json')
     assert json.loads(sidecar.read_bytes())['source']=='da_proxy_rt'
     assert all((archived/k).read_bytes()==v for k,v in original.items())
-    fresh=AppTest.from_file(str(PROGRAM/'app/四川.py'),default_timeout=30).run()
+    fresh=AppTest.from_file(str(PROGRAM/'app/四川历史.py'),default_timeout=30).run()
     fresh.selectbox(key='scv5_archive').select(archived.name).run()
     assert not fresh.exception and not fresh.error
     valuation=payloads['下载实时估值 JSON']
