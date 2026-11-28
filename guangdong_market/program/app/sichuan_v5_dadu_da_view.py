@@ -444,7 +444,7 @@ def workspace(root):
         return
     template = SEASON_TEMPLATE[season]
     sheet = _load_sheet(template)
-    st.caption(f'同一水期共用来水、负荷预测和机组申报。本组合按负荷峰值的 {NET_ERROR_SIGMA[level]:.0%} 模拟净负荷预测误差标准差，用于确定日前向上裕度。')
+    st.caption(f'合成用户负荷采用“{LEGACY_LABELS[template]}”模板。同一水期共用负荷、来水和机组申报。预测误差档位仅调整日前向上裕度，本档净负荷误差标准差取负荷峰值的 {NET_ERROR_SIGMA[level]:.0%}。')
     st.caption('提交顺序：核对默认申报或录入分时例外 → 冻结申报版本 → 运行日前预出清。')
     company,pointer = edit_operations(root,sheet)
     ops = DayOperations(company,sheet['inputs']['stations'])

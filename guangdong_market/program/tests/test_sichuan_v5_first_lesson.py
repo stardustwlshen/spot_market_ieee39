@@ -32,6 +32,18 @@ def test_archived_workstation_water_and_power(scenario):
     name = list_days(root, scenario)[0]
     data = console_data(str(root), name, scenario)
     system = data['system']
+    day, load = data['day'], data['load_day']
+    assert day['capacity'] == 36476
+    assert day['generation'] == pytest.approx(day['served'] + day['pump'] + day['excess'])
+    assert day['balance'] == pytest.approx(0, abs=1e-5)
+    assert day['demand'] == pytest.approx(sum(system['load']) * .25)
+    assert day['served'] == pytest.approx(day['demand'] - day['shed'])
+    assert day['generation_peak'] == pytest.approx(max(map(sum, zip(*(system[m['kind']] for m in day['mix'])))))
+    assert day['price'] == pytest.approx(sum(p*w for p,w in zip(system['weighted_price'],system['load'])) / sum(system['load']))
+    assert day['spill'] == pytest.approx(sum(system['station_spill_m3']))
+    assert day['tight'] == sum(x >= 1.-1e-6 for x in system['max_line_pu'])
+    assert load['template'] == ('丰水低负荷' if scenario.startswith('wet') else '枯水晚峰')
+    assert load['load_factor'] == pytest.approx(sum(system['load']) / 96 / max(system['load']))
     assert len(data['stations']) == 19 and len(data['grid']) == 96
     assert sum(s['model'] == 'reservoir' for s in data['stations']) == 4
     for t, grid in enumerate(data['grid']):

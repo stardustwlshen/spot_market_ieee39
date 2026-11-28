@@ -31,6 +31,33 @@ function supplyChart(system){
   return '<svg class="supply-chart" role="img" aria-label="96 时段分电源计划与系统需求，另可用时段选择器定位" viewBox="0 0 714 192" preserveAspectRatio="none"><g class="axis">'+grid+ticks+'<text x="12" y="13">GW</text></g>'+fills+'<polyline points="'+coords(steps(totalDemand))+'" fill="none" stroke="#23384c" stroke-width="2" stroke-dasharray="4 2"/><g class="time-marker"><line y1="21" y2="163"/><path d="M-4,19 h8 l-4,6 z"/></g></svg>';
 }
 
+function dailyPanel(day,load){
+  const gwh=mwh=>format(mwh/1000,2);
+  const metric=(label,value,unit)=>'<div class="dc-metric"><span>'+label+'</span><div><strong>'+value+'</strong><small>'+unit+'</small></div></div>';
+  const field=(label,value,alarm=false)=>'<div><dt>'+label+'</dt><dd'+(alarm?' class="warn"':'')+'>'+value+'</dd></div>';
+  const names=Object.fromEntries(sourceTypes.map(([key,label])=>[key,label]));
+  function sourceRow(name,cap,peak,mwh){
+    const share=day.generation>0?format(100*mwh/day.generation,1)+'%':'—';
+    return '<tr><th scope="row">'+escape(name)+'</th><td>'+format(cap)+'</td><td>'+format(peak)+'</td><td>'+gwh(mwh)+'</td><td>'+share+'</td></tr>';
+  }
+  const rows=day.mix.map(m=>sourceRow(names[m.kind]||m.kind,m.capacity,m.peak,m.mwh)).join('');
+  const headers=['电源','设计装机 MW','最大计划出力 MW','发电量 GWh','发电占比'];
+  return '<section class="dc-panel dc-daily" aria-label="全日系统统计"><header class="dc-head"><h3>全日系统统计</h3><span>日前预出清 · 00:00–24:00</span></header>'+
+    '<div class="dc-metrics">'+metric('用户需求电量',gwh(day.demand),'GWh')+metric('系统总发电量',gwh(day.generation),'GWh')+metric('抽水耗电量',gwh(day.pump),'GWh')+metric('全日负荷加权参考价',format(day.price,2),'元/MWh')+'</div>'+
+    '<div class="dc-load-day"><strong>合成用户负荷 · '+escape(load.template)+'</strong><span>谷 / 均 / 峰　'+[load.valley,load.mean,load.peak].map(v=>format(v)).join(' / ')+' MW</span><span>日负荷率（平均 / 峰值）　'+(load.load_factor==null?'—':format(100*load.load_factor,1)+'%')+'</span></div>'+
+    '<div class="dc-day-grid"><div><h4>分电源发电计划</h4><div class="dc-scroll" tabindex="0" aria-label="全日分电源统计表"><table><thead><tr>'+headers.map(t=>'<th scope="col">'+t+'</th>').join('')+'</tr></thead><tbody>'+rows+'</tbody><tfoot>'+sourceRow('全网合计',day.capacity,day.generation_peak,day.generation)+'</tfoot></table></div>'+
+    '<p class="dc-day-note">发电占比按全网总发电量计算，含抽蓄发电。各类最大出力分别取各自的峰值。</p></div>'+
+    '<div><h4>安全、消纳与价格</h4><dl class="dc-checks">'+
+    field('线路最高负载率 / 触限时段',format(day.max_loading*100,1)+'% / '+day.tight+' 段',day.tight>0)+
+    field('备用缺额峰值 / 缺额时段',format(day.reserve_short,2)+' MW / '+day.reserve_short_slots+' 段',day.reserve_short_slots>0)+
+    field('失负荷电量',format(day.shed,2)+' MWh',day.shed>1e-5)+
+    field('弃光 / 可发光伏电量',gwh(day.pv_cut)+' / '+gwh(day.pv_available)+' GWh')+
+    field('逐站累计弃水',format(day.spill/1e8,3)+' 亿 m³')+
+    field('全网节点参考价范围',format(day.price_min,2)+' 至 '+format(day.price_max,2)+' 元/MWh')+'</dl>'+
+    '<p class="dc-day-note">触限按基本工况有线路达到限额的时段计数。上游弃水可能被下游利用，逐站累计量不能视为流域净损失。</p></div></div>'+
+    '<div class="dc-day-balance"><b>主网电量平衡</b><span>发电 '+gwh(day.generation)+' = 供用户 '+gwh(day.served)+' + 抽水 '+gwh(day.pump)+' + 电力过剩 '+gwh(day.excess)+' GWh</span><span>未舍入平衡差 '+format(day.balance,3)+' MWh</span></div></section>';
+}
+
 export default function({parentElement,data}){
   const root=parentElement.querySelector('.dispatch-console'), s=data.system;
   const peak=s.load.indexOf(Math.max(...s.load));
@@ -43,6 +70,7 @@ export default function({parentElement,data}){
     '<div class="dc-metrics">'+metric('预测用户负荷','load','MW')+metric('梯级水电中标','hydro','MW')+metric('负荷加权参考价','weighted_price','元/MWh')+metric('最高线路负载率','line','%')+'</div></div>'+
     '<div class="dc-grid"><section class="dc-panel"><div class="dc-head"><h3>电源出力与系统需求</h3><span>全日 · 15 分钟</span></div>'+supplyChart(s)+'<div class="dc-legend">'+sourceTypes.map(([key,label,color])=>'<span><i style="background:'+color+'"></i>'+label+' <strong data-source="'+key+'"></strong></span>').join('')+'<span><b></b>需求（含抽水） <strong data-source="demand"></strong></span><span>单位 MW</span></div></section>'+
     '<section class="dc-panel"><div class="dc-head"><h3>运行校核</h3><span data-check-time></span></div><dl class="dc-checks"></dl></section></div>'+
+    dailyPanel(data.day,data.load_day)+
     '<section class="dc-panel dc-ledger"><div class="dc-head"><div><h3>大渡河梯级计划</h3><p>按上游至下游排列 · 主网并网口径</p></div><label>调节方式 <select aria-label="筛选调节方式"><option value="all">全部电站</option><option value="reservoir">库容式</option><option value="river">径流式近似</option></select></label></div><div class="dc-scroll" tabindex="0" aria-label="梯级计划表可左右滚动"><table><thead><tr>'+headers.map(h=>'<th scope="col">'+h+'</th>').join('')+'</tr></thead><tbody></tbody></table></div><div class="dc-foot"><span data-count></span><span>入流 = 区间来水 + 到达本站的上游下泄</span></div></section>'+
     '<details class="dc-help"><summary>指标口径与操作说明</summary><p>选择时段或点击供需图，可同步查看机组计划、节点价和线路校核。冻结申报是本次归档引用的版本。修改申报后，需重新冻结并运行，才会生成新归档。</p><p>SCUC 确定机组组合和初步计划，SCED 在既定组合下计算分站中标出力和节点参考价。负荷加权参考价以各节点用户负荷为权重。日前预出清用于安排计划，不产生结算金额。</p><p>线路负载率按基本工况的绝对潮流除以线限计算。煤机预留用于覆盖本模型的可靠性要求。流量以 m³/s 表示，每段水量等于流量乘 900 秒。</p></details>';
 
@@ -50,7 +78,7 @@ export default function({parentElement,data}){
   const filter=root.querySelector('[aria-label="筛选调节方式"]');
   filter.value=state.type;
   const chart=root.querySelector('.supply-chart');
-  const checks=root.querySelector('.dc-checks'), body=root.querySelector('tbody');
+  const checks=root.querySelector('.dc-grid .dc-checks'), body=root.querySelector('.dc-ledger tbody');
   const check=(name,value,flag=false)=>'<div><dt>'+name+'</dt><dd'+(flag?' class="warn"':'')+'>'+value+'</dd></div>';
   function update(){
     const q=state.q, g=data.grid[q], line=g.base, percent=s.max_line_pu[q]*100;
