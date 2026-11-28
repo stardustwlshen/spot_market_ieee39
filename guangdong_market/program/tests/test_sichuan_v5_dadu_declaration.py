@@ -16,8 +16,11 @@ def test_submission_workspace(tmp_path, monkeypatch):
     monkeypatch.setattr(backend,'prepare_company_submission',unexpected)
     app = AppTest.from_file(str(PROGRAM/'app/四川.py'), default_timeout=240).run()
     assert not app.exception and not app.error
-    for scenario in ('dry_peak','forecast_error','wet_low'):
-        app.selectbox(key='dadu_scenario').select(scenario).run()
+    for season,level,scenario in [('dry','normal','dry_peak'),('dry','extreme','dry_peak'),
+                                  ('wet','extreme','wet_low'),('wet','normal','wet_low')]:
+        app.radio(key='da_season').set_value(season)
+        app.radio(key='da_error_level').set_value(level).run()
+        assert app.query_params['scenario'] == season+'_'+level
         assert not app.exception and not app.error
         from sichuan_v5_dadu_view import _load_sheet
         sheet = _load_sheet(scenario)
@@ -33,11 +36,16 @@ def test_submission_workspace(tmp_path, monkeypatch):
     assert app.button(key='dadu_run').disabled
     app.button(key='dadu_freeze').click().run()
     assert not backend.list_dadu(tmp_path) and not app.button(key='dadu_run').disabled
+    app.radio(key='da_error_level').set_value('extreme').run()
+    assert not app.button(key='dadu_run').disabled
+    app.radio(key='da_error_level').set_value('normal').run()
     app.button(key='dadu_run').click().run()
     assert not app.exception and not app.error
     from sichuan_v5_dadu_da import list_days, read_day
     name, = list_days(tmp_path)
     archive = read_day(tmp_path,name)
+    assert archive['scenario']=='wet_normal'
+    assert archive['margin']['da_extra_up_mw']==230
     assert archive['company']['declaration_sha256']==sheet['declaration_sha256']
     assert len(archive['da'])==len(archive['scuc'])==96
     assert 'rt' not in archive and 'money' not in archive and not backend.list_dadu(tmp_path)
@@ -48,6 +56,20 @@ def test_submission_workspace(tmp_path, monkeypatch):
     app.multiselect(key='da_compare').set_value(['双江口','安谷']).run()
     assert not app.exception and not app.error
     assert len(list_days(tmp_path)) == 1
+
+
+@pytest.mark.parametrize('season,expected', [('wet',(230,670)),('dry',(250,750))])
+def test_forecast_grade_changes_only_the_market_margin(monkeypatch,season,expected):
+    monkeypatch.syspath_prepend(str(PROGRAM/'app'))
+    from dataclasses import replace
+    from sichuan_v5_dadu_da import NET_ERROR_SIGMA, SEASON_TEMPLATE
+    from sichuan_v5_dadu_case import build_case
+    from sichuan_v5_dadu_run import _uncertainty_boundary
+    case,_ = build_case(SEASON_TEMPLATE[season],39)
+    for level,mw in zip(('normal','extreme'),expected):
+        market, note = _uncertainty_boundary(case,season+'_'+level,error_sigma=NET_ERROR_SIGMA[level])
+        assert market==replace(case,reserve_mw=case.reserve_mw+mw,deliverable_up_mw=mw)
+        assert note['da_extra_up_mw']==mw
 
 
 def test_reviewed_filing_and_ancillary_limits_bind_both_stages():

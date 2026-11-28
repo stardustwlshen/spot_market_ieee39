@@ -198,19 +198,19 @@ def _stock_value_change(cascade, handoff, water_values):
     return stations+transit
 
 
-def _uncertainty_boundary(market, scenario):
+def _uncertainty_boundary(market, scenario, *, error_sigma=None):
     """D-1 synthetic design prior; no RT observations or seed enter this decision."""
     from statistics import NormalDist
     peak = max(sum(row.values()) for row in market.demand)
-    sigma = .03 if scenario == "forecast_error" else 0.
+    sigma = (.03 if scenario == "forecast_error" else 0.) if error_sigma is None else error_sigma
     quantile = .95
     extra = 10 * math.ceil(peak * sigma * NormalDist().inv_cdf(quantile) / 10.)
     report = dict(issued_at="D-1 08:30 Asia/Shanghai", forecast_peak_mw=peak,
                   assumed_net_error_sigma_fraction=sigma, one_sided_quantile=quantile,
                   da_extra_up_mw=extra, da_requirement_mw=market.reserve_mw+extra,
                   rt_requirement_mw=market.reserve_mw,
-                  basis="事前合成净负荷误差尺度占预测峰值3%，单侧正态95%设计分位并向上取整至10 MW。"
-                        "仅预测偏差场景使用；未用当日误差校准，亦非四川备用规则或实测覆盖率。"
+                  basis=f"事前合成净负荷预测误差标准差取系统负荷预测峰值的{sigma:.0%}，单侧正态95%设计分位向上取整至10 MW。"
+                        "参数为仿真假设，未用当日实际数据校准。"
                         "在线煤机按15分钟爬坡和剩余容量留足日前裕度；按各节点日前负荷占比分摊的"
                         "同步激活潮流须满足线路限额，实时允许调用。")
     return replace(market, reserve_mw=market.reserve_mw+extra, deliverable_up_mw=extra), report

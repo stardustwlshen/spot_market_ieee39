@@ -9,10 +9,11 @@ import pandas as pd
 import streamlit as st
 
 from sichuan_v5_ancillary import Award
-from sichuan_v5_dadu_da import list_days, read_day, run_day
+from sichuan_v5_dadu_da import (DAY_SCENARIOS, ERROR_LEVELS, LEGACY_SCENARIOS, NET_ERROR_SIGMA,
+                                SEASONS, SEASON_TEMPLATE, list_days, read_day, run_day)
 from sichuan_v5_dadu_live import solve_visible
 from sichuan_v5_dadu_run import declaration_path, declaration_record, freeze_declaration
-from sichuan_v5_dadu_view import KINDS, SCENARIOS, _chart, _load_sheet
+from sichuan_v5_dadu_view import KINDS, SCENARIOS as LEGACY_LABELS, _chart, _load_sheet
 from sichuan_v5_declaration_sheet import render_sheet
 
 
@@ -24,10 +25,17 @@ def period(q):
     return stamp(q)+'–'+stamp(q+1)
 
 
+def scenario_label(scenario):
+    if scenario in DAY_SCENARIOS:
+        season, level = DAY_SCENARIOS[scenario]
+        return f'{SEASONS[season]} · {ERROR_LEVELS[level]}'
+    return LEGACY_LABELS[scenario]
+
+
 def archive_label(name):
     scenario, date, digest = name.rsplit('_',2)
     local = datetime.strptime(date,'%Y%m%dT%H%M%S%fZ') + timedelta(hours=8)
-    return f'{SCENARIOS[scenario]} · {local:%m-%d %H:%M:%S} · {digest[:6]}'
+    return f'{scenario_label(scenario)} · {local:%m-%d %H:%M:%S} · {digest[:6]}'
 
 
 def price(row,bus):
@@ -109,7 +117,10 @@ def market_results(root,name):
     energy = {k:.25*sum(r['power'][u] for r in da for u in ids) for k,ids in group.items()}
     status = '校核通过' if audit['max_slack_mw'] < 1e-5 else '存在可靠性松弛'
     st.subheader('日前预出清结果')
-    st.caption(f"{SCENARIOS[result['scenario']]} · 96 个 15 分钟时段 · 冻结申报 {result['company']['declaration_sha256'][:12]} · {status}。日前量价用于计划和分析，不结算。")
+    st.caption(f"{scenario_label(result['scenario'])} · 96 个 15 分钟时段 · 冻结申报 {result['company']['declaration_sha256'][:12]} · {status}。日前量价用于计划和分析，不结算。")
+    if result.get('scenario_settings'):
+        m = result['margin']
+        st.caption(f"代表月 {result['scenario_settings']['month']} 月 · 日前净负荷预测误差标准差按负荷峰值的 {m['assumed_net_error_sigma_fraction']:.0%} 取值 · 向上预留 {m['da_extra_up_mw']:,.0f} MW。")
     cols = st.columns(4)
     cols[0].metric('全流域水电量',f"{energy['hydro']/1000:,.2f} GWh")
     cols[1].metric('预测负荷峰值',f"{max(sum(r['demand'].values()) for r in da):,.0f} MW")
@@ -183,6 +194,18 @@ def market_results(root,name):
     st.download_button('下载完整日前结果（CSV 与原始数据）',export_day(str(root),name),name[:28]+'-日前结果.zip','application/zip')
 
 
+def published_days(root,scenario):
+    names = list_days(root,scenario)
+    if not names:
+        st.info('该场景尚无日前结果。请在机组申报页冻结申报并运行日前预出清。')
+        return
+    name = st.selectbox('已发布的日前结果',names,format_func=archive_label,key='da_archive_'+scenario)
+    try:
+        market_results(root,name)
+    except (ValueError,OSError) as exc:
+        st.error(f'读取日前归档失败：{exc}')
+
+
 def workspace(root):
     from sichuan_v5_dadu_style import apply_dadu_style
     apply_dadu_style()
@@ -193,26 +216,36 @@ def workspace(root):
         [data-testid="stMetric"]{padding:.65rem .9rem;border-left:3px solid #45857c;background:#f4f8f6;color:#173746}
         </style>""")
     st.title('大渡河 · 日前现货市场')
+    requested = st.query_params.get('scenario')
+    if requested in LEGACY_SCENARIOS and st.query_params.get('stage') == 'da':
+        st.caption('历史场景 · '+LEGACY_LABELS[requested])
+        if st.button('返回水期与预测误差选择'):
+            st.query_params.clear()
+            st.rerun()
+        published_days(root,requested)
+        return
     if 'dadu_workspace' not in st.session_state and st.query_params.get('stage') == 'da':
         st.session_state['dadu_workspace'] = '日前预出清'
-    if 'dadu_scenario' not in st.session_state and st.query_params.get('scenario') in SCENARIOS:
-        st.session_state['dadu_scenario'] = st.query_params['scenario']
+    initial_season, initial_level = DAY_SCENARIOS.get(requested, ('wet','normal'))
     if 'da_next_page' in st.session_state:
         st.session_state['dadu_workspace'] = st.session_state.pop('da_next_page')
     page = st.radio('工作区',['机组申报','日前预出清'],horizontal=True,key='dadu_workspace')
-    scenario = st.selectbox('申报场景',list(SCENARIOS),format_func=SCENARIOS.get,key='dadu_scenario')
+    left, right = st.columns(2)
+    st.session_state.setdefault('da_season', initial_season)
+    st.session_state.setdefault('da_error_level', initial_level)
+    season = left.radio('水期',list(SEASONS),format_func=SEASONS.get,horizontal=True,key='da_season')
+    level = right.radio('预测误差',list(ERROR_LEVELS),format_func=lambda k:'正常' if k=='normal' else '极端',
+                        horizontal=True,key='da_error_level')
+    scenario = f'{season}_{level}'
+    stage = 'da' if page == '日前预出清' else 'filing'
+    if (st.query_params.get('scenario'), st.query_params.get('stage')) != (scenario,stage):
+        st.query_params.from_dict({'scenario':scenario,'stage':stage})
     if page == '日前预出清':
-        names = list_days(root,scenario)
-        if not names:
-            st.info('该场景尚无日前结果。请在机组申报页冻结申报并运行日前预出清。')
-            return
-        name = st.selectbox('已发布的日前结果',names,format_func=archive_label,key='da_archive_'+scenario)
-        try:
-            market_results(root,name)
-        except (ValueError,OSError) as exc:
-            st.error(f'读取日前归档失败：{exc}')
+        published_days(root,scenario)
         return
-    sheet = _load_sheet(scenario)
+    template = SEASON_TEMPLATE[season]
+    sheet = _load_sheet(template)
+    st.caption(f'同一水期共用来水、负荷预测和机组申报。本组合按负荷峰值的 {NET_ERROR_SIGMA[level]:.0%} 模拟净负荷预测误差标准差，用于确定日前向上裕度。')
     company = sheet['company']
     submitted = declaration_path(root,company).is_file()
     c1,c2,c3 = st.columns(3)
@@ -226,7 +259,7 @@ def workspace(root):
     with st.expander('市场边界与其他电源申报'):
         st.caption('默认申报按站冻结。水电核准区间为申报区间与技术可用容量的交集，出清另用市场侧来水。气电执行外部保供计划，普通集中式光伏采用全量零价申报。')
         from sichuan_v5_dadu_case import build_case
-        case,_ = build_case(scenario,39)
+        case,_ = build_case(template,39)
         assets = {a['id']:a for a in sheet['inputs']['assets']}
         rows = []
         for u in case.resources:
@@ -256,7 +289,7 @@ def workspace(root):
             st.session_state['da_archive_'+scenario] = name
             st.session_state['da_next_page'] = '日前预出清'
             st.rerun()
-    render_sheet(sheet,SCENARIOS[scenario])
+    render_sheet(sheet,scenario_label(scenario))
     with st.expander('同时比较多个站的 96 点申报'):
         stations = {s['name']:s['id'] for s in sheet['inputs']['stations']}
         selection = st.multiselect('比较申报电站',list(stations),default=['瀑布沟','深溪沟'],key='da_filing_compare')

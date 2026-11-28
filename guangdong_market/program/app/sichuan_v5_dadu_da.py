@@ -18,7 +18,13 @@ from sichuan_v5_dadu_run import (_bytes, _hash, _market_offers, _policy, _slack,
 from sichuan_v5_energy import PERIODS, ClearingError, day_ahead
 from sichuan_v5_hydro import advance_cascade, initial_cascade_state
 
-RUN = re.compile(r'(wet_low|dry_peak|forecast_error)_\d{8}T\d{12}Z_[0-9a-f]{64}')
+SEASONS = {'wet':'丰水期', 'dry':'枯水期'}
+ERROR_LEVELS = {'normal':'正常预测误差', 'extreme':'极端预测误差'}
+SEASON_TEMPLATE = {'wet':'wet_low', 'dry':'dry_peak'}
+NET_ERROR_SIGMA = {'normal':.01, 'extreme':.03}
+DAY_SCENARIOS = {f'{season}_{level}':(season,level) for season in SEASONS for level in ERROR_LEVELS}
+LEGACY_SCENARIOS = ('wet_low','dry_peak','forecast_error')
+RUN = re.compile('('+'|'.join((*DAY_SCENARIOS,*LEGACY_SCENARIOS))+r')_\d{8}T\d{12}Z_[0-9a-f]{64}')
 SCHEMA = 'sichuan.dadu19.day_ahead.v1'
 
 
@@ -100,7 +106,11 @@ def audit_day(case, rows, bounds):
 
 def run_day(root, *, scenario, declaration_sha256, awards=(), progress=None):
     report(progress,'inputs',0,1,'载入独立日前预测与已确认申报')
-    case, meta = build_case(scenario,39)
+    if scenario not in DAY_SCENARIOS and scenario not in LEGACY_SCENARIOS:
+        raise ClearingError('无法识别的日前场景')
+    season, level = DAY_SCENARIOS.get(scenario, (None,None))
+    template = SEASON_TEMPLATE[season] if season else scenario
+    case, meta = build_case(template,39)
     company = default_declaration(case,meta)
     frozen = declaration_record(company)
     path = declaration_path(root,company)
@@ -119,7 +129,7 @@ def run_day(root, *, scenario, declaration_sha256, awards=(), progress=None):
                                               awards=records,storage_market={})
     policy = _policy(case,meta['month'],progress=progress)
     market,raw,effective,_ = _market_offers(approved,policy)
-    market,margin = _uncertainty_boundary(market,scenario)
+    market,margin = _uncertainty_boundary(market,scenario,error_sigma=NET_ERROR_SIGMA.get(level))
     scuc = []
     report(progress,'da',0,2,'求解 96 点日前机组组合 SCUC')
     rows = day_ahead(market, hydro_bounds=bounds, holds=holds, spot_disabled=disabled,
@@ -137,6 +147,9 @@ def run_day(root, *, scenario, declaration_sha256, awards=(), progress=None):
                   raw_offers=raw,effective_offers=effective,
                   scuc=[dict(quarter=r['quarter'],online=r['online'],power=r['power']) for r in scuc],
                   da=rows, audit=audit)
+    if season:
+        result['scenario_settings'] = dict(season=season, forecast_error=level,
+                                           month=meta['month'], seasonal_template=template)
     signature = source_hashes()
     signature['app/sichuan_v5_dadu_da.py'] = hashlib.sha256(Path(__file__).read_bytes()).hexdigest()
     result['source_hashes'] = signature
