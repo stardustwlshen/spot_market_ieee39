@@ -40,11 +40,11 @@ def _assumptions(case, corridor_scale, gas_scale):
     return replace(case, lines=lines, fixed_schedule=schedule)
 
 
-def _policy(case, month, *, progress=None, operations=None):
+def _policy(case, month, *, progress=None, operations=None, hydro_envelope=None):
     options = {"operations":operations} if operations else {}
     if progress is not None:
         options["progress"] = progress
-    water_mw, water_mwh = operator_hydro_envelope(case, **options)
+    water_mw, water_mwh = operator_hydro_envelope(case, **options) if hydro_envelope is None else hydro_envelope
     other_market = [u for u in case.resources if u.kind in ("thermal", "renewable")]
     other_mw = [sum(row.get(u.id, u.capacity_mw) for u in other_market) for row in case.available]
     supply = [hydro + other for hydro, other in zip(water_mw, other_mw)]

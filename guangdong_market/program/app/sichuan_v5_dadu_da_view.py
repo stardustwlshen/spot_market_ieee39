@@ -11,6 +11,8 @@ import pandas as pd
 import streamlit as st
 
 from sichuan_v5_ancillary import Award
+from sichuan_v5_da_report import render_review, review_data, standalone_report
+from sichuan_v5_da_review import station_quarters, system_quarters
 from sichuan_v5_dadu_da import (DAY_SCENARIOS, ERROR_LEVELS, LEGACY_SCENARIOS, NET_ERROR_SIGMA,
                                 SEASONS, SEASON_TEMPLATE, list_days, read_day, run_day)
 from sichuan_v5_dadu_live import solve_visible
@@ -155,6 +157,29 @@ def export_day(root,name):
         write('各机组日前计划.csv',units)
         if result['inputs'].get('pumped_storage'):
             write('抽水蓄能96点计划与库存.csv',pump_rows(result))
+        diagnostics = []
+        for station in result['inputs']['stations']:
+            for data in station_quarters(result,station):
+                diagnostics.append({'电站':station['name'],'编号':station['id'],'时段':period(data['quarter']),
+                                    '出清弃水 m³/s':data['spill'],'条件下界 m³/s':data['floor'],
+                                    '超出下界 m³/s':data['remaining'],'期初库存 m³':data['initial_m3'],
+                                    '段末库存 m³':data['storage_m3'],'本段区间来水 m³/s':data['local'],
+                                    '上游到水 m³/s':data['arrival']})
+        write('各站弃水条件下界.csv',diagnostics)
+        ref = result.get('storage_comparison',{})
+        if ref.get('status')=='verified':
+            active = system_quarters(result['da'],result['inputs']['assets'],result['inputs']['lines'])
+            fields = {'hydro':'常规水电 MW','thermal':'煤电 MW','station_spill_m3':'各站弃水之和 m³',
+                      'pv_cut':'弃光 MW','weighted_price':'负荷加权价 元每MWh','residual_load':'剩余负荷 MW',
+                      'pump':'抽水 MW','storage':'抽蓄发电 MW'}
+            paired = []
+            for q,(on,off) in enumerate(zip(active,ref['quarters'])):
+                values = {'时段':period(q)}
+                for k,label in fields.items():
+                    values['投入 '+label],values['停运 '+label] = on[k],off[k]
+                    values['投入减停运 '+label] = on[k]-off[k] if off[k] is not None and on[k] is not None else None
+                paired.append(values)
+            write('抽蓄投运停运对照.csv',paired)
         write('各站申报边界与水账.csv',stations)
         write('线路潮流.csv',lines)
         write('39节点参考价_元每MWh.csv',prices)
@@ -164,11 +189,7 @@ def export_day(root,name):
 
 def market_results(root,name):
     result = read_day(root,name)
-    da, inp, audit = result['da'],result['inputs'],result['audit']
-    group = {k:[a['id'] for a in inp['assets'] if a['kind']==k] for k in DAY_KINDS
-             if any(a['kind']==k for a in inp['assets'])}
-    by_name = {s['name']:s for s in inp['stations']}
-    energy = {k:.25*sum(r['power'][u] for r in da for u in ids) for k,ids in group.items()}
+    inp, audit = result['inputs'],result['audit']
     status = '校核通过' if audit['max_slack_mw'] < 1e-5 else '存在可靠性松弛'
     st.subheader('日前预出清结果')
     st.caption(f"{scenario_label(result['scenario'])} · 96 个 15 分钟时段 · 冻结申报 {result['company']['declaration_sha256'][:12]} · {status}。日前量价用于计划和分析，不结算。")
@@ -180,6 +201,21 @@ def market_results(root,name):
         st.caption(f"已确认 19 站 × 96 点工况，分时例外 {len(entries)} 条。孤网供电 {audit['island_energy_mwh']:,.2f} MWh 单列，以下水电量为主网口径。")
         if entries:
             st.dataframe(instruction_rows(entries,{s['id']:s['name'] for s in inp['stations']}),hide_index=True,width='stretch')
+    review = review_data(result,scenario_label(result['scenario']))
+    render_review(review,key='day_review_'+name)
+    a,b = st.columns(2)
+    a.download_button('下载交互复盘（离线 HTML）',standalone_report([review]),result['scenario']+'-日前复盘.html','text/html')
+    b.download_button('下载完整日前结果（CSV 与原始数据）',export_day(str(root),name),name[:28]+'-日前结果.zip','application/zip')
+    with st.expander('更多调度明细 · 各类电源、抽蓄库存、19 站水账与 39 节点价格'):
+        _dispatch_detail(result)
+
+
+def _dispatch_detail(result):
+    da,inp,audit = result['da'],result['inputs'],result['audit']
+    group = {k:[a['id'] for a in inp['assets'] if a['kind']==k] for k in DAY_KINDS
+             if any(a['kind']==k for a in inp['assets'])}
+    by_name = {s['name']:s for s in inp['stations']}
+    energy = {k:.25*sum(r['power'][u] for r in da for u in ids) for k,ids in group.items()}
     cols = st.columns(4)
     cols[0].metric('全流域水电量',f"{energy['hydro']/1000:,.2f} GWh")
     cols[1].metric('预测负荷峰值',f"{max(sum(r['demand'].values()) for r in da):,.0f} MW")
@@ -272,7 +308,6 @@ def market_results(root,name):
         st.dataframe(sorted(lines,key=lambda l:-l['负载率 %']),hide_index=True,width='stretch')
         st.dataframe([{'节点':int(b),'参考价 元/MWh':v} for b,v in sorted(row['raw_nodal_prices'].items(),key=lambda x:int(x[0]))],hide_index=True)
         st.caption(f"全天最大节点平衡残差 {audit['max_node_residual_mw']:.2g} MW，线路越限 {audit['max_line_overload_mw']:.2g} MW，库容复算误差 {audit['max_storage_error_m3']:.2g} m³，上游到水误差 {audit['max_arrival_error_m3']:.2g} m³。节点价取固定组合 SCED 的原始节点平衡对偶。")
-    st.download_button('下载完整日前结果（CSV 与原始数据）',export_day(str(root),name),name[:28]+'-日前结果.zip','application/zip')
 
 
 def published_days(root,scenario):
@@ -444,10 +479,12 @@ def workspace(root):
         st.caption('辅助服务中标量作为外部边界，可导入 CSV。默认无外部中标占位。时段序号为 1–96。')
         st.download_button('下载占位模板','\ufeff时段序号,机组编号,调频向上MW,调频向下MW,备用向上MW\n','辅助服务占位.csv','text/csv')
         upload = st.file_uploader('导入调频、备用占位（可选）',type='csv',key='da_awards_'+scenario)
+        compare = st.checkbox('同时复算抽蓄停运对照',value=True,key='da_psh_compare')
+        st.caption('勾选后，以同一份冻结申报分别运行抽蓄投运和停运的日前 SCUC、SCED。')
     if run:
         try:
             records = read_awards(upload)
-            name,_ = solve_visible(run_day,root,dict(scenario=scenario,declaration_sha256=company['declaration_sha256'],awards=records),
+            name,_ = solve_visible(run_day,root,dict(scenario=scenario,declaration_sha256=company['declaration_sha256'],awards=records,compare_storage=compare),
                                    st.container(),'日前预出清',day_only=True)
         except (ValueError,RuntimeError,OSError,TypeError,csv.Error) as exc:
             st.error(str(exc))

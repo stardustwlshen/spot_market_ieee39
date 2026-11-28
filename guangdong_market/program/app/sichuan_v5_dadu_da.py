@@ -1,5 +1,5 @@
 """Day-ahead energy clearing and independently replayable Dadu publication."""
-from dataclasses import asdict
+from dataclasses import asdict, replace
 from datetime import datetime, timezone
 import gzip
 import hashlib
@@ -19,6 +19,7 @@ from sichuan_v5_dadu_run import (_bytes, _hash, _market_offers, _policy, _slack,
 from sichuan_v5_energy import PERIODS, ClearingError, day_ahead
 from sichuan_v5_hydro import advance_cascade, initial_cascade_state
 from sichuan_v5_pumped_storage import PSH, audit_pumped, build_day_case
+from sichuan_v5_da_review import system_quarters, daily_metrics
 
 SEASONS = {'wet':'丰水期', 'dry':'枯水期'}
 ERROR_LEVELS = {'normal':'正常预测误差', 'extreme':'极端预测误差'}
@@ -119,7 +120,7 @@ def audit_day(case, rows, bounds, operations=None):
                                   for (u,d),queue in state.in_transit_m3.items()])
 
 
-def run_day(root, *, scenario, declaration_sha256, awards=(), progress=None):
+def run_day(root, *, scenario, declaration_sha256, awards=(), progress=None, compare_storage=True):
     report(progress,'inputs',0,1,'载入独立日前预测与已确认申报')
     if scenario not in DAY_SCENARIOS and scenario not in LEGACY_SCENARIOS:
         raise ClearingError('无法识别的日前场景')
@@ -160,14 +161,34 @@ def run_day(root, *, scenario, declaration_sha256, awards=(), progress=None):
                      equal_offer_priority=True, on_scuc_dispatch=scuc.extend,
                      on_commitment_solved=lambda:report(progress,'da',1,2,'组合已固定，求解 SCED、节点参考价与同价分配'))
     report(progress,'da',2,2,'日前机组组合和固定组合经济调度完成')
-    report(progress,'publish',0,2,'逐段复算节点和梯级水量平衡、日末库存及在途水量')
     audit = audit_day(market,rows,bounds,active)
     audit['pumped_storage'] = audit_pumped(market,rows)
     audit_pumped(market,scuc)
+    comparison = dict(status='skipped')
+    lines = [asdict(line) for line in market.lines]
+    if compare_storage:
+        report(progress,'comparison',0,2,'抽蓄停运对照：重新核定市场力缓解和机组组合')
+        idle = replace(approved,storage_plan=tuple({PSH:0.} for _ in range(PERIODS)))
+        envelope = (policy['operator_hydro_capacity_mw'],policy['operator_hydro_supply_mwh'])
+        idle_policy = _policy(idle,meta['month'],hydro_envelope=envelope)
+        idle,_,_,_ = _market_offers(idle,idle_policy)
+        idle,_ = _uncertainty_boundary(idle,scenario,error_sigma=NET_ERROR_SIGMA.get(level))
+        try:
+            reference = day_ahead(idle,operations=active,hydro_bounds=bounds,holds=holds,spot_disabled=disabled,
+                                  equal_offer_priority=True,on_commitment_solved=lambda:report(progress,'comparison',1,2,'停运对照：组合已固定，求解 SCED 和节点参考价'))
+            idle_audit = audit_day(idle,reference,bounds,active)
+            idle_audit['pumped_storage'] = audit_pumped(idle,reference)
+            baseline = system_quarters(reference,meta['assets'],lines)
+            comparison = dict(status='verified',declaration_sha256=declaration_sha256,
+                              mitigation=idle_policy['active'],quarters=baseline,totals=daily_metrics(baseline),audit=idle_audit)
+        except ClearingError as exc:
+            comparison = dict(status='unavailable',reason=str(exc))
+        report(progress,'comparison',2,2,'抽蓄停运对照已完成' if comparison['status']=='verified' else '抽蓄停运对照未通过，保留主算例')
+    report(progress,'publish',0,2,'整理水电申报、出清及水量复核结果')
     result = dict(schema=SCHEMA, scenario=scenario, company=frozen, bounds=bounds,
                   assumptions={k:meta[k] for k in ('rules_pdf_sha256','hydraulic_limits_note','network_assumption','pv_category','gas_plan_note')},
                   policy=policy, margin=margin, awards=[asdict(a) for a in records],
-                  inputs=dict(stations=meta['stations'],assets=meta['assets'],lines=[asdict(l) for l in market.lines],
+                  storage_comparison=comparison,inputs=dict(stations=meta['stations'],assets=meta['assets'],lines=lines,
                               available=market.available,fixed_schedule=market.fixed_schedule,pumped_storage=meta['pumped_storage'],
                               resources=[asdict(r) for r in market.resources]),
                   raw_offers=raw,effective_offers=effective,
@@ -182,6 +203,8 @@ def run_day(root, *, scenario, declaration_sha256, awards=(), progress=None):
     signature['app/'+ops_file.name] = hashlib.sha256(ops_file.read_bytes()).hexdigest()
     pump_file = Path(__file__).with_name('sichuan_v5_pumped_storage.py')
     signature['app/'+pump_file.name] = hashlib.sha256(pump_file.read_bytes()).hexdigest()
+    review_file = Path(__file__).with_name('sichuan_v5_da_review.py')
+    signature['app/'+review_file.name] = hashlib.sha256(review_file.read_bytes()).hexdigest()
     result['source_hashes'] = signature
     packed = gzip.compress(_bytes(result),mtime=0)
     stamp = datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%S%fZ')

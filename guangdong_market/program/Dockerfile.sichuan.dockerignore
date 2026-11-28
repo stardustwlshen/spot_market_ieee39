@@ -4,7 +4,16 @@
 !app/四川.py
 !app/market_rule_profile.py
 !app/sichuan_v5_*.py
+!app/dadu_sheet/
+!app/dadu_sheet/*.css
+!app/dadu_sheet/*.js
 !data/
+!data/dadu19/
+!data/dadu19/*.csv
+!data/dadu19/scenarios.json
+!data/dadu19/declarations/
+!data/dadu19/declarations/*.json
+!data/dadu19/declarations/*.json.gz
 !data/case39/
 !data/case39/buses.csv
 !data/case39/branches.csv

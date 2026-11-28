@@ -18,7 +18,7 @@ _STAGES = {
 class LiveProgress:
     def __init__(self, container, label, day_only=False):
         self.stages = ({**{k:v for k,v in _STAGES.items() if k in ('inputs','company','market','da')},
-                        'publish':(5,'校核并发布','项')} if day_only else _STAGES)
+                        'comparison':(5,'抽蓄停运对照','项求解'),'publish':(6,'校核并发布','项')} if day_only else _STAGES)
         self.label = label
         self.started = monotonic()
         self.last_message = None

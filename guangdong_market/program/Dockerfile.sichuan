@@ -7,6 +7,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends libstdc++6 \
 COPY requirements-runtime.txt .
 RUN python -m pip install --no-cache-dir -r requirements-runtime.txt && python -m pip check
 COPY app/四川.py app/market_rule_profile.py app/sichuan_v5_*.py ./app/
+COPY app/dadu_sheet/ ./app/dadu_sheet/
+COPY data/dadu19/ ./data/dadu19/
 COPY data/case39/buses.csv data/case39/branches.csv ./data/case39/
 COPY scripts/launch_sichuan.py scripts/host_sichuan.py ./scripts/
 RUN mkdir runs_sichuan_v5_consultation && chown 10001:10001 runs_sichuan_v5_consultation
