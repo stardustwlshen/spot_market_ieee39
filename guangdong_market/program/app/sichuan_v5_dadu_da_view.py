@@ -86,6 +86,10 @@ def tables(result, q):
         filing = result['company'].get('operations')
         active = [e for e in filing['entries'] if e['station']==uid and e['first']<=q<=e['last']] if filing else []
         island = sum(e['value'] for e in active if e['kind']=='island')
+        level = None
+        if s['model']=='reservoir' and s.get('storage_m3',0)>0 and s.get('reference_dead_level_m') and s.get('reference_normal_level_m'):
+            dead,normal = float(s['reference_dead_level_m']),float(s['reference_normal_level_m'])
+            level = dead+(normal-dead)*h['storage_m3']/s['storage_m3']
         status = '可用' if filing else '历史未归档'
         for entry in active:
             if entry['kind'] in ('offline','island'):
@@ -93,10 +97,10 @@ def tables(result, q):
         stations.append({'时段':period(q),'电站':s['name'],'节点':s['bus'],'确认工况':status,
             '运行要求':'、'.join(map(instruction_label,active)) or '—','孤网计划 MW':island if filing else None,
             '核准下限 MW':low,
-            '核准上限 MW':high,'中标 MW':row['power'][uid],'节点参考价 元/MWh':price(row,s['bus']),
+            '核准上限 MW':high,'日前并网 MW':row['power'][uid],'节点参考价 元/MWh':price(row,s['bus']),
             '区间来水 m³/s':h['natural_inflow_m3s'],'上游到水 m³/s':h['upstream_arrival_m3']/900,
             '过机 m³/s':h['turbine_m3s'],'旁泄 m³/s':h['eco_bypass_m3s'],'弃水 m³/s':h['water_spill_m3s'],
-            '总下泄 m³/s':h['release_m3s'],'段末库容 亿m³':h['storage_m3']/1e8})
+            '总下泄 m³/s':h['release_m3s'],'段末库容 亿m³':h['storage_m3']/1e8,'折算段末水位 m':level})
     lines = [{'时段':period(q),'线路':l['id'],'起点':l['source'],'终点':l['target'],
               '潮流 MW':row['flows'][l['id']],'限额 MW':l['limit_mw'],
               '负载率 %':100*abs(row['flows'][l['id']])/l['limit_mw']} for l in inp['lines']]
@@ -198,7 +202,7 @@ def market_results(root,name):
     stations, lines = tables(result,q)
     st.dataframe(stations,hide_index=True,width='stretch')
     with st.expander('各站全天水量过程与期末库存'):
-        st.caption('区间来水与上游到水分列。库容为时段末值，四座库容式电站可跨时段调节。')
+        st.caption('区间来水与上游到水分列。库容为时段末值，四座库容式电站可跨时段调节。段末水位由调节库容作线性换算，仅供算例核对。')
         reservoirs = {r['id']:r for r in result['company']['hydraulic_declaration']['reservoirs']}
         st.dataframe([{'电站':n,'初始 亿m³':v['initial_storage_m3']/1e8,'日末 亿m³':da[-1]['hydro'][u]['storage_m3']/1e8,
             '日末下限 亿m³':v['terminal_min_m3']/1e8,'日末上限 亿m³':v['terminal_max_m3']/1e8}
@@ -250,7 +254,7 @@ def edit_operations(root,sheet):
         st.session_state[key] = entries
     entries = st.session_state[key]
     with st.expander(f'次日工况与特殊运行要求　·　{len(entries)} 条例外',expanded=bool(entries)):
-        st.caption('本算例默认 19 站全天可用。只需录入例外时段，时间均为北京时间。')
+        st.caption('草案 §7.5.1 要求竞价日 09:45 前反馈次日 96 点工况，§7.5.11 规定特殊运行要求。本算例预置 19 站全天可用，按北京时间录入例外。冻结后由程序校验。')
         if entries:
             st.dataframe(instruction_rows(entries,names),hide_index=True,width='stretch')
         a,b = st.columns(2)
@@ -261,9 +265,26 @@ def edit_operations(root,sheet):
         a,b,c = st.columns(3)
         first = a.selectbox('开始时间',range(96),format_func=stamp,key='da_op_first')
         end = b.selectbox('结束时间',range(1,97),format_func=stamp,index=95,key='da_op_end')
+        offer = base['offers'][uid]
+        lake = next(r for r in base['hydraulic_declaration']['reservoirs'] if r['id']==uid)
+        default = 0.
+        if first < end:
+            lower = max(offer['minimum_mw'][first:end])
+            upper = min(offer['available_mw'][first:end])
+            if kind in ('minimum','maximum','fixed'):
+                st.caption(f'所选各段共同的基础并网区间为 {lower:,.1f}–{upper:,.1f} MW。')
+                default = {'minimum':lower,'maximum':upper,'fixed':(lower+upper)/2}[kind]
+            elif kind=='island':
+                default = min(offer['technical_available_mw'][first:end])/2
+            elif kind=='release':
+                default = lake['min_release_m3s']
+            elif kind.startswith('level_'):
+                dead,normal = float(station['reference_dead_level_m']),float(station['reference_normal_level_m'])
+                default = dead+(normal-dead)*lake['initial_storage_m3']/station['storage_m3']
         value = 0.
         if kind != 'offline':
-            value = c.number_input('控制值（'+UNITS[kind]+'）',min_value=0.,format='%.2f',key='da_op_value_'+kind)
+            value = c.number_input('控制值（'+UNITS[kind]+'）',min_value=0.,value=float(default),format='%.3f',
+                                   key='da_op_value_'+kind+'_'+uid)
         if kind.startswith('level_'):
             st.caption(f"本算例在死水位 {station['reference_dead_level_m']} m 与正常蓄水位 {station['reference_normal_level_m']} m 之间线性换算段末调节库容，并校核水期运行边界。")
         if kind=='island':

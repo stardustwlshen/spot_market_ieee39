@@ -23,7 +23,7 @@ jobs:
         with:
           python-version: '3.12'
       - run: python -m pip install -r requirements-dev.txt
-      - run: python -m pytest -q tests/test_sichuan_v5_dadu_declaration.py
+      - run: python -m pytest -q tests/test_sichuan_v5_dadu_declaration.py tests/test_sichuan_v5_dadu_envelope.py tests/test_sichuan_v5_hydro.py tests/test_sichuan_v5_da_equal_offers.py tests/test_sichuan_v5_ancillary.py
       - name: Run four seasonal and uncertainty combinations
         run: python verify_scenarios.py
       - name: Exercise filing and published results in Chromium

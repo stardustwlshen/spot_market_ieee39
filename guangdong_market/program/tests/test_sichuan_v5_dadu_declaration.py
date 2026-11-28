@@ -38,7 +38,7 @@ def test_submission_workspace(tmp_path, monkeypatch):
     app.selectbox(key='da_op_kind').set_value('island').run()
     app.selectbox(key='da_op_first').set_value(48)
     app.selectbox(key='da_op_end').set_value(52)
-    app.number_input(key='da_op_value_island').set_value(80.)
+    app.number_input(key='da_op_value_island_D11').set_value(80.)
     app.button(key='da_op_add').click().run()
     assert not app.exception and not app.error
     app.button(key='dadu_freeze').click().run()
@@ -57,6 +57,13 @@ def test_submission_workspace(tmp_path, monkeypatch):
     assert archive['company']['operations']['entries']==[dict(station='D11',first=48,last=51,kind='island',value=80.)]
     assert archive['audit']['island_energy_mwh']==pytest.approx(80.)
     assert archive['audit']['max_flow_error_m3s'] < 1e-4
+    from sichuan_v5_dadu_da_view import tables
+    water,_ = tables(archive,48)
+    island = next(s for s in water if s['电站']=='深溪沟')
+    assert island['孤网计划 MW']==80. and island['日前并网 MW']==pytest.approx(0.)
+    level = next(s['折算段末水位 m'] for s in water if s['电站']=='瀑布沟')
+    assert 790. <= level <= 850.
+
     for t in range(48,52):
         assert archive['da'][t]['power']['D11']==pytest.approx(0.)
         assert archive['scuc'][t]['power']['D11']==pytest.approx(0.)
