@@ -11,12 +11,12 @@ import pandas as pd
 import streamlit as st
 
 from sichuan_v5_ancillary import Award
+from sichuan_v5_da_console import console_header, render_console
 from sichuan_v5_da_report import render_review, review_data, standalone_report
 from sichuan_v5_da_review import station_quarters, system_quarters
 from sichuan_v5_dadu_da import (DAY_SCENARIOS, ERROR_LEVELS, LEGACY_SCENARIOS, NET_ERROR_SIGMA,
                                 SEASONS, SEASON_TEMPLATE, list_days, read_day, run_day)
 from sichuan_v5_dadu_live import solve_visible
-from sichuan_v5_dadu_lesson import lesson_html, packed_lesson, render_lesson
 from sichuan_v5_dadu_operations import DayOperations, LABELS, UNITS, with_operations
 from sichuan_v5_pumped_storage import build_day_case
 from sichuan_v5_dadu_run import declaration_path, declaration_record, freeze_declaration
@@ -393,37 +393,21 @@ def edit_operations(root,sheet):
     return with_operations(base,entries),pointer
 
 
-@st.cache_data(show_spinner=False, max_entries=6)
-def _lesson_archive(root, name, label):
-    return packed_lesson(root, name, label)
-
-
-def beginner_workspace(root, scenario):
+def dispatch_overview(root, scenario):
     names = list_days(root, scenario)
     if names:
         try:
-            case = _lesson_archive(str(root), names[0], scenario_label(scenario))
-            render_lesson(case, key='lesson_'+names[0])
-            st.download_button('下载这一课，离线练习', lesson_html([case]), scenario+'-日前入门.html','text/html')
+            render_console(root, names[0], archive_label(names[0]))
         except (OSError, ValueError) as exc:
-            st.error(f'打开教学算例失败：{exc}')
+            st.error(f'读取日前归档失败：{exc}')
     else:
-        st.info('这个场景还没有日前结果。先使用默认申报运行一次，出清后即可在这里练习。')
-    if st.button('用这个场景自己申报', key='da_lesson_file'):
-        st.session_state['da_next_page'] = '机组申报'
-        st.rerun()
+        st.info('该场景尚无日前归档。进入机组申报，冻结申报并运行日前预出清后，即可查看运行总览。')
 
 
 def workspace(root):
     from sichuan_v5_dadu_style import apply_dadu_style
     apply_dadu_style()
-    st.html("""<style>
-        [data-testid="stMainBlockContainer"]{max-width:1460px;padding-top:2.5rem}
-        [data-testid="stSkillsNudge"]{display:none}
-        .st-key-dadu_run button{background:#125e53;border-color:#125e53}
-        [data-testid="stMetric"]{padding:.65rem .9rem;border-left:3px solid #45857c;background:#f4f8f6;color:#173746}
-        </style>""")
-    st.title('大渡河 · 日前现货市场')
+    console_header()
     requested = st.query_params.get('scenario')
     if requested in LEGACY_SCENARIOS and st.query_params.get('stage') == 'da':
         st.caption('历史场景 · '+LEGACY_LABELS[requested])
@@ -432,15 +416,17 @@ def workspace(root):
             st.rerun()
         published_days(root,requested)
         return
-    pages = {'learn':'入门体验', 'filing':'机组申报', 'da':'日前预出清'}
-    if 'dadu_workspace' not in st.session_state:
-        default = 'learn' if list_days(root, requested if requested in DAY_SCENARIOS else 'wet_normal') else 'filing'
-        st.session_state['dadu_workspace'] = pages.get(st.query_params.get('stage'), pages[default])
+    pages = {'ops':'运行总览', 'filing':'机组申报', 'da':'日前预出清'}
+    if st.session_state.get('dadu_workspace') not in pages.values():
+        default = 'ops' if list_days(root, requested if requested in DAY_SCENARIOS else 'wet_normal') else 'filing'
+        stage = st.query_params.get('stage')
+        st.session_state['dadu_workspace'] = pages.get('ops' if stage == 'learn' else stage, pages[default])
     initial_season, initial_level = DAY_SCENARIOS.get(requested, ('wet','normal'))
     if 'da_next_page' in st.session_state:
         st.session_state['dadu_workspace'] = st.session_state.pop('da_next_page')
-    page = st.radio('工作区',list(pages.values()),horizontal=True,key='dadu_workspace')
-    left, right = st.columns(2)
+    with st.container(key='dadu_controls'):
+        nav, left, right = st.columns([2.2,1,1])
+    page = nav.radio('工作区',list(pages.values()),horizontal=True,key='dadu_workspace')
     st.session_state.setdefault('da_season', initial_season)
     st.session_state.setdefault('da_error_level', initial_level)
     season = left.radio('水期',list(SEASONS),format_func=SEASONS.get,horizontal=True,key='da_season')
@@ -450,8 +436,8 @@ def workspace(root):
     stage = next(k for k, v in pages.items() if v == page)
     if (st.query_params.get('scenario'), st.query_params.get('stage')) != (scenario,stage):
         st.query_params.from_dict({'scenario':scenario,'stage':stage})
-    if page == '入门体验':
-        beginner_workspace(root,scenario)
+    if page == '运行总览':
+        dispatch_overview(root,scenario)
         return
     if page == '日前预出清':
         published_days(root,scenario)
@@ -459,7 +445,7 @@ def workspace(root):
     template = SEASON_TEMPLATE[season]
     sheet = _load_sheet(template)
     st.caption(f'同一水期共用来水、负荷预测和机组申报。本组合按负荷峰值的 {NET_ERROR_SIGMA[level]:.0%} 模拟净负荷预测误差标准差，用于确定日前向上裕度。')
-    st.caption('第一次动手可以直接用默认参数：先点“确认并冻结 19 站申报”，保存这次提交的内容；再点“运行日前预出清”，查看市场排出的明日计划。')
+    st.caption('提交顺序：核对默认申报或录入分时例外 → 冻结申报版本 → 运行日前预出清。')
     company,pointer = edit_operations(root,sheet)
     ops = DayOperations(company,sheet['inputs']['stations'])
     submitted = declaration_path(root,company).is_file()
@@ -477,6 +463,8 @@ def workspace(root):
     c3.download_button('下载本场景申报单',json.dumps(declaration_record(company),ensure_ascii=False),
                        scenario+'-申报.json','application/json',width='stretch')
     st.caption(('已冻结 · '+company['declaration_sha256'][:12] if submitted else '待确认申报')+'　｜　19 站水电耦合 · 96 个时段 · 日前预出清不结算')
+    progress = st.container()
+    render_sheet(dict(sheet,company=company),scenario_label(scenario),operations=ops)
     case,meta = build_day_case(template)
     pump = meta['pumped_storage']
     st.subheader('抽水蓄能 · 日前抽发计划',anchor='pumped-storage-plan')
@@ -513,14 +501,13 @@ def workspace(root):
         try:
             records = read_awards(upload)
             name,_ = solve_visible(run_day,root,dict(scenario=scenario,declaration_sha256=company['declaration_sha256'],awards=records,compare_storage=compare),
-                                   st.container(),'日前预出清',day_only=True)
+                                   progress,'日前预出清',day_only=True)
         except (ValueError,RuntimeError,OSError,TypeError,csv.Error) as exc:
             st.error(str(exc))
         else:
             st.session_state['da_archive_'+scenario] = name
             st.session_state['da_next_page'] = '日前预出清'
             st.rerun()
-    render_sheet(dict(sheet,company=company),scenario_label(scenario),operations=ops)
     with st.expander('同时比较多个站的 96 点申报'):
         stations = {s['name']:s['id'] for s in sheet['inputs']['stations']}
         selection = st.multiselect('比较申报电站',list(stations),default=['瀑布沟','深溪沟'],key='da_filing_compare')

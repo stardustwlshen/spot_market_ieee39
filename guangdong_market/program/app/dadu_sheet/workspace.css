@@ -1,0 +1,26 @@
+
+[data-testid="stAppViewContainer"],[data-testid="stApp"]{background:#f1f4f7;color:#1d3344}
+[data-testid="stMainBlockContainer"]{max-width:1530px;padding:2.5rem clamp(.85rem,3.3vw,3.5rem) 2rem}
+[data-testid="stMainBlockContainer"] [data-testid="stVerticalBlock"]{gap:.65rem}
+[data-testid="stHeader"]{background:transparent;height:2rem}
+[data-testid="stAppDeployButton"],[data-testid="stSkillsNudge"]{display:none}
+.market-bar{box-sizing:border-box;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:15px 21px;background:#172e43;border-bottom:3px solid #438ba5;color:#fff;border-radius:4px 4px 0 0;font-family:"Segoe UI","Microsoft YaHei",sans-serif}
+.market-brand,.market-context,.market-mark{display:flex;align-items:center}
+.market-brand{gap:14px}.market-mark{height:32px;gap:3px;align-items:flex-end;padding:3px 0 4px}
+.market-mark i{width:5px;background:#76c4d4;transform:skewY(-18deg)}.market-mark i:nth-child(1){height:10px}.market-mark i:nth-child(2){height:17px}.market-mark i:nth-child(3){height:24px}
+.market-bar h1{display:flex;align-items:center;flex-wrap:wrap;margin:0!important;padding:0!important;color:#fff!important;font:650 clamp(18px,2vw,25px)/1.3 "Segoe UI","Microsoft YaHei",sans-serif!important;letter-spacing:.025em}
+.market-bar h1 span{margin-left:14px;border-left:1px solid #678091;padding-left:14px;color:#d1dfe9;font-size:.79em;font-weight:500;letter-spacing:.04em}
+.market-context{gap:12px;color:#b9cad7;font-size:12px}.market-context b{color:#e0eaf0;font-weight:550}.market-context span{border-left:1px solid #516678;padding-left:12px}
+.st-key-dadu_controls{background:#fff;border:1px solid #d2dce5;border-radius:3px;padding:.45rem .9rem}
+.st-key-dadu_controls [role="radiogroup"]{gap:3px}
+.st-key-dadu_controls [role="radiogroup"] label{border-radius:3px;padding:3px 9px;margin:0;color:#3a5366}
+.st-key-dadu_controls [data-testid="stRadioOption"]>div>div:first-child:not([data-testid="stMarkdownContainer"]){display:none}
+.st-key-dadu_controls [data-testid="stRadioOption"]>div{gap:0}
+.st-key-dadu_controls [data-testid="stWidgetLabel"]{min-height:0}
+.st-key-dadu_controls label:has(input:checked){background:#e2eef5;color:#104c73;font-weight:650}
+.st-key-dadu_controls label:focus-within{outline:2px solid #2780af;outline-offset:-2px}
+.st-key-dadu_controls [data-testid="stWidgetLabel"] p{color:#566b7a;font-size:12px}
+.st-key-dadu_controls [role="radiogroup"] p{font-size:14px}
+.st-key-dadu_run button{background:#205d82;border-color:#205d82}
+[data-testid="stMetric"]{border:1px solid #d0dae3;border-radius:3px;background:#fff;padding:.55rem .8rem;font-variant-numeric:tabular-nums}
+@media(max-width:740px){[data-testid="stMainBlockContainer"]{padding-top:2.3rem}.market-bar{padding:12px}.market-context{display:none}.market-brand{gap:8px}.st-key-dadu_controls{padding:.5rem}.st-key-dadu_controls [data-testid="stHorizontalBlock"]{gap:.35rem;flex-wrap:wrap}.st-key-dadu_controls [data-testid="stColumn"]{width:auto!important;min-width:0;flex:1 1 auto}.st-key-dadu_controls [data-testid="stColumn"]:first-child{flex-basis:100%}.st-key-dadu_controls [role="radiogroup"] label{padding:2px 7px}}
