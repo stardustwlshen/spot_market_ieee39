@@ -34,6 +34,13 @@ def test_submission_workspace(tmp_path, monkeypatch):
     with pytest.raises(ValueError, match='已冻结申报'):
         run_day(tmp_path,scenario='wet_low',declaration_sha256='mismatch')
     assert app.button(key='dadu_run').disabled
+    app.selectbox(key='da_op_station').set_value('D11').run()
+    app.selectbox(key='da_op_kind').set_value('island').run()
+    app.selectbox(key='da_op_first').set_value(48)
+    app.selectbox(key='da_op_end').set_value(52)
+    app.number_input(key='da_op_value_island_D11').set_value(80.)
+    app.button(key='da_op_add').click().run()
+    assert not app.exception and not app.error
     app.button(key='dadu_freeze').click().run()
     assert not backend.list_dadu(tmp_path) and not app.button(key='dadu_run').disabled
     app.radio(key='da_error_level').set_value('extreme').run()
@@ -46,7 +53,22 @@ def test_submission_workspace(tmp_path, monkeypatch):
     archive = read_day(tmp_path,name)
     assert archive['scenario']=='wet_normal'
     assert archive['margin']['da_extra_up_mw']==230
-    assert archive['company']['declaration_sha256']==sheet['declaration_sha256']
+    assert archive['company']['base_declaration_sha256']==sheet['declaration_sha256']
+    assert archive['company']['operations']['entries']==[dict(station='D11',first=48,last=51,kind='island',value=80.)]
+    assert archive['audit']['island_energy_mwh']==pytest.approx(80.)
+    assert archive['audit']['max_flow_error_m3s'] < 1e-4
+    from sichuan_v5_dadu_da_view import tables
+    water,_ = tables(archive,48)
+    island = next(s for s in water if s['电站']=='深溪沟')
+    assert island['孤网计划 MW']==80. and island['日前并网 MW']==pytest.approx(0.)
+    level = next(s['折算段末水位 m'] for s in water if s['电站']=='瀑布沟')
+    assert 790. <= level <= 850.
+
+    for t in range(48,52):
+        assert archive['da'][t]['power']['D11']==pytest.approx(0.)
+        assert archive['scuc'][t]['power']['D11']==pytest.approx(0.)
+        assert archive['da'][t]['hydro']['D11']['turbine_m3s']==pytest.approx(80.*sheet['offers']['D11']['consumption_m3_kwh']/3.6)
+
     assert len(archive['da'])==len(archive['scuc'])==96
     assert 'rt' not in archive and 'money' not in archive and not backend.list_dadu(tmp_path)
     assert archive['audit']['max_slack_mw'] < 1e-5
@@ -86,3 +108,35 @@ def test_reviewed_filing_and_ancillary_limits_bind_both_stages():
     with pytest.raises(ClearingError,match='占位'):
         day_ahead(case,hydro_bounds=bounds,holds=({'H':(35.,2.)},)*96)
 
+
+
+def test_special_requirements_freeze_validation(tmp_path,monkeypatch):
+    monkeypatch.syspath_prepend(str(PROGRAM/'app'))
+    from sichuan_v5_dadu_case import build_case
+    from sichuan_v5_dadu_run import default_declaration,freeze_declaration
+    from sichuan_v5_dadu_operations import DayOperations,with_operations
+    from sichuan_v5_dadu_da import run_day,review_filing
+    case,meta = build_case('wet_low',39)
+    base = default_declaration(case,meta)
+    t = 48
+    def entry(uid,kind,x):
+        return dict(station=uid,first=t,last=t,kind=kind,value=x)
+    offer = base['offers']['D10']
+    fixed = (offer['minimum_mw'][t]+offer['available_mw'][t])/2
+    entries = [entry('D10','fixed',fixed),entry('D10','level_min',800.),entry('D11','offline',0.)]
+    company = with_operations(base,entries)
+    ops = DayOperations(company,meta['stations'])
+    bounds = review_filing(case,company,ops)
+    assert bounds[t]['D10']==(fixed,fixed)
+    assert bounds[t]['D11']==(0.,0.)
+    assert bounds[t-1]['D11'][1]>0.
+    assert ops.slots['D10',t]['level_min_m3']>0
+    for wrong in ([entry('D11','level_min',605.)],[entry('D10','maximum',1e8),entry('D10','offline',0.)],
+                  [entry('D11','island',1e8)],entries+[entries[0]]):
+        with pytest.raises(ValueError):
+            DayOperations(with_operations(base,wrong),meta['stations'])
+    assert company['declaration_sha256']==with_operations(base,list(reversed(entries)))['declaration_sha256']
+    frozen = freeze_declaration(tmp_path,company)
+    frozen.write_bytes(frozen.read_bytes()+b' ')
+    with pytest.raises(ValueError,match='校验失败'):
+        run_day(tmp_path,scenario='wet_normal',declaration_sha256=company['declaration_sha256'])

@@ -3,6 +3,8 @@ import csv
 from datetime import datetime, timedelta
 from io import BytesIO, StringIO
 import json
+from pathlib import Path
+from uuid import uuid4
 from zipfile import ZIP_DEFLATED, ZipFile
 
 import pandas as pd
@@ -12,6 +14,7 @@ from sichuan_v5_ancillary import Award
 from sichuan_v5_dadu_da import (DAY_SCENARIOS, ERROR_LEVELS, LEGACY_SCENARIOS, NET_ERROR_SIGMA,
                                 SEASONS, SEASON_TEMPLATE, list_days, read_day, run_day)
 from sichuan_v5_dadu_live import solve_visible
+from sichuan_v5_dadu_operations import DayOperations, LABELS, UNITS, with_operations
 from sichuan_v5_dadu_run import declaration_path, declaration_record, freeze_declaration
 from sichuan_v5_dadu_view import KINDS, SCENARIOS as LEGACY_LABELS, _chart, _load_sheet
 from sichuan_v5_declaration_sheet import render_sheet
@@ -62,6 +65,16 @@ def read_awards(upload):
     return records
 
 
+def instruction_label(e):
+    k = e['kind']
+    return LABELS[k]+(f" {e['value']:g} {UNITS[k]}" if UNITS[k] else '')
+
+
+def instruction_rows(entries,names):
+    return [{'电站':names[e['station']],'生效时间':stamp(e['first'])+'–'+stamp(e['last']+1),
+             '工况或要求':instruction_label(e)} for e in entries]
+
+
 def tables(result, q):
     row = result['da'][q]
     inp = result['inputs']
@@ -70,11 +83,24 @@ def tables(result, q):
         uid = s['id']
         h = row['hydro'][uid]
         low, high = result['bounds'][q][uid]
-        stations.append({'时段':period(q),'电站':s['name'],'节点':s['bus'],'核准下限 MW':low,
-            '核准上限 MW':high,'中标 MW':row['power'][uid],'节点参考价 元/MWh':price(row,s['bus']),
+        filing = result['company'].get('operations')
+        active = [e for e in filing['entries'] if e['station']==uid and e['first']<=q<=e['last']] if filing else []
+        island = sum(e['value'] for e in active if e['kind']=='island')
+        level = None
+        if s['model']=='reservoir' and s.get('storage_m3',0)>0 and s.get('reference_dead_level_m') and s.get('reference_normal_level_m'):
+            dead,normal = float(s['reference_dead_level_m']),float(s['reference_normal_level_m'])
+            level = dead+(normal-dead)*h['storage_m3']/s['storage_m3']
+        status = '可用' if filing else '历史未归档'
+        for entry in active:
+            if entry['kind'] in ('offline','island'):
+                status = LABELS[entry['kind']]
+        stations.append({'时段':period(q),'电站':s['name'],'节点':s['bus'],'确认工况':status,
+            '运行要求':'、'.join(map(instruction_label,active)) or '—','孤网计划 MW':island if filing else None,
+            '核准下限 MW':low,
+            '核准上限 MW':high,'日前并网 MW':row['power'][uid],'节点参考价 元/MWh':price(row,s['bus']),
             '区间来水 m³/s':h['natural_inflow_m3s'],'上游到水 m³/s':h['upstream_arrival_m3']/900,
             '过机 m³/s':h['turbine_m3s'],'旁泄 m³/s':h['eco_bypass_m3s'],'弃水 m³/s':h['water_spill_m3s'],
-            '总下泄 m³/s':h['release_m3s'],'段末库容 亿m³':h['storage_m3']/1e8})
+            '总下泄 m³/s':h['release_m3s'],'段末库容 亿m³':h['storage_m3']/1e8,'折算段末水位 m':level})
     lines = [{'时段':period(q),'线路':l['id'],'起点':l['source'],'终点':l['target'],
               '潮流 MW':row['flows'][l['id']],'限额 MW':l['limit_mw'],
               '负载率 %':100*abs(row['flows'][l['id']])/l['limit_mw']} for l in inp['lines']]
@@ -121,6 +147,11 @@ def market_results(root,name):
     if result.get('scenario_settings'):
         m = result['margin']
         st.caption(f"代表月 {result['scenario_settings']['month']} 月 · 日前净负荷预测误差标准差按负荷峰值的 {m['assumed_net_error_sigma_fraction']:.0%} 取值 · 向上预留 {m['da_extra_up_mw']:,.0f} MW。")
+    if 'operations' in result['company']:
+        entries = result['company']['operations']['entries']
+        st.caption(f"已确认 19 站 × 96 点工况，分时例外 {len(entries)} 条。孤网供电 {audit['island_energy_mwh']:,.2f} MWh 单列，以下水电量为主网口径。")
+        if entries:
+            st.dataframe(instruction_rows(entries,{s['id']:s['name'] for s in inp['stations']}),hide_index=True,width='stretch')
     cols = st.columns(4)
     cols[0].metric('全流域水电量',f"{energy['hydro']/1000:,.2f} GWh")
     cols[1].metric('预测负荷峰值',f"{max(sum(r['demand'].values()) for r in da):,.0f} MW")
@@ -171,7 +202,7 @@ def market_results(root,name):
     stations, lines = tables(result,q)
     st.dataframe(stations,hide_index=True,width='stretch')
     with st.expander('各站全天水量过程与期末库存'):
-        st.caption('区间来水与上游到水分列。库容为时段末值，四座库容式电站可跨时段调节。')
+        st.caption('区间来水与上游到水分列。库容为时段末值，四座库容式电站可跨时段调节。段末水位由调节库容作线性换算，仅供算例核对。')
         reservoirs = {r['id']:r for r in result['company']['hydraulic_declaration']['reservoirs']}
         st.dataframe([{'电站':n,'初始 亿m³':v['initial_storage_m3']/1e8,'日末 亿m³':da[-1]['hydro'][u]['storage_m3']/1e8,
             '日末下限 亿m³':v['terminal_min_m3']/1e8,'日末上限 亿m³':v['terminal_max_m3']/1e8}
@@ -204,6 +235,76 @@ def published_days(root,scenario):
         market_results(root,name)
     except (ValueError,OSError) as exc:
         st.error(f'读取日前归档失败：{exc}')
+
+
+def edit_operations(root,sheet):
+    base,catalog = sheet['company'],sheet['inputs']['stations']
+    names = {s['id']:s['name'] for s in catalog}
+    key = 'da_instructions_'+base['declaration_sha256']
+    pointer = Path(root)/'dadu19_declarations'/('latest-'+base['declaration_sha256']+'.txt')
+    if key not in st.session_state:
+        entries = []
+        if pointer.is_file():
+            digest = pointer.read_text(encoding='ascii')
+            if len(digest)==64 and all(c in '0123456789abcdef' for c in digest):
+                saved = json.loads(declaration_path(root,dict(declaration_sha256=digest)).read_bytes())
+                entries = saved['operations']['entries']
+                if with_operations(base,entries)['declaration_sha256'] != digest:
+                    raise ValueError('最近冻结的工况与本水期不一致')
+        st.session_state[key] = entries
+    entries = st.session_state[key]
+    with st.expander(f'次日工况与特殊运行要求　·　{len(entries)} 条例外',expanded=bool(entries)):
+        st.caption('草案 §7.5.1 要求竞价日 09:45 前反馈次日 96 点工况，§7.5.11 规定特殊运行要求。本算例预置 19 站全天可用，按北京时间录入例外。冻结后由程序校验。')
+        if entries:
+            st.dataframe(instruction_rows(entries,names),hide_index=True,width='stretch')
+        a,b = st.columns(2)
+        uid = a.selectbox('申报电站',list(names),format_func=names.get,index=list(names.values()).index('瀑布沟'),key='da_op_station')
+        station = next(s for s in catalog if s['id']==uid)
+        kinds = [k for k in LABELS if station['model']=='reservoir' or not k.startswith('level_')]
+        kind = b.selectbox('工况或特殊要求',kinds,format_func=LABELS.get,key='da_op_kind')
+        a,b,c = st.columns(3)
+        first = a.selectbox('开始时间',range(96),format_func=stamp,key='da_op_first')
+        end = b.selectbox('结束时间',range(1,97),format_func=stamp,index=95,key='da_op_end')
+        offer = base['offers'][uid]
+        lake = next(r for r in base['hydraulic_declaration']['reservoirs'] if r['id']==uid)
+        default = 0.
+        if first < end:
+            lower = max(offer['minimum_mw'][first:end])
+            upper = min(offer['available_mw'][first:end])
+            if kind in ('minimum','maximum','fixed'):
+                st.caption(f'所选各段共同的基础并网区间为 {lower:,.1f}–{upper:,.1f} MW。')
+                default = {'minimum':lower,'maximum':upper,'fixed':(lower+upper)/2}[kind]
+            elif kind=='island':
+                default = min(offer['technical_available_mw'][first:end])/2
+            elif kind=='release':
+                default = lake['min_release_m3s']
+            elif kind.startswith('level_'):
+                dead,normal = float(station['reference_dead_level_m']),float(station['reference_normal_level_m'])
+                default = dead+(normal-dead)*lake['initial_storage_m3']/station['storage_m3']
+        value = 0.
+        if kind != 'offline':
+            value = c.number_input('控制值（'+UNITS[kind]+'）',min_value=0.,value=float(default),format='%.3f',
+                                   key='da_op_value_'+kind+'_'+uid)
+        if kind.startswith('level_'):
+            st.caption(f"本算例在死水位 {station['reference_dead_level_m']} m 与正常蓄水位 {station['reference_normal_level_m']} m 之间线性换算段末调节库容，并校核水期运行边界。")
+        if kind=='island':
+            st.caption('孤网按给定功率供本地负荷。过机耗水计入梯级，主网中标为零。')
+        if st.button('加入申报',key='da_op_add'):
+            try:
+                candidate = with_operations(base,[*entries,dict(station=uid,kind=kind,first=first,last=end-1,value=value)])
+                DayOperations(candidate,catalog)
+            except ValueError as exc:
+                st.error(str(exc))
+            else:
+                st.session_state[key] = candidate['operations']['entries']
+                st.rerun()
+        if entries:
+            index = st.selectbox('选择要撤回的例外',range(len(entries)),format_func=lambda i:
+                f"{names[entries[i]['station']]} {stamp(entries[i]['first'])}–{stamp(entries[i]['last']+1)} {instruction_label(entries[i])}")
+            if st.button('撤回所选例外',key='da_op_remove'):
+                st.session_state[key] = entries[:index]+entries[index+1:]
+                st.rerun()
+    return with_operations(base,entries),pointer
 
 
 def workspace(root):
@@ -246,11 +347,18 @@ def workspace(root):
     template = SEASON_TEMPLATE[season]
     sheet = _load_sheet(template)
     st.caption(f'同一水期共用来水、负荷预测和机组申报。本组合按负荷峰值的 {NET_ERROR_SIGMA[level]:.0%} 模拟净负荷预测误差标准差，用于确定日前向上裕度。')
-    company = sheet['company']
+    company,pointer = edit_operations(root,sheet)
+    ops = DayOperations(company,sheet['inputs']['stations'])
     submitted = declaration_path(root,company).is_file()
     c1,c2,c3 = st.columns(3)
     if c1.button('确认并冻结 19 站申报',key='dadu_freeze',width='stretch'):
         freeze_declaration(root,company)
+        temporary = pointer.with_suffix('.'+uuid4().hex+'.tmp')
+        try:
+            temporary.write_text(company['declaration_sha256'],encoding='ascii')
+            temporary.replace(pointer)
+        finally:
+            temporary.unlink(missing_ok=True)
         submitted = True
     run = c2.button('运行日前预出清',disabled=not submitted,key='dadu_run',type='primary',width='stretch')
     c3.download_button('下载本场景申报单',json.dumps(declaration_record(company),ensure_ascii=False),
@@ -289,11 +397,18 @@ def workspace(root):
             st.session_state['da_archive_'+scenario] = name
             st.session_state['da_next_page'] = '日前预出清'
             st.rerun()
-    render_sheet(sheet,scenario_label(scenario))
+    render_sheet(dict(sheet,company=company),scenario_label(scenario),operations=ops)
     with st.expander('同时比较多个站的 96 点申报'):
         stations = {s['name']:s['id'] for s in sheet['inputs']['stations']}
         selection = st.multiselect('比较申报电站',list(stations),default=['瀑布沟','深溪沟'],key='da_filing_compare')
         field = st.radio('比较指标',['能力上限','能力下限','区间来水'],horizontal=True)
         key = {'能力上限':'available_mw','能力下限':'minimum_mw','区间来水':'natural_inflow_m3s'}[field]
         if selection:
-            _chart({n:company['offers'][stations[n]][key] for n in selection},'m³/s' if field=='区间来水' else 'MW')
+            curves = {}
+            for n in selection:
+                uid = stations[n]
+                offer = company['offers'][uid]
+                curves[n] = offer[key] if field=='区间来水' else [
+                    ops.grid_bounds(uid,t,lo,hi)[int(field=='能力上限')]
+                    for t,(lo,hi) in enumerate(zip(offer['minimum_mw'],offer['available_mw']))]
+            _chart(curves,'m³/s' if field=='区间来水' else 'MW')

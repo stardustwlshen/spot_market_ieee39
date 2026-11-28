@@ -197,7 +197,7 @@ def _delivery_test(model, case, thermal, times):
             model.forecast_security.add(p.inequality(-edge.limit_mw, flow, edge.limit_mw))
 
 
-def _build(case, begin, stop, *, carry=None, da_mode=None, holds=(), spot_disabled=()):
+def _build(case, begin, stop, *, carry=None, da_mode=None, holds=(), spot_disabled=(), operations=None):
     import pyomo.environ as p
     rs = {r.id: r for r in case.resources}
     ls = {l.id: l for l in case.lines}
@@ -247,6 +247,12 @@ def _build(case, begin, stop, *, carry=None, da_mode=None, holds=(), spot_disabl
             g=m.power[r,t]
             cap=case.available[t].get(r,v.capacity_mw)
             g.setub(cap)
+            if operations and (r,t) in operations.slots:
+                if operations.island(r,t) > cap:
+                    raise ClearingError(f'{r} 第 {t+1} 段孤网计划超过市场侧技术可用容量')
+                low,high = operations.grid_bounds(r,t,0.,cap)
+                g.setlb(low)
+                g.setub(high)
             if v.segments:
                 m.phys.add(g == sum(m.segment[r,i,t] for i in range(len(v.segments))))
             if v.kind == 'fixed':
@@ -293,7 +299,8 @@ def _build(case, begin, stop, *, carry=None, da_mode=None, holds=(), spot_disabl
                     m.phys.add(g>=v.minimum_mw+down)
             if v.kind == 'hydro' and v.ramp_mw_15min is not None:
                 previous=(v.initial_mw if carry is None else carry['power'][r]) if t==begin else m.power[r,t-1]
-                m.phys.add(p.inequality(-v.ramp_mw_15min,g-previous,v.ramp_mw_15min))
+                delta = operations.island(r,t)-operations.island(r,t-1) if operations else 0.
+                m.phys.add(p.inequality(-v.ramp_mw_15min,g+delta-previous,v.ramp_mw_15min))
             if r in st:
                 ch,e,mode=m.charge[r,t],m.energy[r,t],m.mode[r,t]
                 e.setub(v.energy_mwh)
@@ -314,7 +321,8 @@ def _build(case, begin, stop, *, carry=None, da_mode=None, holds=(), spot_disabl
         # A rolling window cannot spend tomorrow's within-day water; preserve
         # the DA budget use outside the current look-ahead as a research anchor.
         after = 0. if da_mode is None else DT*sum(row['power'][r] for row in da_mode[stop:])
-        m.phys.add(DT*sum(m.power[r,t] for t in times) <= max(0.,budget-after))
+        local = sum(operations.island(r,t) for t in times) if operations else 0.
+        m.phys.add(DT*(sum(m.power[r,t] for t in times)+local) <= max(0.,budget-after))
     spill_cost=0
     if case.cascade is not None:
         # A water-only continuation proves that the last physical stock target
@@ -330,7 +338,9 @@ def _build(case, begin, stop, *, carry=None, da_mode=None, holds=(), spot_disabl
                     case.available[t].get(r,rs[r].capacity_mw)-up)
         m.water_tail_power=p.Var(hydraulic_ids,tail,domain=p.NonNegativeReals,bounds=tail_bounds)
         def water_power(r,t):
-            return m.power[r,t] if t<stop else m.water_tail_power[r,t]
+            if t<stop:
+                return m.power[r,t] + (operations.island(r,t) if operations else 0.)
+            return m.water_tail_power[r,t]
         for r in hydraulic_ids:
             rate=rs[r].ramp_mw_15min
             if rate is not None:
@@ -338,6 +348,8 @@ def _build(case, begin, stop, *, carry=None, da_mode=None, holds=(), spot_disabl
                     m.phys.add(p.inequality(-rate,water_power(r,t)-water_power(r,t-1),rate))
         attach_cascade_constraints(m,case.cascade,begin,water_stop,water_power,
                                    state=None if carry is None else carry['cascade_state'])
+        if operations:
+            operations.attach_water(m,m.phys)
         # Modest synthetic coefficient, not the official numerical water penalty.
         spill_cost=.02*sum(m.cascade_spill[r,t] for r in hydraulic_ids for t in times)
     m.objective = p.Objective(expr=spill_cost+DT*sum(
@@ -545,11 +557,11 @@ def _tie_allocate(model, case, time_limit_s):
 
 def day_ahead(case, *, fixed_commitment=None, holds=(), spot_disabled=(), time_limit_s=3600,
               equal_offer_priority=False, on_commitment_solved=None, hydro_bounds=None,
-              on_scuc_dispatch=None):
+              on_scuc_dispatch=None, operations=None):
     """Return 96 DA reference quarters, never a monetary settlement."""
     validate(case)
     _validate_ancillary(case, holds, spot_disabled)
-    m=_build(case,0,PERIODS,da_mode=fixed_commitment,holds=holds,spot_disabled=spot_disabled)
+    m=_build(case,0,PERIODS,da_mode=fixed_commitment,holds=holds,spot_disabled=spot_disabled,operations=operations)
     if hydro_bounds is not None:
         hydro = {r.id for r in case.resources if r.kind == 'hydro'}
         if len(hydro_bounds) != PERIODS:
@@ -559,6 +571,8 @@ def day_ahead(case, *, fixed_commitment=None, holds=(), spot_disabled=(), time_l
                 raise ClearingError(f'第 {t+1} 段水电审核机组不完整')
             for uid, (low, high) in bounds.items():
                 g = m.power[uid, t]
+                if operations:
+                    low,high = operations.grid_bounds(uid,t,low,high)
                 if not _num(low) or not _num(high, low, g.ub):
                     raise ClearingError(f'{uid} 第 {t+1} 段水电审核边界无效')
                 up, down = holds[t].get(uid,(0.,0.)) if holds else (0.,0.)

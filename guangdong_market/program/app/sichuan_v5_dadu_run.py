@@ -40,8 +40,11 @@ def _assumptions(case, corridor_scale, gas_scale):
     return replace(case, lines=lines, fixed_schedule=schedule)
 
 
-def _policy(case, month, *, progress=None):
-    water_mw, water_mwh = operator_hydro_envelope(case, **({"progress": progress} if progress is not None else {}))
+def _policy(case, month, *, progress=None, operations=None):
+    options = {"operations":operations} if operations else {}
+    if progress is not None:
+        options["progress"] = progress
+    water_mw, water_mwh = operator_hydro_envelope(case, **options)
     other_market = [u for u in case.resources if u.kind in ("thermal", "renewable")]
     other_mw = [sum(row.get(u.id, u.capacity_mw) for u in other_market) for row in case.available]
     supply = [hydro + other for hydro, other in zip(water_mw, other_mw)]
@@ -248,8 +251,10 @@ def default_declaration(base, meta):
 
 
 def declaration_record(company):
-    return {k:company[k] for k in ("schema","strategy","as_of","offers","hydraulic_declaration",
-                                   "submission_sha256","declaration_sha256")}
+    keys = ["schema","strategy","as_of","offers","hydraulic_declaration","submission_sha256","declaration_sha256"]
+    if "operations" in company:
+        keys.extend(("operations","base_declaration_sha256"))
+    return {k:company[k] for k in keys}
 
 
 def declaration_path(root, company):

@@ -59,7 +59,7 @@ def _marginal_cost(size, fraction, coal_price):
     return (low + (high - low) * fraction) * coal_price / 1000.
 
 
-def operator_hydro_envelope(case, *, progress=None):
+def operator_hydro_envelope(case, *, progress=None, operations=None):
     """Independent DA hydraulic capability for the 96 power ratios and daily energy.
 
     Each MW value maximizes all stations' *simultaneous* output in its quarter
@@ -79,17 +79,26 @@ def operator_hydro_envelope(case, *, progress=None):
     ticks = range(96)
     model.mw = p.Var(tuple(hydro), ticks, bounds=lambda _, key, t: (
         0., case.available[t].get(key, hydro[key].capacity_mw)))
-    attach_cascade_constraints(model, case.cascade, 0, 96, lambda key, t: model.mw[key, t])
+    def turbine_power(key,t):
+        return model.mw[key,t] + (operations.island(key,t) if operations else 0.)
+    attach_cascade_constraints(model, case.cascade, 0, 96, turbine_power)
     model.unit_bounds = p.ConstraintList()
+    if operations:
+        operations.attach_water(model,model.unit_bounds)
+        for key,t in operations.slots:
+            var = model.mw[key,t]
+            low,high = operations.grid_bounds(key,t,0.,var.ub)
+            var.setlb(low)
+            var.setub(high)
     for key, unit in hydro.items():
         if unit.daily_water_budget_mwh is not None:
-            model.unit_bounds.add(.25 * p.quicksum(model.mw[key, t] for t in ticks)
+            model.unit_bounds.add(.25 * p.quicksum(turbine_power(key,t) for t in ticks)
                                   <= unit.daily_water_budget_mwh)
         if unit.ramp_mw_15min is not None:
             for t in ticks:
-                before = model.mw[key, t-1] if t else unit.initial_mw
+                before = turbine_power(key,t-1) if t else unit.initial_mw
                 ramp = unit.ramp_mw_15min
-                model.unit_bounds.add(p.inequality(-ramp, model.mw[key, t] - before, ramp))
+                model.unit_bounds.add(p.inequality(-ramp, turbine_power(key,t) - before, ramp))
     total = [p.quicksum(model.mw[key, t] for key in hydro) for t in ticks]
     model.criterion = p.Objective(expr=.25 * p.quicksum(total), sense=p.maximize)
     solver = Highs()
