@@ -15,9 +15,12 @@ from sichuan_v5_dadu_da import (DAY_SCENARIOS, ERROR_LEVELS, LEGACY_SCENARIOS, N
                                 SEASONS, SEASON_TEMPLATE, list_days, read_day, run_day)
 from sichuan_v5_dadu_live import solve_visible
 from sichuan_v5_dadu_operations import DayOperations, LABELS, UNITS, with_operations
+from sichuan_v5_pumped_storage import build_day_case
 from sichuan_v5_dadu_run import declaration_path, declaration_record, freeze_declaration
 from sichuan_v5_dadu_view import KINDS, SCENARIOS as LEGACY_LABELS, _chart, _load_sheet
 from sichuan_v5_declaration_sheet import render_sheet
+
+DAY_KINDS = {**KINDS,'storage':'抽水蓄能'}
 
 
 def stamp(q):
@@ -44,6 +47,27 @@ def archive_label(name):
 def price(row,bus):
     values = row['raw_nodal_prices']
     return values.get(str(bus), values.get(bus))
+
+
+def pump_rows(result):
+    spec = result['inputs'].get('pumped_storage')
+    if not spec:
+        return []
+    uid = spec['id']
+    return [{'时段':period(q),'日前净计划 MW':spec['signed_mw'][q],
+             'SCUC 抽水 MW':uc['charge'][uid],'SCUC 发电 MW':uc['power'][uid],
+             'SCED 抽水 MW':r['charge'][uid],'SCED 发电 MW':r['power'][uid],
+             '净注入 MW':r['power'][uid]-r['charge'][uid],'段末库存 MWh':r['energy'][uid],
+             '节点参考价 元/MWh':price(r,spec['bus'])}
+            for q,(uc,r) in enumerate(zip(result['scuc'],result['da']))]
+
+
+def pump_schedule_text(p):
+    def window(start,count):
+        return stamp(start)+'–'+stamp(start+count)
+    return (f"节点 {p['bus']} · 抽水、发电各 {p['capacity_mw']:,.0f} MW　｜　"
+            f"{window(p['pump_start'],p['pump_quarters'])} 抽水　→　"
+            f"{window(p['generate_start'],p['generate_quarters'])} 发电")
 
 
 def read_awards(upload):
@@ -121,13 +145,16 @@ def export_day(root,name):
             lines.extend(flows)
             for a in result['inputs']['assets']:
                 uid = a['id']
-                units.append({'时段':period(q),'资源':a['name'],'编号':uid,'类型':KINDS[a['kind']],
+                units.append({'时段':period(q),'资源':a['name'],'编号':uid,'类型':DAY_KINDS[a['kind']],
                         '设计装机 MW':a['capacity_mw'],'可用 MW':result['inputs']['available'][q][uid],
                         'SCUC出力 MW':result['scuc'][q]['power'][uid], '煤机开机':r['online'].get(uid),
                         'SCED中标或计划 MW':r['power'][uid],'电量 MWh':.25*r['power'][uid],
+                        '抽水 MW':r['charge'].get(uid,0.),'净注入 MW':r['power'][uid]-r['charge'].get(uid,0.),
                         '节点参考价 元/MWh':price(r,a['bus'])})
             prices.append({'时段':period(q),**{f'节点{b}':v for b,v in r['raw_nodal_prices'].items()}})
         write('各机组日前计划.csv',units)
+        if result['inputs'].get('pumped_storage'):
+            write('抽水蓄能96点计划与库存.csv',pump_rows(result))
         write('各站申报边界与水账.csv',stations)
         write('线路潮流.csv',lines)
         write('39节点参考价_元每MWh.csv',prices)
@@ -138,7 +165,8 @@ def export_day(root,name):
 def market_results(root,name):
     result = read_day(root,name)
     da, inp, audit = result['da'],result['inputs'],result['audit']
-    group = {k:[a['id'] for a in inp['assets'] if a['kind']==k] for k in KINDS}
+    group = {k:[a['id'] for a in inp['assets'] if a['kind']==k] for k in DAY_KINDS
+             if any(a['kind']==k for a in inp['assets'])}
     by_name = {s['name']:s for s in inp['stations']}
     energy = {k:.25*sum(r['power'][u] for r in da for u in ids) for k,ids in group.items()}
     status = '校核通过' if audit['max_slack_mw'] < 1e-5 else '存在可靠性松弛'
@@ -164,11 +192,33 @@ def market_results(root,name):
         '组合阶段 MW':result['scuc'][q]['power'][a['id']],'固定组合出力 MW':row['power'][a['id']],
         '全天开机 h':.25*sum(t['online'][a['id']] for t in da)} for a in inp['assets'] if a['kind']=='thermal'],
         hide_index=True,width='stretch')
-    _chart({**{KINDS[k]:[sum(r['power'][u] for u in ids) for r in da] for k,ids in group.items()},
-            '系统负荷':[sum(r['demand'].values()) for r in da]},'MW')
+    supply = {DAY_KINDS[k]:[sum(r['power'][u] for u in ids) for r in da] for k,ids in group.items()}
+    supply['用户负荷'] = [sum(r['demand'].values()) for r in da]
+    if inp.get('pumped_storage'):
+        supply['含抽水的总负荷'] = [sum(r['demand'].values())+sum(r['charge'].values()) for r in da]
+    _chart(supply,'MW')
+    if inp.get('pumped_storage'):
+        spec = inp['pumped_storage']
+        log = pump_rows(result)
+        totals = audit['pumped_storage']
+        st.subheader('抽水蓄能 · 抽发与库存',anchor='pumped-storage')
+        st.caption(pump_schedule_text(spec))
+        cols = st.columns(4)
+        for col,label,key in zip(cols,['抽水用电','发电上网','循环损耗','日末可发电量'],
+                                 ['pumping_mwh','generation_mwh','cycle_loss_mwh','terminal_mwh']):
+            col.metric(label,f"{totals[key]:,.0f} MWh")
+        left,right = st.columns(2)
+        with left:
+            _chart({'计划净注入':[r['日前净计划 MW'] for r in log],'出清净注入':[r['净注入 MW'] for r in log]},'MW')
+        with right:
+            _chart({'上库可发电量':[r['段末库存 MWh'] for r in log]},'MWh')
+        st.caption(f"当前 {period(q)}　抽水 {log[q]['SCED 抽水 MW']:,.0f} MW · 发电 {log[q]['SCED 发电 MW']:,.0f} MW · "
+                   f"段末库存 {log[q]['段末库存 MWh']:,.0f} MWh · 节点参考价 {log[q]['节点参考价 元/MWh']:.2f} 元/MWh。")
+        with st.expander('查看抽蓄 96 点计划、出清及节点参考价'):
+            st.dataframe(log,hide_index=True,width='stretch')
     with st.expander('全电源装机、可用容量与市场采用报价'):
         st.caption(inp.get('pv_category') or result['assumptions']['pv_category'])
-        st.dataframe([{'类型':KINDS[k],'设计装机 MW':sum(a['capacity_mw'] for a in inp['assets'] if a['kind']==k),
+        st.dataframe([{'类型':DAY_KINDS[k],'设计装机 MW':sum(a['capacity_mw'] for a in inp['assets'] if a['kind']==k),
                        '时段可用 MW':sum(inp['available'][q][u] for u in ids),'时段出力 MW':sum(row['power'][u] for u in ids),
                        '全天电量 MWh':energy[k]} for k,ids in group.items()],hide_index=True)
         policy = result['policy']
@@ -364,11 +414,19 @@ def workspace(root):
     c3.download_button('下载本场景申报单',json.dumps(declaration_record(company),ensure_ascii=False),
                        scenario+'-申报.json','application/json',width='stretch')
     st.caption(('已冻结 · '+company['declaration_sha256'][:12] if submitted else '待确认申报')+'　｜　19 站水电耦合 · 96 个时段 · 日前预出清不结算')
+    case,meta = build_day_case(template)
+    pump = meta['pumped_storage']
+    st.subheader('抽水蓄能 · 日前抽发计划',anchor='pumped-storage-plan')
+    st.write(pump_schedule_text(pump))
+    st.caption(f"独立闭式抽蓄按外部计划参与本算例。可发电量上限 {pump['usable_energy_mwh']:,.0f} MWh，"
+               f"期初和日末目标均为 {pump['initial_mwh']:,.0f} MWh，往返效率 {pump['cycle_efficiency']:.0%}。")
+    with st.expander('查看抽蓄计划曲线与取值依据'):
+        st.write(pump['plan_basis']+' 两种工况之间至少停机 15 分钟。功率以向电网送电为正，抽水为负。')
+        _chart({'抽蓄计划净注入':pump['signed_mw']},'MW')
+        st.download_button('下载抽蓄日前计划',json.dumps(pump,ensure_ascii=False),scenario+'-抽蓄计划.json','application/json')
     with st.expander('市场边界与其他电源申报'):
         st.caption('默认申报按站冻结。水电核准区间为申报区间与技术可用容量的交集，出清另用市场侧来水。气电执行外部保供计划，普通集中式光伏采用全量零价申报。')
-        from sichuan_v5_dadu_case import build_case
-        case,_ = build_case(template,39)
-        assets = {a['id']:a for a in sheet['inputs']['assets']}
+        assets = {a['id']:a for a in meta['assets']}
         rows = []
         for u in case.resources:
             if u.kind=='hydro':
@@ -376,8 +434,8 @@ def workspace(root):
             start = 0.
             for width,p in u.segments or [(u.capacity_mw,None)]:
                 stop = start+width
-                rows.append({'资源':assets[u.id]['name'],'类型':KINDS[u.kind],'节点':u.bus,'起点 MW':start,'终点 MW':stop,
-                    '申报价 元/MWh':p if u.kind!='thermal' or start else None,'用途':'保供计划' if u.kind=='fixed' else
+                rows.append({'资源':assets[u.id]['name'],'类型':DAY_KINDS[u.kind],'节点':u.bus,'起点 MW':start,'终点 MW':stop,
+                    '申报价 元/MWh':p if u.kind!='thermal' or start else None,'用途':'日前抽发计划' if u.kind=='storage' else '保供计划' if u.kind=='fixed' else
                     '最小稳定出力' if u.kind=='thermal' and start==0 else '竞价段'})
                 start = stop
         st.dataframe(rows,hide_index=True)

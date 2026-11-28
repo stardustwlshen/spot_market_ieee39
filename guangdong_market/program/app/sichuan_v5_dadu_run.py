@@ -49,12 +49,15 @@ def _policy(case, month, *, progress=None, operations=None):
     other_mw = [sum(row.get(u.id, u.capacity_mw) for u in other_market) for row in case.available]
     supply = [hydro + other for hydro, other in zip(water_mw, other_mw)]
     net = [sum(load.values()) - sum(plan.values()) for load,plan in zip(case.demand,case.fixed_schedule)]
+    if case.storage_plan:
+        net = [d-sum(row.values()) for d,row in zip(net,case.storage_plan)]
     other_mwh = DT * sum(other_mw)
     policy = market_power_policy(month, supply, net, [case.reserve_mw]*PERIODS,
                                  water_mwh + other_mwh)
     return dict(policy, operator_hydro_capacity_mw=water_mw, operator_hydro_supply_mwh=water_mwh,
                 operator_market_capacity_mw=supply, operator_market_supply_mwh=water_mwh + other_mwh,
-                capability_basis="每个时段分别求全梯级同时可达出力，全日可供电量独立优化。煤机和光伏按当期可用能力计入，气电计划抵减净需求。")
+                capability_basis="每个时段分别求全梯级同时可达出力，全日可供电量独立优化。煤机和光伏按当期可用能力计入，气电计划抵减净需求。"
+                                 + ("抽蓄抽水增加净需求，发电抵减净需求。" if case.storage_plan else ""))
 
 
 def _issued_window(current, t, stop, holds, hydraulic_static_sha):
@@ -80,6 +83,10 @@ def _market_offers(case, policy):
     reservoirs = {r.id:r for r in case.cascade.reservoirs}
     units, raw, effective, kinds = [], {}, {}, {}
     for unit in case.resources:
+        if unit.role == "pumped_storage":
+            units.append(unit)
+            kinds[unit.id] = "pumped_storage"
+            continue
         if unit.kind == "hydro":
             kind = "run_of_river" if reservoirs[unit.id].regulation in ("ror", "run_of_river") else "reservoir"
         else:

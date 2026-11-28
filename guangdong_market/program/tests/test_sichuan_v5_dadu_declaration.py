@@ -57,6 +57,22 @@ def test_submission_workspace(tmp_path, monkeypatch):
     assert archive['company']['operations']['entries']==[dict(station='D11',first=48,last=51,kind='island',value=80.)]
     assert archive['audit']['island_energy_mwh']==pytest.approx(80.)
     assert archive['audit']['max_flow_error_m3s'] < 1e-4
+    from sichuan_v5_dadu_da_view import pump_rows
+    from sichuan_v5_pumped_storage import build_day_case,audit_pumped
+    from copy import deepcopy
+    market,_ = build_day_case('wet_low')
+    detail = pump_rows(archive)
+    assert len(detail)==96
+    assert all(abs(r['净注入 MW']-r['日前净计划 MW'])<1e-5 for r in detail)
+    assert all(r['SCUC 抽水 MW']==r['SCED 抽水 MW'] and r['SCUC 发电 MW']==r['SCED 发电 MW'] for r in detail)
+    assert archive['audit']['pumped_storage']==dict(pumping_mwh=4800.,generation_mwh=3600.,cycle_loss_mwh=1200.,
+                                                   terminal_mwh=3600.,max_inventory_error_mwh=0.)
+    assert 'PSH1' not in archive['company']['offers'] and 'PSH1' not in archive['raw_offers']
+    assert all('PSH1' not in row['hydro'] for row in archive['da'])
+    damaged = deepcopy(archive['da'])
+    damaged[0]['energy']['PSH1'] += 1
+    with pytest.raises(ValueError,match='库存'):
+        audit_pumped(market,damaged)
     from sichuan_v5_dadu_da_view import tables
     water,_ = tables(archive,48)
     island = next(s for s in water if s['电站']=='深溪沟')

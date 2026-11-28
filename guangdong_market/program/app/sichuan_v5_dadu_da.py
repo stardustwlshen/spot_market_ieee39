@@ -18,6 +18,7 @@ from sichuan_v5_dadu_run import (_bytes, _hash, _market_offers, _policy, _slack,
                                 declaration_path, declaration_record, default_declaration, source_hashes)
 from sichuan_v5_energy import PERIODS, ClearingError, day_ahead
 from sichuan_v5_hydro import advance_cascade, initial_cascade_state
+from sichuan_v5_pumped_storage import PSH, audit_pumped, build_day_case
 
 SEASONS = {'wet':'丰水期', 'dry':'枯水期'}
 ERROR_LEVELS = {'normal':'正常预测误差', 'extreme':'极端预测误差'}
@@ -89,6 +90,8 @@ def audit_day(case, rows, bounds, operations=None):
         balance = {b:row['shed'][b] - row['spill'][b] - d for b,d in row['demand'].items()}
         for u, p in row['power'].items():
             balance[units[u].bus] += p
+        for u, pumping in row['charge'].items():
+            balance[units[u].bus] -= pumping
         for line in case.lines:
             flow = row['flows'][line.id]
             balance[line.source] -= flow
@@ -122,7 +125,7 @@ def run_day(root, *, scenario, declaration_sha256, awards=(), progress=None):
         raise ClearingError('无法识别的日前场景')
     season, level = DAY_SCENARIOS.get(scenario, (None,None))
     template = SEASON_TEMPLATE[season] if season else scenario
-    case, meta = build_case(template,39)
+    case, meta = build_day_case(template,39)
     company = default_declaration(case,meta)
     if not isinstance(declaration_sha256,str) or not re.fullmatch('[a-f0-9]{64}',declaration_sha256):
         raise ClearingError('未找到与本场景完全一致的已冻结申报')
@@ -159,14 +162,16 @@ def run_day(root, *, scenario, declaration_sha256, awards=(), progress=None):
     report(progress,'da',2,2,'日前机组组合和固定组合经济调度完成')
     report(progress,'publish',0,2,'逐段复算节点和梯级水量平衡、日末库存及在途水量')
     audit = audit_day(market,rows,bounds,active)
+    audit['pumped_storage'] = audit_pumped(market,rows)
+    audit_pumped(market,scuc)
     result = dict(schema=SCHEMA, scenario=scenario, company=frozen, bounds=bounds,
                   assumptions={k:meta[k] for k in ('rules_pdf_sha256','hydraulic_limits_note','network_assumption','pv_category','gas_plan_note')},
                   policy=policy, margin=margin, awards=[asdict(a) for a in records],
                   inputs=dict(stations=meta['stations'],assets=meta['assets'],lines=[asdict(l) for l in market.lines],
-                              available=market.available,fixed_schedule=market.fixed_schedule,
+                              available=market.available,fixed_schedule=market.fixed_schedule,pumped_storage=meta['pumped_storage'],
                               resources=[asdict(r) for r in market.resources]),
                   raw_offers=raw,effective_offers=effective,
-                  scuc=[dict(quarter=r['quarter'],online=r['online'],power=r['power']) for r in scuc],
+                  scuc=[dict(quarter=r['quarter'],online=r['online'],power=r['power'],charge=r['charge'],energy=r['energy']) for r in scuc],
                   da=rows, audit=audit)
     if season:
         result['scenario_settings'] = dict(season=season, forecast_error=level,
@@ -175,6 +180,8 @@ def run_day(root, *, scenario, declaration_sha256, awards=(), progress=None):
     signature['app/sichuan_v5_dadu_da.py'] = hashlib.sha256(Path(__file__).read_bytes()).hexdigest()
     ops_file = Path(__file__).with_name('sichuan_v5_dadu_operations.py')
     signature['app/'+ops_file.name] = hashlib.sha256(ops_file.read_bytes()).hexdigest()
+    pump_file = Path(__file__).with_name('sichuan_v5_pumped_storage.py')
+    signature['app/'+pump_file.name] = hashlib.sha256(pump_file.read_bytes()).hexdigest()
     result['source_hashes'] = signature
     packed = gzip.compress(_bytes(result),mtime=0)
     stamp = datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%S%fZ')

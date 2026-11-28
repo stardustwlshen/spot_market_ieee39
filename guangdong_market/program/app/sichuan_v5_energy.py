@@ -308,8 +308,8 @@ def _build(case, begin, stop, *, carry=None, da_mode=None, holds=(), spot_disabl
                 if spot_disabled and r in spot_disabled[t] and prescribed != 0:
                     raise ClearingError(f'储能 {r} 时段 {t+1} 不参加现货，充放电计划必须为零')
                 mode.fix(int(prescribed > 0))
-                if prescribed>cap:
-                    raise ClearingError(f'储能 {r} 时段 {t+1} 的放电计划超过可用出力')
+                if prescribed>cap or (v.role=='pumped_storage' and -prescribed>cap):
+                    raise ClearingError(f'储能 {r} 时段 {t+1} 的抽发计划超过可用出力')
                 g.fix(max(0.,prescribed))
                 ch.fix(max(0.,-prescribed))
                 prev_e=(v.initial_energy_mwh if carry is None else carry['energy'][r]) if t == begin else m.energy[r,t-1]
